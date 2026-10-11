@@ -8,12 +8,12 @@ import { Popover } from './popover.js';
  * par le parseur. Modèle sélectionné (ou à `pos`) : modification ; sinon insertion, en bloc si le
  * paragraphe courant est vide.
  */
-export function openModelPopover({ editor, wrapper }, pos = null) {
+export function openModelPopover({ editor, wrapper, parent }, pos = null) {
 	if (pos !== null) editor.commands.setNodeSelection(pos);
 	const { selection } = editor.state;
 	const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
 
-	const popover = new Popover({ editor, wrapper, titre: label('modele'), className: 'tts-popover--modele', onSubmit: () => appliquer() });
+	const popover = new Popover({ editor, wrapper, parent, titre: label('modele'), className: 'tts-popover--modele', onSubmit: () => appliquer() });
 	const raccourci = popover.input(label('modele_raccourci'), { value: courant?.node.attrs.model?.source ?? '', name: 'raccourci' });
 
 	const appliquer = () => {

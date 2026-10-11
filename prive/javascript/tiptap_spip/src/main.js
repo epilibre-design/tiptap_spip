@@ -2,11 +2,11 @@ import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
 import { contexte as contexteHote } from './hosts/contexte.js';
-import { LinkTitles, ModelPreviews } from './services/cache.js';
 import { Services } from './services/cvt.js';
+import { creerInterface } from './ui/interface.js';
 import { label } from './ui/labels.js';
-import { openLinkPopover } from './ui/LinkPopover.js';
-import { openModelPopover } from './ui/ModelPopover.js';
+import { NotesPanel } from './ui/NotesPanel.js';
+import { Popover } from './ui/popover.js';
 
 /**
  * Textareas équipés (spec 02 §6) : ceux du porte-plume (classes, et champ texte des formulaires
@@ -72,9 +72,18 @@ class Instance {
 			toolbar.append(b);
 			return b;
 		};
-		this.linkButton = bouton('tts-lien', label('lien'), () => this.ui.openLink());
-		this.linkButton.title = `${label('lien')} (Ctrl+K)`;
-		this.modelButton = bouton('tts-modele', label('modele'), () => this.ui.editModel(null));
+		// boutons de l'édition visuelle, désactivés en mode source
+		this.visualButtons = [
+			bouton('tts-lien', label('lien'), () => this.ui.openLink()),
+			bouton('tts-bouton-note', label('note'), () => this.ui.editNote(null)),
+			bouton('tts-bouton-glossaire', label('glossaire'), () => this.ui.openGlossary()),
+			bouton('tts-bouton-abbr', label('abbr'), () => this.ui.openAbbr()),
+			bouton('tts-modele', label('modele'), () => this.ui.editModel(null)),
+		];
+		const [linkButton, noteButton, glossaryButton] = this.visualButtons;
+		linkButton.title = `${label('lien')} (Ctrl+K)`;
+		noteButton.title = `${label('note')} (Ctrl+Alt+N)`;
+		glossaryButton.title = `${label('glossaire')} (Ctrl+Alt+G)`;
 		this.modeButton = bouton('tts-mode', label('mode_source'), () => this.toggleMode());
 		this.modeButton.setAttribute('aria-pressed', 'false');
 		this.content = document.createElement('div');
@@ -92,15 +101,9 @@ class Instance {
 		this.servicesPrets.then((s) => {
 			this.services = s;
 		});
-		// le popover de lien reçoit la promesse : ouvert avant l'arrivée des services, sa recherche
-		// fonctionne dès qu'ils sont là
-		const contexte = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.servicesPrets, titles: this.ui.titles });
-		this.ui = {
-			previews: new ModelPreviews(this.servicesPrets),
-			titles: new LinkTitles(this.servicesPrets),
-			openLink: () => openLinkPopover(contexte()),
-			editModel: (pos) => openModelPopover(contexte(), pos),
-		};
+		// les popovers reçoivent la promesse : ouverts avant l'arrivée des services, leurs appels
+		// (recherche de liens, glossaire) fonctionnent dès qu'ils sont là
+		this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets });
 
 		// l'éditeur est créé avant de toucher au DOM : en cas d'échec, rien n'a changé
 		this.editor = createEditor({
@@ -110,6 +113,8 @@ class Instance {
 			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em` } },
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
+		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos) });
+		this.content.after(this.notes.element);
 
 		textarea.before(this.wrapper);
 		this.wrapper.append(textarea);
@@ -122,8 +127,8 @@ class Instance {
 		const source = mode === 'source';
 		this.textarea.hidden = !source;
 		this.content.hidden = source;
-		this.linkButton.disabled = source;
-		this.modelButton.disabled = source;
+		this.notes.element.hidden = source || this.notes.liste.childElementCount === 0;
+		for (const b of this.visualButtons) b.disabled = source;
 		this.modeButton.setAttribute('aria-pressed', String(source));
 		(source ? this.textarea : this.editor).focus?.();
 	}
@@ -131,6 +136,9 @@ class Instance {
 	/** @param {{ restore?: boolean }} options  restore : remettre le textarea à sa place */
 	destroy({ restore = true } = {}) {
 		instances.delete(this);
+		// popovers de l'instance (et sous-éditeur d'une note) fermés
+		while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
+		this.notes.destroy();
 		this.bridge.destroy();
 		if (this.chargement) {
 			this.chargement.abort();

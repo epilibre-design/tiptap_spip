@@ -177,7 +177,7 @@
 	display: block;
 }
 
-/* Popovers (lien, modèle). */
+/* Popovers (lien, modèle, note, glossaire, abréviation). */
 .tts-popover {
 	position: absolute;
 	z-index: 10;
@@ -231,4 +231,62 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
+}
+
+/* Popover de note : un peu plus large, sous-éditeur et sa barre réduite. */
+.tts-popover--note {
+	min-width: 24em;
+	max-width: 36em;
+}
+
+.tts-note__barre {
+	display: flex;
+	gap: 2px;
+	margin-bottom: 2px;
+}
+
+.tts-note__texte .tts-prosemirror {
+	min-height: 4em;
+	max-height: 16em;
+	overflow-y: auto;
+	padding: 0.25em 0.4em;
+	border: 1px solid #aaa;
+	border-radius: 3px;
+	background: #fff;
+}
+
+/* Popover ouvert depuis un autre (lien du sous-éditeur d'une note) : au-dessus de son parent. */
+.tts-popover + .tts-popover {
+	z-index: 11;
+}
+
+/* Panneau des notes, sous l'éditeur. */
+.tts-notes {
+	margin: 0.25em 0;
+	font-size: 0.9em;
+}
+
+.tts-notes__liste {
+	margin: 0.25em 0 0;
+	padding-left: 0;
+	list-style: none;
+}
+
+.tts-notes__note {
+	display: block;
+	width: 100%;
+	padding: 0.15em 0.3em;
+	text-align: left;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.tts-notes__note:hover,
+.tts-notes__note:focus {
+	background: #eef3fb;
+}
+
+.tts-notes__appel {
+	font-weight: bold;
 }

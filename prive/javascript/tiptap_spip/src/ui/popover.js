@@ -1,15 +1,22 @@
 /**
  * Popover de l'éditeur : petit dialogue non modal ancré dans .tts-editor, près de la sélection.
  * Échap ferme, Entrée valide (spec 06 §4), le focus revient à l'éditeur à la fermeture.
+ *
+ * Un popover peut en ouvrir un autre (lien depuis le sous-éditeur d'une note) : l'enfant s'ouvre
+ * sans fermer son parent ; fermé, il rend la main au parent ; le parent fermé ferme l'enfant.
  */
 export class Popover {
 	/**
 	 * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
-	 *           onSubmit: () => boolean|void }} options  onSubmit renvoie false pour garder le popover ouvert
+	 *           onSubmit: () => boolean|void, parent?: Popover, onClose?: () => void }} options
+	 *        onSubmit renvoie false pour garder le popover ouvert ; editor : celui qui reprend le focus
 	 */
-	constructor({ editor, wrapper, titre, className, onSubmit }) {
+	constructor({ editor, wrapper, titre, className, onSubmit, parent = null, onClose = null }) {
 		this.editor = editor;
 		this.wrapper = wrapper;
+		this.parent = parent;
+		this.enfant = null;
+		this.onClose = onClose;
 		this.form = document.createElement('form');
 		this.form.className = `tts-popover ${className ?? ''}`.trim();
 		this.form.setAttribute('role', 'dialog');
@@ -74,8 +81,11 @@ export class Popover {
 	}
 
 	open(focus) {
-		Popover.current?.close({ refocus: false });
+		// les popovers ouverts qui ne sont pas des ancêtres de celui-ci se ferment
+		while (Popover.current && Popover.current !== this.parent) Popover.current.close({ refocus: false });
+		if (this.parent) this.parent.enfant = this;
 		Popover.current = this;
+		this.ouvert = true;
 		this.wrapper.append(this.form);
 		this.place();
 		(focus ?? this.form.querySelector('input, button'))?.focus();
@@ -95,9 +105,36 @@ export class Popover {
 	}
 
 	close({ refocus = true } = {}) {
-		if (Popover.current === this) Popover.current = null;
+		if (!this.ouvert) return;
+		this.ouvert = false;
+		this.enfant?.close({ refocus: false });
+		if (Popover.current === this) Popover.current = this.parent;
+		if (this.parent?.enfant === this) this.parent.enfant = null;
 		this.form.remove();
 		if (refocus && !this.editor.isDestroyed) this.editor.commands.focus();
+		this.onClose?.();
 	}
 }
 Popover.current = null;
+
+/**
+ * Suit une position à travers les transactions de l'éditeur (appel au serveur, popover ouvert).
+ * `pos()` donne la position à jour, null si ce qui la suivait a été supprimé ; `fin()` arrête le
+ * suivi et renvoie la position.
+ */
+export function suivrePosition(editor, pos) {
+	let courante = pos;
+	const onTransaction = ({ transaction }) => {
+		if (courante === null) return;
+		const r = transaction.mapping.mapResult(courante, 1);
+		courante = r.deletedAfter ? null : r.pos;
+	};
+	editor.on('transaction', onTransaction);
+	return {
+		pos: () => courante,
+		fin() {
+			editor.off('transaction', onTransaction);
+			return courante;
+		},
+	};
+}

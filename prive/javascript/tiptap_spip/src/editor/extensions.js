@@ -302,8 +302,8 @@ const SpipModelBlock = Node.create({
 	renderHTML: ({ node, HTMLAttributes }) => ['div', { ...HTMLAttributes, class: 'tts-model tts-model-block' }, node.attrs.model?.source ?? ''],
 });
 
-/** Texte d'une note, sans mise en forme, pour l'infobulle de son appel. */
-function apercu(content, max = 80) {
+/** Texte d'une note, sans mise en forme, pour l'infobulle de son appel et le panneau des notes. */
+export function apercu(content, max = 80) {
 	const morceaux = [];
 	const parcourir = (n) => {
 		if (n.text) morceaux.push(n.text);
@@ -382,27 +382,33 @@ const SpipNote = Node.create({
 	},
 });
 
+/**
+ * Notes du document dans l'ordre, numérotées comme SPIP : seules les notes automatiques sont
+ * comptées, une note nommée porte son nom, une note sans appel n'a pas de libellé.
+ *
+ * @param {import('@tiptap/pm/model').Node} doc
+ * @returns {{ pos: number, node: import('@tiptap/pm/model').Node, label: string, aria: string }[]}
+ */
+export function notesDuDocument(doc) {
+	const notes = [];
+	let n = 0;
+	doc.descendants((node, pos) => {
+		if (node.type.name !== 'spipNote') return;
+		const { name } = node.attrs;
+		const label = name == null ? String(++n) : name;
+		const aria = `${name === '' ? 'Note sans appel' : `Note ${label}`} : ${apercu(node.attrs.content)}`;
+		notes.push({ pos, node, label, aria });
+	});
+	return notes;
+}
+
 /** Numéros des appels de note, recalculés à chaque changement du document (décorations). */
 const SpipNoteNumbers = Extension.create({
 	name: 'spipNoteNumbers',
 	addProseMirrorPlugins() {
 		const key = new PluginKey('spipNoteNumbers');
-		const numeroter = (doc) => {
-			const decorations = [];
-			let n = 0;
-			doc.descendants((node, pos) => {
-				if (node.type.name !== 'spipNote') return;
-				const { name } = node.attrs;
-				// comme SPIP : seules les notes automatiques sont comptées
-				const label = name == null ? String(++n) : name;
-				const aria = name === '' ? 'Note sans appel' : `Note ${label}`;
-				decorations.push(Decoration.node(pos, pos + node.nodeSize, {
-					'data-tts-label': label,
-					'aria-label': `${aria} : ${apercu(node.attrs.content)}`,
-				}));
-			});
-			return DecorationSet.create(doc, decorations);
-		};
+		const numeroter = (doc) => DecorationSet.create(doc, notesDuDocument(doc).map(({ pos, node, label, aria }) =>
+			Decoration.node(pos, pos + node.nodeSize, { 'data-tts-label': label, 'aria-label': aria })));
 		return [new Plugin({
 			key,
 			state: {
@@ -428,7 +434,28 @@ const SpipUi = Extension.create({
 			'Mod-k': ouvrir('openLink'),
 			'Mod-Alt-n': ouvrir('editNote'),
 			'Mod-Alt-g': ouvrir('openGlossary'),
+			// Entrée sur un appel de note sélectionné : son popover (spec 05 §1)
+			Enter: ({ editor }) => {
+				const { selection } = editor.state;
+				if (!(selection instanceof NodeSelection) || selection.node.type.name !== 'spipNote' || !this.options.ui?.editNote) return false;
+				this.options.ui.editNote(selection.from);
+				return true;
+			},
 		};
+	},
+	// clic sur un appel de note : son popover
+	addProseMirrorPlugins() {
+		const ui = () => this.options.ui;
+		return [new Plugin({
+			key: new PluginKey('spipUiClic'),
+			props: {
+				handleClickOn: (view, pos, node, nodePos, event, direct) => {
+					if (!direct || node.type.name !== 'spipNote' || !ui()?.editNote) return false;
+					ui().editNote(nodePos);
+					return true;
+				},
+			},
+		})];
 	},
 	// [[ tapé : ouvre une note vide (spec 05 §1), sans laisser les crochets
 	addInputRules() {

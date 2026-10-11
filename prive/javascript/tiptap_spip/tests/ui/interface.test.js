@@ -1,74 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createEditor } from '../../src/editor/createEditor.js';
-import { LinkTitles, ModelPreviews } from '../../src/services/cache.js';
-import { serialize } from '../../src/spip/index.js';
 import { openLinkPopover } from '../../src/ui/LinkPopover.js';
 import { openModelPopover } from '../../src/ui/ModelPopover.js';
-import { Popover } from '../../src/ui/popover.js';
+import { apres, champ, cliquer, demonter, editor, fakeServices, monter, remplir, source, tick, valider, wrapper } from './outils.js';
 
-const tick = () => new Promise((r) => setTimeout(r, 0));
+afterEach(demonter);
 
-// jsdom n'a pas de géométrie : ProseMirror en a besoin pour faire défiler jusqu'à la sélection
-const rect = () => ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 });
-for (const proto of [Range.prototype, Text.prototype]) {
-	proto.getClientRects ??= () => [];
-	proto.getBoundingClientRect ??= rect;
-}
-
-/** Services simulés : réponses par opération. */
-const fakeServices = (reponses = {}) => ({
-	available: true,
-	call: vi.fn(async (operation, params) => {
-		const r = reponses[operation];
-		if (r instanceof Error) throw r;
-		return typeof r === 'function' ? r(params) : r;
-	}),
-});
-
-let editor;
-let wrapper;
-
-/** Éditeur monté comme par main.js, avec ou sans services. */
-const monter = (source, services = null) => {
-	document.body.innerHTML = '<div class="tts-editor"><div class="tts-content"></div></div>';
-	wrapper = document.querySelector('.tts-editor');
-	const contexte = () => ({ editor, wrapper, services, titles: ui.titles });
-	const ui = {
-		previews: services ? new ModelPreviews(services) : null,
-		titles: services ? new LinkTitles(services) : null,
-		openLink: () => openLinkPopover(contexte()),
-		editModel: (pos) => openModelPopover(contexte(), pos),
-	};
-	editor = createEditor({ element: wrapper.querySelector('.tts-content'), source, ui });
-	return { editor, ui };
-};
-
-const source = () => serialize(editor.getJSON());
-const champ = (name) => wrapper.querySelector(`.tts-popover [name=${name}]`);
-const remplir = (name, value) => {
-	const input = champ(name);
-	if (input.type === 'checkbox') input.checked = value;
-	else input.value = value;
-	input.dispatchEvent(new Event('input'));
-};
-const valider = () => wrapper.querySelector('.tts-popover').requestSubmit();
-const cliquer = (name) => wrapper.querySelector(`.tts-popover [name=${name}]`).click();
-/** Position juste après la première occurrence de `texte` dans le document. */
-const apres = (texte) => {
-	let pos = null;
-	editor.state.doc.descendants((node, p) => {
-		if (pos === null && node.isText && node.text.includes(texte)) pos = p + node.text.indexOf(texte) + texte.length;
-	});
-	return pos;
-};
-
-afterEach(() => {
-	Popover.current?.close({ refocus: false });
-	editor?.destroy();
-	editor = null;
-	document.body.innerHTML = '';
-});
 
 describe('prévisualisation des modèles', () => {
 	it('HTML du serveur, inerte ; la source reste identique', async () => {

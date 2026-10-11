@@ -1,26 +1,10 @@
 import { NodeSelection } from '@tiptap/pm/state';
+import { text } from '../spip/json.js';
+import { seRelitInline } from '../spip/valider.js';
 import { label } from './labels.js';
-import { Popover } from './popover.js';
+import { Popover, suivrePosition } from './popover.js';
 
 const VIDE = { href: '', bulle: null, hreflang: null, newWindow: false };
-
-/**
- * Suit une position à travers les transactions de l'éditeur, le temps d'un appel au serveur.
- * `fin()` arrête le suivi et renvoie la position à jour.
- */
-function suivrePosition(editor, pos) {
-	let courante = pos;
-	const onTransaction = ({ transaction }) => {
-		courante = transaction.mapping.map(courante, 1);
-	};
-	editor.on('transaction', onTransaction);
-	return {
-		fin() {
-			editor.off('transaction', onTransaction);
-			return courante;
-		},
-	};
-}
 
 /**
  * Popover de lien (spec 05 §4, 06 §4) : cible avec recherche d'objets SPIP, bulle, langue,
@@ -32,12 +16,13 @@ function suivrePosition(editor, pos) {
  * - texte sélectionné : nouveau lien sur ce texte ;
  * - curseur seul : insertion d'un lien sans texte [->cible].
  *
- * @param {{ editor, wrapper,
+ * @param {{ editor, wrapper, parent?: Popover,
  *           services: ?import('../services/cvt.js').Services|Promise<?import('../services/cvt.js').Services>,
  *           titles: ?import('../services/cache.js').LinkTitles }} context  services : éventuellement une
- *        promesse (formulaire chargé à la demande), lue à chaque recherche
+ *        promesse (formulaire chargé à la demande), lue à chaque recherche ; parent : popover
+ *        d'où le lien est ouvert (sous-éditeur d'une note)
  */
-export function openLinkPopover({ editor, wrapper, services, titles }) {
+export function openLinkPopover({ editor, wrapper, parent, services, titles }) {
 	// ProseMirror lit la sélection du navigateur sur « selectionchange », asynchrone dans Chromium : un
 	// Ctrl+K qui suit de près Maj+flèches verrait l'ancienne sélection. On la lui fait lire maintenant.
 	if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
@@ -48,7 +33,7 @@ export function openLinkPopover({ editor, wrapper, services, titles }) {
 	const attrs = auto ? auto.node.attrs : mark ? editor.getAttributes('spipLink') : VIDE;
 	const existant = Boolean(auto || mark);
 
-	const popover = new Popover({ editor, wrapper, titre: label('lien'), className: 'tts-popover--lien', onSubmit: () => appliquer() });
+	const popover = new Popover({ editor, wrapper, parent, titre: label('lien'), className: 'tts-popover--lien', onSubmit: () => appliquer() });
 	const cible = popover.input(label('lien_cible'), { value: attrs.href, name: 'cible' });
 	const suggestions = document.createElement('ul');
 	suggestions.className = 'tts-popover__suggestions';
@@ -70,6 +55,11 @@ export function openLinkPopover({ editor, wrapper, services, titles }) {
 		const nouveaux = valeurs();
 		if (!nouveaux.href) {
 			popover.error(label('lien_cible_obligatoire'));
+			return false;
+		}
+		// cible ou bulle qui couperait le raccourci ([x->a]b], bulle avec ->…)
+		if (!seRelitInline([text('x', [{ type: 'spipLink', attrs: nouveaux }])])) {
+			popover.error(label('lien_invalide'));
 			return false;
 		}
 		const chain = editor.chain().focus();
@@ -112,7 +102,7 @@ export function openLinkPopover({ editor, wrapper, services, titles }) {
 			const suivi = suivrePosition(editor, auto.from);
 			titles.get(href).then((r) => {
 				const pos = suivi.fin();
-				const node = editor.isDestroyed ? null : editor.state.doc.nodeAt(pos);
+				const node = editor.isDestroyed || pos === null ? null : editor.state.doc.nodeAt(pos);
 				if (!r?.titre || node?.type.name !== 'spipLinkAuto' || node.attrs.href !== href) return;
 				editor.chain().focus().insertContentAt({ from: pos, to: pos + node.nodeSize }, {
 					type: 'text', text: r.titre, marks: [{ type: 'spipLink', attrs: attrsLien }],

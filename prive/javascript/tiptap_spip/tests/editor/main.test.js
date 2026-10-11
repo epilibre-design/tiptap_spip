@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { instances, tiptap_spip_init } from '../../src/main.js';
+import { Popover } from '../../src/ui/popover.js';
 
 const page = (html) => {
 	document.body.innerHTML = html;
@@ -64,6 +65,28 @@ describe('tiptap_spip_init', () => {
 		expect(textarea.hidden).toBe(true);
 		expect(content.hidden).toBe(false);
 		expect(button.getAttribute('aria-pressed')).toBe('false');
+	});
+
+	it('barre : lien, note, glossaire, abréviation, modèle, désactivés en mode source ; panneau des notes', () => {
+		page('<textarea class="inserer_barre_edition">a[[une note]] b</textarea>');
+		tiptap_spip_init();
+		const visuels = ['.tts-lien', '.tts-bouton-note', '.tts-bouton-glossaire', '.tts-bouton-abbr', '.tts-modele'].map((s) => document.querySelector(`.tts-toolbar ${s}`));
+		expect(visuels.every((b) => b && !b.disabled)).toBe(true);
+		const panneau = document.querySelector('.tts-notes');
+		expect(panneau.hidden).toBe(false);
+		expect(panneau.querySelector('summary').textContent).toBe('Notes (1)');
+		expect(panneau.previousElementSibling.classList.contains('tts-content')).toBe(true);
+		document.querySelector('.tts-mode').click();
+		expect(visuels.every((b) => b.disabled)).toBe(true);
+		expect(panneau.hidden).toBe(true);
+		document.querySelector('.tts-mode').click();
+		expect(panneau.hidden).toBe(false);
+		document.querySelector('.tts-bouton-note').click();
+		expect(document.querySelector('.tts-popover--note')).not.toBeNull();
+		const { sous } = Popover.current;
+		[...instances][0].destroy();
+		expect(Popover.current).toBeNull();
+		expect(sous.isDestroyed).toBe(true);
 	});
 
 	it('ne monte rien si la source n\'est pas représentable', () => {
