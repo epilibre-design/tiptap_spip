@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { toEditorJSON } from '../../src/editor/content.js';
 import { coreExtensions } from '../../src/editor/extensions.js';
-import { parse, serialize } from '../../src/spip/index.js';
+import { canon, parse, serialize } from '../../src/spip/index.js';
 
 // jsdom remplace URL : on part de la chaîne import.meta.url
 const corpus = join(dirname(fileURLToPath(import.meta.url)), '../../../../../tests/corpus');
@@ -58,5 +58,22 @@ describe('modification d\'un bloc', () => {
 		const ed = mount('Premier.\n\nSecond.');
 		ed.chain().setTextSelection(4).splitBlock().run();
 		expect(serialize(ed.getJSON())).toBe('Pre\n\nmier.\n\nSecond.');
+	});
+});
+
+describe('liens, ancres et modèles dans l\'éditeur', () => {
+	const source = 'Voir [la {{doc}}|bulle{en}->>art12], [->rub3] et [#ici<-] avec <img3|left>.\n\n<doc12|center>';
+
+	it('le HTML de l\'éditeur se relit à l\'identique (copier-coller interne)', () => {
+		const ed = mount(source);
+		const json = ed.getJSON();
+		ed.commands.setContent(ed.getHTML());
+		expect(canon(ed.getJSON())).toBe(canon(json));
+	});
+
+	it('changer la cible d\'un lien ne réécrit que son paragraphe', () => {
+		const ed = mount(`${source}\n\n\nFin  intacte.`);
+		ed.chain().setTextSelection(6).extendMarkRange('spipLink').updateAttributes('spipLink', { href: 'art13' }).run();
+		expect(serialize(ed.getJSON())).toBe('Voir [la {{doc}}|bulle{en}->>art13], [->rub3] et [#ici<-] avec <img3|left>.\n\n<doc12|center>\n\n\nFin  intacte.');
 	});
 });

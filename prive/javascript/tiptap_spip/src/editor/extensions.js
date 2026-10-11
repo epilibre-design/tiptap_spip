@@ -1,4 +1,4 @@
-import { Extension, Node } from '@tiptap/core';
+import { Extension, Mark, Node } from '@tiptap/core';
 import Blockquote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
 import Code from '@tiptap/extension-code';
@@ -28,7 +28,7 @@ const hidden = (fallback = null, keepOnSplit = true) => ({ default: fallback, re
 /** Blocs de premier niveau : seuls ceux-ci portent la carte de segments. */
 const TOP_BLOCKS = [
 	'paragraph', 'heading', 'horizontalRule', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'table',
-	'spipPoesie', 'spipAlign', 'spipCadre', 'spipHtml', 'spipMath', 'spipRaw',
+	'spipPoesie', 'spipAlign', 'spipCadre', 'spipHtml', 'spipMath', 'spipRaw', 'spipModelBlock',
 ];
 
 /** Attributs de la sérialisation conservatrice (spec 04 §4) : jamais recopiés sur un bloc coupé. */
@@ -159,6 +159,96 @@ const SpipRawInline = Node.create({
 	renderHTML: ({ node, HTMLAttributes }) => ['code', { ...HTMLAttributes, class: 'tts-raw-inline' }, node.attrs.source],
 });
 
+/** Attributs d'un lien (spec 03 §3) : cible brute, bulle, langue, nouvelle fenêtre (->>). */
+const linkAttributes = () => ({
+	href: { default: '', parseHTML: (el) => el.getAttribute('data-tts-href') ?? '', renderHTML: (a) => ({ 'data-tts-href': a.href }) },
+	bulle: { default: null, parseHTML: (el) => el.getAttribute('title'), renderHTML: (a) => (a.bulle == null ? {} : { title: a.bulle }) },
+	hreflang: { default: null, parseHTML: (el) => el.getAttribute('hreflang'), renderHTML: (a) => (a.hreflang ? { hreflang: a.hreflang } : {}) },
+	newWindow: {
+		default: false,
+		parseHTML: (el) => el.hasAttribute('data-tts-new-window'),
+		renderHTML: (a) => (a.newWindow ? { 'data-tts-new-window': '' } : {}),
+	},
+});
+
+/**
+ * Lien [texte->cible]. Pas d'extension-link : sa validation d'URL refuse les cibles SPIP (art12).
+ * Pas de href rendu : un clic dans l'éditeur ne doit pas naviguer.
+ */
+const SpipLink = Mark.create({
+	name: 'spipLink',
+	inclusive: false,
+	addAttributes: linkAttributes,
+	// un lien sans texte (data-tts-auto) est un nœud, pas cette mark
+	parseHTML: () => [{ tag: 'a[data-tts-href]', getAttrs: (el) => (el.hasAttribute('data-tts-auto') ? false : null) }],
+	renderHTML: ({ HTMLAttributes }) => ['a', { ...HTMLAttributes, class: 'tts-link' }, 0],
+});
+
+/** Lien sans texte [->art12] : le titre est calculé par SPIP (affiché par L2c), la cible en attendant. */
+const SpipLinkAuto = Node.create({
+	name: 'spipLinkAuto',
+	group: 'inline',
+	inline: true,
+	atom: true,
+	selectable: true,
+	addAttributes: linkAttributes,
+	parseHTML: () => [{ tag: 'a[data-tts-auto]', priority: 60 }],
+	renderHTML: ({ node, HTMLAttributes }) => ['a', { ...HTMLAttributes, class: 'tts-link tts-link-auto', 'data-tts-auto': '' }, `→ ${node.attrs.href}`],
+});
+
+/** Ancre [#nom<-]. */
+const SpipAnchor = Node.create({
+	name: 'spipAnchor',
+	group: 'inline',
+	inline: true,
+	atom: true,
+	selectable: true,
+	addAttributes: () => ({
+		name: { default: '', parseHTML: (el) => el.getAttribute('data-tts-anchor') ?? '', renderHTML: (a) => ({ 'data-tts-anchor': a.name }) },
+	}),
+	parseHTML: () => [{ tag: 'span[data-tts-anchor]' }],
+	renderHTML: ({ node, HTMLAttributes }) => ['span', { ...HTMLAttributes, class: 'tts-anchor' }, `#${node.attrs.name}`],
+});
+
+/** Attribut model (spec 03 §4), transporté en JSON dans le HTML pour le copier-coller interne. */
+const modelAttributes = () => ({
+	model: {
+		default: null,
+		parseHTML: (el) => {
+			try {
+				return JSON.parse(el.getAttribute('data-tts-model'));
+			} catch {
+				return null;
+			}
+		},
+		renderHTML: (a) => ({ 'data-tts-model': JSON.stringify(a.model) }),
+	},
+});
+
+/** Modèle dans une phrase ; la prévisualisation (NodeView) vient avec les services serveur (L2c). */
+const SpipModel = Node.create({
+	name: 'spipModel',
+	group: 'inline',
+	inline: true,
+	atom: true,
+	selectable: true,
+	addAttributes: modelAttributes,
+	parseHTML: () => [{ tag: 'span[data-tts-model]' }],
+	renderHTML: ({ node, HTMLAttributes }) => ['span', { ...HTMLAttributes, class: 'tts-model' }, node.attrs.model?.source ?? ''],
+});
+
+/** Modèle seul dans son paragraphe. */
+const SpipModelBlock = Node.create({
+	name: 'spipModelBlock',
+	group: 'block',
+	atom: true,
+	selectable: true,
+	draggable: true,
+	addAttributes: modelAttributes,
+	parseHTML: () => [{ tag: 'div[data-tts-model]' }],
+	renderHTML: ({ node, HTMLAttributes }) => ['div', { ...HTMLAttributes, class: 'tts-model tts-model-block' }, node.attrs.model?.source ?? ''],
+});
+
 /**
  * Extensions du cœur, marks dans l'ordre canonique de src/spip/json.js (MARK_ORDER) : le
  * schéma range les marks d'un texte dans l'ordre de déclaration.
@@ -188,7 +278,12 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6] } = {}) {
 		SpipMath,
 		SpipRaw,
 		SpipRawInline,
-		// marks : ordre canonique bold, italic, strike, superscript, subscript, code
+		SpipLinkAuto,
+		SpipAnchor,
+		SpipModel,
+		SpipModelBlock,
+		// marks : ordre canonique spipLink, bold, italic, strike, superscript, subscript, code
+		SpipLink,
 		Bold,
 		Italic,
 		Strike,
