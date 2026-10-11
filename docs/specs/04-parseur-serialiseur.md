@@ -38,10 +38,12 @@ Le parseur suit l'ordre de TextWheel. Chaque étape est une **règle enregistré
 1. **Normalisation** : `\r\n?` → `\n` ; lignes ne contenant que des blancs → vides. Ces normalisations ne
    servent qu'à l'analyse : la carte de segments (§4) garde la source exacte.
 2. **Protection** (priorité la plus basse) — remplacer par des jetons opaques `\u0001N\u0001` :
-   - code en backticks, **avant tout** (wheel `pre_echappe_html_propre`) : ```` ``` ```` (bloc, 1re ligne =
-     langage éventuel), ``` `` ``` puis `` ` `` (inline) ;
+   - wheel backticks, **avant tout** (`pre_echappe_html_propre`), sur tout le texte, y compris dans `<code>`
+     ou `<html>` : d'abord les échappements `\\` et `` \` ``, puis ```` ``` ```` (bloc, 1re ligne = langage
+     éventuel), ``` `` ``` puis `` ` `` (inline). Dans du code en backticks, SPIP **perd** `\\` et `` \` `` ;
+     dans `<code>`, `<cadre>`, `<html>`, il les décode en `\` et `` ` `` ;
    - blocs `<html>`, `<code>`, `<cadre>`/`<frame>`, `<math>`, `<script>`/`<style>` (`RE_PROTEGE_BLOCS`) ;
-   - échappements `\{ \} \_ \- \[ \] \| \< \> \\ \* \# \+ \~` ;
+   - échappements `\{ \} \_ \- \[ \] \| \< \> \* \# \+ \~` ;
    - modèles (`RE_MODELE`, avec la condition du core : il faut un id **ou** des paramètres commençant
      par `|`, sinon c'est une balise HTML) ;
    - `<multi>…</multi>`, idiomes `<:…:>`.
@@ -62,7 +64,11 @@ Le parseur suit l'ordre de TextWheel. Chaque étape est une **règle enregistré
    récursivement, attributs via `RE_LIEN_ATTRIBUTS`) → glossaire `[?…]` → abréviations `[A|b]` →
    `{{…}}` / `{…}` (appariement par pile, cf. §3) → HTML inline connu → `_ ` (hardBreak), `-- ` (alinéa),
    `- ` (puce isolée) → texte.
-   Un simple `\n` dans un paragraphe devient un espace (comportement SPIP).
+   Un simple `\n` dans un paragraphe ou un élément de liste est **significatif** : SPIP 3+ le rend
+   `<br class='autobr' />` (`_AUTOBR`, `textwheel/wheels/spip/spip-paragrapher.php`). Il devient un
+   `hardBreak {syntax: 'autobr'}` ; `\n_ ` devient un `hardBreak {syntax: 'manual'}` (`<br class='manualbr' />`).
+   Entités : `&lt;`, `&gt;`, `&amp;`, `&#91;`, `&#63;` deviennent leur caractère ; les autres restent des
+   nœuds bruts (une entité n'est pas du texte).
 5. **Restauration** des jetons protégés en nœuds (`codeBlock`, `spipModel`, `spipMultiInline`…) ou en
    texte littéral (échappements).
 6. **Repli** : toute construction non reconnue ou mal formée (accolade orpheline, `[` non fermé
@@ -91,13 +97,13 @@ Règles générales :
 | Élément | Sortie |
 |---------|--------|
 | Séparation des blocs | une ligne vide (`\n\n`) |
-| `hardBreak` | `\n_ ` |
+| `hardBreak` | `syntax: 'autobr'` → `\n` ; `'manual'` ou absent (saut créé dans l'éditeur) → `\n_ ` |
 | `heading` | niveau 2 → `{{{…}}}` ; niveaux 3–6 → `<h3>…</h3>` … `<h6>…</h6>` |
 | `spipAlign` | `<div class="text-center">` + ligne vide + blocs + ligne vide + `</div>` (les lignes vides permettent à SPIP de paragrapher le contenu) |
 | Listes | `-*`/`-#` répétés selon la profondeur, une ligne par item, pas de ligne vide entre items |
 | `bold` / `italic` | `{{…}}` / `{…}` ; bold+italic → `{{{…}}}` **interdit** (confusion avec intertitre) : émettre `{{ {…} }}` |
-| `code` | `` `…` `` (comme le porte-plume ; ``` `` ``` si le code contient un backtick) ; `<code>` conservé si c'était la forme d'origine |
-| `codeBlock` | ```` ```langage\n…\n``` ```` ; `<code class="lang">` conservé si c'était la forme d'origine ; `spipCadre` → `<cadre>\n…\n</cadre>` |
+| `code` | `` `…` `` (comme le porte-plume ; ``` `` ``` si le code contient un backtick) ; `<code>…</code>` si le code a des blancs aux bords, contient `\\`, `` \` `` ou finit par `\` (non représentable entre backticks) |
+| `codeBlock` | ```` ```langage\n…``` ```` (délimiteur allongé si le code contient ```` ``` ````) ; `openTag` présent (`<code class="…">` d'origine) ou code non représentable entre backticks → `<code…>\n…\n</code>` ; `<code>` et ```` ``` ```` ont le même rendu, la forme n'est donc pas mémorisée |
 | `spipLink` | `[texte\|bulle{lang}->cible]` ; `newWindow` → `->>` |
 | `spipLinkAuto` | `[->cible]`, `[\|bulle{lang}->cible]` |
 | `spipNote` | `[[<nom>contenu]]` ; collée au mot précédent (SPIP supprime l'espace avant l'appel) |
@@ -109,14 +115,18 @@ Règles générales :
 
 Le sérialiseur échappe dans le **texte** ce qui serait interprété comme raccourci :
 
-- toujours : `{`, `}` → `\{`, `\}` ; `[` suivi de `?`, `#`, `[` ou d'une séquence contenant `->`/`<-` → `\[` ;
-  `<` suivi de ce qui ressemble à un modèle, `<multi>`, `<:`, une balise protégée, `<hN>` ou `<div` → `\<` ;
-- en début de ligne : `-`, `_ `, `|`, `----` → `\-`, `\_`, `\|` ;
-- `~` littéral → `\~` (sinon espace insécable) ;
-- `` ` `` littéral → `` \` `` ;
-- `\` → `\\` seulement quand il précède un caractère échappable.
+- `{`, `}`, `~`, `` ` ``, `\` → `\{`, `\}`, `\~`, `` \` ``, `\\` ; l'espace insécable U+00A0 → `~` ;
+- `<` suivi d'une lettre, `/`, `!` ou `:` (balise, modèle, `<multi>`, idiome) → `&lt;` : un `\<` ne protège
+  **pas** une balise, SPIP la restitue telle quelle ;
+- `&` suivi d'une entité (`&eacute;`) → `&amp;` ;
+- `[?` → `[&#63;`, `[[` → `[&#91;` : notes et glossaire sont traités **avant** les échappements `\[`, qui ne les
+  protègent pas. `[&#63;` plutôt que `&#91;?` évite l'espace insécable que la typographie française ajoute
+  avant `?` ;
+- `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `->`, `<-` ou `|` avant le `]` → `&#91;` ;
+- en début de ligne : `-`, `|`, `_` suivi d'un espace ou d'un `_` → `\-`, `\|`, `\_`.
 
-On n'échappe **que si nécessaire** (minimiser le bruit dans la source).
+On n'échappe **que si nécessaire** (minimiser le bruit dans la source). Ces règles sont vérifiées contre
+`propre()` (texte saisi dans l'éditeur → rendu littéral).
 
 ### Ambiguïtés de collage
 
@@ -146,7 +156,7 @@ source = lead + Σ ( sep_i + bloc_i ) + trail
 |---------|----------|
 | `lead` (lignes vides/blancs avant le 1er bloc) | attribut `spipLead` du nœud `doc` |
 | `sep_i` (séparateur exact avant le bloc *i* : `\n\n`, `\n\n\n`, espaces…) | attribut `spipSep` du bloc |
-| `bloc_i` (source exacte du bloc) | attribut `spipSrc` du bloc, avec `spipHash` (empreinte du JSON canonique issu du parse) |
+| `bloc_i` (source exacte du segment) | attributs du **premier** bloc JSON issu du segment : `spipSrc`, `spipGroup` (nombre de blocs JSON issus du segment : `{{{T}}}\ntexte` en donne deux, comme le rendu SPIP) et `spipHash` (forme canonique exacte de ces blocs — comparaison de chaînes, pas de hachage, donc aucune collision possible) |
 | `trail` (blancs après le dernier bloc) | attribut `spipTrail` du nœud `doc` |
 
 Le nœud `doc` est étendu (extension `Document`) pour porter ces attributs. Pour le **document vide** (`''`
@@ -155,15 +165,18 @@ vide sans `spipSrc` se sérialise en `lead + trail`, donc la source d'origine.
 
 ### Algorithme
 
-1. **Chemin rapide** : si l'empreinte du document entier est égale à celle du parse initial, on renvoie la
-   source de référence telle quelle.
-2. Sinon, pour chaque bloc de premier niveau : `spipSep` (ou `\n\n` si absent) puis, si l'empreinte du JSON
-   courant du bloc est égale à `spipHash`, `spipSrc` ; sinon sa sérialisation normale. Puis `lead` en tête,
-   `trail` en fin.
-3. `spipSrc`/`spipHash`/`spipSep` ne sont pas rendus en HTML, sont exclus du copier-coller et sont perdus
+1. `lead` en tête.
+2. Pour chaque bloc portant `spipGroup = k` : si la forme canonique des *k* blocs courants est égale à
+   `spipHash`, on émet `spipSep + spipSrc` et on saute les *k* blocs. Sinon, chaque bloc est sérialisé
+   normalement, précédé de son `spipSep` s'il en a un, sinon de `\n\n` (rien pour le tout premier).
+3. `trail` en fin.
+4. Un document entièrement intact redonne donc la source exacte, sans chemin rapide séparé. La forme
+   canonique ignore les attributs techniques et les attributs nuls (Tiptap ajoute les valeurs par défaut
+   nulles dans `getJSON()`) ; elle doit être calculée sur le JSON **après** `setContent` dans l'éditeur.
+5. `spipSrc`/`spipHash`/`spipSep`/`spipGroup` ne sont pas rendus en HTML, sont exclus du copier-coller et sont perdus
    quand ProseMirror scinde ou fusionne le bloc (le bloc est alors « modifié »).
 
-Corollaire : les normalisations (simple `\n` → espace, espaces en fin de ligne, forme des modèles)
+Corollaire : les normalisations (espaces en fin de ligne, forme des modèles, forme du code)
 ne s'appliquent qu'aux blocs effectivement édités.
 
 **Test** : pour toute source du corpus, la concaténation des segments est égale à la source (vérifié avant

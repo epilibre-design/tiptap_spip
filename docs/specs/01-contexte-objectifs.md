@@ -132,6 +132,9 @@ Tout ce qui repose sur `tiptap-markdown` / markdown-it (règles `setup(markdowni
   Markdown (classe `inserer_md_barre*`, ou texte commençant par le marqueur du plugin markdown),
   tiptap-spip s'abstient. Les deux plugins doivent pouvoir partager le code commun (modèles, multi).
 - **Formulaires publics** (forums) : barre réduite, sans modèles par défaut (autorisation).
+- **Crayons** et tout autre hôte (CVT de plugins, réglages du site) : l'éditeur se lance sur n'importe quel
+  textarea, comme le porte-plume ; le contexte des services serveur est résolu par des adaptateurs d'hôte
+  ([02](02-architecture.md) §6). Dans le site public, l'éditeur hérite des styles du site (pas d'iframe).
 
 ## 6. Exigences non fonctionnelles
 

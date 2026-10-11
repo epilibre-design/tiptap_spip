@@ -5,8 +5,9 @@
 | Lot | Contenu | Livrable vérifiable |
 |-----|---------|---------------------|
 | **L0 — Socle** | Paquet SPIP, bundle bun, chargement SPIP 4/5, `TextareaBridge`, StarterKit 3 configuré, Vitest/PHPUnit en place | Un textarea d'article est remplacé par Tiptap, texte simple aller-retour |
-| **L1 — Cœur SPIP** | `src/spip/` : protections, blocs, inline (gras, italique, intertitres, titres `<h3>`–`<h6>`, alignements `<div>`, listes, `_ `, `----`, quote, backticks, code, cadre, html, tableaux), échappements, nœuds bruts, sérialisation conservatrice | Invariants 1, 2, 4 verts sur le corpus ; harnais d'équivalence de rendu opérationnel |
+| **L1 — Cœur SPIP** | `src/spip/` : protections, blocs, inline (gras, italique, intertitres, titres `<h3>`–`<h6>`, alignements `<div>`, listes, `_ `, `----`, quote, backticks, code, cadre, html, tableaux), échappements, nœuds bruts, sérialisation conservatrice ; liens, notes, modèles, glossaire, abréviations, ancres, multi et idiomes y sont reconnus mais conservés en `spipRawInline` jusqu'aux lots L2–L4 | Invariants 1, 2, 4 verts sur le corpus ; harnais d'équivalence de rendu opérationnel |
 | **L2 — Liens et modèles** | `spipLink` (cibles SPIP, liens vides, recherche d'objets), ancres, `spipModel` / `spipModelBlock` porté depuis markdown_editor, `spipLinkAuto`, formulaire CVT `tiptap_spip` (services serveur) | Insertion/édition de liens et modèles de bout en bout |
+| **L2b — Hôtes** | lancement générique et cycle de vie, adaptateurs (Crayons, `data-tts-*`, `tiptap_spip_contextes`, sans objet), formulaire de services à la demande, styles par hôte | Tests « Hôtes » de la spec 08 |
 | **L3 — Notes et glossaire** | `spipNote` (sous-éditeur, panneau des notes, numérotation), `spipGlossary`, `spipAbbr` | Critère d'acceptation 4 |
 | **L4 — Multilinguisme** | multi inline/bloc, idiomes | Édition d'un texte multilingue sans perte |
 | **L5 — Interface** | barres `edition`/`forum`/`minimale`, popovers, anomalies, plein écran, accessibilité, i18n, config CFG | Critères 6, 7, 8 |
@@ -37,5 +38,6 @@ TDD avec le corpus.
 | Q4 | En mode source, réactiver le porte-plume sur le textarea ? | Oui si le plugin porte-plume est actif |
 | Q5 | Autolien : sérialiser les URL tapées en `[->url]` ou les laisser en texte ? | Texte par défaut (SPIP fait l'autolien), lien explicite seulement si créé via le popover |
 | Q6 | Champs autres que `texte` (`chapo`, `ps`, `descriptif`, champs extras) | Configurable, barre `minimale` par défaut |
-| Q7 | Public (forums, formulaires d'édition publics) en v1 ? | Oui avec barre `forum`, sans modèles ni prévisualisation serveur |
+| Q7 | Public (forums, formulaires d'édition publics, Crayons) en v1 ? | Oui : lot L2b ; forums avec barre `forum`, sans modèles ni prévisualisation serveur |
 | Q8 | Noms des classes d'alignement | **Tranché** : `text-left` / `text-center` / `text-right` / `text-justify`, déjà définies par la dist et Bootstrap ; surchargeables par constante |
+| Q9 | Crayons : le crayon d'un champ texte doit-il ouvrir l'éditeur par défaut, ou seulement sur option (comme `porte_plume_partout`) ? | Sur option au début, le temps de valider le cycle de vie dans Crayons |

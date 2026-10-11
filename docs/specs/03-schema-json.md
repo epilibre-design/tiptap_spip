@@ -23,13 +23,13 @@ Le format JSON est le format standard de Tiptap (`editor.getJSON()`) :
 |-----------|--------|----------------|
 | `document`, `text` | gardé | — |
 | `paragraph` | gardé | bloc séparé par ligne vide |
-| `hardBreak` | gardé | `_ ` en début de ligne |
+| `hardBreak` | gardé, attr `syntax` (`autobr` \| `manual`) | retour à la ligne simple (`autobr`, rendu `<br class='autobr' />` par SPIP 3+) ou `\n_ ` (`manual`) |
 | `heading` | gardé, niveaux 2 à 6 | `{{{…}}}` (niveau 2), `<h3>`…`<h6>` (cf. §3) |
 | `bold` | gardé | `{{…}}` |
 | `italic` | gardé | `{…}` |
 | `strike` | gardé | `<del>…</del>` |
-| `code` | gardé, attr `syntax` | `` `…` `` (défaut) ou `<code>…</code>` inline |
-| `codeBlock` | gardé, attrs `language`, `syntax` | ```` ```langage … ``` ```` (défaut), `<code class="…">` multiligne ; `<cadre>` → `spipCadre` |
+| `code` | gardé, sans attribut, **combinable avec les autres marks** (configurer `excludes: ''`, Tiptap l'exclut par défaut) | `` `…` `` ou `<code>…</code>` inline (même rendu) |
+| `codeBlock` | gardé, attrs `language`, `openTag` (seulement pour un `<code …>` avec attributs) | ```` ```langage … ``` ```` ou `<code>` multiligne (même rendu) ; `<cadre>` → `spipCadre` |
 | `blockquote` | gardé | `<quote>…</quote>` |
 | `bulletList`, `orderedList`, `listItem` | gardés, contenu restreint | `-*`, `-#` |
 | `horizontalRule` | gardé | `----` |
@@ -53,7 +53,7 @@ Le format JSON est le format standard de Tiptap (`editor.getJSON()`) :
 | `tableHeader` / `tableCell` | `colspan`, `rowspan`, `colwidth` (ignoré) | `paragraph` unique, inline seulement | `\|{{titre}}\|` / `\|<\|` / `\|^\|` |
 | `spipPoesie` | — | `paragraph+` (sauts de ligne significatifs) | `<poesie>…</poesie>` |
 | `spipCadre` | `kind` (`cadre`\|`frame`), `attrs` (chaîne) | `text*`, pas de marks, `code: true` | `<cadre>…</cadre>` |
-| `codeBlock` | `language`, `attrs` | `text*` | `<code class="php">\n…\n</code>` sur bloc |
+| `codeBlock` | `language`, `openTag` | `text*` | ```` ```php ```` ou `<code class="php">\n…\n</code>` sur bloc |
 | `spipHtml` | — | `text*`, `code: true` | `<html>…</html>` en bloc |
 | `spipMath` | — | `text*`, `code: true` | `<math>…</math>` |
 | `spipMultiBlock` | — | `spipLangBlock+` | `<multi>` entourant des blocs |
@@ -207,6 +207,7 @@ JSON :
 
 Le `renderHTML` de chaque nœud produit un HTML proche du rendu public (`class="spip"`, `h2.spip`,
 `ul.spip`, `table.spip`…) pour que la feuille `css/tiptap_spip_contenu.css` — surchargeable par le
-squelette via `find_in_path` — donne un aperçu fidèle. Les éléments propres à l'édition portent des
+squelette via `find_in_path` — donne un aperçu fidèle dans l'espace privé ; dans le site public, ce sont
+les styles du site qui s'appliquent ([02](02-architecture.md) §6). Les éléments propres à l'édition portent des
 classes préfixées `tts-` (`tts-note`, `tts-model`, `tts-raw`…) et des attributs `data-spip-*` qui
 permettent le copier-coller interne (cf. [04](04-parseur-serialiseur.md) §6).

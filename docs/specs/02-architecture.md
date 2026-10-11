@@ -39,6 +39,7 @@ tiptap_spip/
 │   ├── configurer_tiptap_spip.html
 │   └── inserer_modeles.*            # si non mutualisé avec markdown_editor
 ├── inclure/tiptap_spip_services.html  # rend #FORMULAIRE_TIPTAP_SPIP, concaténé après le formulaire d'édition
+├── tiptap_spip_services.html        # même formulaire, chargé à la demande par les hôtes hors editer_* (§6)
 ├── modeles/*.yaml                   # descriptions de formulaires de modèles (doc, img, emb…)
 ├── prive/
 │   ├── javascript/
@@ -59,6 +60,7 @@ tiptap_spip/
 |----------------------|------|
 | `importmap` (SPIP 5) / `header_prive` (SPIP 4) | Charger le bundle et la config (repris de markdown_editor) |
 | `tiptap_spip_toolbars` (nouveau) | Déclarer/modifier les barres d'outils (`edition`, `forum`, …) |
+| `tiptap_spip_contextes` (nouveau) | Déclarer le contexte (objet, id, champ) des CVT de plugins qui embarquent l'éditeur (§6) |
 | `tiptap_spip_extensions` (nouveau) | Déclarer des extensions JS tierces à charger (cf. [07](07-extensibilite.md)) |
 | `autoriser` | `tiptapspipmodele_previsualiser`, `tiptapspip_utiliser` |
 | `porte_plume_barre_pre_charger` / config | Désactiver le porte-plume sur les champs pris en charge |
@@ -98,6 +100,7 @@ src/
 ├── marks/                      # Mark.create(...) : SpipLink, SpipGlossary, SpipAbbr…
 ├── nodeviews/                  # rendus riches (modèle compilé, note, multi)
 ├── ui/                         # Toolbar, boutons, popovers, panneau des notes
+├── hosts/                      # adaptateurs d'hôte : editer_* (formulaire_fond), Crayons, data-tts-*, sans objet
 ├── services/cvt.js             # appels AJAX au formulaire CVT de services, lecture des réponses
 └── i18n.js                     # chaînes fournies par SPIP via la config
 ```
@@ -179,6 +182,7 @@ la sécurité sans code spécifique :
   refait l'association à chaque `onAjaxLoad`.
 - Pas de formulaire rendu (pas d'autorisation, ou contexte non configuré) ⇒ l'éditeur fonctionne sans
   services serveur : modèles en affichage compact, liens vides sans titre résolu, pas de recherche d'objets.
+- Hors des formulaires `editer_*`, le formulaire de services est obtenu par un adaptateur d'hôte (§6).
 
 ### Opérations
 
@@ -220,8 +224,77 @@ suivi du **HTML du formulaire recalculé**. Le contrat est donc :
 - Les appels sont **sérialisés** (une file par formulaire) ; les demandes de titres de liens et de
   prévisualisations sont regroupées par lot dans une seule opération.
 
-Le contexte public (forums, formulaires d'édition publics) suit la même règle : le formulaire n'est rendu
-que là où `charger()` l'autorise ; les forums n'ont pas de service `previsu_modele` (barre `forum` sans modèles).
+Le contexte public (forums, formulaires d'édition publics, Crayons) suit la même règle : le formulaire n'est
+rendu que là où `charger()` l'autorise ; les forums n'ont pas de service `previsu_modele` (barre `forum` sans
+modèles).
 
 Les prévisualisations de modèles sont **mises en cache côté JS** (clé = raccourci complet + champ + objet)
 pour éviter de recompiler à chaque re-rendu de NodeView.
+
+## 6. Hôtes de l'éditeur
+
+L'éditeur n'est pas lié à un endroit : comme le porte-plume, il s'accroche à **n'importe quel textarea**, dans
+l'espace privé comme dans le site public. On distingue trois couches :
+
+| Couche | Dépend de l'hôte ? | Contenu |
+|--------|--------------------|---------|
+| Cœur (`src/spip/`, extensions, `TextareaBridge`) | non | ne connaît que le textarea |
+| Hôte | oui | où et quand monter l'éditeur, quelle barre, quels styles |
+| Contexte serveur | oui | objet, id, champ pour les services (§5) |
+
+### Lancement générique
+
+- Textareas équipés : classes du porte-plume (`inserer_barre_edition`, `inserer_barre_forum`, et
+  `porte_plume_partout` si la configuration l'active) ou attribut `data-tts-toolbar="<barre>"` ; jamais un
+  textarea déjà pris par markdown_editor (classes `inserer_md_barre*`, `data-md-editor-toolbar`). Un
+  marqueur `data-tts-mounted` rend le montage idempotent.
+- Plusieurs éditeurs par page, indépendants (chacun son instance, son pont textarea, ses services).
+- Relance à chaque `onAjaxLoad` : couvre les rechargements AJAX de SPIP **et Crayons**, qui appelle
+  `jQuery.spip.triggerAjaxLoad()` à l'ouverture d'un crayon (`crayons/js/crayons.js`).
+- Cycle de vie : sérialisation forcée sur l'événement `submit` du formulaire hôte (Crayons déclenche bien un
+  `submit`) ; quand le textarea quitte le DOM (crayon fermé, bloc AJAX rechargé), l'éditeur est détruit
+  (`editor.destroy()`, observateurs retirés) pour ne pas fuir de mémoire.
+
+### Résolution du contexte serveur (adaptateurs)
+
+| Hôte | Contexte (objet, id, champ) | Formulaire de services |
+|------|-----------------------------|------------------------|
+| Formulaires d'édition `editer_*` (CVT) | arguments du formulaire d'édition | inséré par `formulaire_fond` après le `</form>`, relié par identifiant d'instance (§5) |
+| Autres CVT déclarés | pipeline `tiptap_spip_contextes` : nom du formulaire → fonction qui renvoie objet, id, champ à partir des arguments du CVT | idem, inséré par `formulaire_fond` |
+| Crayons | classes du crayon (`crayon <objet>-<champ>-<id>`), lues par l'adaptateur JS Crayons | **à la demande** (ci-dessous) |
+| Textarea quelconque | attributs `data-tts-objet`, `data-tts-id-objet`, `data-tts-champ` posés par le squelette | à la demande |
+| Sans contexte (réglages, `descriptif_site`…) | aucun | à la demande, en mode sans objet |
+
+**Formulaire de services à la demande** : l'éditeur charge en AJAX un squelette
+`tiptap_spip_services.html` (`spip.php?page=tiptap_spip_services&objet=…&id_objet=…&champ=…`, `#CACHE{0}`)
+qui ne contient que `#FORMULAIRE_TIPTAP_SPIP{#ENV{objet}, #ENV{id_objet}, #ENV{champ}}`, puis l'insère dans
+un conteneur masqué ajouté à la fin de `<body>`, donc hors de tout formulaire. La sécurité reste celle du
+CVT (§5) :
+
+- le contexte vient de la requête, mais `charger()` le vérifie avant de rendre quoi que ce soit :
+  `autoriser('modifier', objet, id_objet)`, et `champ` doit être un champ texte de la table de l'objet ; sinon
+  `false`, donc aucun formulaire ;
+- une fois rendu, le contexte est **signé** dans les arguments du formulaire et lié à la session : les
+  opérations ne peuvent pas viser un autre objet ;
+- en mode **sans objet**, `charger()` exige `autoriser('previsualiser', 'tiptapspipmodele')` (repris de
+  markdown_editor : accès à l'espace privé, ou administrateur non restreint dans le public). Les modèles sont
+  alors calculés sans contexte d'objet ; `titre_lien` et `rechercher` gardent leur filtrage par
+  `autoriser('voir')`.
+
+L'éditeur garde la référence du formulaire chargé : pas de recherche dans le DOM, donc pas d'ambiguïté
+entre instances.
+
+### Barre d'outils par hôte
+
+La barre vient de la classe ou de `data-tts-toolbar` ; à défaut, l'adaptateur choisit : `edition` pour les
+champs `texte` et `chapo`, `minimale` pour les autres champs, `forum` pour les formulaires de forum.
+
+### Styles
+
+Tiptap n'utilise pas d'iframe : la zone d'édition fait partie du DOM de la page.
+
+- **Dans le site public** (Crayons, CVT publics) : l'éditeur hérite directement des CSS et du JS du site,
+  sans extraction ni réinjection. Seule la feuille de l'interface (`tts-*` : barre, popovers) est ajoutée.
+- **Dans l'espace privé** : la feuille de contenu `css/tiptap_spip_contenu.css` (surchargeable par le
+  squelette) approche le rendu public.
+- Un hôte peut forcer l'une ou l'autre (`data-tts-styles="site|contenu"`).

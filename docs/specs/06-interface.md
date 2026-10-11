@@ -117,4 +117,5 @@ markdown_editor : bouton « Modifier », « Liste »…).
 
 - CSS de l'interface préfixé `tts-`, variables CSS de l'espace privé SPIP 4/5 (thème clair/sombre).
 - CSS du contenu (`css/tiptap_spip_contenu.css`) surchargeable par le squelette, pour approcher le
-  rendu public.
+  rendu public dans l'espace privé ; dans le site public (Crayons, CVT publics), l'éditeur hérite des styles
+  du site ([02](02-architecture.md) §6).
