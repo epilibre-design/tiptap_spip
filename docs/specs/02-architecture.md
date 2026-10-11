@@ -295,6 +295,8 @@ qui ne contient que `#FORMULAIRE_TIPTAP_SPIP{#ENV{objet}, #ENV{id_objet}, #ENV{c
 un conteneur masqué ajouté à la fin de `<body>`, donc hors de tout formulaire. La sécurité reste celle du
 CVT (§5) :
 
+- le formulaire inclut `inc/autoriser`, que le site public ne charge pas d'office (sans cela, la page de
+  services répond 503) ;
 - le contexte vient de la requête, mais `charger()` le vérifie avant de rendre quoi que ce soit :
   `autoriser('modifier', objet, id_objet)`, et `champ` doit être un champ texte de la table de l'objet ; sinon
   `false`, donc aucun formulaire ;
@@ -322,3 +324,28 @@ Tiptap n'utilise pas d'iframe : la zone d'édition fait partie du DOM de la page
 - **Dans l'espace privé** : la feuille de contenu `css/tiptap_spip_contenu.css` (surchargeable par le
   squelette) approche le rendu public.
 - Un hôte peut forcer l'une ou l'autre (`data-tts-styles="site|contenu"`).
+
+### Réalisation (lot L2b)
+
+- **Options** (métas jusqu'à la page de configuration du lot L5, `non` par défaut) : `tiptap_spip/public`
+  charge l'éditeur dans le site public (pipeline `insert_head`) ; `tiptap_spip/crayons` équipe les crayons
+  (`.formulaire_crayon textarea.crayon-active`) — Q9 tranchée : sur option. Avec l'option publique, le
+  formulaire de forum d'un article (`textarea[name=texte]`) est équipé lui aussi.
+- **Configuration JS** (`09_tiptap_spip_config.js.html`, sans cache, calculée avec `prive` dans son
+  contexte pour ne pas partager le cache entre privé et public) : `prive`, `crayons`, `services` (URL de la
+  page de services à la demande).
+- **Contextes déclarés** : `tiptap_spip_contextes` associe un nom de formulaire à une fonction
+  `($args, $contexte) → ['objet', 'id_objet', 'champs']` (objet vide : sans objet ; `null` : rien) ;
+  `formulaire_fond` pose `data-tts-toolbar="minimale"` sur leurs textareas (sauf barre déjà indiquée) et
+  ajoute leurs services. Défaut fourni : `configurer_identite` → sans objet, `descriptif_site`.
+- **Contexte côté JS** (`src/hosts/contexte.js`), quand aucun formulaire de services n'a été rendu après
+  le formulaire hôte : `data-tts-objet` / `data-tts-id-objet` / `data-tts-champ`, sinon crayon (champ caché
+  `name_<clé>` = `objet-champ-id`, textarea `content_<clé>_<champ>`), sinon sans objet (champ = `name`).
+  Les services sont alors chargés à la demande (`src/hosts/aLaDemande.js`) et placés dans `#tts-services`
+  à la fin de `<body>` ; prévisualisations et titres les attendent (`instance.servicesPrets`).
+- **Cycle de vie** : `onAjaxLoad` peut passer un élément, un objet jQuery ou un tableau d'éléments
+  (Crayons : `triggerAjaxLoad(tous.get())`) ; jquery.form (Crayons, CVT en AJAX) envoie sur un
+  `.trigger("submit")` jQuery que l'écouteur natif ne voit pas : le pont sérialise sur `form-pre-serialize`.
+  Un crayon enregistré ou annulé quitte le DOM : son éditeur est détruit.
+- **Styles** : classe `tts-styles-contenu` sur `.tts-editor` (privé par défaut, ou `data-tts-styles`) ;
+  `css/tiptap_spip_contenu.css` est chargée partout mais ne s'applique qu'à cette classe.
