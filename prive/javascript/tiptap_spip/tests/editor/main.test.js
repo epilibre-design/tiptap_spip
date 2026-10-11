@@ -89,6 +89,36 @@ describe('tiptap_spip_init', () => {
 		expect(sous.isDestroyed).toBe(true);
 	});
 
+	it('bouton Glossaire désactivé sur une sélection contenant [ ] < >', () => {
+		page('<textarea class="inserer_barre_edition">un a&lt;b mot</textarea>');
+		tiptap_spip_init();
+		const { editor } = [...instances][0];
+		const bouton = document.querySelector('.tts-bouton-glossaire');
+		editor.commands.setTextSelection({ from: 1, to: 6 });
+		expect(bouton.disabled).toBe(true);
+		editor.commands.setTextSelection({ from: 8, to: 11 });
+		expect(bouton.disabled).toBe(false);
+	});
+
+	it('panneau des notes recalculé au retour du mode source', () => {
+		page('<textarea class="inserer_barre_edition">a[[un]] b[[deux]]</textarea>');
+		tiptap_spip_init();
+		const textarea = document.querySelector('textarea');
+		const panneau = document.querySelector('.tts-notes');
+		document.querySelector('.tts-mode').click();
+		const saisir = (valeur) => {
+			textarea.value = valeur;
+			textarea.dispatchEvent(new Event('input'));
+		};
+		saisir('a b[[deux]] c[[trois]] d[[quatre]]');
+		document.querySelector('.tts-mode').click();
+		expect(panneau.querySelector('summary').textContent).toBe('Notes (3)');
+		document.querySelector('.tts-mode').click();
+		saisir('plus de note');
+		document.querySelector('.tts-mode').click();
+		expect(panneau.hidden).toBe(true);
+	});
+
 	it('ne monte rien si la source n\'est pas représentable', () => {
 		page('<textarea class="inserer_barre_edition">Texte</textarea>');
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

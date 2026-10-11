@@ -3,8 +3,9 @@ import { label } from './labels.js';
 
 /**
  * Panneau des notes (spec 05 §1) : sous l'éditeur, repliable, la liste des notes du texte comme
- * elles apparaîtront en bas de l'article. Vue dérivée du document, recalculée à chaque changement ;
- * cliquer sur une note la sélectionne et ouvre son popover. Masqué sans note.
+ * elles apparaîtront en bas de l'article. Vue dérivée du document, recalculée à chaque changement
+ * (rechargement depuis le mode source compris, qui n'émet pas d'update) ; cliquer sur une note la
+ * sélectionne et ouvre son popover. Masqué sans note et en mode source.
  */
 export class NotesPanel {
 	/**
@@ -19,14 +20,23 @@ export class NotesPanel {
 		this.liste.className = 'tts-notes__liste';
 		this.element.append(this.resume, this.liste);
 		this.editNote = editNote;
-		this.render = () => this.afficher();
-		editor.on('update', this.render);
+		this.source = false;
+		this.render = ({ transaction }) => {
+			if (transaction.docChanged) this.afficher();
+		};
+		editor.on('transaction', this.render);
+		this.afficher();
+	}
+
+	/** Mode source : panneau masqué. */
+	setMode(source) {
+		this.source = source;
 		this.afficher();
 	}
 
 	afficher() {
 		const notes = notesDuDocument(this.editor.state.doc);
-		this.element.hidden = notes.length === 0;
+		this.element.hidden = this.source || notes.length === 0;
 		this.resume.textContent = `${label('notes')} (${notes.length})`;
 		this.liste.replaceChildren(...notes.map(({ pos, node, label: numero }) => {
 			const li = document.createElement('li');
@@ -44,7 +54,7 @@ export class NotesPanel {
 	}
 
 	destroy() {
-		this.editor.off('update', this.render);
+		this.editor.off('transaction', this.render);
 		this.element.remove();
 	}
 }

@@ -40,6 +40,7 @@ const DEFAUTS = {
 	note_sans_appel: 'Sans appel',
 	note_texte: 'Texte de la note',
 	note_retirer: 'Supprimer la note',
+	note_aria_sans_appel: 'Note sans appel',
 	note_invalide: 'Cette note ne peut pas s’écrire telle quelle (nom ou texte).',
 	note_vide: 'La note est vide.',
 	notes: 'Notes',

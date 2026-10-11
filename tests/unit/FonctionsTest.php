@@ -36,6 +36,13 @@ final class FonctionsTest extends TestCase
 		}
 	}
 
+	public function testNomDuGlossaireCommeLeCore(): void {
+		$this->assertSame('', tiptap_spip_nom_glossaire('[?SPIP]'));
+		$this->assertSame('', tiptap_spip_nom_glossaire('[?SPIP#12|bulle]'));
+		$this->assertSame('mots', tiptap_spip_nom_glossaire('[?SPIP#mots12{fr}]'));
+		$this->assertSame('wikipedia', tiptap_spip_nom_glossaire('[?SPIP|bulle#wikipedia]'));
+	}
+
 	public function testGlossairesNommesDesFonctionsDefinies(): void {
 		$this->assertSame(
 			['mots', 'wikipedia'],

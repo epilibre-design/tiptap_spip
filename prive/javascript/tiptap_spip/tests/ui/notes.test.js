@@ -41,6 +41,38 @@ describe('popover de note', () => {
 		expect(source()).toBe('a[[<A>x]] b[[<>y]]');
 	});
 
+	it('texte sélectionné : il devient le texte de la note (bouton Note du porte-plume)', () => {
+		const { ui } = monter('Voir {{ceci}} ici');
+		editor.commands.setTextSelection({ from: apres('Voir '), to: apres('ceci') });
+		ui.editNote(null);
+		expect(sousEditeur().getHTML()).toContain('<strong>ceci</strong>');
+		valider();
+		expect(source()).toBe('Voir [[{{ceci}}]] ici');
+	});
+
+	it('sélection sur deux paragraphes : gardée, la note est insérée après', () => {
+		const { ui } = monter('un\n\ndeux');
+		editor.commands.setTextSelection({ from: 2, to: apres('de') });
+		ui.editNote(null);
+		ecrireNote('n');
+		valider();
+		expect(source()).toBe('un\n\nde[[n]]ux');
+	});
+
+	it('barre du sous-éditeur : modèle inséré en popover enfant', () => {
+		const { ui } = monter('a[[Voir]]');
+		ui.editNote(notePos());
+		const boutons = [...wrapper.querySelectorAll('.tts-note__barre button')].map((b) => b.textContent);
+		expect(boutons).toEqual(['Gras', 'Italique', 'Lien', 'Glossaire', 'Modèle']);
+		sousEditeur().commands.focus('end');
+		wrapper.querySelectorAll('.tts-note__barre button')[4].click();
+		expect(popovers()).toHaveLength(2);
+		remplir('raccourci', '<doc1>');
+		valider();
+		valider();
+		expect(source()).toBe('a[[Voir<doc1>]]');
+	});
+
 	it('note vide refusée', () => {
 		const { ui } = monter('a');
 		ui.editNote(null);
@@ -150,6 +182,13 @@ describe('panneau des notes', () => {
 		editor.commands.deleteRange({ from: notePos(0), to: notePos(0) + 1 });
 		expect(items(panel)).toEqual(['[A] deux', '• trois']);
 		editor.commands.setContent('<p>rien</p>', { emitUpdate: true });
+		expect(panel.element.hidden).toBe(true);
+		panel.destroy();
+	});
+
+	it('rechargé sans update (retour du mode source) : recalculé', () => {
+		const panel = panneau();
+		editor.commands.setContent('<p>a</p>', { emitUpdate: false });
 		expect(panel.element.hidden).toBe(true);
 		panel.destroy();
 	});

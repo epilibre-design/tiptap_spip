@@ -3,7 +3,7 @@ import { serializeGlossary } from '../spip/glossary.js';
 import { text } from '../spip/json.js';
 import { seRelitInline } from '../spip/valider.js';
 import { label } from './labels.js';
-import { Popover } from './popover.js';
+import { idUnique, lireSelection, Popover } from './popover.js';
 
 /** Champ texte : '' → null. */
 const ouNull = (v) => (v.trim() === '' ? null : v.trim());
@@ -23,7 +23,7 @@ const ouNull = (v) => (v.trim() === '' ? null : v.trim());
  *        champs : attributs de la mark ; lire convertit la saisie (ouNull par défaut)
  */
 function openMarkPopover({ editor, wrapper, parent }, desc) {
-	if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+	lireSelection(editor);
 	const { state } = editor;
 	const { selection } = state;
 	const markType = state.schema.marks[desc.type];
@@ -81,9 +81,12 @@ function openMarkPopover({ editor, wrapper, parent }, desc) {
 	return popover;
 }
 
-/** Appel de l'opération glossaire (spec 05 §2) ; null sans services ou en cas d'échec. */
+/**
+ * Appel de l'opération glossaire (spec 02 §5) : URL de la définition d'un raccourci, et glossaires
+ * du site ; sans raccourci, les glossaires seuls. null sans services ou en cas d'échec.
+ */
 const glossaire = (services, raccourci) => Promise.resolve(services)
-	.then((s) => (s?.available ? s.call('glossaire', { raccourci }) : null))
+	.then((s) => (s?.available ? s.call('glossaire', raccourci ? { raccourci } : {}) : null))
 	.catch(() => null);
 
 /**
@@ -111,10 +114,10 @@ export function openGlossaryPopover(contexte) {
 			// glossaires nommés du site, proposés à la saisie
 			const nom = popover.form.querySelector('[name=glossaire]');
 			const liste = document.createElement('datalist');
-			liste.id = `tts-glossaires-${Math.random().toString(36).slice(2)}`;
+			liste.id = idUnique('tts-glossaires');
 			nom.setAttribute('list', liste.id);
 			nom.after(liste);
-			glossaire(services, '[?x]').then((r) => {
+			glossaire(services, null).then((r) => {
 				liste.replaceChildren(...(r?.glossaires ?? []).map((g) => Object.assign(document.createElement('option'), { value: g })));
 			});
 			const voir = popover.button(label('glossaire_definition'), () => {

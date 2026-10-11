@@ -20,6 +20,7 @@ import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { linkAutoView, modelView } from '../nodeviews/views.js';
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
+import { label as libelle } from '../ui/labels.js';
 
 /**
  * Schéma de l'éditeur (spec 03) : seulement ce que la syntaxe SPIP sait exprimer.
@@ -317,6 +318,12 @@ export function apercu(content, max = 80) {
 	return texte.length > max ? `${texte.slice(0, max - 1)}…` : texte;
 }
 
+/** Note sélectionnée (NodeSelection), ou null. */
+export function noteSelectionnee(state) {
+	const { selection } = state;
+	return selection instanceof NodeSelection && selection.node.type.name === 'spipNote' ? selection : null;
+}
+
 /**
  * Note [[…]] (spec 05 §1) : appel de note, contenu en attribut (document JSON avec sa carte de
  * segments). Le numéro n'est pas stocké : SpipNoteNumbers le calcule.
@@ -353,27 +360,22 @@ const SpipNote = Node.create({
 	parseHTML: () => [{ tag: 'sup[data-tts-note]', priority: 60 }],
 	renderHTML: ({ node, HTMLAttributes }) => ['sup', { ...HTMLAttributes, class: 'tts-note', title: apercu(node.attrs.content) }],
 	addCommands() {
-		const selectionnee = (state) => {
-			const { selection } = state;
-			return selection instanceof NodeSelection && selection.node.type.name === 'spipNote' ? selection : null;
-		};
 		return {
 			/** Note au curseur ; sans contenu, ouvre le popover de note (spec 05 §1). */
 			insertSpipNote: ({ name = null, content = null } = {}) => ({ commands }) => {
 				if (content?.length) return commands.insertContent({ type: this.name, attrs: { name, content } });
-				if (!this.options.ui?.editNote) return false;
-				this.options.ui.editNote(null);
-				return true;
+				// sans popover (pas d'interface, ou note non modifiable) : rien n'est fait
+				return Boolean(this.options.ui?.editNote?.(null));
 			},
 			/** Nom et contenu de la note sélectionnée ; ses blancs d'origine (spipLead, spipTrail) restent. */
 			updateSpipNote: ({ name = null, content }) => ({ state, tr, dispatch }) => {
-				const note = selectionnee(state);
+				const note = noteSelectionnee(state);
 				if (!note) return false;
 				if (dispatch) tr.setNodeMarkup(note.from, undefined, { ...note.node.attrs, name, content });
 				return true;
 			},
 			removeSpipNote: () => ({ state, tr, dispatch }) => {
-				const note = selectionnee(state);
+				const note = noteSelectionnee(state);
 				if (!note) return false;
 				if (dispatch) tr.delete(note.from, note.to);
 				return true;
@@ -396,7 +398,7 @@ export function notesDuDocument(doc) {
 		if (node.type.name !== 'spipNote') return;
 		const { name } = node.attrs;
 		const label = name == null ? String(++n) : name;
-		const aria = `${name === '' ? 'Note sans appel' : `Note ${label}`} : ${apercu(node.attrs.content)}`;
+		const aria = `${name === '' ? libelle('note_aria_sans_appel') : `${libelle('note')} ${label}`} : ${apercu(node.attrs.content)}`;
 		notes.push({ pos, node, label, aria });
 	});
 	return notes;
@@ -425,21 +427,16 @@ const SpipUi = Extension.create({
 	name: 'spipUi',
 	addOptions: () => ({ ui: null }),
 	addKeyboardShortcuts() {
-		const ouvrir = (action) => () => {
-			if (!this.options.ui?.[action]) return false;
-			this.options.ui[action](null);
-			return true;
-		};
+		// une touche n'est consommée que si le popover s'ouvre
+		const ouvrir = (action) => () => Boolean(this.options.ui?.[action]?.(null));
 		return {
 			'Mod-k': ouvrir('openLink'),
 			'Mod-Alt-n': ouvrir('editNote'),
 			'Mod-Alt-g': ouvrir('openGlossary'),
 			// Entrée sur un appel de note sélectionné : son popover (spec 05 §1)
 			Enter: ({ editor }) => {
-				const { selection } = editor.state;
-				if (!(selection instanceof NodeSelection) || selection.node.type.name !== 'spipNote' || !this.options.ui?.editNote) return false;
-				this.options.ui.editNote(selection.from);
-				return true;
+				const note = noteSelectionnee(editor.state);
+				return Boolean(note && this.options.ui?.editNote?.(note.from));
 			},
 		};
 	},
@@ -450,9 +447,8 @@ const SpipUi = Extension.create({
 			key: new PluginKey('spipUiClic'),
 			props: {
 				handleClickOn: (view, pos, node, nodePos, event, direct) => {
-					if (!direct || node.type.name !== 'spipNote' || !ui()?.editNote) return false;
-					ui().editNote(nodePos);
-					return true;
+					if (!direct || node.type.name !== 'spipNote') return false;
+					return Boolean(ui()?.editNote?.(nodePos));
 				},
 			},
 		})];

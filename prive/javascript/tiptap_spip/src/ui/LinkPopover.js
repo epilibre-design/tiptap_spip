@@ -2,7 +2,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import { text } from '../spip/json.js';
 import { seRelitInline } from '../spip/valider.js';
 import { label } from './labels.js';
-import { Popover, suivrePosition } from './popover.js';
+import { lireSelection, Popover, suivrePosition } from './popover.js';
 
 const VIDE = { href: '', bulle: null, hreflang: null, newWindow: false };
 
@@ -23,9 +23,7 @@ const VIDE = { href: '', bulle: null, hreflang: null, newWindow: false };
  *        d'où le lien est ouvert (sous-éditeur d'une note)
  */
 export function openLinkPopover({ editor, wrapper, parent, services, titles }) {
-	// ProseMirror lit la sélection du navigateur sur « selectionchange », asynchrone dans Chromium : un
-	// Ctrl+K qui suit de près Maj+flèches verrait l'ancienne sélection. On la lui fait lire maintenant.
-	if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+	lireSelection(editor);
 	const { state } = editor;
 	const { selection } = state;
 	const auto = selection instanceof NodeSelection && selection.node.type.name === 'spipLinkAuto' ? selection : null;

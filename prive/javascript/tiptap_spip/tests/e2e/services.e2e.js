@@ -78,6 +78,8 @@ test('glossaire : URL de la définition calculée par SPIP, glossaires nommés d
 	const { resultat } = await appeler(page, 'glossaire', { raccourci: '[?Système de publication]' });
 	expect(resultat).toEqual({ url: 'https://fr.wikipedia.org/wiki/Syst%C3%A8me_de_publication', glossaires: ['tts'] });
 	expect((await appeler(page, 'glossaire', { raccourci: '[?SPIP#tts12|bulle]' })).resultat.url).toBe('https://glossaire.test/SPIP/12');
+	expect((await appeler(page, 'glossaire', {})).resultat).toEqual({ url: null, glossaires: ['tts'] });
+	expect((await appeler(page, 'glossaire', { raccourci: '[?SPIP#inconnu]' })).erreurs.raccourci).toBe('Ce glossaire n’existe pas sur le site.');
 	const r = await appeler(page, 'glossaire', { raccourci: '[?a] [?b]' });
 	expect(r).toMatchObject({ erreur: 'ServiceError', disponible: true });
 	expect(r.erreurs.raccourci).toBe('Raccourci de glossaire invalide.');

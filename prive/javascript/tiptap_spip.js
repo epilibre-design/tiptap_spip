@@ -24329,6 +24329,7 @@ var DEFAUTS = {
   note_sans_appel: "Sans appel",
   note_texte: "Texte de la note",
   note_retirer: "Supprimer la note",
+  note_aria_sans_appel: "Note sans appel",
   note_invalide: "Cette note ne peut pas s\u2019\xE9crire telle quelle (nom ou texte).",
   note_vide: "La note est vide.",
   notes: "Notes",
@@ -24704,6 +24705,10 @@ function apercu(content, max = 80) {
   const texte2 = morceaux.join("").replace(/\s+/g, " ").trim();
   return texte2.length > max ? `${texte2.slice(0, max - 1)}\u2026` : texte2;
 }
+function noteSelectionnee(state) {
+  const { selection } = state;
+  return selection instanceof NodeSelection && selection.node.type.name === "spipNote" ? selection : null;
+}
 var SpipNote = Node3.create({
   name: "spipNote",
   group: "inline",
@@ -24736,27 +24741,21 @@ var SpipNote = Node3.create({
   parseHTML: () => [{ tag: "sup[data-tts-note]", priority: 60 }],
   renderHTML: ({ node: node2, HTMLAttributes }) => ["sup", { ...HTMLAttributes, class: "tts-note", title: apercu(node2.attrs.content) }],
   addCommands() {
-    const selectionnee = (state) => {
-      const { selection } = state;
-      return selection instanceof NodeSelection && selection.node.type.name === "spipNote" ? selection : null;
-    };
     return {
       /** Note au curseur ; sans contenu, ouvre le popover de note (spec 05 §1). */
       insertSpipNote: ({ name = null, content = null } = {}) => ({ commands }) => {
         if (content?.length) return commands.insertContent({ type: this.name, attrs: { name, content } });
-        if (!this.options.ui?.editNote) return false;
-        this.options.ui.editNote(null);
-        return true;
+        return Boolean(this.options.ui?.editNote?.(null));
       },
       /** Nom et contenu de la note sélectionnée ; ses blancs d'origine (spipLead, spipTrail) restent. */
       updateSpipNote: ({ name = null, content }) => ({ state, tr, dispatch }) => {
-        const note = selectionnee(state);
+        const note = noteSelectionnee(state);
         if (!note) return false;
         if (dispatch) tr.setNodeMarkup(note.from, void 0, { ...note.node.attrs, name, content });
         return true;
       },
       removeSpipNote: () => ({ state, tr, dispatch }) => {
-        const note = selectionnee(state);
+        const note = noteSelectionnee(state);
         if (!note) return false;
         if (dispatch) tr.delete(note.from, note.to);
         return true;
@@ -24771,7 +24770,7 @@ function notesDuDocument(doc4) {
     if (node2.type.name !== "spipNote") return;
     const { name } = node2.attrs;
     const label2 = name == null ? String(++n) : name;
-    const aria = `${name === "" ? "Note sans appel" : `Note ${label2}`} : ${apercu(node2.attrs.content)}`;
+    const aria = `${name === "" ? label("note_aria_sans_appel") : `${label("note")} ${label2}`} : ${apercu(node2.attrs.content)}`;
     notes.push({ pos, node: node2, label: label2, aria });
   });
   return notes;
@@ -24795,21 +24794,15 @@ var SpipUi = Extension.create({
   name: "spipUi",
   addOptions: () => ({ ui: null }),
   addKeyboardShortcuts() {
-    const ouvrir = (action) => () => {
-      if (!this.options.ui?.[action]) return false;
-      this.options.ui[action](null);
-      return true;
-    };
+    const ouvrir = (action) => () => Boolean(this.options.ui?.[action]?.(null));
     return {
       "Mod-k": ouvrir("openLink"),
       "Mod-Alt-n": ouvrir("editNote"),
       "Mod-Alt-g": ouvrir("openGlossary"),
       // Entrée sur un appel de note sélectionné : son popover (spec 05 §1)
       Enter: ({ editor }) => {
-        const { selection } = editor.state;
-        if (!(selection instanceof NodeSelection) || selection.node.type.name !== "spipNote" || !this.options.ui?.editNote) return false;
-        this.options.ui.editNote(selection.from);
-        return true;
+        const note = noteSelectionnee(editor.state);
+        return Boolean(note && this.options.ui?.editNote?.(note.from));
       }
     };
   },
@@ -24820,9 +24813,8 @@ var SpipUi = Extension.create({
       key: new PluginKey("spipUiClic"),
       props: {
         handleClickOn: (view, pos, node2, nodePos, event, direct) => {
-          if (!direct || node2.type.name !== "spipNote" || !ui()?.editNote) return false;
-          ui().editNote(nodePos);
-          return true;
+          if (!direct || node2.type.name !== "spipNote") return false;
+          return Boolean(ui()?.editNote?.(nodePos));
         }
       }
     })];
@@ -25225,6 +25217,7 @@ var Popover = class _Popover {
     this.parent = parent;
     this.enfant = null;
     this.onClose = onClose;
+    this.ouvert = false;
     this.form = document.createElement("form");
     this.form.className = `tts-popover ${className ?? ""}`.trim();
     this.form.setAttribute("role", "dialog");
@@ -25331,11 +25324,15 @@ function suivrePosition(editor, pos) {
     }
   };
 }
+function lireSelection(editor) {
+  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+}
+var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
 
 // src/ui/LinkPopover.js
 var VIDE = { href: "", bulle: null, hreflang: null, newWindow: false };
 function openLinkPopover({ editor, wrapper, parent, services, titles }) {
-  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+  lireSelection(editor);
   const { state } = editor;
   const { selection } = state;
   const auto = selection instanceof NodeSelection && selection.node.type.name === "spipLinkAuto" ? selection : null;
@@ -25458,7 +25455,7 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
 // src/ui/MarkPopover.js
 var ouNull = (v) => v.trim() === "" ? null : v.trim();
 function openMarkPopover({ editor, wrapper, parent }, desc) {
-  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+  lireSelection(editor);
   const { state } = editor;
   const { selection } = state;
   const markType = state.schema.marks[desc.type];
@@ -25511,7 +25508,7 @@ function openMarkPopover({ editor, wrapper, parent }, desc) {
   popover.open(terme ?? champs[0].input);
   return popover;
 }
-var glossaire = (services, raccourci) => Promise.resolve(services).then((s) => s?.available ? s.call("glossaire", { raccourci }) : null).catch(() => null);
+var glossaire = (services, raccourci) => Promise.resolve(services).then((s) => s?.available ? s.call("glossaire", raccourci ? { raccourci } : {}) : null).catch(() => null);
 function openGlossaryPopover(contexte3) {
   const { services } = contexte3;
   return openMarkPopover(contexte3, {
@@ -25530,10 +25527,10 @@ function openGlossaryPopover(contexte3) {
       if (!services) return;
       const nom = popover.form.querySelector("[name=glossaire]");
       const liste = document.createElement("datalist");
-      liste.id = `tts-glossaires-${Math.random().toString(36).slice(2)}`;
+      liste.id = idUnique("tts-glossaires");
       nom.setAttribute("list", liste.id);
       nom.after(liste);
-      glossaire(services, "[?x]").then((r) => {
+      glossaire(services, null).then((r) => {
         liste.replaceChildren(...(r?.glossaires ?? []).map((g) => Object.assign(document.createElement("option"), { value: g })));
       });
       const voir = popover.button(label("glossaire_definition"), () => {
@@ -25603,10 +25600,20 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
 var vide = (content) => content.every((b) => b.type === "paragraph" && !b.content?.length);
 function openNotePopover(contexte3, pos = null) {
   const { editor, wrapper } = contexte3;
+  lireSelection(editor);
   if (pos !== null) editor.commands.setNodeSelection(pos);
   const { selection } = editor.state;
-  const existante = selection instanceof NodeSelection && selection.node.type.name === "spipNote" ? selection : null;
+  const { $from, $to } = selection;
+  const existante = noteSelectionnee(editor.state);
+  const morceau = !existante && !selection.empty && $from.sameParent($to) && $from.parent.isTextblock ? $from.parent.slice($from.parentOffset, $to.parentOffset).content : null;
+  let entoure = Boolean(morceau);
+  morceau?.descendants((n) => {
+    if (n.type.name === "spipNote") entoure = false;
+  });
   const origine = existante?.node.attrs.content ?? null;
+  const initial = entoure ? [{ type: "paragraph", content: morceau.toJSON() }] : null;
+  const debut = existante ? null : suivrePosition(editor, entoure ? selection.from : selection.to);
+  const fin = existante ? null : suivrePosition(editor, selection.to);
   const name = existante?.node.attrs.name ?? null;
   let sous = null;
   const suivi = existante ? suivrePosition(editor, existante.from) : null;
@@ -25622,6 +25629,8 @@ function openNotePopover(contexte3, pos = null) {
     onSubmit: () => appliquer(),
     onClose: () => {
       suivi?.fin();
+      debut?.fin();
+      fin?.fin();
       sous?.destroy();
     }
   });
@@ -25635,7 +25644,7 @@ function openNotePopover(contexte3, pos = null) {
   const bloc = document.createElement("div");
   bloc.className = "tts-popover__champ tts-note__bloc";
   const titre = document.createElement("span");
-  titre.id = `tts-note-${Math.random().toString(36).slice(2)}`;
+  titre.id = idUnique("tts-note");
   titre.textContent = label("note_texte");
   const barre = document.createElement("div");
   barre.className = "tts-note__barre";
@@ -25650,15 +25659,18 @@ function openNotePopover(contexte3, pos = null) {
     previews: contexte3.previews ?? null,
     titles: contexte3.titles ?? null,
     openLink: () => openLinkPopover(enfant()),
-    openGlossary: () => openGlossaryPopover(enfant())
+    openGlossary: () => openGlossaryPopover(enfant()),
+    editModel: (p) => openModelPopover(enfant(), p)
   };
   const extensions = noteExtensions({ ui: sousUi });
   let content;
   try {
-    content = schemaJSON({ type: "doc", content: origine?.length ? origine : [{ type: "paragraph" }] }, getSchema(extensions));
+    content = schemaJSON({ type: "doc", content: origine?.length ? origine : initial ?? [{ type: "paragraph" }] }, getSchema(extensions));
   } catch (error) {
     console.warn("tiptap_spip : note non modifiable dans l'\xE9diteur", error);
     suivi?.fin();
+    debut?.fin();
+    fin?.fin();
     return null;
   }
   sous = new Editor({
@@ -25676,7 +25688,8 @@ function openNotePopover(contexte3, pos = null) {
     [label("gras"), () => sous.chain().focus().toggleBold().run()],
     [label("italique"), () => sous.chain().focus().toggleItalic().run()],
     [label("lien"), () => sousUi.openLink()],
-    [label("glossaire"), () => sousUi.openGlossary()]
+    [label("glossaire"), () => sousUi.openGlossary()],
+    [label("modele"), () => sousUi.editModel(null)]
   ]) {
     const b = document.createElement("button");
     b.type = "button";
@@ -25700,7 +25713,9 @@ function openNotePopover(contexte3, pos = null) {
       const p = note();
       if (p !== null) editor.chain().focus().setNodeSelection(p).updateSpipNote({ name: nouveau, content: texte2 }).run();
     } else {
-      editor.chain().focus().insertSpipNote({ name: nouveau, content: texte2 }).run();
+      const to = fin.pos() ?? editor.state.selection.to;
+      const from2 = Math.min(debut.pos() ?? to, to);
+      editor.chain().focus().insertContentAt({ from: from2, to }, { type: "spipNote", attrs: { name: nouveau, content: texte2 } }).run();
     }
     return true;
   };
@@ -25747,13 +25762,21 @@ var NotesPanel = class {
     this.liste.className = "tts-notes__liste";
     this.element.append(this.resume, this.liste);
     this.editNote = editNote;
-    this.render = () => this.afficher();
-    editor.on("update", this.render);
+    this.source = false;
+    this.render = ({ transaction }) => {
+      if (transaction.docChanged) this.afficher();
+    };
+    editor.on("transaction", this.render);
+    this.afficher();
+  }
+  /** Mode source : panneau masqué. */
+  setMode(source) {
+    this.source = source;
     this.afficher();
   }
   afficher() {
     const notes = notesDuDocument(this.editor.state.doc);
-    this.element.hidden = notes.length === 0;
+    this.element.hidden = this.source || notes.length === 0;
     this.resume.textContent = `${label("notes")} (${notes.length})`;
     this.liste.replaceChildren(...notes.map(({ pos, node: node2, label: numero }) => {
       const li = document.createElement("li");
@@ -25770,7 +25793,7 @@ var NotesPanel = class {
     }));
   }
   destroy() {
-    this.editor.off("update", this.render);
+    this.editor.off("transaction", this.render);
     this.element.remove();
   }
 };
@@ -25829,6 +25852,7 @@ var Instance = class {
       bouton("tts-modele", label("modele"), () => this.ui.editModel(null))
     ];
     const [linkButton, noteButton, glossaryButton] = this.visualButtons;
+    this.glossaryButton = glossaryButton;
     linkButton.title = `${label("lien")} (Ctrl+K)`;
     noteButton.title = `${label("note")} (Ctrl+Alt+N)`;
     glossaryButton.title = `${label("glossaire")} (Ctrl+Alt+G)`;
@@ -25852,6 +25876,11 @@ var Instance = class {
     });
     this.bridge = new TextareaBridge({ textarea, editor: this.editor });
     this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos) });
+    this.majGlossaire = () => {
+      const { from: from2, to } = this.editor.state.selection;
+      this.glossaryButton.disabled = this.bridge.mode === "source" || /[[\]<>]/.test(this.editor.state.doc.textBetween(from2, to, " "));
+    };
+    this.editor.on("selectionUpdate", this.majGlossaire);
     this.content.after(this.notes.element);
     textarea.before(this.wrapper);
     this.wrapper.append(textarea);
@@ -25863,8 +25892,9 @@ var Instance = class {
     const source = mode === "source";
     this.textarea.hidden = !source;
     this.content.hidden = source;
-    this.notes.element.hidden = source || this.notes.liste.childElementCount === 0;
+    this.notes.setMode(source);
     for (const b of this.visualButtons) b.disabled = source;
+    this.majGlossaire();
     this.modeButton.setAttribute("aria-pressed", String(source));
     (source ? this.textarea : this.editor).focus?.();
   }

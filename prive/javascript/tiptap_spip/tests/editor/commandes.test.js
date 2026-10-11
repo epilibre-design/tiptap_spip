@@ -53,11 +53,14 @@ describe('commandes de note', () => {
 	});
 
 	it('insertSpipNote sans contenu : ouvre le popover de note', () => {
-		const editNote = vi.fn();
+		const editNote = vi.fn(() => ({}));
 		monter('Texte', { editNote });
 		expect(editor.commands.insertSpipNote()).toBe(true);
 		expect(editNote).toHaveBeenCalledWith(null);
 		expect(source()).toBe('Texte');
+		// popover non ouvert (note non modifiable) : la commande échoue
+		editNote.mockReturnValue(null);
+		expect(editor.commands.insertSpipNote()).toBe(false);
 	});
 
 	it('updateSpipNote et removeSpipNote sur la note sélectionnée', () => {
@@ -81,7 +84,7 @@ describe('commandes de note', () => {
 
 describe('raccourcis clavier', () => {
 	it('Mod-Alt-N : note ; Mod-Alt-G : glossaire', () => {
-		const ui = { editNote: vi.fn(), openGlossary: vi.fn() };
+		const ui = { editNote: vi.fn(() => ({})), openGlossary: vi.fn(() => ({})) };
 		monter('Texte', ui);
 		touche('n', { ctrlKey: true, altKey: true });
 		expect(ui.editNote).toHaveBeenCalledWith(null);
@@ -92,7 +95,7 @@ describe('raccourcis clavier', () => {
 
 describe('règles de saisie', () => {
 	it('[[ : retiré du texte, popover de note ouvert ensuite', async () => {
-		const editNote = vi.fn();
+		const editNote = vi.fn(() => ({}));
 		monter('Texte', { editNote });
 		editor.commands.setTextSelection(6);
 		taper(' [[');

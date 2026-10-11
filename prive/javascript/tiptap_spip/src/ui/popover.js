@@ -17,6 +17,7 @@ export class Popover {
 		this.parent = parent;
 		this.enfant = null;
 		this.onClose = onClose;
+		this.ouvert = false;
 		this.form = document.createElement('form');
 		this.form.className = `tts-popover ${className ?? ''}`.trim();
 		this.form.setAttribute('role', 'dialog');
@@ -140,3 +141,14 @@ export function suivrePosition(editor, pos) {
 		},
 	};
 }
+
+/**
+ * ProseMirror lit la sélection du navigateur sur « selectionchange », asynchrone dans Chromium : un
+ * raccourci qui suit de près Maj+flèches verrait l'ancienne sélection. On la lui fait lire maintenant.
+ */
+export function lireSelection(editor) {
+	if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+}
+
+/** Identifiant d'élément unique dans la page. */
+export const idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;

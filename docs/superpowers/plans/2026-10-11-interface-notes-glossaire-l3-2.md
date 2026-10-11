@@ -42,7 +42,7 @@
 | `src/editor/extensions.js` | commandes de note, raccourcis, règles de saisie, `noteExtensions()` (schéma du sous-éditeur) |
 | `src/ui/popover.js` | popover enfant (`parent`) |
 | `src/ui/NotePopover.js` | popover de note et sous-éditeur |
-| `src/ui/GlossaryPopover.js` | popovers glossaire et abréviation |
+| `src/ui/MarkPopover.js` | popovers glossaire et abréviation |
 | `src/ui/NotesPanel.js` | panneau des notes |
 | `src/ui/LinkPopover.js` | cible validée par `seRelitInline` ; option `parent` |
 | `src/main.js` | boutons, panneau, `ui.editNote`, `ui.openGlossary`, `ui.openAbbr` |

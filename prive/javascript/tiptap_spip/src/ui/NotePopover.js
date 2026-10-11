@@ -1,12 +1,12 @@
 import { Editor, getSchema } from '@tiptap/core';
-import { NodeSelection } from '@tiptap/pm/state';
 import { schemaJSON } from '../editor/content.js';
-import { noteExtensions } from '../editor/extensions.js';
+import { noteExtensions, noteSelectionnee } from '../editor/extensions.js';
 import { noteSeRelit } from '../spip/valider.js';
 import { label } from './labels.js';
 import { openLinkPopover } from './LinkPopover.js';
 import { openGlossaryPopover } from './MarkPopover.js';
-import { Popover, suivrePosition } from './popover.js';
+import { openModelPopover } from './ModelPopover.js';
+import { idUnique, lireSelection, Popover, suivrePosition } from './popover.js';
 
 /** Contenu de note sans texte ni objet : paragraphes vides seulement. */
 const vide = (content) => content.every((b) => b.type === 'paragraph' && !b.content?.length);
@@ -16,9 +16,11 @@ const vide = (content) => content.every((b) => b.type === 'paragraph' && !b.cont
  * un sous-éditeur Tiptap (schéma de noteExtensions : sans notes, blocs permis dans une note) avec
  * une barre réduite. Le lien et le glossaire du sous-éditeur s'ouvrent en popovers enfants.
  *
- * Note sélectionnée (ou à `pos`) : modification ou suppression ; sinon insertion au curseur. Une
- * note ouverte puis appliquée sans que son texte change garde son contenu d'origine, restitué à
- * l'identique.
+ * Note sélectionnée (ou à `pos`) : modification ou suppression. Sinon insertion : comme le bouton
+ * Note du porte-plume, un texte sélectionné dans un même bloc devient le texte de la note, qui le
+ * remplace ; une autre sélection (sur plusieurs blocs, un modèle) est gardée, la note est insérée
+ * après. Une note ouverte puis appliquée sans que son texte change garde son contenu d'origine,
+ * restitué à l'identique.
  *
  * @param {{ editor, wrapper, services?, titles?, previews? }} contexte
  * @param {?number} [pos]
@@ -26,10 +28,24 @@ const vide = (content) => content.every((b) => b.type === 'paragraph' && !b.cont
  */
 export function openNotePopover(contexte, pos = null) {
 	const { editor, wrapper } = contexte;
+	lireSelection(editor);
 	if (pos !== null) editor.commands.setNodeSelection(pos);
 	const { selection } = editor.state;
-	const existante = selection instanceof NodeSelection && selection.node.type.name === 'spipNote' ? selection : null;
+	const { $from, $to } = selection;
+	const existante = noteSelectionnee(editor.state);
+	// texte sélectionné dans un même bloc, sans note : il devient le texte de la note
+	const morceau = !existante && !selection.empty && $from.sameParent($to) && $from.parent.isTextblock
+		? $from.parent.slice($from.parentOffset, $to.parentOffset).content
+		: null;
+	let entoure = Boolean(morceau);
+	morceau?.descendants((n) => {
+		if (n.type.name === 'spipNote') entoure = false;
+	});
 	const origine = existante?.node.attrs.content ?? null;
+	const initial = entoure ? [{ type: 'paragraph', content: morceau.toJSON() }] : null;
+	// plage remplacée par une nouvelle note, suivie pendant que le popover est ouvert
+	const debut = existante ? null : suivrePosition(editor, entoure ? selection.from : selection.to);
+	const fin = existante ? null : suivrePosition(editor, selection.to);
 	const name = existante?.node.attrs.name ?? null;
 
 	let sous = null;
@@ -44,6 +60,8 @@ export function openNotePopover(contexte, pos = null) {
 		onSubmit: () => appliquer(),
 		onClose: () => {
 			suivi?.fin();
+			debut?.fin();
+			fin?.fin();
 			sous?.destroy();
 		},
 	});
@@ -59,7 +77,7 @@ export function openNotePopover(contexte, pos = null) {
 	const bloc = document.createElement('div');
 	bloc.className = 'tts-popover__champ tts-note__bloc';
 	const titre = document.createElement('span');
-	titre.id = `tts-note-${Math.random().toString(36).slice(2)}`;
+	titre.id = idUnique('tts-note');
 	titre.textContent = label('note_texte');
 	const barre = document.createElement('div');
 	barre.className = 'tts-note__barre';
@@ -76,14 +94,17 @@ export function openNotePopover(contexte, pos = null) {
 		titles: contexte.titles ?? null,
 		openLink: () => openLinkPopover(enfant()),
 		openGlossary: () => openGlossaryPopover(enfant()),
+		editModel: (p) => openModelPopover(enfant(), p),
 	};
 	const extensions = noteExtensions({ ui: sousUi });
 	let content;
 	try {
-		content = schemaJSON({ type: 'doc', content: origine?.length ? origine : [{ type: 'paragraph' }] }, getSchema(extensions));
+		content = schemaJSON({ type: 'doc', content: origine?.length ? origine : initial ?? [{ type: 'paragraph' }] }, getSchema(extensions));
 	} catch (error) {
 		console.warn('tiptap_spip : note non modifiable dans l\'éditeur', error);
 		suivi?.fin();
+		debut?.fin();
+		fin?.fin();
 		return null;
 	}
 	sous = new Editor({
@@ -104,6 +125,7 @@ export function openNotePopover(contexte, pos = null) {
 		[label('italique'), () => sous.chain().focus().toggleItalic().run()],
 		[label('lien'), () => sousUi.openLink()],
 		[label('glossaire'), () => sousUi.openGlossary()],
+		[label('modele'), () => sousUi.editModel(null)],
 	]) {
 		const b = document.createElement('button');
 		b.type = 'button';
@@ -129,7 +151,9 @@ export function openNotePopover(contexte, pos = null) {
 			const p = note();
 			if (p !== null) editor.chain().focus().setNodeSelection(p).updateSpipNote({ name: nouveau, content: texte }).run();
 		} else {
-			editor.chain().focus().insertSpipNote({ name: nouveau, content: texte }).run();
+			const to = fin.pos() ?? editor.state.selection.to;
+			const from = Math.min(debut.pos() ?? to, to);
+			editor.chain().focus().insertContentAt({ from, to }, { type: 'spipNote', attrs: { name: nouveau, content: texte } }).run();
 		}
 		return true;
 	};

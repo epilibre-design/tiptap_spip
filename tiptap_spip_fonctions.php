@@ -32,6 +32,19 @@ function tiptap_spip_est_glossaire(string $raccourci): bool {
 }
 
 /**
+ * Nom du glossaire d'un raccourci valide (tiptap_spip_est_glossaire()), découpé comme
+ * traiter_raccourci_glossaire() : `[?terme#mots12]` → 'mots' ; '' pour le glossaire par défaut.
+ */
+function tiptap_spip_nom_glossaire(string $raccourci): string {
+	preg_match('/^\[\?+\s*([^][<>]+)\]$/', $raccourci, $m);
+	if (!preg_match('/^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/', $m[1], $r)) {
+		return '';
+	}
+	preg_match('/^(.*?)(\d*)$/', $r[4] ?? '', $n);
+	return $n[1];
+}
+
+/**
  * Glossaires nommés disponibles (`[?terme#nom]`) : le core appelle glossaire_<nom>() si elle existe
  * (liens_implicite_glose_dist()) ; glossaire_std() est le glossaire par défaut.
  *

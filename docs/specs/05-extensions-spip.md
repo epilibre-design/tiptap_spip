@@ -45,9 +45,12 @@ final ou suivi d'un autre `]` s'écrit `&#93;` : `\]` ne suffit pas, le core che
 avant de traiter les échappements (`[[a\]]]` est la note `a\` suivie de `]`).
 
 Lot L3.2 : popover ouvert par le bouton « Note », `Mod-Alt-N`, la frappe de `[[`, un clic ou `Entrée`
-sur un appel, ou le panneau des notes. Le sous-éditeur a le schéma de l'éditeur sans notes, avec les
-seuls blocs permis dans une note (`noteExtensions()`) ; sa barre réduite a gras, italique, lien et
-glossaire, ouverts en popovers enfants. Une note ouverte puis appliquée sans que son texte change
+sur un appel, ou le panneau des notes ; le bouton « Note » sur un appel sélectionné tient lieu de
+bouton « Modifier ». Comme le bouton Note du porte-plume, un texte sélectionné dans un même bloc
+devient le texte de la nouvelle note, qui le remplace ; une autre sélection est gardée, la note est
+insérée après. Le sous-éditeur a le schéma de l'éditeur sans notes, avec les seuls blocs permis dans
+une note (`noteExtensions()`) ; sa barre réduite a gras, italique, lien, glossaire et modèle, ces trois
+derniers en popovers enfants. Une note ouverte puis appliquée sans que son texte change
 garde son contenu d'origine (identité) ; une note vide est refusée, comme une note qui ne se relirait
 pas à l'identique (nom `a>b`, nom `i` devant un texte contenant `</i>` brut…). La note est suivie
 pendant que le popover est ouvert : supprimée entre-temps, rien n'est modifié.
@@ -94,7 +97,8 @@ la sérialisation, le texte restant ; l'interface (L3.2) empêche ces saisies.
 
 Lot L3.2 : popover du bouton « Glossaire » ou de `Mod-Alt-G` : curseur ou sélection dans un terme →
 modification du terme entier ou retrait ; texte d'un même paragraphe sélectionné → nouveau terme ;
-curseur seul → champ « Terme » et insertion. Toute saisie est validée par relecture
+curseur seul → champ « Terme » et insertion. Le bouton est désactivé sur une sélection qui contient
+`[ ] < >` ; `Mod-Alt-G` ouvre le popover, qui refuse alors la saisie. Toute saisie est validée par relecture
 (`src/spip/valider.js`). Avec les services : glossaires nommés du site proposés (`datalist`) et
 « Voir la définition ». La frappe de `[?terme…]` pose le terme si le raccourci se réécrit à
 l'identique (sinon le texte reste, comme le parseur le garde brut).

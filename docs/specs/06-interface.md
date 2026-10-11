@@ -79,7 +79,7 @@ Tous les popovers : fermeture par `Échap`, focus rendu à l'éditeur, validatio
 Lot L3.2 : un popover peut en ouvrir un autre (lien ou glossaire depuis le sous-éditeur d'une note) :
 l'enfant s'ouvre sans fermer son parent, rend le focus au sous-éditeur, et se ferme avec lui. Le focus
 est rendu tout de suite (`view.focus()`) : une touche pressée juste après agit dans l'éditeur. Les
-popovers d'une instance se ferment à sa destruction.
+popovers d'une instance se ferment à sa destruction. Piège de focus des popovers (§7) : lot L5.
 
 ## 5. Anomalies de syntaxe
 

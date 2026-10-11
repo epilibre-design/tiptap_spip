@@ -81,6 +81,7 @@ class Instance {
 			bouton('tts-modele', label('modele'), () => this.ui.editModel(null)),
 		];
 		const [linkButton, noteButton, glossaryButton] = this.visualButtons;
+		this.glossaryButton = glossaryButton;
 		linkButton.title = `${label('lien')} (Ctrl+K)`;
 		noteButton.title = `${label('note')} (Ctrl+Alt+N)`;
 		glossaryButton.title = `${label('glossaire')} (Ctrl+Alt+G)`;
@@ -114,6 +115,12 @@ class Instance {
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
 		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos) });
+		// pas de [ ] < > dans un terme de glossaire (spec 05 §2) : bouton désactivé sur une telle sélection
+		this.majGlossaire = () => {
+			const { from, to } = this.editor.state.selection;
+			this.glossaryButton.disabled = this.bridge.mode === 'source' || /[[\]<>]/.test(this.editor.state.doc.textBetween(from, to, ' '));
+		};
+		this.editor.on('selectionUpdate', this.majGlossaire);
 		this.content.after(this.notes.element);
 
 		textarea.before(this.wrapper);
@@ -127,8 +134,9 @@ class Instance {
 		const source = mode === 'source';
 		this.textarea.hidden = !source;
 		this.content.hidden = source;
-		this.notes.element.hidden = source || this.notes.liste.childElementCount === 0;
+		this.notes.setMode(source);
 		for (const b of this.visualButtons) b.disabled = source;
+		this.majGlossaire();
 		this.modeButton.setAttribute('aria-pressed', String(source));
 		(source ? this.textarea : this.editor).focus?.();
 	}
