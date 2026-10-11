@@ -82,13 +82,19 @@ class Instance {
 		this.wrapper.append(toolbar, this.content);
 
 		// formulaire de services du champ : rendu après le formulaire hôte (formulaire_fond), sinon
-		// chargé à la demande pour le contexte du textarea ; null : mode dégradé
+		// chargé à la demande pour le contexte du textarea ; null : mode dégradé. Le formulaire chargé
+		// à la demande appartient à l'instance : retiré à sa destruction (destroy)
 		this.services = Services.forTextarea(textarea);
-		this.servicesPrets = this.services ? Promise.resolve(this.services) : servicesALaDemande(textarea, contexteHote(textarea));
+		this.chargement = this.services ? null : new AbortController();
+		this.servicesPrets = this.services
+			? Promise.resolve(this.services)
+			: servicesALaDemande(textarea, contexteHote(textarea), { signal: this.chargement.signal });
 		this.servicesPrets.then((s) => {
 			this.services = s;
 		});
-		const contexte = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.services, titles: this.ui.titles });
+		// le popover de lien reçoit la promesse : ouvert avant l'arrivée des services, sa recherche
+		// fonctionne dès qu'ils sont là
+		const contexte = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.servicesPrets, titles: this.ui.titles });
 		this.ui = {
 			previews: new ModelPreviews(this.servicesPrets),
 			titles: new LinkTitles(this.servicesPrets),
@@ -126,6 +132,10 @@ class Instance {
 	destroy({ restore = true } = {}) {
 		instances.delete(this);
 		this.bridge.destroy();
+		if (this.chargement) {
+			this.chargement.abort();
+			this.services?.container.remove();
+		}
 		if (restore && this.wrapper.isConnected) {
 			this.wrapper.before(this.textarea);
 			this.wrapper.remove();

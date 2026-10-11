@@ -32,8 +32,10 @@ function suivrePosition(editor, pos) {
  * - texte sélectionné : nouveau lien sur ce texte ;
  * - curseur seul : insertion d'un lien sans texte [->cible].
  *
- * @param {{ editor, wrapper, services: ?import('../services/cvt.js').Services,
- *           titles: ?import('../services/cache.js').LinkTitles }} context
+ * @param {{ editor, wrapper,
+ *           services: ?import('../services/cvt.js').Services|Promise<?import('../services/cvt.js').Services>,
+ *           titles: ?import('../services/cache.js').LinkTitles }} context  services : éventuellement une
+ *        promesse (formulaire chargé à la demande), lue à chaque recherche
  */
 export function openLinkPopover({ editor, wrapper, services, titles }) {
 	// ProseMirror lit la sélection du navigateur sur « selectionchange », asynchrone dans Chromium : un
@@ -126,9 +128,12 @@ export function openLinkPopover({ editor, wrapper, services, titles }) {
 	const rechercher = () => {
 		const q = cible.value.trim();
 		suggestions.replaceChildren();
-		if (!services?.available || q.length < 2 || /^[a-z_]+\d+$|^\w+:\/\/|^#/.test(q)) return;
+		if (!services || q.length < 2 || /^[a-z_]+\d+$|^\w+:\/\/|^#/.test(q)) return;
 		derniere = q;
-		services.call('rechercher', { q, objets: ['article', 'rubrique', 'breve', 'document', 'auteur', 'mot', 'site'] }).then((resultats) => {
+		Promise.resolve(services).then((s) => {
+			if (!s?.available) return [];
+			return s.call('rechercher', { q, objets: ['article', 'rubrique', 'breve', 'document', 'auteur', 'mot', 'site'] });
+		}).then((resultats) => {
 			if (q !== derniere) return;
 			suggestions.replaceChildren(...resultats.map((r) => {
 				const li = document.createElement('li');

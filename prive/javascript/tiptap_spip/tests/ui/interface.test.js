@@ -237,6 +237,40 @@ describe('popover de lien', () => {
 		}
 	});
 
+	it('recherche d\'objets : services arrivés après l\'ouverture du popover (chargement à la demande)', async () => {
+		vi.useFakeTimers();
+		try {
+			const services = fakeServices({ rechercher: [{ objet: 'article', id: 7, titre: 'Tiptap', raccourci: 'article7' }] });
+			let fournir;
+			const prets = new Promise((resolve) => { fournir = resolve; });
+			monter('Voir ');
+			editor.commands.setTextSelection(apres('Voir '));
+			openLinkPopover({ editor, wrapper, services: prets });
+			remplir('cible', 'tip');
+			await vi.advanceTimersByTimeAsync(300);
+			expect(services.call).not.toHaveBeenCalled();
+			fournir(services);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(services.call).toHaveBeenCalledWith('rechercher', expect.objectContaining({ q: 'tip' }));
+			expect(wrapper.querySelector('.tts-popover__suggestions li').textContent).toBe('Tiptap (article7)');
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('recherche d\'objets : pas de services (null), aucune suggestion', async () => {
+		vi.useFakeTimers();
+		try {
+			monter('Voir ');
+			openLinkPopover({ editor, wrapper, services: Promise.resolve(null) });
+			remplir('cible', 'tip');
+			await vi.advanceTimersByTimeAsync(300);
+			expect(wrapper.querySelector('.tts-popover__suggestions li')).toBeNull();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it('Échap ferme sans rien changer', () => {
 		monter('Voir');
 		openLinkPopover({ editor, wrapper });

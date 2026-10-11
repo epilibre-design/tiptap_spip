@@ -175,4 +175,56 @@ describe('tiptap_spip_init', () => {
 			vi.unstubAllGlobals();
 		}
 	});
+
+	it('services à la demande : le formulaire chargé part avec l\'éditeur, une réponse tardive n\'est pas ajoutée', async () => {
+		let repondre;
+		const fetch = vi.fn((url, { signal }) => new Promise((resolve, reject) => {
+			repondre = () => resolve({ ok: true, text: async () => '<div class="tts-services"><form action="/spip.php"></form></div>' });
+			signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+		}));
+		vi.stubGlobal('fetch', fetch);
+		globalThis.spipConfig = { tiptap_spip: { services: 'https://site.test/spip.php?page=tiptap_spip_services' } };
+		const charges = () => document.querySelectorAll('#tts-services .tts-services').length;
+		const textarea = '<textarea data-tts-toolbar="minimale" name="bio" data-tts-objet="auteur" data-tts-id-objet="4" data-tts-champ="bio">a</textarea>';
+		try {
+			// chargé puis détruit : le formulaire est retiré
+			page(textarea);
+			tiptap_spip_init();
+			let [instance] = instances;
+			repondre();
+			await instance.servicesPrets;
+			expect(charges()).toBe(1);
+			instance.destroy();
+			expect(charges()).toBe(0);
+
+			// détruit pendant le chargement : la réponse n'ajoute rien
+			page(textarea);
+			tiptap_spip_init();
+			[instance] = instances;
+			instance.destroy();
+			repondre();
+			expect(await instance.servicesPrets).toBeNull();
+			expect(charges()).toBe(0);
+
+			// même si fetch ignore l'annulation
+			fetch.mockImplementation(async () => ({ ok: true, text: async () => '<div class="tts-services"><form action="/spip.php"></form></div>' }));
+			page(textarea);
+			tiptap_spip_init();
+			[instance] = instances;
+			instance.destroy();
+			expect(await instance.servicesPrets).toBeNull();
+			expect(charges()).toBe(0);
+		} finally {
+			delete globalThis.spipConfig;
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it('formulaire de services rendu par la page : laissé en place à la destruction', () => {
+		page(`<div class="formulaire_spip"><form data-tts-instance="tts-aaa"><textarea name="texte">a</textarea></form></div>
+			<div class="tts-services" hidden data-tts-instance="tts-aaa" data-tts-champ="texte"><form action="/ecrire/"></form></div>`);
+		tiptap_spip_init();
+		[...instances][0].destroy();
+		expect(document.querySelectorAll('.tts-services')).toHaveLength(1);
+	});
 });

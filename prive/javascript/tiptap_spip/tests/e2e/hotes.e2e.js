@@ -23,12 +23,16 @@ async function articlePublic(page, source, { chapo } = {}) {
 	publier(id);
 	await page.goto(`/spip.php?page=article&id_article=${id}&var_mode=calcul`);
 	await module(page);
+	// éditeurs déjà présents dans la page (forum…) : leurs services à la demande sont chargés avant
+	// qu'un test ne les compte
+	await page.evaluate(() => Promise.all([...window.__tts.instances].map((i) => i.servicesPrets)));
 	return id;
 }
 
 test('crayon public : éditeur et services à la demande, enregistrement, fermeture puis réouverture sans fuite', async ({ page }) => {
 	const id = await articlePublic(page, 'Voir [->art1] et du {{gras}}.');
 	const base = await instances(page);
+	const servicesAvant = await servicesCharges(page);
 	const crayon = page.locator(`.crayon.article-texte-${id}`);
 
 	await crayon.dblclick();
@@ -54,6 +58,8 @@ test('crayon public : éditeur et services à la demande, enregistrement, fermet
 	await page.locator('.crayon-html .crayon-cancel').click();
 	await expect(page.locator('.crayon-html')).toHaveCount(0);
 	await expect.poll(() => instances(page)).toBe(base);
+	// les formulaires de services chargés à la demande partent avec leur éditeur
+	expect(await servicesCharges(page)).toBe(servicesAvant);
 });
 
 test('deux crayons ouverts ensemble : deux éditeurs, chacun ses services', async ({ page }) => {
@@ -78,6 +84,7 @@ test('deux crayons ouverts ensemble : deux éditeurs, chacun ses services', asyn
 	await page.locator('.crayon-html .crayon-cancel').first().click();
 	await expect(page.locator('.crayon-html')).toHaveCount(0);
 	await expect.poll(() => instances(page)).toBe(base);
+	expect(await servicesCharges(page)).toBe(servicesAvant);
 });
 
 test('formulaire public déclaré par tiptap_spip_contextes : services reliés au formulaire', async ({ page }) => {
