@@ -23955,7 +23955,7 @@ var label = (key) => globalThis.spipConfig?.tiptap_spip?.i18n?.[key] ?? DEFAUTS[
 
 // src/ui/sanitize.js
 var RETIRES = "script, style, link, meta, base, object, embed, form";
-var INTERACTIFS = "a[href], area, button, input, select, textarea, iframe, video, audio, [tabindex], [contenteditable]";
+var INTERACTIFS = "a, area, button, input, select, textarea, iframe, video, audio, [tabindex], [contenteditable]";
 function previewFragment(html) {
   const template = document.createElement("template");
   template.innerHTML = String(html);
@@ -23967,6 +23967,11 @@ function previewFragment(html) {
         el.removeAttribute(name);
       }
     }
+  }
+  for (const el of root.querySelectorAll("a, area")) {
+    const href = el.getAttribute("href") ?? el.getAttribute("xlink:href");
+    if (href !== null) el.dataset.ttsHref = href;
+    for (const name of ["href", "xlink:href", "target", "ping", "download"]) el.removeAttribute(name);
   }
   for (const el of root.querySelectorAll(INTERACTIFS)) {
     el.tabIndex = -1;
@@ -24853,6 +24858,19 @@ Popover.current = null;
 
 // src/ui/LinkPopover.js
 var VIDE = { href: "", bulle: null, hreflang: null, newWindow: false };
+function suivrePosition(editor, pos) {
+  let courante = pos;
+  const onTransaction = ({ transaction }) => {
+    courante = transaction.mapping.map(courante, 1);
+  };
+  editor.on("transaction", onTransaction);
+  return {
+    fin() {
+      editor.off("transaction", onTransaction);
+      return courante;
+    }
+  };
+}
 function openLinkPopover({ editor, wrapper, services, titles }) {
   if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
   const { state } = editor;
@@ -24916,15 +24934,19 @@ function openLinkPopover({ editor, wrapper, services, titles }) {
   }
   if (auto && titles) {
     popover.button(label("lien_figer"), () => {
-      titles.get(auto.node.attrs.href).then((r) => {
-        if (!r?.titre) return;
-        editor.chain().focus().insertContentAt({ from: auto.from, to: auto.to }, {
+      const { href } = auto.node.attrs;
+      const attrsLien = valeurs();
+      const suivi = suivrePosition(editor, auto.from);
+      titles.get(href).then((r) => {
+        const pos = suivi.fin();
+        const node2 = editor.isDestroyed ? null : editor.state.doc.nodeAt(pos);
+        if (!r?.titre || node2?.type.name !== "spipLinkAuto" || node2.attrs.href !== href) return;
+        editor.chain().focus().insertContentAt({ from: pos, to: pos + node2.nodeSize }, {
           type: "text",
           text: r.titre,
-          marks: [{ type: "spipLink", attrs: valeurs() }]
+          marks: [{ type: "spipLink", attrs: attrsLien }]
         }).run();
-      }, () => {
-      });
+      }, () => suivi.fin());
     }, { name: "figer" });
   }
   popover.button(label("annuler"), () => {

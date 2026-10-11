@@ -176,6 +176,37 @@ describe('popover de lien', () => {
 		expect(source()).toBe('Voir [Mon article->art1].');
 	});
 
+	it('« Figer le titre » vise le lien même si le document change pendant l\'appel', async () => {
+		let repondre;
+		const titres = new Promise((r) => { repondre = r; });
+		const services = fakeServices({ titre_lien: () => titres });
+		const { ui } = monter('Voir [->art1].', services);
+		editor.commands.setNodeSelection(apres('Voir '));
+		ui.openLink();
+		cliquer('figer');
+		// pendant l'appel, du texte est inséré avant le lien
+		editor.commands.insertContentAt(1, 'X');
+		repondre([{ cible: 'art1', titre: 'Mon article', url: 'spip.php?article1' }]);
+		await tick();
+		await tick();
+		expect(source()).toBe('XVoir [Mon article->art1].');
+	});
+
+	it('« Figer le titre » ne touche à rien si le lien a été supprimé pendant l\'appel', async () => {
+		let repondre;
+		const titres = new Promise((r) => { repondre = r; });
+		const { ui } = monter('Voir [->art1] puis [->art2].', fakeServices({ titre_lien: () => titres }));
+		editor.commands.setNodeSelection(apres('Voir '));
+		ui.openLink();
+		cliquer('figer');
+		editor.commands.setNodeSelection(apres('Voir '));
+		editor.commands.deleteSelection();
+		repondre([{ cible: 'art1', titre: 'Mon article' }, { cible: 'art2', titre: 'Autre' }]);
+		await tick();
+		await tick();
+		expect(source()).toBe('Voir  puis [->art2].');
+	});
+
 	it('cible vide : message d\'erreur, le popover reste ouvert', () => {
 		monter('Voir');
 		openLinkPopover({ editor, wrapper });

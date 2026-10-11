@@ -5,6 +5,24 @@ import { Popover } from './popover.js';
 const VIDE = { href: '', bulle: null, hreflang: null, newWindow: false };
 
 /**
+ * Suit une position à travers les transactions de l'éditeur, le temps d'un appel au serveur.
+ * `fin()` arrête le suivi et renvoie la position à jour.
+ */
+function suivrePosition(editor, pos) {
+	let courante = pos;
+	const onTransaction = ({ transaction }) => {
+		courante = transaction.mapping.map(courante, 1);
+	};
+	editor.on('transaction', onTransaction);
+	return {
+		fin() {
+			editor.off('transaction', onTransaction);
+			return courante;
+		},
+	};
+}
+
+/**
  * Popover de lien (spec 05 §4, 06 §4) : cible avec recherche d'objets SPIP, bulle, langue,
  * nouvelle fenêtre ; ouvrir, retirer ; « Figer le titre » pour un lien sans texte.
  *
@@ -85,12 +103,19 @@ export function openLinkPopover({ editor, wrapper, services, titles }) {
 	}
 	if (auto && titles) {
 		popover.button(label('lien_figer'), () => {
-			titles.get(auto.node.attrs.href).then((r) => {
-				if (!r?.titre) return;
-				editor.chain().focus().insertContentAt({ from: auto.from, to: auto.to }, {
-					type: 'text', text: r.titre, marks: [{ type: 'spipLink', attrs: valeurs() }],
+			const { href } = auto.node.attrs;
+			const attrsLien = valeurs();
+			// le titre arrive après un appel au serveur : la position du lien est suivie entre-temps, et
+			// le nœud trouvé doit toujours être ce lien sans texte, sinon rien n'est modifié
+			const suivi = suivrePosition(editor, auto.from);
+			titles.get(href).then((r) => {
+				const pos = suivi.fin();
+				const node = editor.isDestroyed ? null : editor.state.doc.nodeAt(pos);
+				if (!r?.titre || node?.type.name !== 'spipLinkAuto' || node.attrs.href !== href) return;
+				editor.chain().focus().insertContentAt({ from: pos, to: pos + node.nodeSize }, {
+					type: 'text', text: r.titre, marks: [{ type: 'spipLink', attrs: attrsLien }],
 				}).run();
-			}, () => {});
+			}, () => suivi.fin());
 		}, { name: 'figer' });
 	}
 	popover.button(label('annuler'), () => {}, { name: 'annuler' });

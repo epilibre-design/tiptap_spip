@@ -5,7 +5,7 @@
  */
 
 const RETIRES = 'script, style, link, meta, base, object, embed, form';
-const INTERACTIFS = 'a[href], area, button, input, select, textarea, iframe, video, audio, [tabindex], [contenteditable]';
+const INTERACTIFS = 'a, area, button, input, select, textarea, iframe, video, audio, [tabindex], [contenteditable]';
 
 /** @returns {DocumentFragment} */
 export function previewFragment(html) {
@@ -19,6 +19,13 @@ export function previewFragment(html) {
 				el.removeAttribute(name);
 			}
 		}
+	}
+	// un lien ne doit mener nulle part : sans href, un clic (ou Ctrl+clic, clic du milieu) n'a rien à
+	// suivre ; la cible reste dans data-tts-href pour l'affichage
+	for (const el of root.querySelectorAll('a, area')) {
+		const href = el.getAttribute('href') ?? el.getAttribute('xlink:href');
+		if (href !== null) el.dataset.ttsHref = href;
+		for (const name of ['href', 'xlink:href', 'target', 'ping', 'download']) el.removeAttribute(name);
 	}
 	for (const el of root.querySelectorAll(INTERACTIFS)) {
 		el.tabIndex = -1;

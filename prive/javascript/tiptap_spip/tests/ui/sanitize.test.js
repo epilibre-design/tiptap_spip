@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { previewFragment } from '../../src/ui/sanitize.js';
 
 const html = (fragment) => {
@@ -19,6 +19,25 @@ describe('previewFragment', () => {
 		expect(out).not.toMatch(/script|style|onclick|onmouseover|onerror|javascript:/i);
 		expect(out).toContain('a');
 		expect(out).toContain('b');
+	});
+
+	it('un lien de la prévisualisation ne mène nulle part : pas de href, cible gardée pour l\'affichage', () => {
+		const div = document.createElement('div');
+		div.append(previewFragment('<a href="spip.php?article1" target="_blank">l</a><svg><a href="#x" xlink:href="#y"><text>t</text></a></svg><map><area href="spip.php?article2"></map>'));
+		document.body.append(div);
+		const a = div.querySelector('a');
+		expect(a.hasAttribute('href')).toBe(false);
+		expect(a.hasAttribute('target')).toBe(false);
+		expect(a.dataset.ttsHref).toBe('spip.php?article1');
+		expect(div.querySelector('svg a').hasAttribute('href')).toBe(false);
+		expect(div.querySelector('svg a').hasAttribute('xlink:href')).toBe(false);
+		expect(div.querySelector('area').hasAttribute('href')).toBe(false);
+		// un clic n'a rien à suivre : jsdom ne signale aucune navigation
+		const navigation = vi.fn();
+		window.addEventListener('beforeunload', navigation);
+		a.click();
+		expect(navigation).not.toHaveBeenCalled();
+		div.remove();
 	});
 
 	it('éléments interactifs hors du clavier et inactifs, iframes en bac à sable', () => {
