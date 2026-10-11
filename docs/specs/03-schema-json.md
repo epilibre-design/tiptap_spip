@@ -17,13 +17,17 @@ et restituée telle quelle. Les raccourcis de plugins tiers sont hors configurat
 Le format JSON est le format standard de Tiptap (`editor.getJSON()`) :
 `{ type, attrs?, content?, marks?, text? }`.
 
-## 2. Extensions standard retenues (StarterKit 3 configuré)
+Pas de StarterKit : les extensions sont déclarées une à une, les marks dans l'ordre canonique du parseur
+(`bold`, `italic`, `strike`, `superscript`, `subscript`, `code`). Le schéma range les marks d'un texte dans
+l'ordre de déclaration ; un autre ordre ferait diverger `getJSON()` de l'empreinte d'un bloc intact.
+
+## 2. Extensions standard retenues (déclarées une à une)
 
 | Extension | Statut | Raccourci SPIP |
 |-----------|--------|----------------|
 | `document`, `text` | gardé | — |
 | `paragraph` | gardé | bloc séparé par ligne vide |
-| `hardBreak` | gardé, attr `syntax` (`autobr` \| `manual`) | retour à la ligne simple (`autobr`, rendu `<br class='autobr' />` par SPIP 3+) ou `\n_ ` (`manual`) |
+| `hardBreak` | gardé, attr `syntax` (`autobr` \| `manual`) | retour à la ligne simple (`autobr`, rendu `<br class='autobr' />` par SPIP 3+) ou `\n_ ` (`manual`, valeur des sauts saisis dans l'éditeur) |
 | `heading` | gardé, niveaux 2 à 6 | `{{{…}}}` (niveau 2), `<h3>`…`<h6>` (cf. §3) |
 | `bold` | gardé | `{{…}}` |
 | `italic` | gardé | `{…}` |
@@ -31,11 +35,12 @@ Le format JSON est le format standard de Tiptap (`editor.getJSON()`) :
 | `code` | gardé, sans attribut, **combinable avec les autres marks** (configurer `excludes: ''`, Tiptap l'exclut par défaut) | `` `…` `` ou `<code>…</code>` inline (même rendu) |
 | `codeBlock` | gardé, attrs `language`, `openTag` (seulement pour un `<code …>` avec attributs) | ```` ```langage … ``` ```` ou `<code>` multiligne (même rendu) ; `<cadre>` → `spipCadre` |
 | `blockquote` | gardé | `<quote>…</quote>` |
-| `bulletList`, `orderedList`, `listItem` | gardés, contenu restreint | `-*`, `-#` |
+| `bulletList`, `orderedList`, `listItem` | gardés, contenu restreint ; `orderedList` sans attributs `start`/`type` ni règle de saisie (SPIP ne les connaît pas) | `-*`, `-#` |
 | `horizontalRule` | gardé | `----` |
 | `link` | **remplacé** par `spipLink` | `[…->…]` |
 | `underline` | **désactivé** | pas de raccourci SPIP (`<u>` déconseillé) |
-| `listKeymap`, `dropcursor`, `gapcursor`, `undoRedo`, `trailingNode` | gardés | — |
+| `listKeymap`, `dropcursor`, `gapcursor`, `undoRedo` | gardés | — |
+| `trailingNode` | **retiré** : il ajoute un paragraphe vide en fin de document, donc modifie la source d'un texte intact ; `gapcursor` permet d'écrire après un tableau ou un bloc de code final | — |
 | `subscript`, `superscript` | ajoutés | `<sub>`, `<sup>` |
 | `table`, `tableRow`, `tableHeader`, `tableCell` (`TableKit`) | ajoutés, contenu restreint | `|…|` |
 

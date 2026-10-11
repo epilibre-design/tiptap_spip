@@ -4,7 +4,7 @@
 
 | Lot | Contenu | Livrable vérifiable |
 |-----|---------|---------------------|
-| **L0 — Socle** | Paquet SPIP, bundle bun, chargement SPIP 4/5, `TextareaBridge`, StarterKit 3 configuré, Vitest/PHPUnit en place | Un textarea d'article est remplacé par Tiptap, texte simple aller-retour |
+| **L0 — Socle** | Paquet SPIP, bundle esbuild, chargement SPIP 4/5, `TextareaBridge`, schéma Tiptap 3 (extensions déclarées une à une), Vitest/PHPUnit/Playwright en place | Un textarea d'article est remplacé par Tiptap, texte simple aller-retour |
 | **L1 — Cœur SPIP** | `src/spip/` : protections, blocs, inline (gras, italique, intertitres, titres `<h3>`–`<h6>`, alignements `<div>`, listes, `_ `, `----`, quote, backticks, code, cadre, html, tableaux), échappements, nœuds bruts, sérialisation conservatrice ; liens, notes, modèles, glossaire, abréviations, ancres, multi et idiomes y sont reconnus mais conservés en `spipRawInline` jusqu'aux lots L2–L4 | Invariants 1, 2, 4 verts sur le corpus ; harnais d'équivalence de rendu opérationnel |
 | **L2 — Liens et modèles** | `spipLink` (cibles SPIP, liens vides, recherche d'objets), ancres, `spipModel` / `spipModelBlock` porté depuis markdown_editor, `spipLinkAuto`, formulaire CVT `tiptap_spip` (services serveur) | Insertion/édition de liens et modèles de bout en bout |
 | **L2b — Hôtes** | lancement générique et cycle de vie, adaptateurs (Crayons, `data-tts-*`, `tiptap_spip_contextes`, sans objet), formulaire de services à la demande, styles par hôte | Tests « Hôtes » de la spec 08 |
@@ -13,6 +13,11 @@
 | **L5 — Interface** | barres `edition`/`forum`/`minimale`, popovers, anomalies, plein écran, accessibilité, i18n, config CFG | Critères 6, 7, 8 |
 | **L6 — Extensibilité** | API `registerExtension`, pipelines, ré-export du core, exemple de plugin tiers (FAQ) | Plugin d'exemple fonctionnel sans modifier le cœur |
 | L7 — Ultérieur | glisser-déposer de documents (upload → `<docN>`), aperçu `<math>`, collaboration | — |
+
+État de L0 : chargement SPIP 4 vérifié de bout en bout (site 4.4.21 jetable) ; chargement SPIP 5 repris de
+markdown_editor, non vérifié faute de site SPIP 5 sur le poste. Mesure du critère 6 (spec 08) : 50 000
+caractères, montage à froid 256 ms, à chaud 102 à 127 ms dans Chromium 149 ; optimisation à prévoir avant la
+recette (L5).
 
 L1 est le lot critique : rien d'autre ne vaut tant que l'aller-retour n'est pas fiable. Il est développé en
 TDD avec le corpus.

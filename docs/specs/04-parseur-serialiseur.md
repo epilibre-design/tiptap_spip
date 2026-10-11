@@ -167,14 +167,20 @@ vide sans `spipSrc` se sérialise en `lead + trail`, donc la source d'origine.
 
 1. `lead` en tête.
 2. Pour chaque bloc portant `spipGroup = k` : si la forme canonique des *k* blocs courants est égale à
-   `spipHash`, on émet `spipSep + spipSrc` et on saute les *k* blocs. Sinon, chaque bloc est sérialisé
-   normalement, précédé de son `spipSep` s'il en a un, sinon de `\n\n` (rien pour le tout premier).
+   `spipHash`, on émet `séparateur + spipSrc` et on saute les *k* blocs. Sinon, chaque bloc est sérialisé
+   normalement, précédé de son séparateur. Le séparateur est le `spipSep` du bloc s'il est valide à sa
+   place (vide pour le premier bloc, contenant une ligne vide ailleurs), sinon `\n\n` (rien pour le
+   premier bloc).
 3. `trail` en fin.
 4. Un document entièrement intact redonne donc la source exacte, sans chemin rapide séparé. La forme
    canonique ignore les attributs techniques et les attributs nuls (Tiptap ajoute les valeurs par défaut
-   nulles dans `getJSON()`) ; elle doit être calculée sur le JSON **après** `setContent` dans l'éditeur.
-5. `spipSrc`/`spipHash`/`spipSep`/`spipGroup` ne sont pas rendus en HTML, sont exclus du copier-coller et sont perdus
-   quand ProseMirror scinde ou fusionne le bloc (le bloc est alors « modifié »).
+   nulles dans `getJSON()`) ; les empreintes sont recalculées sur le JSON passé par le schéma de l'éditeur
+   (`toEditorJSON`, attributs par défaut compris) avant `setContent`.
+5. `spipSrc`/`spipHash`/`spipSep`/`spipGroup` ne sont pas rendus en HTML, donc perdus au copier-coller ;
+   mais ProseMirror les **recopie** quand il coupe un bloc en son milieu (`keepOnSplit: false` n'agit que sur
+   une coupure en fin de bloc) ou le déplace. Le sérialiseur n'en reprend donc que ce qui reste valide :
+   `spipSrc` si la forme canonique correspond, `spipSep` s'il est valide à sa place. Sans cette règle, le
+   second morceau d'un paragraphe coupé hériterait d'un séparateur vide et se recollerait au premier.
 
 Corollaire : les normalisations (espaces en fin de ligne, forme des modèles, forme du code)
 ne s'appliquent qu'aux blocs effectivement édités.

@@ -76,17 +76,20 @@ tiptap_spip/
 
 ## 3. Le code JavaScript
 
-Sources dans `prive/javascript/tiptap_spip/` (package npm privé, construit avec **bun** comme
-markdown_editor, ou Vite si le besoin de dev server se fait sentir).
+Sources dans `prive/javascript/tiptap_spip/` (package npm privé), bundle construit avec **esbuild**
+(`npm run build`) en `prive/javascript/tiptap_spip.js` et `.min.js`, versionnés comme ceux de
+markdown_editor pour que le plugin s'installe sans build. esbuild remplace bun (absent des postes de
+développement) et produit le même module ESM.
 
 ```
 src/
-├── main.js                     # tiptap_spip_init(racine) : découverte des textareas, montage
-├── config.js                   # lecture config SPIP (import "config.js" en SPIP 5, window.spipConfig sinon)
+├── main.js                     # tiptap_spip_init(racine) : découverte des textareas, montage ;
+│                               # config lue dans window.spipConfig.tiptap_spip (SPIP 4 et 5)
 ├── editor/
-│   ├── createEditor.js         # assemble extensions + options
+│   ├── createEditor.js         # assemble extensions + options, refuse un contenu invalide
+│   ├── content.js              # toEditorJSON : parse, contrôle par le schéma, empreintes recalculées
 │   ├── TextareaBridge.js       # synchronisation textarea ⇄ éditeur (cf. §4)
-│   └── extensions.js           # liste des extensions cœur
+│   └── extensions.js           # schéma : extensions cœur déclarées une à une
 ├── spip/                       # *** cœur indépendant de Tiptap et du DOM ***
 │   ├── parser/                 # SPIP → JSON (cf. 04)
 │   │   ├── protect.js          # échappements et blocs protégés
@@ -111,9 +114,13 @@ JSON et inversement. Il est donc testable en Node pur (Vitest) et réutilisable 
 
 ### Dépendances Tiptap 3
 
-- `@tiptap/core`, `@tiptap/pm`, `@tiptap/starter-kit` (configuré, cf. [03](03-schema-json.md) §2),
-- `@tiptap/extension-table` (`TableKit`), `@tiptap/extension-subscript`, `@tiptap/extension-superscript`,
-- `@tiptap/extensions` (`Placeholder`, `CharacterCount`, `Dropcursor`, `Gapcursor`, `TrailingNode`, `UndoRedo`),
+- `@tiptap/core`, `@tiptap/pm`, et les extensions **déclarées une à une** (`document`, `paragraph`, `text`,
+  `heading`, `bold`, `italic`, `strike`, `code`, `code-block`, `blockquote`, `list`, `horizontal-rule`,
+  `hard-break`), pas de `@tiptap/starter-kit` : les marks doivent être déclarées dans l'ordre canonique du
+  parseur (cf. [03](03-schema-json.md) §2),
+- `@tiptap/extension-table`, `@tiptap/extension-subscript`, `@tiptap/extension-superscript`,
+- `@tiptap/extensions` (`Dropcursor`, `Gapcursor`, `UndoRedo` ; `Placeholder`, `CharacterCount` au lot L5 ;
+  **pas** de `TrailingNode`, qui ajoute un paragraphe vide en fin de document et modifie donc la source),
 - `@tiptap/extension-bubble-menu` (barre contextuelle sur sélection, optionnelle).
 - **Pas** de `@tiptap/markdown`, **pas** de `@tiptap/extension-typography` (la typographie française est
   faite par SPIP au rendu ; la faire dans l'éditeur modifierait la source).
@@ -124,10 +131,10 @@ Versions épinglées exactement dans `package.json`, lockfile versionné.
 
 | Événement | Action |
 |-----------|--------|
-| Montage | `parse(textarea.value)` → `editor.commands.setContent(json, { emitUpdate: false })` ; mémoriser la source et la carte des blocs (sérialisation conservatrice) |
-| `editor.on('update')` | Sérialisation **débouncée** (150 ms) → `textarea.value` ; flush immédiat sur `submit`, `blur`, bascule de mode, `beforeunload` |
-| Saisie dans le textarea (mode source) | Re-parse débouncé (300 ms) **uniquement quand le mode source est visible** ; à la rebascule en WYSIWYG, `setContent` une seule fois |
-| Garde anti-boucle | Un drapeau `syncing` empêche qu'une mise à jour issue du textarea régénère le textarea |
+| Montage | `createEditor()` avec `toEditorJSON(textarea.value)` : le JSON du parseur passe par le schéma (`nodeFromJSON` puis `check()`, exception si invalide : l'éditeur n'est alors pas monté et le textarea reste en saisie directe), puis les empreintes `spipHash` sont recalculées sur la forme que `getJSON()` renverra (attributs par défaut compris) |
+| `editor.on('update')` | Sérialisation **débouncée** (150 ms) → `textarea.value`, écrite seulement si elle diffère ; flush immédiat sur `submit`, `blur` de l'éditeur, bascule de mode, `beforeunload` |
+| Saisie dans le textarea (mode source) | Pas de re-parse pendant la saisie ; au retour en visuel, rechargement **une seule fois** s'il y a eu saisie (`setContent` sans émettre de mise à jour, donc sans réécrire le textarea). Si la source n'est pas représentable, on reste en mode source |
+| Garde anti-boucle | Les événements `input` émis par l'éditeur lui-même ne marquent pas la source comme modifiée |
 | Événements | Le textarea reçoit des événements `input`/`change` synthétiques pour que les scripts SPIP (alerte de modification non enregistrée, compteurs) restent informés |
 
 Différence voulue avec markdown_editor : pas de `setContent` à chaque frappe dans le textarea, ce qui
@@ -244,13 +251,19 @@ l'espace privé comme dans le site public. On distingue trois couches :
 
 ### Lancement générique
 
-- Textareas équipés : classes du porte-plume (`inserer_barre_edition`, `inserer_barre_forum`, et
-  `porte_plume_partout` si la configuration l'active) ou attribut `data-tts-toolbar="<barre>"` ; jamais un
-  textarea déjà pris par markdown_editor (classes `inserer_md_barre*`, `data-md-editor-toolbar`). Un
-  marqueur `data-tts-mounted` rend le montage idempotent.
+- Textareas équipés : ceux du porte-plume (classes `inserer_barre_edition`, `inserer_barre_forum`, et
+  `porte_plume_partout` si la configuration l'active ; champ `.formulaire_spip textarea[name=texte]`, que le
+  porte-plume équipe par son option `inserer_auto_name_texte`, cas de `editer_article` dont le textarea n'a
+  pas de classe) ou attribut `data-tts-toolbar="<barre>"` ; jamais un textarea déjà pris par markdown_editor
+  (classes `inserer_md_barre*`, `data-md-editor-toolbar`). Un marqueur `data-tts-mounted` (`oui` ou
+  `erreur`) rend le montage idempotent.
+- Le porte-plume est écarté du textarea : classes `no_barre no_previsualisation` posées avant son lancement
+  (il démarre sur `window.load`, après le module de l'éditeur), `markItUpRemove()` s'il est déjà monté.
 - Plusieurs éditeurs par page, indépendants (chacun son instance, son pont textarea, ses services).
 - Relance à chaque `onAjaxLoad` : couvre les rechargements AJAX de SPIP **et Crayons**, qui appelle
-  `jQuery.spip.triggerAjaxLoad()` à l'ouverture d'un crayon (`crayons/js/crayons.js`).
+  `jQuery.spip.triggerAjaxLoad()` à l'ouverture d'un crayon (`crayons/js/crayons.js`). La racine rechargée
+  arrive dans `this` (pas en argument), parfois sous forme d'objet jQuery :
+  `onAjaxLoad(function () { tiptap_spip_init(this); })`.
 - Cycle de vie : sérialisation forcée sur l'événement `submit` du formulaire hôte (Crayons déclenche bien un
   `submit`) ; quand le textarea quitte le DOM (crayon fermé, bloc AJAX rechargé), l'éditeur est détruit
   (`editor.destroy()`, observateurs retirés) pour ne pas fuir de mémoire.
