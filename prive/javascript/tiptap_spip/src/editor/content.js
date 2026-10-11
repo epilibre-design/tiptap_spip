@@ -2,7 +2,7 @@ import { canon } from '../spip/json.js';
 import { parse } from '../spip/parse.js';
 
 /**
- * Source SPIP → JSON prêt pour editor.commands.setContent().
+ * Document JSON → forme que l'éditeur renverra dans getJSON(), empreintes comprises.
  *
  * Le JSON passe par le schéma (nodeFromJSON puis check(), qui lève une exception si le contenu
  * viole le schéma), puis les empreintes spipHash sont recalculées sur la forme que l'éditeur
@@ -10,18 +10,27 @@ import { parse } from '../spip/parse.js';
  * le schéma ajoute un attribut par défaut ne serait plus reconnu par la sérialisation
  * conservatrice.
  *
- * @param {string} source
+ * @param {object} json  document JSON (parse(), ou contenu d'une note)
  * @param {import('@tiptap/pm/model').Schema} schema
  * @returns {object} document JSON
  */
-export function toEditorJSON(source, schema) {
-	const doc = schema.nodeFromJSON(parse(source));
+export function schemaJSON(json, schema) {
+	const doc = schema.nodeFromJSON(json);
 	doc.check();
-	const json = doc.toJSON();
-	const blocks = json.content ?? [];
+	const out = doc.toJSON();
+	const blocks = out.content ?? [];
 	blocks.forEach((block, i) => {
 		const group = block.attrs?.spipGroup;
 		if (group) block.attrs.spipHash = canon(blocks.slice(i, i + group));
 	});
-	return json;
+	return out;
 }
+
+/**
+ * Source SPIP → JSON prêt pour editor.commands.setContent().
+ *
+ * @param {string} source
+ * @param {import('@tiptap/pm/model').Schema} schema
+ * @returns {object} document JSON
+ */
+export const toEditorJSON = (source, schema) => schemaJSON(parse(source), schema);

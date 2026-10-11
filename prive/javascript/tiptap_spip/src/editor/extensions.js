@@ -1,4 +1,4 @@
-import { Extension, Mark, Node } from '@tiptap/core';
+import { Extension, InputRule, Mark, Node } from '@tiptap/core';
 import Blockquote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
 import Code from '@tiptap/extension-code';
@@ -16,9 +16,10 @@ import Superscript from '@tiptap/extension-superscript';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Text from '@tiptap/extension-text';
 import { Dropcursor, Gapcursor, UndoRedo } from '@tiptap/extensions';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { linkAutoView, modelView } from '../nodeviews/views.js';
+import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
 
 /**
  * Schéma de l'éditeur (spec 03) : seulement ce que la syntaxe SPIP sait exprimer.
@@ -208,6 +209,19 @@ const SpipGlossary = Mark.create({
 	}),
 	parseHTML: () => [{ tag: 'span[data-tts-glossary]' }],
 	renderHTML: ({ HTMLAttributes }) => ['span', { ...HTMLAttributes, class: 'tts-glossary' }, 0],
+	// [?terme…] tapé : le terme marqué, si le raccourci se réécrit à l'identique (sinon le texte reste,
+	// comme le parseur le garde brut)
+	addInputRules() {
+		return [new InputRule({
+			find: /\[\?[^\][<>]+\]$/,
+			handler: ({ state, range, match }) => {
+				const gloss = parseGlossary(match[0]);
+				if (!gloss || serializeGlossary(gloss.term, gloss.attrs) !== match[0]) return null;
+				const marks = [...state.storedMarks ?? state.doc.resolve(range.from).marks(), this.type.create(gloss.attrs)];
+				state.tr.replaceWith(range.from, range.to, state.schema.text(gloss.term, marks));
+			},
+		})];
+	},
 });
 
 /** Abréviation [ABBR|explication{lang}]. */
@@ -313,6 +327,7 @@ const SpipNote = Node.create({
 	inline: true,
 	atom: true,
 	selectable: true,
+	addOptions: () => ({ ui: null }),
 	addAttributes: () => ({
 		// null : numérotée automatiquement ; '' : sans appel
 		name: {
@@ -337,6 +352,34 @@ const SpipNote = Node.create({
 	// avant la mark exposant, qui lit aussi <sup>
 	parseHTML: () => [{ tag: 'sup[data-tts-note]', priority: 60 }],
 	renderHTML: ({ node, HTMLAttributes }) => ['sup', { ...HTMLAttributes, class: 'tts-note', title: apercu(node.attrs.content) }],
+	addCommands() {
+		const selectionnee = (state) => {
+			const { selection } = state;
+			return selection instanceof NodeSelection && selection.node.type.name === 'spipNote' ? selection : null;
+		};
+		return {
+			/** Note au curseur ; sans contenu, ouvre le popover de note (spec 05 §1). */
+			insertSpipNote: ({ name = null, content = null } = {}) => ({ commands }) => {
+				if (content?.length) return commands.insertContent({ type: this.name, attrs: { name, content } });
+				if (!this.options.ui?.editNote) return false;
+				this.options.ui.editNote(null);
+				return true;
+			},
+			/** Nom et contenu de la note sélectionnée ; ses blancs d'origine (spipLead, spipTrail) restent. */
+			updateSpipNote: ({ name = null, content }) => ({ state, tr, dispatch }) => {
+				const note = selectionnee(state);
+				if (!note) return false;
+				if (dispatch) tr.setNodeMarkup(note.from, undefined, { ...note.node.attrs, name, content });
+				return true;
+			},
+			removeSpipNote: () => ({ state, tr, dispatch }) => {
+				const note = selectionnee(state);
+				if (!note) return false;
+				if (dispatch) tr.delete(note.from, note.to);
+				return true;
+			},
+		};
+	},
 });
 
 /** Numéros des appels de note, recalculés à chaque changement du document (décorations). */
@@ -376,12 +419,28 @@ const SpipUi = Extension.create({
 	name: 'spipUi',
 	addOptions: () => ({ ui: null }),
 	addKeyboardShortcuts() {
-		return {
-			'Mod-k': () => {
-				this.options.ui?.openLink?.();
-				return true;
-			},
+		const ouvrir = (action) => () => {
+			if (!this.options.ui?.[action]) return false;
+			this.options.ui[action](null);
+			return true;
 		};
+		return {
+			'Mod-k': ouvrir('openLink'),
+			'Mod-Alt-n': ouvrir('editNote'),
+			'Mod-Alt-g': ouvrir('openGlossary'),
+		};
+	},
+	// [[ tapé : ouvre une note vide (spec 05 §1), sans laisser les crochets
+	addInputRules() {
+		return [new InputRule({
+			find: /\[\[$/,
+			handler: ({ state, range }) => {
+				if (!this.options.ui?.editNote) return null;
+				state.tr.delete(range.from, range.to);
+				// le popover s'ouvre une fois la transaction appliquée
+				queueMicrotask(() => this.options.ui.editNote(null));
+			},
+		})];
 	},
 });
 
@@ -421,7 +480,7 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		SpipRawInline,
 		withView(SpipLinkAuto, linkAutoView, Boolean(ui?.titles)),
 		SpipAnchor,
-		SpipNote,
+		SpipNote.configure({ ui }),
 		SpipNoteNumbers,
 		withView(SpipModel, modelView, Boolean(ui?.previews)),
 		withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
@@ -441,4 +500,19 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		UndoRedo,
 		SpipUi.configure({ ui }),
 	];
+}
+
+/** Blocs qu'une note peut contenir (spec 03 §5, src/spip/notes.js). */
+const NoteDocument = SpipDocument.extend({ content: '(paragraph | bulletList | orderedList | spipModelBlock)+' });
+
+/**
+ * Schéma du sous-éditeur d'une note (spec 05 §1) : celui de l'éditeur, sans notes, avec seulement
+ * les blocs permis dans une note.
+ *
+ * @param {{ ui?: object | null }} options  ui : interface du sous-éditeur (lien, glossaire…)
+ */
+export function noteExtensions({ ui = null } = {}) {
+	return coreExtensions({ ui })
+		.filter((e) => !['spipNote', 'spipNoteNumbers'].includes(e.name))
+		.map((e) => (e.name === 'doc' ? NoteDocument : e));
 }
