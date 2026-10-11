@@ -56,9 +56,19 @@ Un écart à l'invariant 3 n'est accepté que s'il est **enregistré** dans `tes
   accepte_par: "<mainteneur>"  # relecture de la PR qui ajoute l'entrée
 ```
 
-- **Types tolérés** (liste fermée) : `espacement` (espaces ou espaces insécables ajoutés par un séparateur de
-  sécurité), `balisage-equivalent` (même texte et même structure, balises équivalentes : `<i>`/`<em>` par
-  exemple).
+- **Types tolérés** (liste fermée) :
+  - `espacement` : espaces ou espaces insécables ajoutés par un séparateur de sécurité ;
+  - `balisage-equivalent` : même texte, même structure de blocs, balisage inline équivalent. Deux formes :
+    - substitution de balises équivalentes (`<i>`/`<em>` par exemple) ;
+    - fusion inline : plusieurs éléments inline accolés de même balise et de mêmes attributs, sans rien
+      entre eux, deviennent un seul élément contenant leurs textes concaténés dans l'ordre
+      (`<code>a</code><code>b</code>` → `<code>ab</code>`). Le nombre de balises change, pas le texte. C'est
+      la conséquence du modèle de document : le JSON, comme Tiptap, fusionne les textes voisins de mêmes
+      marks.
+  - Limites de la fusion inline : elle ne traverse ni texte, ni espace, ni autre balise entre les éléments ;
+    elle ne change ni l'ordre ni le contenu des textes ; elle ne touche ni un bloc, ni un lien, ni une note,
+    ni un modèle. Une fusion d'un nombre différent d'éléments (quatre codes accolés au lieu de deux) produit
+    un autre hunk : c'est un autre écart, qui demande sa propre entrée.
 - **Jamais tolérés** : texte perdu ou ajouté, lien/note/modèle/glossaire perdu ou modifié, changement de
   structure (niveau de titre, liste, tableau, paragraphes).
 - **Non-régression** : le test compare le diff obtenu au diff figé ; un diff différent fait échouer la CI,
@@ -68,7 +78,9 @@ Un écart à l'invariant 3 n'est accepté que s'il est **enregistré** dans `tes
   `@@`. Il s'écrit avec `npm run equivalence -- --figer` (entrées déjà enregistrées seulement).
 - **Corpus non versionné** (corpus réel, `npm run equivalence -- <dossier>`) : un écart y est « couvert »
   quand tous ses hunks figurent dans le diff figé d'une même entrée, c'est-à-dire quand le cas a été réduit
-  à un extrait du corpus versionné et enregistré ; tout autre écart échoue.
+  à un extrait du corpus versionné et enregistré ; tout autre écart échoue. Un hunk figé peut apparaître
+  plusieurs fois dans un même fichier : chaque occurrence reproduit le même écart connu (deux paires de codes
+  accolés séparées par du texte donnent deux hunks identiques, tous deux couverts).
 - **Plafond** : au plus 1 % des fichiers examinés en écart accepté ou couvert, arrondi à l'entier
   supérieur (un écart toléré pour un corpus de moins de 100 fichiers).
 - Ajout d'une entrée : uniquement par PR, approuvée par un mainteneur autre que l'auteur.

@@ -73,6 +73,18 @@ describe('judge', () => {
 		expect(judge({ fichier: null, diff: '- x\n+ y\n@@\n- w\n', entries: [entry], frozen }).statut).toBe('ecart');
 	});
 
+	it('couvre un hunk figé répété : chaque occurrence reproduit le même écart connu', () => {
+		expect(judge({ fichier: null, diff: '- x\n+ y\n@@\n- x\n+ y\n', entries: [entry], frozen })).toEqual({ statut: 'couvert', entree: entry });
+	});
+
+	it('produit deux hunks identiques pour deux occurrences du même écart dans un fichier', () => {
+		const a = `<p>${CODE}&lt;/code</code>${CODE}&gt;</code>, puis ${CODE}&lt;/code</code>${CODE}&gt;</code></p>`;
+		const b = `<p>${CODE}&lt;/code&gt;</code>, puis ${CODE}&lt;/code&gt;</code></p>`;
+		const [h1, h2, ...reste] = hunks(diffHtml(a, b));
+		expect(reste).toEqual([]);
+		expect(h1).toBe(h2);
+	});
+
 	it('ne couvre jamais un fichier du corpus versionné sans entrée', () => {
 		expect(judge({ fichier: 'b.spip', diff: '- x\n+ y\n', entries: [entry], frozen }).statut).toBe('ecart');
 		expect(judge({ fichier: 'b.spip', diff: '', entries: [entry], frozen }).statut).toBe('equivalent');
