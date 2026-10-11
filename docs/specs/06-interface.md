@@ -96,6 +96,11 @@ Les nœuds bruts légitimes (HTML inconnu volontaire) ne sont pas signalés comm
 | Bascule source | `Mod-Shift-E` |
 | Plein écran | `F11` dans l'éditeur, `Échap` pour sortir |
 
+Lot L2.3 : barre minimale (Lien, Modèle, Source ; Lien et Modèle désactivés en mode source) et `Mod-K`.
+ProseMirror lit la sélection du navigateur sur `selectionchange`, asynchrone dans Chromium : une commande
+clavier qui suit de près `Maj+flèches` verrait l'ancienne sélection. Le popover de lien force donc cette
+lecture avant d'agir.
+
 Input rules (frappe directe des raccourcis SPIP, pour les habitués) : `{{x}}`, `{x}`, `{{{` en début de
 bloc, `-* ` / `-# ` en début de ligne, `----`, `[[`, `[?x]`, `<doc12>` etc.
 

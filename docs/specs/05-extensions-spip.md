@@ -90,11 +90,14 @@ avec les évolutions suivantes.
 - NodeView : opération `previsu_modele` du formulaire CVT de l'éditeur ([02](02-architecture.md) §5) ; le
   contexte de l'objet édité (`objet`, `id_objet`, `champ`) vient des arguments signés du formulaire, pour
   que les modèles dépendant de l'objet se calculent bien sans que le JS puisse le modifier.
-- Cache JS par clé (source + contexte), invalidé quand l'attribut change ; requêtes regroupées au chargement
-  (au plus N=4 en parallèle) pour les textes à nombreux documents.
-- HTML inséré dans un conteneur `contenteditable=false`, éléments interactifs neutralisés
-  (repris de markdown_editor), scripts jamais exécutés. Pendant le chargement : squelette avec le
-  raccourci ; en erreur : chip `<doc12|center>` en code (comportement de repli).
+- Cache JS par source du raccourci (`ModelPreviews`, `src/services/cache.js`), un échec n'étant pas gardé ;
+  le contexte est celui, fixe, du formulaire de services. Les appels passent par la file des services, qui
+  les sérialise (lot L2.2) : pas de limite de parallélisme propre.
+- HTML inséré dans un conteneur `contenteditable=false` et rendu inerte côté navigateur, en plus du
+  `safehtml()` du serveur (`src/ui/sanitize.js`) : ni script, ni gestionnaire `on*`, ni URL `javascript:`,
+  éléments interactifs hors du clavier et désactivés, iframes en bac à sable. Pendant le chargement et en
+  cas d'erreur ou de rendu vide : le raccourci en code (comportement de repli). Sans services : affichage
+  compact, sans NodeView.
 - Option « affichage compact » (config / bouton) : chip avec icône du modèle (`icone_barre` du YAML)
   et raccourci, sans prévisualisation — utile en plein écran ou sur connexions lentes.
 
@@ -104,7 +107,10 @@ avec les évolutions suivantes.
   modalbox, prérempli avec `id` et `params` ; au retour, `updateSpipModel`. **Résoudre la todo de
   markdown_editor « Plein écran + modèles »** : la modalbox doit s'ouvrir au-dessus de l'éditeur plein
   écran (z-index et piège de focus).
-- Sans YAML : édition du raccourci brut dans un petit champ texte (validé par la regex).
+- Sans YAML : édition du raccourci brut dans un petit champ texte, validé par le parseur (`parseModel`) —
+  **réalisé au lot L2.3** : bouton « Modifier » du NodeView et bouton « Modèle » de la barre ; insertion en
+  bloc (`spipModelBlock`) dans un paragraphe vide, en ligne sinon. YAML (`#FORMULAIRE_INSERER_MODELES`,
+  question Q3), sélecteur de documents et règle de saisie : lots suivants.
 - Insertion : bouton « Modèles » de la barre → liste des modèles disponibles par catégorie
   (`inserer_modeles_lister_formulaires_modeles`), puis formulaire. Raccourcis spécifiques
   « Image / Document » (`doc`, `img`, `emb`) avec sélecteur de document de l'objet.
@@ -123,6 +129,11 @@ avec les évolutions suivantes.
   du texte (SPIP fait lui-même l'autolien au rendu) ; un lien se crée par le popover (L2.3).
 - Lot L2.1 : liens, liens sans texte, ancres et modèles sont reconnus, sérialisés et affichés en compact ;
   titres, recherche, popover et prévisualisation viennent des services (L2.2) et de l'interface (L2.3).
+- Lot L2.3 : titres des liens sans texte demandés par lots de 50 (`LinkTitles`) ; popover (`Ctrl+K`,
+  bouton « Lien ») : sélection vide → lien sans texte, texte sélectionné → nouveau lien, curseur dans un
+  lien → modification du lien entier ; recherche à partir de 2 caractères (250 ms), sauf pour une cible
+  déjà au format `art12`, une URL ou `#ancre` ; « Ouvrir » utilise l'URL résolue par `titre_lien`.
+  Proposition des ancres du document : lots suivants.
 - Cibles reconnues : `art12`, `article12`, `rub3`, `br5`, `doc7`, `aut2`, `mot4`, `site8`, `12` (article),
   types d'objets déclarés (`_RACCOURCI_URL`), `#ancre`, `art12#ancre`, URL absolues, `mailto:`.
 - **Liens sans texte** `[->art12]` : nœud `spipLinkAuto` ([03](03-schema-json.md) §3), affiché avec le titre
