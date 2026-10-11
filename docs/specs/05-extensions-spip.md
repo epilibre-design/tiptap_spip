@@ -118,9 +118,11 @@ avec les évolutions suivantes.
 
 ## 4. Liens — `spipLink`
 
-- Extension de `@tiptap/extension-link` 3 avec attributs `href` (cible SPIP brute), `bulle`, `hreflang`,
-  `newWindow`. `autolink` gardé (URL tapée → lien) mais sérialisé en `[->https://…]` seulement si
-  l'utilisateur l'a validé ; sinon l'URL reste du texte (SPIP fait lui-même l'autolien au rendu).
+- Mark propre (pas `@tiptap/extension-link`, dont la validation d'URL refuse les cibles SPIP) avec
+  attributs `href` (cible SPIP brute), `bulle`, `hreflang`, `newWindow`. Pas d'autolien : une URL tapée reste
+  du texte (SPIP fait lui-même l'autolien au rendu) ; un lien se crée par le popover (L2.3).
+- Lot L2.1 : liens, liens sans texte, ancres et modèles sont reconnus, sérialisés et affichés en compact ;
+  titres, recherche, popover et prévisualisation viennent des services (L2.2) et de l'interface (L2.3).
 - Cibles reconnues : `art12`, `article12`, `rub3`, `br5`, `doc7`, `aut2`, `mot4`, `site8`, `12` (article),
   types d'objets déclarés (`_RACCOURCI_URL`), `#ancre`, `art12#ancre`, URL absolues, `mailto:`.
 - **Liens sans texte** `[->art12]` : nœud `spipLinkAuto` ([03](03-schema-json.md) §3), affiché avec le titre

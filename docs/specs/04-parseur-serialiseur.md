@@ -104,11 +104,12 @@ Règles générales :
 | `bold` / `italic` | `{{…}}` / `{…}` ; bold+italic → `{{{…}}}` **interdit** (confusion avec intertitre) : émettre `{{ {…} }}` |
 | `code` | `` `…` `` (comme le porte-plume ; ``` `` ``` si le code contient un backtick) ; `<code>…</code>` si le code a des blancs aux bords, contient `\\`, `` \` `` ou finit par `\` (non représentable entre backticks) |
 | `codeBlock` | ```` ```langage\n…``` ```` (délimiteur allongé si le code contient ```` ``` ````) ; `openTag` présent (`<code class="…">` d'origine) ou code non représentable entre backticks → `<code…>\n…\n</code>` ; `<code>` et ```` ``` ```` ont le même rendu, la forme n'est donc pas mémorisée |
-| `spipLink` | `[texte\|bulle{lang}->cible]` ; `newWindow` → `->>` |
+| `spipLink` | `[texte\|bulle{lang}->cible]` ; `newWindow` → `->>` ; texte échappé comme ci-dessous |
 | `spipLinkAuto` | `[->cible]`, `[\|bulle{lang}->cible]` |
 | `spipNote` | `[[<nom>contenu]]` ; collée au mot précédent (SPIP supprime l'espace avant l'appel) |
 | `spipGlossary` | `[?terme#glossaireN\|bulle{lang}]` |
-| `spipModel` | `source` si inchangé, sinon `<name id\|p1\|k=v>` reconstruit |
+| `spipModel`, `spipModelBlock` | `source` si nom, id et paramètres inchangés, sinon `<nameid\|p1\|k=v>` reconstruit |
+| `spipAnchor` | `[#nom<-]` |
 | `spipRaw*` | `source` tel quel |
 
 ### Échappements
@@ -123,7 +124,27 @@ Le sérialiseur échappe dans le **texte** ce qui serait interprété comme racc
   protègent pas. `[&#63;` plutôt que `&#91;?` évite l'espace insécable que la typographie française ajoute
   avant `?` ;
 - `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `->`, `<-` ou `|` avant le `]` → `&#91;` ;
-- en début de ligne : `-`, `|`, `_` suivi d'un espace ou d'un `_` → `\-`, `\|`, `\_`.
+- en début de ligne : `-`, `|`, `_` suivi d'un espace ou d'un `_` → `\-`, `\|`, `\_` ;
+- dans le **texte d'un lien**, le collecteur de liens passe avant les échappements (`\|` n'y protège rien) :
+  `[` → `&#91;`, `]` → `&#93;`, `|` → `&#124;`, `->` → `-&gt;` ; `\{` y fonctionne. Le parseur décode
+  `&#124;` et `&#93;` dans le texte d'un lien seulement.
+
+### Texte d'un lien
+
+Découpé comme `traiter_raccourci_lien_atts()` (`plugins-dist/textwheel/inc/lien.php`) : `texte|bulle{lang}`.
+`{xx}` final n'est une langue que si `xx` est un code de `$GLOBALS['codes_langues']` (liste recopiée dans
+`regex.js`) ; sinon il reste dans la bulle, ou dans le texte (où il devient un italique). `{}` (langue de
+l'objet, qui dépend du contexte) n'est pas représentable : le lien reste brut. Le texte est analysé
+récursivement (marks, modèles) et reçoit la mark `spipLink`.
+
+### Imbrication des marks
+
+Les marks d'un nœud n'indiquent pas leur imbrication dans la source. Le sérialiseur garde ouvertes les marks
+qui continuent, puis ouvre les autres de la plus étendue (nombre de nœuds suivants qui la portent) à la
+moins étendue : `{a {{b}} c}` reste `{a <strong>b</strong> c}`, `[voir {{la}} doc->x]` reste un seul lien.
+À étendue égale, l'ordre canonique départage (`spipLink`, `bold`, `italic`, `strike`, `superscript`,
+`subscript`, `code`) : `{{[a->b]}}` est réécrit `[{{a}}->b]` (rendu `<a><strong>` au lieu de
+`<strong><a>`, même affichage) ; seul un bloc modifié est concerné.
 
 On n'échappe **que si nécessaire** (minimiser le bruit dans la source). Ces règles sont vérifiées contre
 `propre()` (texte saisi dans l'éditeur → rendu littéral).

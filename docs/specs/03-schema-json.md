@@ -79,14 +79,14 @@ Bootstrap : `text-left`, `text-center`, `text-right`, `text-justify`.
 
 | Type | Nature | Attributs | Source SPIP |
 |------|--------|-----------|-------------|
-| `spipLink` | mark | `href` (cible brute : `art12`, `https://…`, `#ancre`, `mailto:`), `bulle`, `hreflang`, `newWindow` (`->>`) | `[texte\|bulle{fr}->art12]` (texte non vide) |
+| `spipLink` | mark (propre, pas `@tiptap/extension-link`, dont la validation d'URL refuse `art12`) ; `inclusive: false` ; première dans l'ordre des marks | `href` (cible brute : `art12`, `https://…`, `#ancre`, `mailto:`), `bulle`, `hreflang`, `newWindow` (`->>`) | `[texte\|bulle{fr}->art12]` (texte non vide une fois rogné, comme le titre calculé par SPIP) |
 | `spipLinkAuto` | nœud inline atome | mêmes attributs que `spipLink` | `[->art12]`, `[\|bulle->art12]` : lien sans texte, titre calculé par SPIP |
 | `spipGlossary` | mark | `glossaire` (null = défaut), `numero`, `bulle`, `hreflang` | `[?terme#glossaireN\|bulle{lang}]` |
 | `spipAbbr` | mark | `title`, `lang` | `[ABBR\|explication{fr}]` |
 | `spipInlineHtml` | mark | `tag` (`small`, `sc`, `span`, `ins`, `q`…), `attrs` (chaîne brute) | `<small>…</small>` et HTML inline toléré |
 | `spipNote` | nœud inline atome | `name` (null = auto, `""` = sans appel), `content` (JSON, cf. §5) | `[[…]]`, `[[<nom>…]]`, `[[<>…]]` |
 | `spipModel` | nœud inline atome | `model` (cf. §4) | `<doc12\|left>` dans une phrase |
-| `spipAnchor` | nœud inline atome | `name` | `[#ancre<-]` |
+| `spipAnchor` | nœud inline atome | `name` | `[#ancre<-]` ; `[ancre<-]` (même rendu) est réécrit `[#ancre<-]` |
 | `spipMultiInline` | nœud inline | — | contenu `spipLangInline+` → `<multi>[fr]a[en]b</multi>` |
 | `spipLangInline` | nœud inline | `lang` | `inline*` |
 | `spipIdiome` | nœud inline atome | `module`, `cle` | `<:module:cle:>` |
@@ -101,6 +101,8 @@ Remarques :
   marqué `spipLink` ; vider le texte d'un lien le reconvertit en `spipLinkAuto`.
 - `spipGlossary` ne s'applique qu'à du texte sans autre mark (la regex SPIP interdit `[]<>` dans le terme).
 - Un `spipModel` peut porter la mark `spipLink` (cas `[<img3>->art12]`).
+- Jusqu'au lot L2.3, `spipLinkAuto` affiche sa cible (`→ art12`), `spipModel` et `spipModelBlock` leur
+  raccourci : la prévisualisation et les titres viennent des services serveur.
 - Le texte des nœuds `code: true` n'est pas interprété : aucune règle inline n'y est appliquée.
 
 ## 4. Attribut `model` (modèles)

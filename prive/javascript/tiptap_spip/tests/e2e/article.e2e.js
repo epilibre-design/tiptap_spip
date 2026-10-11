@@ -41,7 +41,7 @@ const enregistrer = async (page) => {
 
 test.skip(!process.env.TTS_SITE || !process.env.TTS_URL, 'TTS_SITE et TTS_URL requis');
 
-for (const fichier of ['base.spip', 'melanges.spip', 'blancs.spip']) {
+for (const fichier of ['base.spip', 'melanges.spip', 'blancs.spip', 'liens.spip', 'modeles.spip']) {
 	test(`${fichier} : enregistré sans modification, le texte est inchangé`, async ({ page }) => {
 		const source = readFileSync(`${repo}tests/corpus/${fichier}`, 'utf8');
 		const id = await editer(page, source);
