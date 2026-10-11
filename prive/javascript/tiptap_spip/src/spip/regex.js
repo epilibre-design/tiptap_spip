@@ -18,7 +18,7 @@ export const RE_NOTE = /\[\[(\s*(<([^>'"]*)>)?(.*?))\]\]/gs;
 export const RE_GLOSSAIRE = /\[\?+\s*([^\][<>]+)\]/g;
 export const RE_ANCRE = /\[#?([^\][]*)<-\]/g;
 
-// plugins-dist/textwheel/wheels/spip/spip.yaml — règle abbr
+// plugins-dist/textwheel/wheels/spip/spip.json — règle abbr
 export const RE_ABBR = /\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]/g;
 
 // ecrire/src/Texte/Collecteur/Multis.php
@@ -27,7 +27,7 @@ export const RE_MULTI = /<multi>(.*?)<\/multi>/gs;
 // ecrire/src/Texte/Collecteur/Idiomes.php
 export const RE_IDIOME = /<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>/gi;
 
-// ecrire/inc/texte_mini.php — _PROTEGE_BLOCS, plus <math> (règle math de spip.yaml)
+// ecrire/inc/texte_mini.php — _PROTEGE_BLOCS, plus <math> (règle math de wheels/spip/spip.json)
 export const RE_PROTEGE_BLOCS = /<(html|pre|code|cadre|frame|script|style|math)(\b[^>]*)?>(.*?)<\/\1>/gis;
 
 // plugins-dist/textwheel/wheels/spip/backticks.php — replace_backticks(), dans cet ordre
@@ -37,10 +37,10 @@ export const RE_BACKTICKS = [
 	/(?<!`)(`)([^`]|[^`].*?[^`])(`)(?=$|[^`])/gms,
 ];
 
-// backticks.yaml bt-echappe-backticks : traité avant les backticks
+// wheels/spip/backticks.json bt-echappe-backticks : traité avant les backticks
 export const RE_ECHAPPEMENT_CODE = /\\([\\`])/g;
 
-// spip.yaml echappe-raccourcis
+// wheels/spip/spip.json echappe-raccourcis
 export const RE_ECHAPPEMENT = /\\([{}_\-[\]|<>*#+~])/g;
 
 // ecrire/inc/lang_liste.php — clés de $GLOBALS['codes_langues'] : les codes que traduire_nom_langue()
