@@ -19,6 +19,34 @@ describe('protect', () => {
 			]);
 	});
 
+	it('ordre du core : les liens passent avant les notes', () => {
+		expect(kinds('[[note->art1]]')).toEqual([['link', '[note->art1]']]);
+	});
+
+	it('\\[ ne protège ni une note, ni un glossaire, ni une ancre : le \\ reste brut', () => {
+		expect(kinds('x\\[[n]]')).toEqual([['raw', '\\'], ['note', '[[n]]']]);
+		expect(kinds('x\\[?SPIP]')).toEqual([['raw', '\\'], ['glossary', '[?SPIP]']]);
+		expect(kinds('\\[#a<-]')).toEqual([['raw', '\\'], ['anchor', '[#a<-]']]);
+		expect(protect('\\[#a<-]').regions[1].data.name).toBe('a');
+	});
+
+	it('\\] dans une note : la note s\'arrête au premier ]] du texte', () => {
+		expect(kinds('[[a\\]]')).toEqual([['note', '[[a\\]]']]);
+		expect(kinds('[[a\\]b]]')).toEqual([['note', '[[a\\]b]]']]);
+	});
+
+	it('\\[ protège un lien et une abréviation', () => {
+		expect(kinds('\\[a->b]').map(([k]) => k)).toEqual(['escape']);
+		expect(kinds('\\[A|b]').map(([k]) => k)).toEqual(['escape']);
+	});
+
+	it('une note absorbe ses liens et termes de glossaire', () => {
+		const { regions } = protect('[[voir [a->b] et [?x]]]');
+		expect(regions).toHaveLength(1);
+		expect(regions[0]).toMatchObject({ kind: 'note', start: 0, end: 23 });
+		expect(regions[0].data.absorbed.sort()).toEqual(['glossary', 'link']);
+	});
+
 	it('ne prend pas une balise HTML pour un modèle', () => {
 		expect(kinds('<span> <span|x> <doc12>')).toEqual([['model', '<span|x>'], ['model', '<doc12>']]);
 	});

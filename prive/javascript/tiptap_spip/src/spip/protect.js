@@ -64,23 +64,43 @@ export function protect(source) {
 		});
 	});
 
-	// 3. autres échappements \{ \[ …
-	scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, 'escape', { char: m[1] }));
+	// 3. autres échappements \{ \[ … (wheel echappe-raccourcis)
+	scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, 'escape', { char: m[1], raccourci: true }));
 
-	// 4. raccourcis : modèles, liens et ancres analysés (inline.js), les autres conservés tels quels
+	// Glossaire, ancres (pipeline pre_liens) et notes passent avant la wheel, donc avant ces
+	// échappements : \[ ne les protège pas. On les cherche dans le texte masqué où les échappements
+	// sont rétablis ; un échappement qui chevauche le début du raccourci laisse son \ brut (au
+	// rendu, il précède une balise et disparaît).
+	const echappements = () => regions.filter((r) => r.kind === 'escape' && r.data.raccourci);
+	const scanSansEchappements = (regex, onMatch) => {
+		let texte = masked;
+		for (const r of echappements()) texte = texte.slice(0, r.start) + source.slice(r.start, r.end) + texte.slice(r.end);
+		for (const m of [...texte.matchAll(regex)]) {
+			const start = m.index;
+			const chevauche = echappements().find((r) => r.start < start && r.end > start);
+			if (chevauche) {
+				regions = regions.filter((r) => r !== chevauche);
+				regions.push({ start: chevauche.start, end: start, kind: 'raw', data: { absorbed: [] } });
+			}
+			onMatch(m, start, start + m[0].length);
+		}
+	};
+
+	// 4. raccourcis, dans l'ordre de propre() : modèles ; glossaire et ancres (pre_liens) ; liens ;
+	//    notes (traiter_raccourcis, avant la wheel) ; abréviations (wheel) ; multi, idiomes
 	scan(RE_MODELE, (m, start, end) => {
 		// condition du core : un id ou des paramètres, sinon c'est une balise HTML
 		if (m[2] || m[3]) add(start, end, 'model', { source: m[0] });
 	});
-	scan(RE_NOTE, (m, start, end) => add(start, end, 'note', {}));
+	scanSansEchappements(RE_GLOSSAIRE, (m, start, end) => add(start, end, 'glossary', {}));
+	scanSansEchappements(RE_ANCRE, (m, start, end) => add(start, end, 'anchor', { name: source.slice(end - 3 - m[1].length, end - 3) }));
 	// texte et cible relus dans la source : le texte masqué a remplacé les modèles par FILL
 	scan(RE_LIEN, (m, start, end) => add(start, end, 'link', {
 		part: source.slice(start + 1, start + 1 + m[1].length),
 		newWindow: m[3] === '>',
 		href: source.slice(end - 1 - m[4].length, end - 1),
 	}));
-	scan(RE_ANCRE, (m, start, end) => add(start, end, 'anchor', { name: source.slice(end - 3 - m[1].length, end - 3) }));
-	scan(RE_GLOSSAIRE, (m, start, end) => add(start, end, 'glossary', {}));
+	scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, 'note', {}));
 	scan(RE_ABBR, (m, start, end) => add(start, end, 'abbr', {}));
 	scan(RE_MULTI, (m, start, end) => add(start, end, 'multi', {}));
 	scan(RE_IDIOME, (m, start, end) => add(start, end, 'idiome', {}));
