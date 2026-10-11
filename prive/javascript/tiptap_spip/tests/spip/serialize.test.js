@@ -115,7 +115,8 @@ describe('escapeText', () => {
 		['`x`', '\\`x\\`'],
 		['<b> <doc1> <:a:b:> a < b', '&lt;b> &lt;doc1> &lt;:a:b:> a < b'],
 		['&eacute; & co', '&amp;eacute; & co'],
-		['[?g] [[n]] [x->y] [a|b] [#a<-] [sic]', '[&#63;g] [&#91;n]] &#91;x->y] &#91;a|b] &#91;#a<-] [sic]'],
+		// \[ protège un lien et une abréviation (comme dans SPIP), pas une ancre : entité
+		['[?g] [[n]] [x->y] [a|b] [#a<-] [b<-] [sic]', '[&#63;g] [&#91;n]] \\[x->y] \\[a|b] &#91;#a<-] &#91;b<-] [sic]'],
 	])('%j → %j', (input, expected) => {
 		expect(escapeText(input, false)).toBe(expected);
 	});

@@ -1,0 +1,9 @@
+Le [?SPIP] est un [CMS|Content Management System{en}], voir [?SPIP#wikipedia] ou [?SPIP#mots12|Le mot-clé{fr}].
+
+En gras : {{[?Tiptap]}} et en italique {[W3C|World Wide Web Consortium]}.
+
+Bruts : [? espace], [??double], [?S{P}], [?SPIP|bulle#mots] et [{A}|b].
+
+Dans un lien : [le [?terme] et [AB|cd]->art1].
+
+Échappés : \[?pas un glossaire\] mais x\[?SPIP] en est un, \[A|b] non.

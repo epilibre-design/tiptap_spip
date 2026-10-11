@@ -1,7 +1,10 @@
+import { parseAbbr, serializeAbbr } from './abbr.js';
+import { parseGlossary, serializeGlossary } from './glossary.js';
 import { mergeText, node, raw, sortMarks, text } from './json.js';
 import { parseLinkAtts } from './links.js';
 import { parseModel } from './models.js';
 import { FILL, protect } from './protect.js';
+import { escapeText } from './serialize.js';
 
 /** Balises HTML sans attribut équivalentes à une mark (même rendu que le raccourci SPIP). */
 const MARK_TAGS = { strong: 'bold', i: 'italic', del: 'strike', sup: 'superscript', sub: 'subscript' };
@@ -49,6 +52,23 @@ function linkToken(region, src) {
 	return { t: 'link', mark: { type: 'spipLink', attrs }, children: parseInline(atts.text, masked, regions, { link: true }) };
 }
 
+/** Glossaire et abréviation : analyse, puis forme écrite par le sérialiseur à partir des attributs. */
+const MARKED = {
+	glossary: { type: 'spipGlossary', parse: (src) => { const r = parseGlossary(src); return r && { v: r.term, attrs: r.attrs }; }, write: serializeGlossary },
+	abbr: { type: 'spipAbbr', parse: (src) => { const r = parseAbbr(src); return r && { v: r.text, attrs: r.attrs }; }, write: serializeAbbr },
+};
+
+/**
+ * Région glossaire ou abréviation → texte marqué, si le raccourci se réécrit à l'identique depuis
+ * ses attributs et que son texte s'écrit tel quel (sinon brut : `[? SPIP]`, `[?S{P}]`…).
+ */
+function markedToken(region, src) {
+	const def = MARKED[region.kind];
+	const r = def.parse(src);
+	if (!r || /[\r\n]/.test(r.v) || escapeText(r.v, false) !== r.v || def.write(r.v, r.attrs) !== src) return null;
+	return { t: 'marked', mark: { type: def.type, attrs: r.attrs }, v: r.v };
+}
+
 function tokenize(source, masked, regions, lineStart, link) {
 	const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
 	const entities = link ? LINK_ENTITIES : ENTITIES;
@@ -85,6 +105,9 @@ function tokenize(source, masked, regions, lineStart, link) {
 				push({ t: 'code', v: region.data.code.trim() });
 			} else if (region.kind === 'link') {
 				push(linkToken(region, src));
+			} else if (MARKED[region.kind] && !link && markedToken(region, src)) {
+				// pas de glossaire ni d'abréviation dans le texte d'un lien
+				push(markedToken(region, src));
 			} else if (region.kind === 'anchor') {
 				push({ t: 'node', node: node('spipAnchor', { name: region.data.name }) });
 			} else if (region.kind === 'model' && parseModel(src)) {
@@ -186,6 +209,9 @@ function buildNodes(tokens) {
 				break;
 			case 'code':
 				nodes.push(text(tk.v, sortMarks([...marks, { type: 'code' }])));
+				break;
+			case 'marked':
+				nodes.push(text(tk.v, sortMarks([...marks, tk.mark])));
 				break;
 			case 'br':
 				nodes.push(withMarks({ type: 'hardBreak', attrs: { syntax: tk.syntax } }));

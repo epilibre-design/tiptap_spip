@@ -26,8 +26,8 @@ dans `src/spip/regex.js` (source unique, avec référence au fichier PHP d'origi
 | `RE_MULTI`, `RE_MULTI_LANG` | `ecrire/src/Texte/Collecteur/Multis.php` |
 | `RE_IDIOME` | `ecrire/src/Texte/Collecteur/Idiomes.php` |
 | `RE_PROTEGE_BLOCS` | `ecrire/inc/texte_mini.php` (`_PROTEGE_BLOCS`) |
-| `RE_BACKTICKS_*` | `textwheel/wheels/spip/backticks.yaml` / `backticks.php` |
-| `RE_ABBR`, listes, tableaux, intertitres | `textwheel/wheels/spip/*.yaml` |
+| `RE_BACKTICKS_*` | `textwheel/wheels/spip/backticks.json` / `backticks.php` |
+| `RE_ABBR`, listes, tableaux, intertitres | `textwheel/wheels/spip/*.json` (le format YAML des wheels est obsolète) |
 
 ## 2. Parseur : étapes
 
@@ -123,7 +123,7 @@ Le sérialiseur échappe dans le **texte** ce qui serait interprété comme racc
 - `[?` → `[&#63;`, `[[` → `[&#91;` : notes et glossaire sont traités **avant** les échappements `\[`, qui ne les
   protègent pas. `[&#63;` plutôt que `&#91;?` évite l'espace insécable que la typographie française ajoute
   avant `?` ;
-- `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `->`, `<-` ou `|` avant le `]` → `&#91;` ;
+- `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `<-` avant le `]` → `&#91;` (`\[` ne protège pas une ancre, traitée dans `pre_liens`) ; `[` suivi d'une séquence contenant `->` ou `|` → `\[` (protège un lien et une abréviation, comme dans SPIP) ;
 - en début de ligne : `-`, `|`, `_` suivi d'un espace ou d'un `_` → `\-`, `\|`, `\_` ;
 - dans le **texte d'un lien**, le collecteur de liens passe avant les échappements (`\|` n'y protège rien) :
   `[` → `&#91;`, `]` → `&#93;`, `|` → `&#124;`, `->` → `-&gt;` ; `\{` y fonctionne. Le parseur décode

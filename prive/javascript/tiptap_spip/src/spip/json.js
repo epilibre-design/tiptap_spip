@@ -3,7 +3,8 @@
  */
 
 /** Ordre canonique des marks, de la plus externe à la plus interne. */
-export const MARK_ORDER = ['spipLink', 'bold', 'italic', 'strike', 'superscript', 'subscript', 'code'];
+// glossaire et abréviation juste avant le code : leur texte ne porte aucune autre mark écrite à l'intérieur
+export const MARK_ORDER = ['spipLink', 'bold', 'italic', 'strike', 'superscript', 'subscript', 'spipAbbr', 'spipGlossary', 'code'];
 
 /** Attributs techniques de la sérialisation conservatrice : exclus de la forme canonique. */
 export const TECH_ATTRS = ['spipSrc', 'spipSep', 'spipHash', 'spipGroup', 'spipLead', 'spipTrail'];

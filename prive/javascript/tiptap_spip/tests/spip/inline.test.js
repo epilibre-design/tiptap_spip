@@ -68,7 +68,7 @@ describe('parseInline : caractères', () => {
 		expect(inl('`a {b}` et <code>c</code>')).toEqual([text('a {b}', [C]), text(' et '), text('c', [C])]);
 	});
 
-	it('notes, glossaire, multi : bruts jusqu\'aux lots L3 et L4', () => {
-		expect(inl('voir [[note]] [?terme] <multi>a</multi>')).toEqual([text('voir '), raw('[[note]]'), text(' '), raw('[?terme]'), text(' '), raw('<multi>a</multi>')]);
+	it('multi : brut jusqu\'au lot L4', () => {
+		expect(inl('voir <multi>a</multi>')).toEqual([text('voir '), raw('<multi>a</multi>')]);
 	});
 });

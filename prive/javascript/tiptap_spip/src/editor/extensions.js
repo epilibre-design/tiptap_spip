@@ -185,6 +185,37 @@ const SpipLink = Mark.create({
 	renderHTML: ({ HTMLAttributes }) => ['a', { ...HTMLAttributes, class: 'tts-link' }, 0],
 });
 
+/**
+ * Terme de glossaire [?terme#glossaireN|bulle{lang}] : le texte marqué est le terme. Ni lien, ni code,
+ * ni abréviation sur le même texte (spec 03 §3).
+ */
+const SpipGlossary = Mark.create({
+	name: 'spipGlossary',
+	inclusive: false,
+	excludes: 'spipGlossary spipLink spipAbbr code',
+	addAttributes: () => ({
+		glossaire: { default: null, parseHTML: (el) => el.getAttribute('data-tts-glossary') || null, renderHTML: (a) => ({ 'data-tts-glossary': a.glossaire ?? '' }) },
+		numero: { default: null, parseHTML: (el) => el.getAttribute('data-tts-numero'), renderHTML: (a) => (a.numero ? { 'data-tts-numero': a.numero } : {}) },
+		bulle: { default: null, parseHTML: (el) => el.getAttribute('title'), renderHTML: (a) => (a.bulle == null ? {} : { title: a.bulle }) },
+		hreflang: { default: null, parseHTML: (el) => el.getAttribute('hreflang'), renderHTML: (a) => (a.hreflang ? { hreflang: a.hreflang } : {}) },
+	}),
+	parseHTML: () => [{ tag: 'span[data-tts-glossary]' }],
+	renderHTML: ({ HTMLAttributes }) => ['span', { ...HTMLAttributes, class: 'tts-glossary' }, 0],
+});
+
+/** Abréviation [ABBR|explication{lang}]. */
+const SpipAbbr = Mark.create({
+	name: 'spipAbbr',
+	inclusive: false,
+	excludes: 'spipAbbr spipLink code',
+	addAttributes: () => ({
+		title: { default: '', parseHTML: (el) => el.getAttribute('title') ?? '', renderHTML: (a) => ({ title: a.title }) },
+		lang: { default: null, parseHTML: (el) => el.getAttribute('lang'), renderHTML: (a) => (a.lang ? { lang: a.lang } : {}) },
+	}),
+	parseHTML: () => [{ tag: 'abbr[title]' }],
+	renderHTML: ({ HTMLAttributes }) => ['abbr', { ...HTMLAttributes, class: 'tts-abbr' }, 0],
+});
+
 /** Lien sans texte [->art12] : le titre est calculé par SPIP (affiché par L2c), la cible en attendant. */
 const SpipLinkAuto = Node.create({
 	name: 'spipLinkAuto',
@@ -302,13 +333,15 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		SpipAnchor,
 		withView(SpipModel, modelView, Boolean(ui?.previews)),
 		withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
-		// marks : ordre canonique spipLink, bold, italic, strike, superscript, subscript, code
+		// marks : ordre canonique de MARK_ORDER
 		SpipLink,
 		Bold,
 		Italic,
 		Strike,
 		Superscript,
 		Subscript,
+		SpipAbbr,
+		SpipGlossary,
 		SpipCode,
 		SegmentMap,
 		Dropcursor,

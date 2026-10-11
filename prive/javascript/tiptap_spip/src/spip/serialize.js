@@ -1,6 +1,9 @@
-import { canon, MARK_ORDER, sameMark } from './json.js';
+import { serializeAbbr } from './abbr.js';
+import { serializeGlossary } from './glossary.js';
+import { canon, MARK_ORDER, node, sameMark, text } from './json.js';
 import { linkEnd } from './links.js';
 import { serializeModel } from './models.js';
+import { parse } from './parse.js';
 import { canBacktick, encodeCode } from './protect.js';
 
 /**
@@ -134,8 +137,67 @@ function serializeTable(table) {
 
 const OPEN = { bold: ['{{', '}}'], italic: ['{', '}'], strike: ['<del>', '</del>'], superscript: ['<sup>', '</sup>'], subscript: ['<sub>', '</sub>'] };
 
-/** Délimiteurs d'une mark ; un lien dépend de ses attributs. */
-const delimiters = (mark) => (mark.type === 'spipLink' ? ['[', linkEnd(mark.attrs)] : OPEN[mark.type]);
+/** Délimiteurs d'une mark ; un lien, un glossaire, une abréviation dépendent de leurs attributs. */
+const delimiters = (mark) => {
+	if (mark.type === 'spipLink') return ['[', linkEnd(mark.attrs)];
+	if (mark.type === 'spipGlossary') return ['[?', serializeGlossary('', mark.attrs).slice(2)];
+	if (mark.type === 'spipAbbr') return ['[', serializeAbbr('', mark.attrs).slice(1)];
+	return OPEN[mark.type];
+};
+
+/** Marks dont le texte s'écrit tel quel dans le raccourci, sans autre mark à l'intérieur. */
+const ATOMIQUES = ['spipGlossary', 'spipAbbr'];
+const avecMarks = (n, marks) => {
+	const { marks: _, ...rest } = n;
+	return marks.length ? { ...rest, marks } : rest;
+};
+
+/** Le raccourci écrit pour ce texte marqué se relit-il en ce même texte marqué ? */
+function seRelit(n, mark) {
+	const [open, close] = delimiters(mark);
+	const relu = parse(open + n.text + close).content;
+	return canon(relu) === canon([node('paragraph', null, [text(n.text, [mark])])]);
+}
+
+/**
+ * Glossaire et abréviation saisis dans l'éditeur : seulement sur un texte sans lien ni code (un
+ * glossaire l'emporte sur une abréviation) ; des textes voisins sous la même mark sont fusionnés
+ * avec leurs seules marks communes ; un raccourci qui ne se relirait pas à l'identique est
+ * abandonné (le texte est écrit normalement). Le parseur ne produit que des formes valides.
+ */
+function marksAtomiques(nodes) {
+	let out = nodes.map((n) => {
+		const marks = n.marks ?? [];
+		let garde = marks;
+		if (marks.some((m) => m.type === 'spipLink' || m.type === 'code')) garde = garde.filter((m) => !ATOMIQUES.includes(m.type));
+		if (garde.some((m) => m.type === 'spipGlossary')) garde = garde.filter((m) => m.type !== 'spipAbbr');
+		return garde.length === marks.length ? n : avecMarks(n, garde);
+	});
+	for (const type of ATOMIQUES) {
+		const res = [];
+		for (let i = 0; i < out.length;) {
+			const mark = out[i].marks?.find((m) => m.type === type);
+			if (!mark) {
+				res.push(out[i++]);
+				continue;
+			}
+			let j = i;
+			while (j < out.length && out[j].marks?.some((m) => sameMark(m, mark))) j++;
+			const run = out.slice(i, j);
+			let fusion = null;
+			if (run.every((n) => n.type === 'text')) {
+				const communes = run[0].marks.filter((m) => run.every((n) => n.marks.some((x) => sameMark(x, m))));
+				const candidat = text(run.map((n) => n.text).join(''), communes);
+				if (seRelit(candidat, mark)) fusion = candidat;
+			}
+			if (fusion) res.push(fusion);
+			else res.push(...run.map((n) => avecMarks(n, n.marks.filter((m) => !sameMark(m, mark)))));
+			i = j;
+		}
+		out = res;
+	}
+	return out;
+}
 const HTML = { bold: ['<strong>', '</strong>'], italic: ['<i>', '</i>'] };
 
 /**
@@ -147,6 +209,7 @@ const HTML = { bold: ['<strong>', '</strong>'], italic: ['<i>', '</i>'] };
  * @param {{ lineStart?: boolean, html?: boolean }} options
  */
 export function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
+	nodes = marksAtomiques(nodes);
 	let out = '';
 	const stack = [];
 	let atLineStart = lineStart;
@@ -181,7 +244,9 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 		const inLink = stack.some((s) => s.mark.type === 'spipLink');
 		if (n.type === 'text') {
 			const code = n.marks?.find((m) => m.type === 'code');
-			out += code ? serializeCode(n.text) : escapeText(n.text, atLineStart, { link: inLink });
+			const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
+			// texte d'un glossaire ou d'une abréviation : validé par marksAtomiques, écrit tel quel
+			out += code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink });
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
 			const autobr = n.attrs?.syntax === 'autobr';
@@ -231,9 +296,11 @@ export function escapeText(value, atLineStart, { link = false } = {}) {
 		.replace(/<(?=[a-z/!:])/gi, '&lt;')
 		// notes et glossaire sont traités avant les échappements \[ : on passe par des entités
 		.replace(/\[\?/g, '[&#63;')
-		.replace(/\[\[/g, '[&#91;')
-		.replace(/\[(?=#|$|[^\]]*?(?:->|<-|\|)[^\]]*\])/g, '&#91;');
-	if (link) {
+		.replace(/\[\[/g, '[&#91;');
+	if (!link) {
+		// \[ protège un lien ou une abréviation, comme dans SPIP ; pas une ancre (pre_liens) : entité
+		s = s.replace(/\[(?=#|$|[^\]]*?<-[^\]]*\])/g, '&#91;').replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, '\\[');
+	} else {
 		s = s.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/\|/g, '&#124;').replace(/->/g, '-&gt;');
 	}
 	if (atLineStart) s = s.replace(/^([-|]|_(?= |_))/, '\\$1');
