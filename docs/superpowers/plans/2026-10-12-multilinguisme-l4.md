@@ -7,6 +7,7 @@
 **Découpage :**
 - **L4.1 :** cœur, schéma et affichage.
 - **L4.2 :** interface. Elle couvre :
+  - un sélecteur de la langue affichée par les multis en ligne et bloc (barre), qui remplace les onglets de la spec 05 §5 ;
   - les traductions des idiomes (opération `idiomes`) ;
   - le popover de multi en ligne (sous-éditeur par langue) ;
   - l'insertion d'un multi ;
@@ -38,7 +39,7 @@
 ## Tâches L4.1
 
 1. **`src/spip/multi.js` :**
-   - `parseMulti(src, masked)` renvoie `{ parts: [{ lang, start, end }] }`, positions relatives au raccourci ;
+   - `parseMulti(src, masked)` renvoie `[{ lang, start, end }]` (positions relatives au raccourci), ou null si un marqueur est caché dans un raccourci traité avant ;
    - `RE_LANGUE_MULTI` dans `regex.js`.
    - Tests : marqueurs, partie initiale vide ou non, marqueur dans un lien masqué, casse.
 2. **Analyse et sérialisation :**

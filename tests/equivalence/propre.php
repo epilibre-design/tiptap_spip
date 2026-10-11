@@ -19,7 +19,6 @@ if (is_file($root . '/vendor/autoload.php')) {
 	include_once $root . '/ecrire/inc_version.php';
 }
 include_spip('inc/texte');
-include_spip('inc/lang');
 $texte = stream_get_contents(STDIN);
 
 /** propre() dans la langue courante, suivi du texte des notes (que SPIP accumule pour #NOTES). */
@@ -35,13 +34,16 @@ function oracle_rendu(string $texte): string {
 }
 
 echo oracle_rendu($texte);
-// <multi> ne rend qu'une langue, celle du contexte : chaque langue citée par un multi est rendue aussi
+// <multi> ne rend qu'une langue, celle du contexte : chaque langue citée par un multi est rendue aussi.
+// Codes gardés tels quels (la casse compte : [EN] n'est choisi que pour EN) et posés directement :
+// lang_select() ignore une langue que le site ne propose pas.
 if (strpos($texte, '<multi>') !== false && preg_match_all('@\[([a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?)\]@i', $texte, $m)) {
-	$langues = array_diff(array_unique(array_map('strtolower', $m[1])), [$GLOBALS['spip_lang']]);
+	$defaut = $GLOBALS['spip_lang'];
+	$langues = array_diff(array_unique($m[1]), [$defaut]);
 	sort($langues);
 	foreach ($langues as $langue) {
-		lang_select($langue);
+		$GLOBALS['spip_lang'] = $langue;
 		echo "\n<!-- langue $langue -->\n" . oracle_rendu($texte);
-		lang_select();
 	}
+	$GLOBALS['spip_lang'] = $defaut;
 }

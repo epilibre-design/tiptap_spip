@@ -193,7 +193,10 @@ avec les évolutions suivantes.
 Lot L4.1 (vérifié avec l'oracle, rendu dans chaque langue) :
 - **Ordre de traitement :** `<multi>` et idiomes sont traités dans `typo()`, après tous les autres raccourcis. Liens, notes, gras… d'une partie sont rendus normalement, et les marqueurs `[xx]` se cherchent dans le texte où ces raccourcis sont déjà remplacés.
 - **Découpage des parties** (`Multis::extraire_trads()`) : une première partie sans marqueur n'existe que si elle n'est pas vide ; casse du code gardée (`[FR]` rend `lang='FR'`).
-- **Marqueur dans le texte d'une partie :** `\[en]` ne protège pas un marqueur (le `\` reste dans la partie précédente), d'où l'écriture `&#91;en]`.
+- **Marqueur dans le texte d'une partie :** `\[en]` ne protège pas un marqueur (le `\` reste dans la partie précédente), d'où l'écriture `&#91;en]`. Ce `\` final d'une partie ne se rend pas pareil selon la langue (retiré quand SPIP retombe sur une autre langue) : gardé en fragment brut dans un multi en ligne, multi bloc gardé brut.
+- **Marqueur caché dans un raccourci traité avant** (note, texte d'un lien, code) : le core coupe le multi dans une note, pas dans du code ; découpage incertain, multi gardé brut.
+- **Partie sans langue :** elle ne s'écrit qu'en tête ; une partie sans langue placée ailleurs y est déplacée. Une partie sans langue faite de blancs dans un multi bloc : gardé brut (elle compte quand aucune langue ne convient).
+- **Langue en double :** SPIP garde la dernière partie, l'affichage aussi.
 - **Multi en ligne :** atome affiché dans la langue de l'interface (`<html lang>`, code exact puis langue de base, sinon la première partie), les autres parties en infobulle, la langue en badge.
 - **Multi bloc :** parties empilées, chacune avec sa langue en badge, éditables directement.
 - **Gardés bruts :**
@@ -201,7 +204,7 @@ Lot L4.1 (vérifié avec l'oracle, rendu dans chaque langue) :
   - un multi qui contient une ligne vide sans être seul dans son segment ;
   - un multi bloc dont une partie n'est pas faite que de paragraphes.
 - **Idiomes :** affichés par leur raccourci (traduction : L4.2).
-- **Choix d'affichage :** onglets et sélecteur de langue ne sont pas faits ; toutes les parties d'un multi bloc restent visibles.
+- **Choix d'affichage :** toutes les parties d'un multi bloc restent visibles. Le sélecteur de la langue affichée, qui remplace les onglets, est prévu au lot L4.2.
 
 ## 6. Blocs protégés — `codeBlock`, `spipCadre`, `spipHtml`, `spipMath`, `spipPoesie`
 

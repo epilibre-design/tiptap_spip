@@ -103,8 +103,15 @@ export function protect(source) {
 	// texte de la note tel que le voit le core : liens, modèles, glossaire déjà remplacés (masqués)
 	scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, 'note', { masked: m[0] }));
 	scan(RE_ABBR, (m, start, end) => add(start, end, 'abbr', {}));
-	// marqueurs de langue cherchés dans le texte que voit typo() : raccourcis précédents masqués
-	scan(RE_MULTI, (m, start, end) => add(start, end, 'multi', { masked: m[0] }));
+	// marqueurs de langue cherchés dans le texte que voit typo() : raccourcis précédents masqués, mais
+	// échappements \[ rétablis (ils ne protègent pas un marqueur : vérifié avec l'oracle)
+	scan(RE_MULTI, (m, start, end) => {
+		let vu = m[0];
+		for (const r of echappements()) {
+			if (r.start >= start && r.end <= end) vu = vu.slice(0, r.start - start) + source.slice(r.start, r.end) + vu.slice(r.end - start);
+		}
+		add(start, end, 'multi', { masked: vu });
+	});
 	scan(RE_IDIOME, (m, start, end) => add(start, end, 'idiome', {}));
 
 	regions.sort((a, b) => a.start - b.start);

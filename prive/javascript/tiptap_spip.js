@@ -17709,7 +17709,10 @@ var RE_GLOSSAIRE = /\[\?+\s*([^\][<>]+)\]/g;
 var RE_ANCRE = /\[#?([^\][]*)<-\]/g;
 var RE_ABBR = /\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]/g;
 var RE_MULTI = /<multi>(.*?)<\/multi>/gs;
-var RE_LANGUE_MULTI = /\[([a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?)\]/gi;
+var CODE_LANGUE = "[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?";
+var RE_LANGUE_MULTI = new RegExp(`\\[(${CODE_LANGUE})\\]`, "gi");
+var RE_AVANT_LANGUE = new RegExp(`\\[(?=${CODE_LANGUE}\\])`, "gi");
+var LIGNE_VIDE = /\n[ \t\r]*\n/;
 var RE_IDIOME = /<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>/gi;
 var RE_PROTEGE_BLOCS = /<(html|pre|code|cadre|frame|script|style|math)(\b[^>]*)?>(.*?)<\/\1>/gis;
 var RE_BACKTICKS = [
@@ -17798,6 +17801,9 @@ var OUVRANT = "<multi>".length;
 var FERMANT = "</multi>".length;
 function parseMulti(src, masked = src) {
   const fin = src.length - FERMANT;
+  const marqueurs = (s) => [...s.slice(OUVRANT, fin).matchAll(RE_LANGUE_MULTI)].length;
+  if (marqueurs(src) !== marqueurs(masked)) return null;
+  if (fin === OUVRANT) return [];
   const parts = [];
   let lang = null;
   let debut = OUVRANT;
@@ -17810,7 +17816,11 @@ function parseMulti(src, masked = src) {
   parts.push({ lang, start: debut, end: fin });
   return parts;
 }
-var serializeMulti = (parts) => `<multi>${parts.map(({ lang, texte: texte2 }) => (lang ? `[${lang}]` : "") + texte2).join("")}</multi>`;
+var BARRE_FINALE = /(?<!\\)(?:\\\\)*\\$/;
+function serializeMulti(parts) {
+  const ordre = [...parts.filter((p) => !p.lang), ...parts.filter((p) => p.lang)];
+  return `<multi>${ordre.map(({ lang, texte: texte2 }) => (lang ? `[${lang}]` : "") + texte2).join("")}</multi>`;
+}
 function parseIdiome(src) {
   const m = src.match(RE_IDIOME_SEUL);
   if (!m) return null;
@@ -17911,7 +17921,13 @@ function protect(source) {
   }));
   scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, "note", { masked: m[0] }));
   scan(RE_ABBR, (m, start, end) => add(start, end, "abbr", {}));
-  scan(RE_MULTI, (m, start, end) => add(start, end, "multi", { masked: m[0] }));
+  scan(RE_MULTI, (m, start, end) => {
+    let vu = m[0];
+    for (const r of echappements()) {
+      if (r.start >= start && r.end <= end) vu = vu.slice(0, r.start - start) + source.slice(r.start, r.end) + vu.slice(r.end - start);
+    }
+    add(start, end, "multi", { masked: vu });
+  });
   scan(RE_IDIOME, (m, start, end) => add(start, end, "idiome", {}));
   regions.sort((a, b) => a.start - b.start);
   return { masked, regions };
@@ -18206,7 +18222,7 @@ function serializeCode(code2) {
 }
 function escapeText(value, atLineStart, { link = false, avantCrochets = false } = {}) {
   let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:])/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
-  if (contexte.multi) s = s.replace(/\[(?=[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?\])/gi, "&#91;");
+  if (contexte.multi) s = s.replace(RE_AVANT_LANGUE, "&#91;");
   if (!link) {
     s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
   } else {
@@ -18260,13 +18276,15 @@ function markedToken(region, src) {
   if (!r || /[\r\n]/.test(r.v) || escapeText(r.v, false) !== r.v || def.write(r.v, r.attrs) !== src) return null;
   return { t: "marked", mark: { type: def.type, attrs: r.attrs }, v: r.v };
 }
-var LIGNE_VIDE = /\n[ \t\r]*\n/;
 function multiNode(src, masked) {
-  if (LIGNE_VIDE.test(src)) return null;
-  const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
-    const part = src.slice(start, end);
+  const decoupe = LIGNE_VIDE.test(src) ? null : parseMulti(src, masked);
+  if (!decoupe) return null;
+  const parts = decoupe.map(({ lang, start, end }) => {
+    const barre = BARRE_FINALE.test(src.slice(start, end)) ? 1 : 0;
+    const part = src.slice(start, end - barre);
     const p = protect(part);
-    return { lang, content: parseInline(part, p.masked, p.regions) };
+    const content = parseInline(part, p.masked, p.regions);
+    return { lang, content: barre ? [...content, raw("\\")] : content };
   });
   return node("spipMultiInline", { parts, spipSrc: src, spipHash: canon(parts) });
 }
@@ -18533,7 +18551,11 @@ function verbatimBlock(src, regions) {
 }
 function multiBlock(src, masked) {
   if (!LIGNE_VIDE.test(src)) return null;
-  const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
+  const decoupe = parseMulti(src, masked);
+  if (!decoupe || decoupe.some((p) => p.lang === null && src.slice(p.start, p.end).trim() === "" || BARRE_FINALE.test(src.slice(p.start, p.end)))) {
+    throw new Fallback();
+  }
+  const parts = decoupe.map(({ lang, start, end }) => {
     const content = parseContent(src.slice(start, end));
     if (content.some((b) => b.type !== "paragraph")) throw new Fallback();
     return node("spipLangBlock", { lang }, content);
@@ -24794,7 +24816,7 @@ var langAttr = () => ({
 function partieAffichee(parts, langue = globalThis.document?.documentElement?.lang ?? "") {
   const l = langue.toLowerCase();
   const base2 = l.split(/[-_]/)[0];
-  return parts.find((p) => p.lang?.toLowerCase() === l) ?? parts.find((p) => p.lang?.toLowerCase().split("_")[0] === base2) ?? parts[0];
+  return parts.findLast((p) => p.lang?.toLowerCase() === l) ?? parts.findLast((p) => p.lang?.toLowerCase().split(/[-_]/)[0] === base2) ?? parts[0];
 }
 var SpipMultiInline = Node3.create({
   name: "spipMultiInline",
@@ -24838,7 +24860,7 @@ var SpipIdiome = Node3.create({
     cle: { default: "", parseHTML: (el) => el.getAttribute("data-tts-idiome") ?? "", renderHTML: (a) => ({ "data-tts-idiome": a.cle }) }
   }),
   parseHTML: () => [{ tag: "code[data-tts-idiome]", priority: 60 }],
-  renderHTML: ({ node: node2, HTMLAttributes }) => ["code", { ...HTMLAttributes, class: "tts-idiome" }, `<:${node2.attrs.module ? `${node2.attrs.module}:` : ""}${node2.attrs.cle}:>`]
+  renderHTML: ({ node: node2, HTMLAttributes }) => ["code", { ...HTMLAttributes, class: "tts-idiome" }, serializeIdiome(node2.attrs)]
 });
 function apercu(content, max = 80) {
   const morceaux = [];

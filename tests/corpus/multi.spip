@@ -17,3 +17,14 @@ Two</multi>
 Idiomes : <:tiptap_spip:lien:>, <:info_titre:>, <:inconnu:cle_absente:>.
 
 <multi>[pt_br]Olá[FR]Salut[en]</multi> et <multi>[fr]&#91;en] dans le texte[en]text</multi>
+
+
+Voir <multi>[fr]a\[en]b[de]c</multi> fin, x <multi>[fr]a[[voir [en] ici]][en]b[[note en]]</multi> y.
+
+<multi>[fr]A
+
+{{B}}[en]C
+
+[lien [de]->art1]</multi>
+
+<multi>[fr]a[fr]b[en]c</multi>

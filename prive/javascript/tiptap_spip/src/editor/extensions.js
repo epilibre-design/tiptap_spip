@@ -20,6 +20,7 @@ import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { linkAutoView, modelView } from '../nodeviews/views.js';
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
+import { serializeIdiome } from '../spip/multi.js';
 import { label as libelle } from '../ui/labels.js';
 
 /**
@@ -328,14 +329,14 @@ const langAttr = () => ({
 });
 
 /**
- * Partie d'un multi affichée : celle de la langue de l'interface (code exact, puis langue de base),
- * sinon la première.
+ * Partie d'un multi affichée : celle de la langue de l'interface (code exact, puis langue de base ;
+ * la dernière si la langue est en double, comme SPIP), sinon la première.
  */
 export function partieAffichee(parts, langue = globalThis.document?.documentElement?.lang ?? '') {
 	const l = langue.toLowerCase();
 	const base = l.split(/[-_]/)[0];
-	return parts.find((p) => p.lang?.toLowerCase() === l)
-		?? parts.find((p) => p.lang?.toLowerCase().split('_')[0] === base)
+	return parts.findLast((p) => p.lang?.toLowerCase() === l)
+		?? parts.findLast((p) => p.lang?.toLowerCase().split(/[-_]/)[0] === base)
 		?? parts[0];
 }
 
@@ -391,7 +392,7 @@ const SpipIdiome = Node.create({
 		cle: { default: '', parseHTML: (el) => el.getAttribute('data-tts-idiome') ?? '', renderHTML: (a) => ({ 'data-tts-idiome': a.cle }) },
 	}),
 	parseHTML: () => [{ tag: 'code[data-tts-idiome]', priority: 60 }],
-	renderHTML: ({ node, HTMLAttributes }) => ['code', { ...HTMLAttributes, class: 'tts-idiome' }, `<:${node.attrs.module ? `${node.attrs.module}:` : ''}${node.attrs.cle}:>`],
+	renderHTML: ({ node, HTMLAttributes }) => ['code', { ...HTMLAttributes, class: 'tts-idiome' }, serializeIdiome(node.attrs)],
 });
 
 /** Texte d'une note, sans mise en forme, pour l'infobulle de son appel et le panneau des notes. */

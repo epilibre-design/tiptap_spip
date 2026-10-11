@@ -7,7 +7,7 @@ import { serialize } from '../../src/spip/serialize.js';
 
 const canonical = (source) => serialize(parse(source), { conservative: false });
 const inline = (source) => stripTech(parse(source).content[0].content);
-const parts = (src, masked) => parseMulti(src, masked).map(({ lang, start, end }) => [lang, src.slice(start, end)]);
+const parts = (src, masked) => parseMulti(src, masked)?.map(({ lang, start, end }) => [lang, src.slice(start, end)]);
 const p = (...content) => node('paragraph', null, content.length ? content : undefined);
 const multi = (...parties) => node('spipMultiInline', { parts: parties.map(([lang, content]) => ({ lang, content })) });
 
@@ -17,13 +17,20 @@ describe('parseMulti (Multis::extraire_trads du core)', () => {
 		expect(parts('<multi>chat[en]cat</multi>')).toEqual([[null, 'chat'], ['en', 'cat']]);
 		expect(parts('<multi>sans langue</multi>')).toEqual([[null, 'sans langue']]);
 		expect(parts('<multi>[pt_br]a[FR]b[en]</multi>')).toEqual([['pt_br', 'a'], ['FR', 'b'], ['en', '']]);
-		expect(parts('<multi></multi>')).toEqual([[null, '']]);
+		expect(parts('<multi></multi>')).toEqual([]);
 	});
 
-	it('marqueurs cherchés dans le texte que voit le core : pas dans un lien', () => {
-		const src = '<multi>[fr]voir [[en]->art1][en]see</multi>';
+	it('\\[ ne protège pas un marqueur : le \\ reste dans la partie précédente', () => {
+		const src = '<multi>[fr]a\\[en]b[de]c</multi>';
 		const { regions } = protect(src);
-		expect(parts(src, regions[0].data.masked)).toEqual([['fr', 'voir [[en]->art1]'], ['en', 'see']]);
+		expect(parts(src, regions[0].data.masked)).toEqual([['fr', 'a\\'], ['en', 'b'], ['de', 'c']]);
+	});
+
+	it('marqueur caché dans une note, un lien, du code : découpage incertain, null', () => {
+		for (const src of ['<multi>[fr]a[[voir [en] ici]][en]b</multi>', '<multi>[fr]voir [[en]->art1][en]see</multi>', '<multi>[fr]`[en]`[en]b</multi>']) {
+			const { regions } = protect(src);
+			expect(parseMulti(src, regions[0].data.masked)).toBeNull();
+		}
 	});
 });
 
@@ -50,10 +57,23 @@ describe('multi en ligne', () => {
 		expect(serialize(doc)).toBe('Après <multi> [fr]a  b[en]c</multi>');
 	});
 
+	it('partie sans langue après la première : écrite en tête (sans marqueur, elle se fondrait)', () => {
+		const doc = node('doc', null, [p(multi(['fr', [text('voir')]], [null, [text('sans')]]))]);
+		expect(serialize(doc)).toBe('<multi>sans[fr]voir</multi>');
+	});
+
 	it('[xx] dans le texte d\'une partie : entité (\\[ ne protège pas un marqueur)', () => {
 		const doc = node('doc', null, [p(multi(['fr', [text('a[en]b')]], ['en', [text('c')]]))]);
 		expect(serialize(doc)).toBe('<multi>[fr]a&#91;en]b[en]c</multi>');
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('\\[en] dans une partie, marqueur dans une note : identité, forme canonique sûre', () => {
+		for (const source of ['Voir <multi>[fr]a\\[en]b[de]c</multi> fin', 'x <multi>[fr]a[[voir [en] ici]][en]b[[note en]]</multi> y']) {
+			expect(serialize(parse(source))).toBe(source);
+			expect(stripTech(parse(canonical(source)).content)).toEqual(stripTech(parse(source).content));
+		}
+		expect(inline('x <multi>[fr]a[[voir [en] ici]][en]b</multi>')[1]).toMatchObject({ type: 'spipRawInline' });
 	});
 
 	it('dans le texte d\'un lien : brut', () => {
@@ -82,6 +102,10 @@ describe('multi bloc', () => {
 
 	it('multi avec ligne vide au milieu d\'un paragraphe : brut', () => {
 		expect(inline('Intro <multi>[fr]a\n\nb[en]c</multi>')[1]).toEqual(raw('<multi>[fr]a\n\nb[en]c</multi>'));
+	});
+
+	it('partie sans langue faite de blancs : brut (elle compte quand aucune langue ne convient)', () => {
+		expect(parse('<multi>\n[fr]a\n\nb[en]c</multi>').content[0].type).toBe('spipRaw');
 	});
 
 	it('partie vide', () => {

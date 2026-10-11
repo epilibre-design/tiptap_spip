@@ -3,7 +3,8 @@ import { parseGlossary, serializeGlossary } from './glossary.js';
 import { canon, mergeText, node, raw, sortMarks, text } from './json.js';
 import { parseLinkAtts } from './links.js';
 import { parseModel } from './models.js';
-import { parseIdiome, parseMulti } from './multi.js';
+import { BARRE_FINALE, parseIdiome, parseMulti } from './multi.js';
+import { LIGNE_VIDE } from './regex.js';
 import { parseNote } from './notes.js';
 import { FILL, protect } from './protect.js';
 import { escapeText } from './serialize.js';
@@ -71,19 +72,20 @@ function markedToken(region, src) {
 	return { t: 'marked', mark: { type: def.type, attrs: r.attrs }, v: r.v };
 }
 
-/** Ligne vide : un multi qui en contient une n'est représentable qu'en bloc (blocks.js). */
-export const LIGNE_VIDE = /\n[ \t\r]*\n/;
-
 /**
  * Multi dans une phrase : atome dont chaque partie est analysée en inline. La source et la forme
  * canonique des parties sont gardées : un multi inchangé est réécrit tel quel.
  */
 function multiNode(src, masked) {
-	if (LIGNE_VIDE.test(src)) return null;
-	const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
-		const part = src.slice(start, end);
+	const decoupe = LIGNE_VIDE.test(src) ? null : parseMulti(src, masked);
+	if (!decoupe) return null;
+	const parts = decoupe.map(({ lang, start, end }) => {
+		// \ final : fragment brut, restitué tel quel (multi.js)
+		const barre = BARRE_FINALE.test(src.slice(start, end)) ? 1 : 0;
+		const part = src.slice(start, end - barre);
 		const p = protect(part);
-		return { lang, content: parseInline(part, p.masked, p.regions) };
+		const content = parseInline(part, p.masked, p.regions);
+		return { lang, content: barre ? [...content, raw('\\')] : content };
 	});
 	return node('spipMultiInline', { parts, spipSrc: src, spipHash: canon(parts) });
 }

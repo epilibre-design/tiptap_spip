@@ -1,7 +1,8 @@
-import { LIGNE_VIDE, parseInline } from './inline.js';
+import { parseInline } from './inline.js';
 import { node, text } from './json.js';
 import { parseModel } from './models.js';
-import { parseMulti } from './multi.js';
+import { BARRE_FINALE, parseMulti } from './multi.js';
+import { LIGNE_VIDE } from './regex.js';
 import { FILL, protect, regionsIn } from './protect.js';
 import { segment } from './segment.js';
 
@@ -66,7 +67,14 @@ function verbatimBlock(src, regions) {
  */
 function multiBlock(src, masked) {
 	if (!LIGNE_VIDE.test(src)) return null;
-	const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
+	const decoupe = parseMulti(src, masked);
+	// une partie sans langue faite de blancs compte pour SPIP (quand aucune langue ne convient) mais
+	// ne s'écrit pas en paragraphes
+	// \ final d'une partie : rendu variable selon la langue (multi.js), gardé brut
+	if (!decoupe || decoupe.some((p) => (p.lang === null && src.slice(p.start, p.end).trim() === '') || BARRE_FINALE.test(src.slice(p.start, p.end)))) {
+		throw new Fallback();
+	}
+	const parts = decoupe.map(({ lang, start, end }) => {
 		const content = parseContent(src.slice(start, end));
 		if (content.some((b) => b.type !== 'paragraph')) throw new Fallback();
 		return node('spipLangBlock', { lang }, content);

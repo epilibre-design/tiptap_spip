@@ -25,7 +25,12 @@ export const RE_ABBR = /\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]/g;
 export const RE_MULTI = /<multi>(.*?)<\/multi>/gs;
 
 // ecrire/src/Texte/Collecteur/Multis.php — extraire_trads() : marqueur de langue [fr], [pt_br]…
-export const RE_LANGUE_MULTI = /\[([a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?)\]/gi;
+const CODE_LANGUE = '[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?';
+export const RE_LANGUE_MULTI = new RegExp(`\\[(${CODE_LANGUE})\\]`, 'gi');
+// [ d'un marqueur de langue (même code), à écrire en entité dans le texte d'une partie
+export const RE_AVANT_LANGUE = new RegExp(`\\[(?=${CODE_LANGUE}\\])`, 'gi');
+// ligne vide (paragraphes) : un multi qui en contient une n'est représentable qu'en bloc
+export const LIGNE_VIDE = /\n[ \t\r]*\n/;
 
 // ecrire/src/Texte/Collecteur/Idiomes.php
 export const RE_IDIOME = /<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>/gi;
@@ -72,7 +77,5 @@ export const RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
 export const RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
 // ecrire/src/Texte/Collecteur/Idiomes.php — même regex que RE_IDIOME
 export const RE_IDIOME_SEUL = /^<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>$/i;
-// code de langue seul (marqueur [xx] d'un multi)
-export const RE_CODE_LANGUE = /^[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?$/i;
 // ecrire/src/Texte/Collecteur/Modeles.php — même regex que RE_MODELE
 export const RE_MODELE_SEUL = /^<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>$/i;

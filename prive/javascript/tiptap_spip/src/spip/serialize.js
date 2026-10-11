@@ -6,6 +6,7 @@ import { serializeModel } from './models.js';
 import { serializeIdiome, serializeMulti } from './multi.js';
 import { parse } from './parse.js';
 import { canBacktick, encodeCode } from './protect.js';
+import { RE_AVANT_LANGUE } from './regex.js';
 
 /**
  * Document JSON → source SPIP.
@@ -364,7 +365,7 @@ export function escapeText(value, atLineStart, { link = false, avantCrochets = f
 		.replace(/\[\?/g, '[&#63;')
 		.replace(/\[\[/g, '[&#91;');
 	// marqueur de langue d'un multi : \[ ne le protège pas (typo() passe après les échappements)
-	if (contexte.multi) s = s.replace(/\[(?=[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?\])/gi, '&#91;');
+	if (contexte.multi) s = s.replace(RE_AVANT_LANGUE, '&#91;');
 	if (!link) {
 		// \[ protège un lien ou une abréviation, comme dans SPIP ; pas une ancre (pre_liens) : entité
 		s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, '&#91;')

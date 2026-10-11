@@ -9,12 +9,19 @@ const FERMANT = '</multi>'.length;
  * n'est pas vide. Les marqueurs se cherchent dans le texte que voit le core au moment de typo(), où
  * liens, notes, modèles… sont déjà remplacés (masked).
  *
+ * Un marqueur caché dans un raccourci traité avant (note, lien, code) rend le découpage incertain : le
+ * core coupe le multi dans une note (`[[voir [en] ici]]`), pas dans du code. Non représentable (null).
+ *
  * @param {string} src  raccourci entier
  * @param {string} [masked]  même texte, raccourcis traités avant masqués (même longueur)
- * @returns {{ lang: ?string, start: number, end: number }[]}  positions relatives à src
+ * @returns {{ lang: ?string, start: number, end: number }[] | null}  positions relatives à src
  */
 export function parseMulti(src, masked = src) {
 	const fin = src.length - FERMANT;
+	const marqueurs = (s) => [...s.slice(OUVRANT, fin).matchAll(RE_LANGUE_MULTI)].length;
+	if (marqueurs(src) !== marqueurs(masked)) return null;
+	// <multi></multi> : aucune partie (extraire_trads() d'un texte vide)
+	if (fin === OUVRANT) return [];
 	const parts = [];
 	let lang = null;
 	let debut = OUVRANT;
@@ -28,8 +35,20 @@ export function parseMulti(src, masked = src) {
 	return parts;
 }
 
-/** <multi> + [lang]partie… + </multi> ; une partie sans langue ne peut être que la première. */
-export const serializeMulti = (parts) => `<multi>${parts.map(({ lang, texte }) => (lang ? `[${lang}]` : '') + texte).join('')}</multi>`;
+/**
+ * \ final (non échappé) d'une partie : il précède un marqueur, et SPIP ne le rend pas de la même
+ * façon selon la langue choisie (gardé ou retiré quand la langue manque) : à restituer tel quel.
+ */
+export const BARRE_FINALE = /(?<!\\)(?:\\\\)*\\$/;
+
+/**
+ * <multi> + [lang]partie… + </multi>. Une partie sans langue ne s'écrit qu'en tête (sans marqueur,
+ * elle se fondrait dans la précédente) : elle y est placée.
+ */
+export function serializeMulti(parts) {
+	const ordre = [...parts.filter((p) => !p.lang), ...parts.filter((p) => p.lang)];
+	return `<multi>${ordre.map(({ lang, texte }) => (lang ? `[${lang}]` : '') + texte).join('')}</multi>`;
+}
 
 /**
  * Idiome <:module:cle:> (Idiomes::collecter()).

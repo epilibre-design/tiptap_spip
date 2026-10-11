@@ -35,6 +35,8 @@ describe('multi en ligne', () => {
 		expect(partieAffichee(parts, 'pt-BR').lang).toBe('pt_br');
 		expect(partieAffichee(parts, 'pt').lang).toBe('pt_br');
 		expect(partieAffichee(parts, 'de').lang).toBe('fr');
+		// langue en double : SPIP garde la dernière
+		expect(partieAffichee([{ lang: 'fr', n: 1 }, { lang: 'fr', n: 2 }], 'fr').n).toBe(2);
 	});
 
 	it('copier-coller interne : multi recréé (forme canonique)', () => {
