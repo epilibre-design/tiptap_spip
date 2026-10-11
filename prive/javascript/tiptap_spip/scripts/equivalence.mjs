@@ -18,11 +18,15 @@ if (!process.env.SPIP_ROOT) {
 const propre = (text) => execFileSync('php', [oracle], { input: text, encoding: 'utf8' });
 
 /**
- * Normalisation : blancs, identifiants aléatoires des tableaux, et caractères de contrôle
- * invisibles que SPIP laisse parfois dans sa sortie (marqueurs \x01\x15 de la wheel backticks).
+ * Normalisation : blancs, identifiants qui dépendent de la source et non du rendu (tableaux :
+ * cellules aléatoires, résumé tiré du md5 du bloc ; modèles : classe base64php tirée d'un
+ * uniqid), et caractères de contrôle invisibles que SPIP laisse parfois dans sa sortie
+ * (marqueurs \x01\x15 de la wheel backticks).
  */
 export const normalize = (html) => html
 	.replace(/ (?:id|headers)='id[0-9a-f]+_c\d+'/g, '')
+	.replace(/\bdby[0-9a-f]{4}\b/g, 'dby')
+	.replace(/\bbase64php[0-9a-f.]+/g, 'base64php')
 	.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
 	.replace(/\s+/g, ' ')
 	.replace(/>\s+/g, '>')
