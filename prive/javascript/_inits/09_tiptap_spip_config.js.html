@@ -1,0 +1,9 @@
+window.spipConfig ??= {};
+Object.assign(window.spipConfig, {
+	tiptap_spip: {
+		css: "@import url('[(#CHEMIN{css/tiptap_spip.css}|timestamp|url_absolue)]')",
+		i18n: {
+			mode_source: "<:tiptap_spip:mode_source|texte_script:>"
+		}
+	}
+});

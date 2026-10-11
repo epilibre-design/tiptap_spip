@@ -1,0 +1,56 @@
+/* Éditeur visuel pour SPIP : interface et éléments propres à l'édition (classes tts-*). */
+
+.tts-editor {
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.tts-toolbar {
+	display: flex;
+	justify-content: flex-end;
+	gap: 4px;
+	padding: 4px;
+	border-bottom: 1px solid #ccc;
+}
+
+.tts-mode[aria-pressed="true"] {
+	font-weight: bold;
+}
+
+.tts-content .tts-prosemirror {
+	padding: 0.5em 1em;
+	outline: none;
+}
+
+.tts-editor > textarea {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	border: 0;
+}
+
+.tts-editor > textarea[hidden],
+.tts-content[hidden] {
+	display: none;
+}
+
+/* Constructions conservées telles quelles : affichées comme du code. */
+.tts-raw,
+.tts-raw-inline {
+	font-family: monospace;
+	background: #f4f4f4;
+	color: #555;
+	white-space: pre-wrap;
+}
+
+.tts-raw {
+	padding: 0.25em 0.5em;
+	border-left: 3px solid #bbb;
+}
+
+.tts-verbatim {
+	white-space: pre-wrap;
+	background: #f8f8f8;
+	padding: 0.25em 0.5em;
+}

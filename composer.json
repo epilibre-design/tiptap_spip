@@ -1,0 +1,18 @@
+{
+	"name": "spip-contrib-extensions/tiptap_spip",
+	"description": "Éditeur visuel Tiptap pour les raccourcis SPIP",
+	"type": "spip-plugin",
+	"license": "GPL-3.0-or-later",
+	"require": {
+		"php": ">=8.1"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^12.0"
+	},
+	"scripts": {
+		"tests-unit": "vendor/bin/phpunit --colors --testsuite unit"
+	},
+	"config": {
+		"sort-packages": true
+	}
+}

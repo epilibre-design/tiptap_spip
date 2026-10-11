@@ -1,0 +1,22 @@
+<paquet
+	prefix="tiptap_spip"
+	categorie="edition"
+	version="0.1.0"
+	etat="dev"
+	compatibilite="[4.2.0;5.*]"
+	documentation=""
+>
+	<nom>Éditeur visuel pour SPIP</nom>
+	<!-- Éditeur visuel Tiptap qui lit et écrit les raccourcis SPIP -->
+
+	<credit lien="https://tiptap.dev">Tiptap</credit>
+	<licence lien="http://www.gnu.org/licenses/gpl-3.0.html">GPL 3</licence>
+
+	<utilise nom="porte_plume" />
+
+	<pipeline nom="header_prive" inclure="tiptap_spip_pipelines.php" />
+	<pipeline nom="importmap" inclure="tiptap_spip_pipelines.php" />
+
+	<chemin path="" />
+	<chemin path="prive" />
+</paquet>
