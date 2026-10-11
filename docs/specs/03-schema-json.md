@@ -62,7 +62,7 @@ l'ordre de déclaration ; un autre ordre ferait diverger `getJSON()` de l'emprei
 | `spipHtml` | — | `text*`, `code: true` | `<html>…</html>` en bloc |
 | `spipMath` | — | `text*`, `code: true` | `<math>…</math>` |
 | `spipMultiBlock` | — | `spipLangBlock+` | `<multi>` entourant des blocs |
-| `spipLangBlock` | `lang` | `block+` | `[fr]` en tête de bloc dans un multi |
+| `spipLangBlock` | `lang` (null : partie sans langue) | `paragraph+` | `[fr]` en tête de partie dans un multi (lot L4.1 : paragraphes seuls, SPIP mêlant les parties d'une liste ou d'un intertitre) |
 | `spipModelBlock` | `model` (cf. §4) | atome | modèle seul sur son paragraphe |
 | `spipRaw` | `source` | atome | tout bloc non reconnu |
 
@@ -87,9 +87,12 @@ Bootstrap : `text-left`, `text-center`, `text-right`, `text-justify`.
 | `spipNote` | nœud inline atome | `name` (null = auto, `""` = sans appel), `content` (JSON, cf. §5) | `[[…]]`, `[[<nom>…]]`, `[[<>…]]` |
 | `spipModel` | nœud inline atome | `model` (cf. §4) | `<doc12\|left>` dans une phrase |
 | `spipAnchor` | nœud inline atome | `name` | `[#ancre<-]` ; `[ancre<-]` (même rendu) est réécrit `[#ancre<-]` |
-| `spipMultiInline` | nœud inline | — | contenu `spipLangInline+` → `<multi>[fr]a[en]b</multi>` |
-| `spipLangInline` | nœud inline | `lang` | `inline*` |
-| `spipIdiome` | nœud inline atome | `module`, `cle` | `<:module:cle:>` |
+| `spipMultiInline` | nœud inline atome (lot L4.1) | `parts` : `[{ lang, content }]`, `content` = nœuds inline de la partie ; `spipSrc`, `spipHash` (réécrit tel quel s'il n'a pas changé) | `<multi>[fr]a[en]b</multi>` dans une phrase |
+| `spipIdiome` | nœud inline atome | `module` (null : module par défaut), `cle` | `<:module:cle:>` |
+
+**Décision (lot L4.1)** : le multi en ligne est un atome dont les parties sont en attribut, et non un
+nœud à contenu `spipLangInline+` : les nœuds inline à contenu de ProseMirror se prêtent mal à
+l'édition (curseur, sélection). Il s'édite dans un popover, comme une note (lot L4.2).
 | `spipNbsp` | (texte) | — | `~` restitué comme U+00A0 dans le texte, re-sérialisé en `~` |
 | `spipRawInline` | nœud inline atome | `source` | fragment inline non reconnu (HTML exotique, raccourci cassé) |
 

@@ -190,6 +190,19 @@ avec les évolutions suivantes.
 - Idiomes `<:module:cle:>` : nœud atomique affichant la traduction (récupérée en lot) avec le raccourci
   en infobulle ; édition du raccourci brut.
 
+Lot L4.1 (vérifié avec l'oracle, rendu dans chaque langue) :
+- **Ordre de traitement :** `<multi>` et idiomes sont traités dans `typo()`, après tous les autres raccourcis. Liens, notes, gras… d'une partie sont rendus normalement, et les marqueurs `[xx]` se cherchent dans le texte où ces raccourcis sont déjà remplacés.
+- **Découpage des parties** (`Multis::extraire_trads()`) : une première partie sans marqueur n'existe que si elle n'est pas vide ; casse du code gardée (`[FR]` rend `lang='FR'`).
+- **Marqueur dans le texte d'une partie :** `\[en]` ne protège pas un marqueur (le `\` reste dans la partie précédente), d'où l'écriture `&#91;en]`.
+- **Multi en ligne :** atome affiché dans la langue de l'interface (`<html lang>`, code exact puis langue de base, sinon la première partie), les autres parties en infobulle, la langue en badge.
+- **Multi bloc :** parties empilées, chacune avec sa langue en badge, éditables directement.
+- **Gardés bruts :**
+  - un multi dans le texte d'un lien ;
+  - un multi qui contient une ligne vide sans être seul dans son segment ;
+  - un multi bloc dont une partie n'est pas faite que de paragraphes.
+- **Idiomes :** affichés par leur raccourci (traduction : L4.2).
+- **Choix d'affichage :** onglets et sélecteur de langue ne sont pas faits ; toutes les parties d'un multi bloc restent visibles.
+
 ## 6. Blocs protégés — `codeBlock`, `spipCadre`, `spipHtml`, `spipMath`, `spipPoesie`
 
 - Code : backticks (`` `x` `` → mark `code`, ```` ```php … ``` ```` → `codeBlock` avec `language`) et forme

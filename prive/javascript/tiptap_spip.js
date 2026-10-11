@@ -17709,6 +17709,7 @@ var RE_GLOSSAIRE = /\[\?+\s*([^\][<>]+)\]/g;
 var RE_ANCRE = /\[#?([^\][]*)<-\]/g;
 var RE_ABBR = /\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]/g;
 var RE_MULTI = /<multi>(.*?)<\/multi>/gs;
+var RE_LANGUE_MULTI = /\[([a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?)\]/gi;
 var RE_IDIOME = /<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>/gi;
 var RE_PROTEGE_BLOCS = /<(html|pre|code|cadre|frame|script|style|math)(\b[^>]*)?>(.*?)<\/\1>/gis;
 var RE_BACKTICKS = [
@@ -17733,6 +17734,7 @@ var RE_NOTE_SEULE = new RegExp(`^\\[\\[([ \\t\\n\\v\\f\\r]*(<([^>'"]*)>)?([\\s\\
 var RE_GLOSSAIRE_SEUL = /^\[\?+\s*([^\][<>]+)\]$/;
 var RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
 var RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
+var RE_IDIOME_SEUL = /^<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>$/i;
 var RE_MODELE_SEUL = /^<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>$/i;
 
 // src/spip/abbr.js
@@ -17790,6 +17792,31 @@ function serializeModel(model) {
   const params = model.params.map(({ key, value }) => `|${key === null ? value : `${key}=${value}`}`).join("");
   return `<${model.name}${model.id ?? ""}${params}>`;
 }
+
+// src/spip/multi.js
+var OUVRANT = "<multi>".length;
+var FERMANT = "</multi>".length;
+function parseMulti(src, masked = src) {
+  const fin = src.length - FERMANT;
+  const parts = [];
+  let lang = null;
+  let debut = OUVRANT;
+  for (const m of masked.slice(OUVRANT, fin).matchAll(RE_LANGUE_MULTI)) {
+    const pos = OUVRANT + m.index;
+    if (lang !== null || pos > debut) parts.push({ lang, start: debut, end: pos });
+    lang = m[1];
+    debut = pos + m[0].length;
+  }
+  parts.push({ lang, start: debut, end: fin });
+  return parts;
+}
+var serializeMulti = (parts) => `<multi>${parts.map(({ lang, texte: texte2 }) => (lang ? `[${lang}]` : "") + texte2).join("")}</multi>`;
+function parseIdiome(src) {
+  const m = src.match(RE_IDIOME_SEUL);
+  if (!m) return null;
+  return m[1] === void 0 ? { cle: m[2] } : { module: m[1], cle: m[2] };
+}
+var serializeIdiome = ({ module, cle }) => `<:${module ? `${module}:` : ""}${cle}:>`;
 
 // src/spip/notes.js
 var BLOCS = /* @__PURE__ */ new Set(["paragraph", "bulletList", "orderedList", "spipModelBlock"]);
@@ -17884,7 +17911,7 @@ function protect(source) {
   }));
   scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, "note", { masked: m[0] }));
   scan(RE_ABBR, (m, start, end) => add(start, end, "abbr", {}));
-  scan(RE_MULTI, (m, start, end) => add(start, end, "multi", {}));
+  scan(RE_MULTI, (m, start, end) => add(start, end, "multi", { masked: m[0] }));
   scan(RE_IDIOME, (m, start, end) => add(start, end, "idiome", {}));
   regions.sort((a, b) => a.start - b.start);
   return { masked, regions };
@@ -17907,7 +17934,7 @@ function serialize(doc4, { conservative = true } = {}) {
     contexte = avant;
   }
 }
-var contexte = { conservative: true, note: false };
+var contexte = { conservative: true, note: false, multi: false };
 function serializeDoc(doc4, conservative) {
   const blocks2 = doc4.content ?? [];
   let out = conservative ? doc4.attrs?.spipLead ?? "" : "";
@@ -17968,6 +17995,11 @@ ${blocks(b.content)}
       return a.source;
     case "spipModelBlock":
       return serializeModel(a.model);
+    case "spipMultiBlock":
+      return enMulti(() => serializeMulti(b.content.map((part) => ({
+        lang: part.attrs?.lang ?? null,
+        texte: serialize(node("doc", null, part.content), { conservative: false })
+      }))));
     case "table":
       return serializeTable(b);
     default:
@@ -18131,6 +18163,12 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
     } else if (n.type === "spipNote") {
       out += serializeNote(n.attrs);
       atLineStart = false;
+    } else if (n.type === "spipMultiInline") {
+      out += serializeMultiInline(n.attrs);
+      atLineStart = false;
+    } else if (n.type === "spipIdiome") {
+      out += serializeIdiome(n.attrs);
+      atLineStart = false;
     } else {
       throw new Error(`serialize: type inline inconnu \xAB ${n.type} \xBB`);
     }
@@ -18148,6 +18186,19 @@ function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) 
     contexte = avant;
   }
 }
+function enMulti(f) {
+  const avant = contexte;
+  contexte = { ...contexte, multi: true };
+  try {
+    return f();
+  } finally {
+    contexte = avant;
+  }
+}
+function serializeMultiInline({ parts = [], spipSrc = null, spipHash = null }) {
+  if (contexte.conservative && typeof spipSrc === "string" && spipHash === canon(parts)) return spipSrc;
+  return enMulti(() => serializeMulti(parts.map(({ lang, content }) => ({ lang, texte: serializeInline(content ?? []) }))));
+}
 function serializeCode(code2) {
   const backtick = code2 === code2.trim() && canBacktick(code2) && !/^`|`$|``/.test(code2);
   if (!backtick) return `<code>${encodeCode(code2)}</code>`;
@@ -18155,6 +18206,7 @@ function serializeCode(code2) {
 }
 function escapeText(value, atLineStart, { link = false, avantCrochets = false } = {}) {
   let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:])/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
+  if (contexte.multi) s = s.replace(/\[(?=[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?\])/gi, "&#91;");
   if (!link) {
     s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
   } else {
@@ -18208,6 +18260,16 @@ function markedToken(region, src) {
   if (!r || /[\r\n]/.test(r.v) || escapeText(r.v, false) !== r.v || def.write(r.v, r.attrs) !== src) return null;
   return { t: "marked", mark: { type: def.type, attrs: r.attrs }, v: r.v };
 }
+var LIGNE_VIDE = /\n[ \t\r]*\n/;
+function multiNode(src, masked) {
+  if (LIGNE_VIDE.test(src)) return null;
+  const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
+    const part = src.slice(start, end);
+    const p = protect(part);
+    return { lang, content: parseInline(part, p.masked, p.regions) };
+  });
+  return node("spipMultiInline", { parts, spipSrc: src, spipHash: canon(parts) });
+}
 function noteNode({ name, content, lead, trail }) {
   return node("spipNote", { ...name === null ? {} : { name }, content, spipLead: lead, spipTrail: trail });
 }
@@ -18240,6 +18302,8 @@ function tokenize(source, masked, regions, lineStart, link) {
       const src = source.slice(region.start, region.end);
       let note;
       let marque;
+      let multi;
+      let idiome;
       if (region.kind === "escape") {
         buf += region.data.char;
       } else if (region.kind === "backtick" && region.data.ticks.length < 3 && region.data.code.trim() !== "") {
@@ -18252,6 +18316,10 @@ function tokenize(source, masked, regions, lineStart, link) {
         push({ t: "node", node: noteNode(note) });
       } else if (region.kind === "anchor") {
         push({ t: "node", node: node("spipAnchor", { name: region.data.name }) });
+      } else if (region.kind === "multi" && !link && (multi = multiNode(src, region.data.masked))) {
+        push({ t: "node", node: multi });
+      } else if (region.kind === "idiome" && (idiome = parseIdiome(src))) {
+        push({ t: "node", node: node("spipIdiome", idiome) });
       } else if (region.kind === "model" && parseModel(src)) {
         push({ t: "node", node: node("spipModel", { model: parseModel(src) }) });
       } else if (region.kind === "block" && region.data.openTag === "<code>" && !region.data.inner.includes("\n") && region.data.inner !== "" && !region.data.absorbed.includes("backtick")) {
@@ -18448,6 +18516,7 @@ function verbatimBlock(src, regions) {
   const r = regions.length === 1 && regions[0].start === 0 && regions[0].end === src.length ? regions[0] : null;
   if (!r) return null;
   if (r.kind === "model" && parseModel(src)) return [node("spipModelBlock", { model: parseModel(src) })];
+  if (r.kind === "multi") return multiBlock(src, r.data.masked);
   if (r.kind === "backtick" && r.data.ticks.length >= 3) {
     return [node("codeBlock", { language: r.data.language || null }, textContent(r.data.code))];
   }
@@ -18461,6 +18530,15 @@ function verbatimBlock(src, regions) {
   }
   const type = { cadre: "spipCadre", frame: "spipCadre", html: "spipHtml", math: "spipMath" }[tag];
   return [type ? node(type, { openTag, closeTag }, textContent(inner)) : node("spipRaw", { source: src })];
+}
+function multiBlock(src, masked) {
+  if (!LIGNE_VIDE.test(src)) return null;
+  const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
+    const content = parseContent(src.slice(start, end));
+    if (content.some((b) => b.type !== "paragraph")) throw new Fallback();
+    return node("spipLangBlock", { lang }, content);
+  });
+  return [node("spipMultiBlock", null, parts)];
 }
 function containerBlock(src, msk) {
   let m;
@@ -24477,7 +24555,8 @@ var TOP_BLOCKS = [
   "spipHtml",
   "spipMath",
   "spipRaw",
-  "spipModelBlock"
+  "spipModelBlock",
+  "spipMultiBlock"
 ];
 var SegmentMap = Extension.create({
   name: "spipSegmentMap",
@@ -24692,6 +24771,75 @@ var SpipModelBlock = Node3.create({
   parseHTML: () => [{ tag: "div[data-tts-model]" }],
   renderHTML: ({ node: node2, HTMLAttributes }) => ["div", { ...HTMLAttributes, class: "tts-model tts-model-block" }, node2.attrs.model?.source ?? ""]
 });
+var jsonAttr = (name, dataAttr, fallback) => ({
+  [name]: {
+    default: fallback,
+    parseHTML: (el) => {
+      try {
+        return JSON.parse(el.getAttribute(dataAttr)) ?? fallback;
+      } catch {
+        return fallback;
+      }
+    },
+    renderHTML: (a) => ({ [dataAttr]: JSON.stringify(a[name] ?? fallback) })
+  }
+});
+var langAttr = () => ({
+  lang: {
+    default: null,
+    parseHTML: (el) => el.getAttribute("data-tts-lang"),
+    renderHTML: (a) => a.lang == null ? {} : { "data-tts-lang": a.lang }
+  }
+});
+function partieAffichee(parts, langue = globalThis.document?.documentElement?.lang ?? "") {
+  const l = langue.toLowerCase();
+  const base2 = l.split(/[-_]/)[0];
+  return parts.find((p) => p.lang?.toLowerCase() === l) ?? parts.find((p) => p.lang?.toLowerCase().split("_")[0] === base2) ?? parts[0];
+}
+var SpipMultiInline = Node3.create({
+  name: "spipMultiInline",
+  group: "inline",
+  inline: true,
+  atom: true,
+  selectable: true,
+  addAttributes: () => ({ ...jsonAttr("parts", "data-tts-multi", []), spipSrc: hidden(), spipHash: hidden() }),
+  parseHTML: () => [{ tag: "span[data-tts-multi]" }],
+  renderHTML: ({ node: node2, HTMLAttributes }) => {
+    const parts = node2.attrs.parts ?? [];
+    const affichee = partieAffichee(parts);
+    const title = parts.map((p) => `${p.lang ?? "*"} : ${apercu(p.content)}`).join(" \xB7 ");
+    return ["span", { ...HTMLAttributes, class: "tts-multi", title, "data-tts-lang": affichee?.lang ?? "" }, apercu(affichee?.content ?? [])];
+  }
+});
+var SpipLangBlock = Node3.create({
+  name: "spipLangBlock",
+  content: "paragraph+",
+  defining: true,
+  addAttributes: langAttr,
+  parseHTML: () => [{ tag: "div[data-tts-lang-block]" }],
+  renderHTML: ({ HTMLAttributes }) => ["div", { ...HTMLAttributes, class: "tts-lang", "data-tts-lang-block": "" }, 0]
+});
+var SpipMultiBlock = Node3.create({
+  name: "spipMultiBlock",
+  group: "block",
+  content: "spipLangBlock+",
+  defining: true,
+  parseHTML: () => [{ tag: "div[data-tts-multi-block]" }],
+  renderHTML: () => ["div", { class: "tts-multi-block", "data-tts-multi-block": "" }, 0]
+});
+var SpipIdiome = Node3.create({
+  name: "spipIdiome",
+  group: "inline",
+  inline: true,
+  atom: true,
+  selectable: true,
+  addAttributes: () => ({
+    module: { default: null, parseHTML: (el) => el.getAttribute("data-tts-module"), renderHTML: (a) => a.module ? { "data-tts-module": a.module } : {} },
+    cle: { default: "", parseHTML: (el) => el.getAttribute("data-tts-idiome") ?? "", renderHTML: (a) => ({ "data-tts-idiome": a.cle }) }
+  }),
+  parseHTML: () => [{ tag: "code[data-tts-idiome]", priority: 60 }],
+  renderHTML: ({ node: node2, HTMLAttributes }) => ["code", { ...HTMLAttributes, class: "tts-idiome" }, `<:${node2.attrs.module ? `${node2.attrs.module}:` : ""}${node2.attrs.cle}:>`]
+});
 function apercu(content, max = 80) {
   const morceaux = [];
   const parcourir = (n) => {
@@ -24861,6 +25009,10 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
     SpipAnchor,
     SpipNote.configure({ ui }),
     SpipNoteNumbers,
+    SpipMultiInline,
+    SpipMultiBlock,
+    SpipLangBlock,
+    SpipIdiome,
     withView(SpipModel, modelView, Boolean(ui?.previews)),
     withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
     // marks : ordre canonique de MARK_ORDER

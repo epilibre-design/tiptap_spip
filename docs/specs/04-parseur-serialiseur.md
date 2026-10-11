@@ -57,7 +57,8 @@ Le parseur suit l'ordre de TextWheel. Chaque étape est une **règle enregistré
      récursivement ; tout autre `<div>` → `spipRaw` ;
    - `<quote>`, `<poesie>` (blocs conteneurs, parsés récursivement) ;
    - bloc ne contenant qu'un jeton de modèle → `spipModelBlock` ;
-   - bloc ne contenant qu'un jeton `<multi>` dont les parties contiennent des lignes vides → `spipMultiBlock` ;
+   - bloc ne contenant qu'un jeton `<multi>` dont les parties contiennent des lignes vides → `spipMultiBlock`
+     (parties faites de paragraphes seulement, sinon brut ; lot L4.1) ;
    - sinon `paragraph`.
 4. **Inline** dans chaque bloc textuel, dans l'ordre de `propre()` (vérifié avec l'oracle, lot L3.1) :
    modèles → glossaire `[?…]` et ancres `[#x<-]` (pipeline `pre_liens`) → liens `[…->…]` (texte parsé

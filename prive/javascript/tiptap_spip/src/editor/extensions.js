@@ -33,7 +33,7 @@ const hidden = (fallback = null, keepOnSplit = true) => ({ default: fallback, re
 /** Blocs de premier niveau : seuls ceux-ci portent la carte de segments. */
 const TOP_BLOCKS = [
 	'paragraph', 'heading', 'horizontalRule', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'table',
-	'spipPoesie', 'spipAlign', 'spipCadre', 'spipHtml', 'spipMath', 'spipRaw', 'spipModelBlock',
+	'spipPoesie', 'spipAlign', 'spipCadre', 'spipHtml', 'spipMath', 'spipRaw', 'spipModelBlock', 'spipMultiBlock',
 ];
 
 /** Attributs de la sérialisation conservatrice (spec 04 §4) : jamais recopiés sur un bloc coupé. */
@@ -303,6 +303,97 @@ const SpipModelBlock = Node.create({
 	renderHTML: ({ node, HTMLAttributes }) => ['div', { ...HTMLAttributes, class: 'tts-model tts-model-block' }, node.attrs.model?.source ?? ''],
 });
 
+/** Attribut JSON transporté dans le HTML (copier-coller interne). */
+const jsonAttr = (name, dataAttr, fallback) => ({
+	[name]: {
+		default: fallback,
+		parseHTML: (el) => {
+			try {
+				return JSON.parse(el.getAttribute(dataAttr)) ?? fallback;
+			} catch {
+				return fallback;
+			}
+		},
+		renderHTML: (a) => ({ [dataAttr]: JSON.stringify(a[name] ?? fallback) }),
+	},
+});
+
+/** Attribut lang d'une partie de multi (null : partie sans langue). */
+const langAttr = () => ({
+	lang: {
+		default: null,
+		parseHTML: (el) => el.getAttribute('data-tts-lang'),
+		renderHTML: (a) => (a.lang == null ? {} : { 'data-tts-lang': a.lang }),
+	},
+});
+
+/**
+ * Partie d'un multi affichée : celle de la langue de l'interface (code exact, puis langue de base),
+ * sinon la première.
+ */
+export function partieAffichee(parts, langue = globalThis.document?.documentElement?.lang ?? '') {
+	const l = langue.toLowerCase();
+	const base = l.split(/[-_]/)[0];
+	return parts.find((p) => p.lang?.toLowerCase() === l)
+		?? parts.find((p) => p.lang?.toLowerCase().split('_')[0] === base)
+		?? parts[0];
+}
+
+/**
+ * Multi dans une phrase (spec 05 §5) : atome, une partie par langue ; affiché dans la langue de
+ * l'interface, les autres en infobulle. Édité dans un popover (lot L4.2).
+ */
+const SpipMultiInline = Node.create({
+	name: 'spipMultiInline',
+	group: 'inline',
+	inline: true,
+	atom: true,
+	selectable: true,
+	addAttributes: () => ({ ...jsonAttr('parts', 'data-tts-multi', []), spipSrc: hidden(), spipHash: hidden() }),
+	parseHTML: () => [{ tag: 'span[data-tts-multi]' }],
+	renderHTML: ({ node, HTMLAttributes }) => {
+		const parts = node.attrs.parts ?? [];
+		const affichee = partieAffichee(parts);
+		const title = parts.map((p) => `${p.lang ?? '*'} : ${apercu(p.content)}`).join(' · ');
+		return ['span', { ...HTMLAttributes, class: 'tts-multi', title, 'data-tts-lang': affichee?.lang ?? '' }, apercu(affichee?.content ?? [])];
+	},
+});
+
+/** Partie d'un multi bloc : des paragraphes, et sa langue en badge. */
+const SpipLangBlock = Node.create({
+	name: 'spipLangBlock',
+	content: 'paragraph+',
+	defining: true,
+	addAttributes: langAttr,
+	parseHTML: () => [{ tag: 'div[data-tts-lang-block]' }],
+	renderHTML: ({ HTMLAttributes }) => ['div', { ...HTMLAttributes, class: 'tts-lang', 'data-tts-lang-block': '' }, 0],
+});
+
+/** Multi sur plusieurs paragraphes : ses parties empilées. */
+const SpipMultiBlock = Node.create({
+	name: 'spipMultiBlock',
+	group: 'block',
+	content: 'spipLangBlock+',
+	defining: true,
+	parseHTML: () => [{ tag: 'div[data-tts-multi-block]' }],
+	renderHTML: () => ['div', { class: 'tts-multi-block', 'data-tts-multi-block': '' }, 0],
+});
+
+/** Idiome <:module:cle:> : chaîne de langue de SPIP, affichée par son raccourci (traduction : L4.2). */
+const SpipIdiome = Node.create({
+	name: 'spipIdiome',
+	group: 'inline',
+	inline: true,
+	atom: true,
+	selectable: true,
+	addAttributes: () => ({
+		module: { default: null, parseHTML: (el) => el.getAttribute('data-tts-module'), renderHTML: (a) => (a.module ? { 'data-tts-module': a.module } : {}) },
+		cle: { default: '', parseHTML: (el) => el.getAttribute('data-tts-idiome') ?? '', renderHTML: (a) => ({ 'data-tts-idiome': a.cle }) },
+	}),
+	parseHTML: () => [{ tag: 'code[data-tts-idiome]', priority: 60 }],
+	renderHTML: ({ node, HTMLAttributes }) => ['code', { ...HTMLAttributes, class: 'tts-idiome' }, `<:${node.attrs.module ? `${node.attrs.module}:` : ''}${node.attrs.cle}:>`],
+});
+
 /** Texte d'une note, sans mise en forme, pour l'infobulle de son appel et le panneau des notes. */
 export function apercu(content, max = 80) {
 	const morceaux = [];
@@ -505,6 +596,10 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		SpipAnchor,
 		SpipNote.configure({ ui }),
 		SpipNoteNumbers,
+		SpipMultiInline,
+		SpipMultiBlock,
+		SpipLangBlock,
+		SpipIdiome,
 		withView(SpipModel, modelView, Boolean(ui?.previews)),
 		withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
 		// marks : ordre canonique de MARK_ORDER

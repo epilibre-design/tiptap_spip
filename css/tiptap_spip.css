@@ -290,3 +290,50 @@
 .tts-notes__appel {
 	font-weight: bold;
 }
+
+/* Multilinguisme : langue en badge ; partie sans langue marquée d'un astérisque. */
+.tts-multi {
+	border-bottom: 1px dashed #7a9cc6;
+}
+
+.tts-multi::after,
+.tts-lang::before {
+	content: attr(data-tts-lang);
+	margin-left: 2px;
+	padding: 0 3px;
+	font-size: 0.7em;
+	vertical-align: super;
+	color: #fff;
+	background: #7a9cc6;
+	border-radius: 2px;
+}
+
+.tts-multi[data-tts-lang=""]::after,
+.tts-lang:not([data-tts-lang])::before {
+	content: "*";
+}
+
+.tts-multi-block {
+	margin: 0.5em 0;
+	padding: 0.25em 0.5em;
+	border-left: 3px solid #7a9cc6;
+}
+
+.tts-lang::before {
+	display: inline-block;
+	margin: 0 0 0.25em;
+	vertical-align: baseline;
+}
+
+.tts-lang + .tts-lang {
+	margin-top: 0.5em;
+	padding-top: 0.25em;
+	border-top: 1px dashed #c8d6e8;
+}
+
+.tts-idiome {
+	padding: 0 0.25em;
+	font-size: 0.9em;
+	background: #f3eefb;
+	border-radius: 3px;
+}
