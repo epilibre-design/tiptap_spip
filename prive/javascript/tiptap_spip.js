@@ -5851,24 +5851,24 @@ var FieldDesc = class {
 };
 var baseFields = [
   new FieldDesc("doc", {
-    init(config) {
-      return config.doc || config.schema.topNodeType.createAndFill();
+    init(config2) {
+      return config2.doc || config2.schema.topNodeType.createAndFill();
     },
     apply(tr) {
       return tr.doc;
     }
   }),
   new FieldDesc("selection", {
-    init(config, instance) {
-      return config.selection || Selection.atStart(instance.doc);
+    init(config2, instance) {
+      return config2.selection || Selection.atStart(instance.doc);
     },
     apply(tr) {
       return tr.selection;
     }
   }),
   new FieldDesc("storedMarks", {
-    init(config) {
-      return config.storedMarks || null;
+    init(config2) {
+      return config2.storedMarks || null;
     },
     apply(tr, _marks, _old, state) {
       return state.selection.$cursor ? tr.storedMarks : null;
@@ -5904,8 +5904,8 @@ var EditorState = class _EditorState {
   /**
   @internal
   */
-  constructor(config) {
-    this.config = config;
+  constructor(config2) {
+    this.config = config2;
   }
   /**
   The schema of the state's document.
@@ -5996,11 +5996,11 @@ var EditorState = class _EditorState {
   /**
   Create a new state.
   */
-  static create(config) {
-    let $config = new Configuration(config.doc ? config.doc.type.schema : config.schema, config.plugins);
+  static create(config2) {
+    let $config = new Configuration(config2.doc ? config2.doc.type.schema : config2.schema, config2.plugins);
     let instance = new _EditorState($config);
     for (let i2 = 0; i2 < $config.fields.length; i2++)
-      instance[$config.fields[i2].name] = $config.fields[i2].init(config, instance);
+      instance[$config.fields[i2].name] = $config.fields[i2].init(config2, instance);
     return instance;
   }
   /**
@@ -6011,12 +6011,12 @@ var EditorState = class _EditorState {
   [`init`](https://prosemirror.net/docs/ref/#state.StateField.init) method, passing in the new
   configuration object..
   */
-  reconfigure(config) {
-    let $config = new Configuration(this.schema, config.plugins);
+  reconfigure(config2) {
+    let $config = new Configuration(this.schema, config2.plugins);
     let fields = $config.fields, instance = new _EditorState($config);
     for (let i2 = 0; i2 < fields.length; i2++) {
       let name = fields[i2].name;
-      instance[name] = this.hasOwnProperty(name) ? this[name] : fields[i2].init(config, instance);
+      instance[name] = this.hasOwnProperty(name) ? this[name] : fields[i2].init(config2, instance);
     }
     return instance;
   }
@@ -6048,31 +6048,31 @@ var EditorState = class _EditorState {
   to deserialize the state of plugins, by associating plugin
   instances with the property names they use in the JSON object.
   */
-  static fromJSON(config, json, pluginFields) {
+  static fromJSON(config2, json, pluginFields) {
     if (!json)
       throw new RangeError("Invalid input for EditorState.fromJSON");
-    if (!config.schema)
+    if (!config2.schema)
       throw new RangeError("Required config field 'schema' missing");
-    let $config = new Configuration(config.schema, config.plugins);
+    let $config = new Configuration(config2.schema, config2.plugins);
     let instance = new _EditorState($config);
     $config.fields.forEach((field) => {
       if (field.name == "doc") {
-        instance.doc = Node2.fromJSON(config.schema, json.doc);
+        instance.doc = Node2.fromJSON(config2.schema, json.doc);
       } else if (field.name == "selection") {
         instance.selection = Selection.fromJSON(instance.doc, json.selection);
       } else if (field.name == "storedMarks") {
         if (json.storedMarks)
-          instance.storedMarks = json.storedMarks.map(config.schema.markFromJSON);
+          instance.storedMarks = json.storedMarks.map(config2.schema.markFromJSON);
       } else {
         if (pluginFields)
           for (let prop in pluginFields) {
             let plugin = pluginFields[prop], state = plugin.spec.state;
             if (plugin.key == field.name && state && state.fromJSON && Object.prototype.hasOwnProperty.call(json, prop)) {
-              instance[field.name] = state.fromJSON.call(plugin, config, json[prop], instance);
+              instance[field.name] = state.fromJSON.call(plugin, config2, json[prop], instance);
               return;
             }
           }
-        instance[field.name] = field.init(config, instance);
+        instance[field.name] = field.init(config2, instance);
       }
     });
     return instance;
@@ -12797,10 +12797,10 @@ function closeHistory(tr) {
 }
 var historyKey = new PluginKey("history");
 var closeHistoryKey = new PluginKey("closeHistory");
-function history(config = {}) {
-  config = {
-    depth: config.depth || 100,
-    newGroupDelay: config.newGroupDelay || 500
+function history(config2 = {}) {
+  config2 = {
+    depth: config2.depth || 100,
+    newGroupDelay: config2.newGroupDelay || 500
   };
   return new Plugin({
     key: historyKey,
@@ -12809,10 +12809,10 @@ function history(config = {}) {
         return new HistoryState(Branch.empty, Branch.empty, null, 0, -1);
       },
       apply(tr, hist, state) {
-        return applyTransaction(hist, state, tr, config);
+        return applyTransaction(hist, state, tr, config2);
       }
     },
-    config,
+    config: config2,
     props: {
       handleDOMEvents: {
         beforeinput(view, e) {
@@ -12846,8 +12846,8 @@ var undoNoScroll = buildCommand(false, false);
 var redoNoScroll = buildCommand(true, false);
 
 // node_modules/@tiptap/core/dist/index.js
-function createChainableState(config) {
-  const { state, transaction } = config;
+function createChainableState(config2) {
+  const { state, transaction } = config2;
   let { selection } = transaction;
   let { doc: doc3 } = transaction;
   let { storedMarks } = transaction;
@@ -15525,15 +15525,15 @@ function isPlainObject(value) {
 function isValidCSSStyleValue(value) {
   return typeof value === "string" && value.trim().length > 0 && !/[;{}]/.test(value);
 }
-function parseIndentedBlocks(src, config, lexer) {
+function parseIndentedBlocks(src, config2, lexer) {
   const lines = src.split("\n");
   const items = [];
   let totalRaw = "";
   let i2 = 0;
-  const baseIndentSize = config.baseIndentSize || 2;
+  const baseIndentSize = config2.baseIndentSize || 2;
   while (i2 < lines.length) {
     const currentLine = lines[i2];
-    const itemMatch = currentLine.match(config.itemPattern);
+    const itemMatch = currentLine.match(config2.itemPattern);
     if (!itemMatch) {
       if (items.length > 0) break;
       else if (currentLine.trim() === "") {
@@ -15543,7 +15543,7 @@ function parseIndentedBlocks(src, config, lexer) {
         continue;
       } else return;
     }
-    const itemData = config.extractItemData(itemMatch);
+    const itemData = config2.extractItemData(itemMatch);
     const { indentLevel, mainContent } = itemData;
     totalRaw = `${totalRaw}${currentLine}
 `;
@@ -15576,11 +15576,11 @@ function parseIndentedBlocks(src, config, lexer) {
     if (nestedContent.length > 0) {
       const dedentedNested = nestedContent.map((nestedLine) => nestedLine.slice(indentLevel + baseIndentSize)).join("\n");
       if (dedentedNested.trim()) {
-        if (config.customNestedParser) nestedTokens = config.customNestedParser(dedentedNested);
+        if (config2.customNestedParser) nestedTokens = config2.customNestedParser(dedentedNested);
         else nestedTokens = lexer.blockTokens(dedentedNested);
       }
     }
-    const token = config.createToken(itemData, nestedTokens);
+    const token = config2.createToken(itemData, nestedTokens);
     items.push(token);
   }
   if (items.length === 0) return;
@@ -15656,11 +15656,11 @@ function updateMarkViewAttributes(checkMark, editor, attrs = {}) {
   if (tr.docChanged) editor.view.dispatch(tr);
 }
 var InputRule = class {
-  constructor(config) {
+  constructor(config2) {
     var _config$undoable;
-    this.find = config.find;
-    this.handler = config.handler;
-    this.undoable = (_config$undoable = config.undoable) !== null && _config$undoable !== void 0 ? _config$undoable : true;
+    this.find = config2.find;
+    this.handler = config2.handler;
+    this.undoable = (_config$undoable = config2.undoable) !== null && _config$undoable !== void 0 ? _config$undoable : true;
   }
 };
 var inputRuleMatcherHandler = (text2, find) => {
@@ -15677,8 +15677,8 @@ var inputRuleMatcherHandler = (text2, find) => {
   }
   return result;
 };
-function createRuleTransaction(config) {
-  const { editor, from: from2, to, text: text2, insertText } = config;
+function createRuleTransaction(config2) {
+  const { editor, from: from2, to, text: text2, insertText } = config2;
   if (!insertText) return {
     inputTransaction: null,
     tr: editor.view.state.tr
@@ -15693,8 +15693,8 @@ function createRuleTransaction(config) {
     }).tr
   };
 }
-function applyRule(config) {
-  const { editor, from: from2, to, text: text2, rule, match, plugin, insertText } = config;
+function applyRule(config2) {
+  const { editor, from: from2, to, text: text2, rule, match, plugin, insertText } = config2;
   const { view } = editor;
   const { inputTransaction, tr } = createRuleTransaction({
     editor,
@@ -15745,9 +15745,9 @@ function matchesDocument($from, match, text2) {
   const matchStartOffset = $from.parentOffset - matchedDocLength;
   return matchStartOffset >= 0 && $from.parent.textBetween(matchStartOffset, $from.parentOffset) === match[0].slice(0, matchedDocLength);
 }
-function run$1(config) {
+function run$1(config2) {
   var _ref;
-  const { editor, from: from2, to, text: text2, rules, plugin, insertText } = config;
+  const { editor, from: from2, to, text: text2, rules, plugin, insertText } = config2;
   const { view } = editor;
   if (view.composing) return false;
   const $from = view.state.doc.resolve(from2);
@@ -15843,7 +15843,7 @@ function inputRulesPlugin(props) {
   return plugin;
 }
 var Extendable = class {
-  constructor(config = {}) {
+  constructor(config2 = {}) {
     this.type = "extendable";
     this.parent = null;
     this.child = null;
@@ -15851,7 +15851,7 @@ var Extendable = class {
     this.config = { name: this.name };
     this.config = {
       ...this.config,
-      ...config
+      ...config2
     };
     this.name = this.config.name;
   }
@@ -15896,8 +15896,8 @@ var Mark2 = class Mark3 extends Extendable {
   * Create a new Mark instance
   * @param config - Mark configuration object or a function that returns a configuration object
   */
-  static create(config = {}) {
-    const resolvedConfig = typeof config === "function" ? config() : config;
+  static create(config2 = {}) {
+    const resolvedConfig = typeof config2 === "function" ? config2() : config2;
     return new Mark3(resolvedConfig);
   }
   static handleExit({ editor, mark }) {
@@ -15923,9 +15923,9 @@ var Mark2 = class Mark3 extends Extendable {
   }
 };
 var PasteRule = class {
-  constructor(config) {
-    this.find = config.find;
-    this.handler = config.handler;
+  constructor(config2) {
+    this.find = config2.find;
+    this.handler = config2.handler;
   }
 };
 var pasteRuleMatcherHandler = (text2, find, event) => {
@@ -15944,8 +15944,8 @@ var pasteRuleMatcherHandler = (text2, find, event) => {
     return result;
   });
 };
-function run(config) {
-  const { editor, state, from: from2, to, rule, pasteEvent, dropEvent } = config;
+function run(config2) {
+  const { editor, state, from: from2, to, rule, pasteEvent, dropEvent } = config2;
   const { commands, chain, can } = new CommandManager({
     editor,
     state
@@ -16437,8 +16437,8 @@ var Extension = class Extension2 extends Extendable {
   * Create a new Extension instance
   * @param config - Extension configuration object or a function that returns a configuration object
   */
-  static create(config = {}) {
-    const resolvedConfig = typeof config === "function" ? config() : config;
+  static create(config2 = {}) {
+    const resolvedConfig = typeof config2 === "function" ? config2() : config2;
     return new Extension2(resolvedConfig);
   }
   configure(options) {
@@ -17508,11 +17508,11 @@ var Editor = class extends EventEmitter {
     return this.$pos(0);
   }
 };
-function markInputRule(config) {
+function markInputRule(config2) {
   return new InputRule({
-    find: config.find,
+    find: config2.find,
     handler: ({ state, range, match }) => {
-      const attributes = callOrReturn(config.getAttributes, void 0, match);
+      const attributes = callOrReturn(config2.getAttributes, void 0, match);
       if (attributes === false || attributes === null) return null;
       const { tr } = state;
       const captureGroup = match[match.length - 1];
@@ -17522,27 +17522,27 @@ function markInputRule(config) {
         const textStart = range.from + fullMatch.indexOf(captureGroup);
         const textEnd = textStart + captureGroup.length;
         if (getMarksBetween(range.from, range.to, state.doc).filter((item) => {
-          return item.mark.type.excluded.find((type) => type === config.type && type !== item.mark.type);
+          return item.mark.type.excluded.find((type) => type === config2.type && type !== item.mark.type);
         }).filter((item) => item.to > textStart).length) return null;
         if (textEnd < range.to) tr.delete(textEnd, range.to);
         if (textStart > range.from) tr.delete(range.from + startSpaces, textStart);
         const markEnd = range.from + startSpaces + captureGroup.length;
-        tr.addMark(range.from + startSpaces, markEnd, config.type.create(attributes || {}));
-        tr.removeStoredMark(config.type);
+        tr.addMark(range.from + startSpaces, markEnd, config2.type.create(attributes || {}));
+        tr.removeStoredMark(config2.type);
       }
     },
-    undoable: config.undoable
+    undoable: config2.undoable
   });
 }
-function nodeInputRule(config) {
+function nodeInputRule(config2) {
   return new InputRule({
-    find: config.find,
+    find: config2.find,
     handler: ({ state, range, match }) => {
-      const attributes = callOrReturn(config.getAttributes, void 0, match) || {};
+      const attributes = callOrReturn(config2.getAttributes, void 0, match) || {};
       const { tr } = state;
       const start = range.from;
       let end = range.to;
-      const newNode = config.type.create(attributes);
+      const newNode = config2.type.create(attributes);
       if (match[1]) {
         let matchStart = start + match[0].lastIndexOf(match[1]);
         if (matchStart > end) matchStart = end;
@@ -17551,53 +17551,53 @@ function nodeInputRule(config) {
         tr.insertText(lastChar, start + match[0].length - 1);
         tr.replaceWith(matchStart, end, newNode);
       } else if (match[0]) {
-        const insertionStart = config.type.isInline ? start : start - 1;
-        tr.insert(insertionStart, config.type.create(attributes)).delete(tr.mapping.map(start), tr.mapping.map(end));
+        const insertionStart = config2.type.isInline ? start : start - 1;
+        tr.insert(insertionStart, config2.type.create(attributes)).delete(tr.mapping.map(start), tr.mapping.map(end));
       }
       tr.scrollIntoView();
     },
-    undoable: config.undoable
+    undoable: config2.undoable
   });
 }
-function textblockTypeInputRule(config) {
+function textblockTypeInputRule(config2) {
   return new InputRule({
-    find: config.find,
+    find: config2.find,
     handler: ({ state, range, match }) => {
       const $start = state.doc.resolve(range.from);
-      const attributes = callOrReturn(config.getAttributes, void 0, match) || {};
-      if (!$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config.type)) return null;
-      state.tr.delete(range.from, range.to).setBlockType(range.from, range.from, config.type, attributes);
+      const attributes = callOrReturn(config2.getAttributes, void 0, match) || {};
+      if (!$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config2.type)) return null;
+      state.tr.delete(range.from, range.to).setBlockType(range.from, range.from, config2.type, attributes);
     },
-    undoable: config.undoable
+    undoable: config2.undoable
   });
 }
-function wrappingInputRule(config) {
+function wrappingInputRule(config2) {
   return new InputRule({
-    find: config.find,
+    find: config2.find,
     handler: ({ state, range, match, chain }) => {
-      const attributes = callOrReturn(config.getAttributes, void 0, match) || {};
+      const attributes = callOrReturn(config2.getAttributes, void 0, match) || {};
       const tr = state.tr.delete(range.from, range.to);
       const blockRange = tr.doc.resolve(range.from).blockRange();
-      const wrapping = blockRange && findWrapping(blockRange, config.type, attributes);
+      const wrapping = blockRange && findWrapping(blockRange, config2.type, attributes);
       if (!wrapping) return null;
       tr.wrap(blockRange, wrapping);
-      if (config.keepMarks && config.editor) {
+      if (config2.keepMarks && config2.editor) {
         const { selection, storedMarks } = state;
-        const { splittableMarks } = config.editor.extensionManager;
+        const { splittableMarks } = config2.editor.extensionManager;
         const marks = storedMarks || selection.$to.parentOffset && selection.$from.marks();
         if (marks) {
           const filteredMarks = marks.filter((mark) => splittableMarks.includes(mark.type.name));
           tr.ensureMarks(filteredMarks);
         }
       }
-      if (config.keepAttributes) {
-        const nodeType = config.type.name === "bulletList" || config.type.name === "orderedList" ? "listItem" : "taskList";
+      if (config2.keepAttributes) {
+        const nodeType = config2.type.name === "bulletList" || config2.type.name === "orderedList" ? "listItem" : "taskList";
         chain().updateAttributes(nodeType, attributes).run();
       }
       const before = tr.doc.resolve(range.from - 1).nodeBefore;
-      if (before && before.type === config.type && canJoin(tr.doc, range.from - 1) && (!config.joinPredicate || config.joinPredicate(match, before))) tr.join(range.from - 1);
+      if (before && before.type === config2.type && canJoin(tr.doc, range.from - 1) && (!config2.joinPredicate || config2.joinPredicate(match, before))) tr.join(range.from - 1);
     },
-    undoable: config.undoable
+    undoable: config2.undoable
   });
 }
 var Node3 = class Node4 extends Extendable {
@@ -17609,8 +17609,8 @@ var Node3 = class Node4 extends Extendable {
   * Create a new Node instance
   * @param config - Node configuration object or a function that returns a configuration object
   */
-  static create(config = {}) {
-    const resolvedConfig = typeof config === "function" ? config() : config;
+  static create(config2 = {}) {
+    const resolvedConfig = typeof config2 === "function" ? config2() : config2;
     return new Node4(resolvedConfig);
   }
   configure(options) {
@@ -17621,11 +17621,11 @@ var Node3 = class Node4 extends Extendable {
     return super.extend(resolvedConfig);
   }
 };
-function markPasteRule(config) {
+function markPasteRule(config2) {
   return new PasteRule({
-    find: config.find,
+    find: config2.find,
     handler: ({ state, range, match, pasteEvent }) => {
-      const attributes = callOrReturn(config.getAttributes, void 0, match, pasteEvent);
+      const attributes = callOrReturn(config2.getAttributes, void 0, match, pasteEvent);
       if (attributes === false || attributes === null) return null;
       const { tr } = state;
       const captureGroup = match[match.length - 1];
@@ -17636,13 +17636,13 @@ function markPasteRule(config) {
         const textStart = range.from + fullMatch.indexOf(captureGroup);
         const textEnd = textStart + captureGroup.length;
         if (getMarksBetween(range.from, range.to, state.doc).filter((item) => {
-          return item.mark.type.excluded.find((type) => type === config.type && type !== item.mark.type);
+          return item.mark.type.excluded.find((type) => type === config2.type && type !== item.mark.type);
         }).filter((item) => item.to > textStart).length) return null;
         if (textEnd < range.to) tr.delete(textEnd, range.to);
         if (textStart > range.from) tr.delete(range.from + startSpaces, textStart);
         markEnd = range.from + startSpaces + captureGroup.length;
-        tr.addMark(range.from + startSpaces, markEnd, config.type.create(attributes || {}));
-        if (!(match.index !== void 0 && match.input !== void 0 && match.index + match[0].length >= match.input.length)) tr.removeStoredMark(config.type);
+        tr.addMark(range.from + startSpaces, markEnd, config2.type.create(attributes || {}));
+        if (!(match.index !== void 0 && match.input !== void 0 && match.index + match[0].length >= match.input.length)) tr.removeStoredMark(config2.type);
       }
     }
   });
@@ -24554,6 +24554,9 @@ var TextareaBridge = class {
     editor.on("blur", this.onFlush);
     textarea.addEventListener("input", this.onInput);
     textarea.form?.addEventListener("submit", this.onFlush, true);
+    const $ = globalThis.jQuery;
+    this.$form = $ && textarea.form ? $(textarea.form) : null;
+    this.$form?.on("form-pre-serialize.tts", this.onFlush);
     globalThis.window?.addEventListener("beforeunload", this.onFlush);
   }
   schedule() {
@@ -24613,63 +24616,9 @@ var TextareaBridge = class {
     this.editor.off("blur", this.onFlush);
     this.textarea.removeEventListener("input", this.onInput);
     this.textarea.form?.removeEventListener("submit", this.onFlush, true);
+    this.$form?.off("form-pre-serialize.tts", this.onFlush);
     globalThis.window?.removeEventListener("beforeunload", this.onFlush);
     this.editor.destroy();
-  }
-};
-
-// src/services/cache.js
-var ModelPreviews = class {
-  /** @param {import('./cvt.js').Services} services */
-  constructor(services) {
-    this.services = services;
-    this.cache = /* @__PURE__ */ new Map();
-  }
-  /** @returns {Promise<string>} HTML calculé par SPIP (passé par safehtml) */
-  get(source) {
-    if (!this.cache.has(source)) {
-      const promise = this.services.call("previsu_modele", { modele: source });
-      this.cache.set(source, promise);
-      promise.catch(() => this.cache.delete(source));
-    }
-    return this.cache.get(source);
-  }
-};
-var LinkTitles = class {
-  /** @param {import('./cvt.js').Services} services */
-  constructor(services, { batch = 50 } = {}) {
-    this.services = services;
-    this.batch = batch;
-    this.cache = /* @__PURE__ */ new Map();
-    this.pending = /* @__PURE__ */ new Map();
-    this.scheduled = false;
-  }
-  /** @returns {Promise<{ cible: string, titre: ?string, url: ?string, objet: ?string, id: ?number }>} */
-  get(cible) {
-    if (this.cache.has(cible)) return this.cache.get(cible);
-    const promise = new Promise((resolve, reject) => this.pending.set(cible, { resolve, reject }));
-    this.cache.set(cible, promise);
-    promise.catch(() => this.cache.delete(cible));
-    if (!this.scheduled) {
-      this.scheduled = true;
-      queueMicrotask(() => this.flush());
-    }
-    return promise;
-  }
-  flush() {
-    this.scheduled = false;
-    const demandes = [...this.pending];
-    this.pending.clear();
-    for (let i2 = 0; i2 < demandes.length; i2 += this.batch) {
-      const lot = demandes.slice(i2, i2 + this.batch);
-      this.services.call("titre_lien", { cibles: lot.map(([cible]) => cible) }).then(
-        (resultats) => {
-          const parCible = new Map(resultats.map((r) => [r.cible, r]));
-          for (const [cible, { resolve }] of lot) resolve(parCible.get(cible) ?? { cible, titre: null, url: null });
-        },
-        (erreur) => lot.forEach(([, { reject }]) => reject(erreur))
-      );
-    }
   }
 };
 
@@ -24688,8 +24637,8 @@ var ServiceError = class extends Error {
   }
 };
 var texte = (html) => new DOMParser().parseFromString(String(html), "text/html").body.textContent.trim();
-var lireJSON = (doc3, selecteur) => {
-  const script = doc3.querySelector(selecteur);
+var lireJSON = (doc3, selecteur2) => {
+  const script = doc3.querySelector(selecteur2);
   return script ? JSON.parse(script.textContent) : null;
 };
 function parseResponse(html) {
@@ -24760,6 +24709,114 @@ var Services = class _Services {
     form.replaceWith(document.importNode(reponse.form, true));
     if (reponse.erreurs) throw new ServiceError(reponse.erreurs);
     return reponse.resultat;
+  }
+};
+
+// src/hosts/aLaDemande.js
+async function servicesALaDemande(textarea, ctx, { fetch = globalThis.fetch?.bind(globalThis), url = globalThis.spipConfig?.tiptap_spip?.services } = {}) {
+  if (!url || !fetch) return null;
+  const adresse = new URL(url, document.baseURI);
+  adresse.searchParams.set("objet", ctx.objet);
+  adresse.searchParams.set("id_objet", String(ctx.id));
+  adresse.searchParams.set("champ", ctx.champ);
+  let html;
+  try {
+    const res = await fetch(adresse.href, { credentials: "same-origin" });
+    html = res.ok ? await res.text() : "";
+  } catch {
+    return null;
+  }
+  const container = new DOMParser().parseFromString(html, "text/html").querySelector(".tts-services");
+  if (!container?.querySelector("form")) return null;
+  let bloc = document.getElementById("tts-services");
+  if (!bloc) {
+    bloc = document.createElement("div");
+    bloc.id = "tts-services";
+    bloc.hidden = true;
+    document.body.append(bloc);
+  }
+  const importe = document.importNode(container, true);
+  importe.hidden = true;
+  bloc.append(importe);
+  return new Services(importe);
+}
+
+// src/hosts/contexte.js
+function contexte(textarea) {
+  const { ttsObjet, ttsIdObjet, ttsChamp } = textarea.dataset;
+  if (ttsObjet !== void 0) {
+    return { objet: ttsObjet, id: Number(ttsIdObjet) || 0, champ: ttsChamp || textarea.name };
+  }
+  const form = textarea.form;
+  if (form?.classList.contains("formulaire_crayon")) {
+    for (const input of form.querySelectorAll("input.crayon-id")) {
+      const cle = input.value;
+      const prefixe = `content_${cle}_`;
+      if (!textarea.name.startsWith(prefixe)) continue;
+      const nom = form.querySelector(`input[name="name_${CSS.escape(cle)}"]`)?.value ?? "";
+      const m = nom.match(/^([a-z_]+)-.*-(\d+)$/);
+      if (m) return { objet: m[1], id: Number(m[2]), champ: textarea.name.slice(prefixe.length) };
+    }
+  }
+  return { objet: "", id: 0, champ: textarea.name };
+}
+
+// src/services/cache.js
+var disponibles = (services) => Promise.resolve(services).then((s) => {
+  if (!s) throw new ServiceUnavailable();
+  return s;
+});
+var ModelPreviews = class {
+  /** @param {import('./cvt.js').Services|Promise<?import('./cvt.js').Services>|null} services */
+  constructor(services) {
+    this.services = services;
+    this.cache = /* @__PURE__ */ new Map();
+  }
+  /** @returns {Promise<string>} HTML calculé par SPIP (passé par safehtml) */
+  get(source) {
+    if (!this.cache.has(source)) {
+      const promise = disponibles(this.services).then((s) => s.call("previsu_modele", { modele: source }));
+      this.cache.set(source, promise);
+      promise.catch(() => this.cache.delete(source));
+    }
+    return this.cache.get(source);
+  }
+};
+var LinkTitles = class {
+  /** @param {import('./cvt.js').Services|Promise<?import('./cvt.js').Services>|null} services */
+  constructor(services, { batch = 50 } = {}) {
+    this.services = services;
+    this.batch = batch;
+    this.cache = /* @__PURE__ */ new Map();
+    this.pending = /* @__PURE__ */ new Map();
+    this.scheduled = false;
+  }
+  /** @returns {Promise<{ cible: string, titre: ?string, url: ?string, objet: ?string, id: ?number }>} */
+  get(cible) {
+    if (this.cache.has(cible)) return this.cache.get(cible);
+    const promise = new Promise((resolve, reject) => this.pending.set(cible, { resolve, reject }));
+    this.cache.set(cible, promise);
+    promise.catch(() => this.cache.delete(cible));
+    if (!this.scheduled) {
+      this.scheduled = true;
+      queueMicrotask(() => this.flush());
+    }
+    return promise;
+  }
+  flush() {
+    this.scheduled = false;
+    const demandes = [...this.pending];
+    this.pending.clear();
+    for (let i2 = 0; i2 < demandes.length; i2 += this.batch) {
+      const lot = demandes.slice(i2, i2 + this.batch);
+      disponibles(this.services).then((s) => s.call("titre_lien", { cibles: lot.map(([cible]) => cible) })).then(
+        (resultats) => {
+          const parCible = new Map(resultats.map((r) => [r.cible, r]));
+          for (const [cible, { resolve }] of lot) resolve(parCible.get(cible) ?? { cible, titre: null, url: null });
+        },
+        (erreur) => lot.forEach(([, { reject }]) => reject(erreur))
+      );
+    }
   }
 };
 
@@ -25031,6 +25088,9 @@ var SELECTOR = [
   '.formulaire_spip textarea[name="texte"]',
   "textarea[data-tts-toolbar]"
 ].join(", ");
+var CRAYONS = ".formulaire_crayon textarea.crayon-active";
+var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
+var selecteur = () => config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR;
 var MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
 var instances = /* @__PURE__ */ new Set();
 var observer = null;
@@ -25054,6 +25114,8 @@ var Instance = class {
     const rows = Number(textarea.getAttribute("rows")) || 10;
     this.wrapper = document.createElement("div");
     this.wrapper.className = "tts-editor";
+    const styles = textarea.dataset.ttsStyles ?? (config().prive ? "contenu" : "site");
+    if (styles === "contenu") this.wrapper.classList.add("tts-styles-contenu");
     const toolbar = document.createElement("div");
     toolbar.className = "tts-toolbar";
     const bouton = (className, texte2, onClick) => {
@@ -25074,12 +25136,16 @@ var Instance = class {
     this.content.className = "tts-content";
     this.wrapper.append(toolbar, this.content);
     this.services = Services.forTextarea(textarea);
-    const contexte = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.services, titles: this.ui.titles });
+    this.servicesPrets = this.services ? Promise.resolve(this.services) : servicesALaDemande(textarea, contexte(textarea));
+    this.servicesPrets.then((s) => {
+      this.services = s;
+    });
+    const contexte2 = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.services, titles: this.ui.titles });
     this.ui = {
-      previews: this.services ? new ModelPreviews(this.services) : null,
-      titles: this.services ? new LinkTitles(this.services) : null,
-      openLink: () => openLinkPopover(contexte()),
-      editModel: (pos) => openModelPopover(contexte(), pos)
+      previews: new ModelPreviews(this.servicesPrets),
+      titles: new LinkTitles(this.servicesPrets),
+      openLink: () => openLinkPopover(contexte2()),
+      editModel: (pos) => openModelPopover(contexte2(), pos)
     };
     this.editor = createEditor2({
       element: this.content,
@@ -25116,9 +25182,13 @@ var Instance = class {
   }
 };
 function tiptap_spip_init(racine = document, { createEditor: createEditor2 = createEditor } = {}) {
-  const node2 = racine?.jquery ? racine[0] : racine;
-  const root = node2?.querySelectorAll ? node2 : document;
-  for (const textarea of root.querySelectorAll(SELECTOR)) {
+  const sel = selecteur();
+  const textareas = /* @__PURE__ */ new Set();
+  for (const root of racines(racine)) {
+    if (root.matches?.(sel)) textareas.add(root);
+    root.querySelectorAll(sel).forEach((t) => textareas.add(t));
+  }
+  for (const textarea of textareas) {
     if (textarea.dataset.ttsMounted || textarea.matches(MARKDOWN_EDITOR)) continue;
     textarea.dataset.ttsMounted = "oui";
     releasePortePlume(textarea);
@@ -25130,6 +25200,11 @@ function tiptap_spip_init(racine = document, { createEditor: createEditor2 = cre
     }
   }
   if (instances.size) watchRemovals();
+}
+function racines(racine) {
+  const liste = racine?.jquery || Array.isArray(racine) ? Array.from(racine) : [racine];
+  const noeuds = liste.filter((n) => n?.querySelectorAll);
+  return noeuds.length ? noeuds : [document];
 }
 export {
   instances,

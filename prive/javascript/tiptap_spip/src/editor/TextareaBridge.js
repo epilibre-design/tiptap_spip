@@ -29,6 +29,11 @@ export class TextareaBridge {
 		editor.on('blur', this.onFlush);
 		textarea.addEventListener('input', this.onInput);
 		textarea.form?.addEventListener('submit', this.onFlush, true);
+		// jquery.form (Crayons, formulaires SPIP en AJAX) sérialise sur un .trigger("submit") jQuery,
+		// que l'écouteur natif ne voit pas : il annonce la sérialisation par form-pre-serialize
+		const $ = globalThis.jQuery;
+		this.$form = $ && textarea.form ? $(textarea.form) : null;
+		this.$form?.on('form-pre-serialize.tts', this.onFlush);
 		globalThis.window?.addEventListener('beforeunload', this.onFlush);
 	}
 
@@ -93,6 +98,7 @@ export class TextareaBridge {
 		this.editor.off('blur', this.onFlush);
 		this.textarea.removeEventListener('input', this.onInput);
 		this.textarea.form?.removeEventListener('submit', this.onFlush, true);
+		this.$form?.off('form-pre-serialize.tts', this.onFlush);
 		globalThis.window?.removeEventListener('beforeunload', this.onFlush);
 		this.editor.destroy();
 	}

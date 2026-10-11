@@ -93,6 +93,23 @@ describe('TextareaBridge', () => {
 		expect(bridge.mode).toBe('source');
 	});
 
+	it('formulaire envoyé par jquery.form (Crayons, CVT en AJAX) : sérialise sur form-pre-serialize', () => {
+		const handlers = {};
+		const $form = { on: vi.fn((evt, h) => { handlers[evt] = h; return $form; }), off: vi.fn(() => $form) };
+		globalThis.jQuery = vi.fn(() => $form);
+		try {
+			setup('Texte');
+			typeAtEnd('!');
+			handlers['form-pre-serialize.tts']();
+			expect(textarea.value).toBe('Texte!');
+			bridge.destroy();
+			expect($form.off).toHaveBeenCalledWith('form-pre-serialize.tts', handlers['form-pre-serialize.tts']);
+			bridge = null;
+		} finally {
+			delete globalThis.jQuery;
+		}
+	});
+
 	it('destroy() sérialise ce qui reste et détache tout', () => {
 		setup('Texte');
 		typeAtEnd('!');

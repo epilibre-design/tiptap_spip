@@ -123,5 +123,56 @@ describe('tiptap_spip_init', () => {
 		expect(b.services.container.dataset.ttsInstance).toBe('tts-bbb');
 		expect(c.services).toBeNull();
 	});
-});
 
+	it('racine sous forme de tableau d\'éléments (triggerAjaxLoad de Crayons)', () => {
+		page('<div id="a"><textarea class="inserer_barre_edition">a</textarea></div><div id="b"><textarea class="inserer_barre_edition">b</textarea></div>');
+		tiptap_spip_init([document.getElementById('b')]);
+		expect(instances.size).toBe(1);
+		expect(document.querySelector('#a textarea').dataset.ttsMounted).toBeUndefined();
+	});
+
+	it('crayons : équipés seulement si la configuration l\'active', () => {
+		const crayon = '<div class="formulaire_spip"><form class="formulaire_crayon"><textarea class="crayon-active" name="content_wid1_texte">a</textarea></form></div>';
+		page(crayon);
+		tiptap_spip_init();
+		expect(instances.size).toBe(0);
+		globalThis.spipConfig = { tiptap_spip: { crayons: true } };
+		try {
+			tiptap_spip_init();
+			expect(instances.size).toBe(1);
+		} finally {
+			delete globalThis.spipConfig;
+		}
+	});
+
+	it('styles de contenu : espace privé par défaut, ou data-tts-styles', () => {
+		page('<textarea class="inserer_barre_edition">a</textarea><textarea class="inserer_barre_edition" data-tts-styles="site">b</textarea>');
+		globalThis.spipConfig = { tiptap_spip: { prive: true } };
+		try {
+			tiptap_spip_init();
+		} finally {
+			delete globalThis.spipConfig;
+		}
+		const [a, b] = document.querySelectorAll('.tts-editor');
+		expect(a.classList.contains('tts-styles-contenu')).toBe(true);
+		expect(b.classList.contains('tts-styles-contenu')).toBe(false);
+	});
+
+	it('sans formulaire de services rendu : services chargés à la demande pour le contexte du textarea', async () => {
+		const fetch = vi.fn(async () => ({ ok: true, text: async () => '<div class="tts-services"><form action="/spip.php"></form></div>' }));
+		vi.stubGlobal('fetch', fetch);
+		globalThis.spipConfig = { tiptap_spip: { services: 'https://site.test/spip.php?page=tiptap_spip_services' } };
+		try {
+			page('<textarea data-tts-toolbar="minimale" name="bio" data-tts-objet="auteur" data-tts-id-objet="4" data-tts-champ="bio">a</textarea>');
+			tiptap_spip_init();
+			const [instance] = instances;
+			const services = await instance.servicesPrets;
+			expect(services.container.parentElement.id).toBe('tts-services');
+			expect(new URL(fetch.mock.calls[0][0]).searchParams.get('objet')).toBe('auteur');
+			expect(instance.services).toBe(services);
+		} finally {
+			delete globalThis.spipConfig;
+			vi.unstubAllGlobals();
+		}
+	});
+});

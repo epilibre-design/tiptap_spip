@@ -1,5 +1,7 @@
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
+import { servicesALaDemande } from './hosts/aLaDemande.js';
+import { contexte as contexteHote } from './hosts/contexte.js';
 import { LinkTitles, ModelPreviews } from './services/cache.js';
 import { Services } from './services/cvt.js';
 import { label } from './ui/labels.js';
@@ -16,6 +18,12 @@ const SELECTOR = [
 	'.formulaire_spip textarea[name="texte"]',
 	'textarea[data-tts-toolbar]',
 ].join(', ');
+
+/** Textareas des crayons (plugin Crayons), équipés si la configuration l'active (tiptap_spip/crayons). */
+const CRAYONS = '.formulaire_crayon textarea.crayon-active';
+
+const config = () => globalThis.spipConfig?.tiptap_spip ?? {};
+const selecteur = () => (config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR);
 
 /** Textareas pris par markdown_editor : jamais touchés. */
 const MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
@@ -50,6 +58,9 @@ class Instance {
 
 		this.wrapper = document.createElement('div');
 		this.wrapper.className = 'tts-editor';
+		// styles de contenu de l'éditeur : espace privé ; dans le site public, ceux du site (spec 02 §6)
+		const styles = textarea.dataset.ttsStyles ?? (config().prive ? 'contenu' : 'site');
+		if (styles === 'contenu') this.wrapper.classList.add('tts-styles-contenu');
 		const toolbar = document.createElement('div');
 		toolbar.className = 'tts-toolbar';
 		const bouton = (className, texte, onClick) => {
@@ -70,12 +81,17 @@ class Instance {
 		this.content.className = 'tts-content';
 		this.wrapper.append(toolbar, this.content);
 
-		// formulaire de services du champ (null : mode dégradé, sans services serveur)
+		// formulaire de services du champ : rendu après le formulaire hôte (formulaire_fond), sinon
+		// chargé à la demande pour le contexte du textarea ; null : mode dégradé
 		this.services = Services.forTextarea(textarea);
+		this.servicesPrets = this.services ? Promise.resolve(this.services) : servicesALaDemande(textarea, contexteHote(textarea));
+		this.servicesPrets.then((s) => {
+			this.services = s;
+		});
 		const contexte = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.services, titles: this.ui.titles });
 		this.ui = {
-			previews: this.services ? new ModelPreviews(this.services) : null,
-			titles: this.services ? new LinkTitles(this.services) : null,
+			previews: new ModelPreviews(this.servicesPrets),
+			titles: new LinkTitles(this.servicesPrets),
 			openLink: () => openLinkPopover(contexte()),
 			editModel: (pos) => openModelPopover(contexte(), pos),
 		};
@@ -123,14 +139,17 @@ class Instance {
  * Monte l'éditeur sur les textareas équipés de `racine` (document par défaut). Idempotent :
  * appelée au chargement puis à chaque onAjaxLoad (rechargements AJAX de SPIP et Crayons).
  *
- * @param {ParentNode|{ jquery: string, 0: ParentNode }} [racine]
+ * @param {ParentNode|ParentNode[]|{ jquery: string }} [racine]
  * @param {{ createEditor?: typeof defaultCreateEditor }} [options]
  */
 export function tiptap_spip_init(racine = document, { createEditor = defaultCreateEditor } = {}) {
-	// onAjaxLoad passe la racine rechargée dans this, parfois sous forme d'objet jQuery
-	const node = racine?.jquery ? racine[0] : racine;
-	const root = node?.querySelectorAll ? node : document;
-	for (const textarea of root.querySelectorAll(SELECTOR)) {
+	const sel = selecteur();
+	const textareas = new Set();
+	for (const root of racines(racine)) {
+		if (root.matches?.(sel)) textareas.add(root);
+		root.querySelectorAll(sel).forEach((t) => textareas.add(t));
+	}
+	for (const textarea of textareas) {
 		if (textarea.dataset.ttsMounted || textarea.matches(MARKDOWN_EDITOR)) continue;
 		textarea.dataset.ttsMounted = 'oui';
 		releasePortePlume(textarea);
@@ -142,4 +161,14 @@ export function tiptap_spip_init(racine = document, { createEditor = defaultCrea
 		}
 	}
 	if (instances.size) watchRemovals();
+}
+
+/**
+ * Racines où chercher : onAjaxLoad passe la racine rechargée dans this, parfois sous forme d'objet
+ * jQuery ou de tableau d'éléments (Crayons : triggerAjaxLoad(tous.get())).
+ */
+function racines(racine) {
+	const liste = racine?.jquery || Array.isArray(racine) ? Array.from(racine) : [racine];
+	const noeuds = liste.filter((n) => n?.querySelectorAll);
+	return noeuds.length ? noeuds : [document];
 }

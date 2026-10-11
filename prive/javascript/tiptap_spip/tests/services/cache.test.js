@@ -73,3 +73,19 @@ describe('LinkTitles', () => {
 		await expect(q).resolves.toMatchObject({ titre: 'Un' });
 	});
 });
+
+describe('services arrivés plus tard ou absents', () => {
+	it('attend les services chargés à la demande', async () => {
+		let fournir;
+		const services = fakeServices((op, { modele }) => `<p>${modele}</p>`);
+		const previews = new ModelPreviews(new Promise((r) => { fournir = r; }));
+		const p = previews.get('<doc1>');
+		fournir(services);
+		await expect(p).resolves.toBe('<p><doc1></p>');
+	});
+
+	it('sans services : rejet, pour l\'affichage de repli', async () => {
+		await expect(new ModelPreviews(Promise.resolve(null)).get('<doc1>')).rejects.toThrow();
+		await expect(new LinkTitles(null).get('art1')).rejects.toThrow();
+	});
+});
