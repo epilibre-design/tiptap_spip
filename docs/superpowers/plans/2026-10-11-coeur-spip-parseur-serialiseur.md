@@ -262,7 +262,7 @@ git commit -m "feat(spip): package npm et nœuds JSON canoniques"
 - Produces :
   - `regex.js` : `RE_MODELE`, `RE_LIEN`, `RE_NOTE`, `RE_GLOSSAIRE`, `RE_ANCRE`, `RE_ABBR`, `RE_MULTI`, `RE_IDIOME`, `RE_PROTEGE_BLOCS`, `RE_BACKTICKS: RegExp[]`, `RE_ECHAPPEMENT_CODE`, `RE_ECHAPPEMENT` (toutes globales)
   - `protect.js` :
-    - `FILL = ''`
+    - `FILL = '\uE000'`
     - `protect(source: string): { masked: string, regions: Region[] }` — `masked` a la même longueur que `source` ; `Region = { start, end, kind, data }` avec `kind` ∈ `escape` (`data.char`), `backtick` (`data.ticks`, `data.code`, `data.language`), `block` (`data.tag`, `data.openTag`, `data.closeTag`, `data.inner`), `model`, `note`, `link`, `anchor`, `glossary`, `abbr`, `multi`, `idiome` ; toujours `data.absorbed: string[]` (types des régions englobées)
     - `regionsIn(regions, start, end): Region[]` — régions entièrement dans `[start, end[`, positions relatives
     - `decodeCode(s)`, `dropCodeEscapes(s)`, `canBacktick(s): boolean`, `encodeCode(s)`
@@ -385,7 +385,7 @@ export const RE_ECHAPPEMENT = /\\([{}_\-[\]|<>*#+~])/g;
 
 - [ ] **Step 4 : implémenter la protection**
 
-`prive/javascript/tiptap_spip/src/spip/protect.js` (attention : `FILL` est le caractère U+E000, écrit `''` dans la source) :
+`prive/javascript/tiptap_spip/src/spip/protect.js` (attention : `FILL` est le caractère U+E000, écrit `'\uE000'` dans la source) :
 
 ```js
 import {
