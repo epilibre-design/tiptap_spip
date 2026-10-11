@@ -59,11 +59,14 @@ Le parseur suit l'ordre de TextWheel. Chaque étape est une **règle enregistré
    - bloc ne contenant qu'un jeton de modèle → `spipModelBlock` ;
    - bloc ne contenant qu'un jeton `<multi>` dont les parties contiennent des lignes vides → `spipMultiBlock` ;
    - sinon `paragraph`.
-4. **Inline** dans chaque bloc textuel, dans cet ordre :
-   notes `[[…]]` (contenu parsé récursivement) → ancres `[#x<-]` → liens `[…->…]` (texte parsé
-   récursivement, attributs via `RE_LIEN_ATTRIBUTS`) → glossaire `[?…]` → abréviations `[A|b]` →
-   `{{…}}` / `{…}` (appariement par pile, cf. §3) → HTML inline connu → `_ ` (hardBreak), `-- ` (alinéa),
-   `- ` (puce isolée) → texte.
+4. **Inline** dans chaque bloc textuel, dans l'ordre de `propre()` (vérifié avec l'oracle, lot L3.1) :
+   modèles → glossaire `[?…]` et ancres `[#x<-]` (pipeline `pre_liens`) → liens `[…->…]` (texte parsé
+   récursivement, attributs via `RE_LIEN_ATTRIBUTS`) → notes `[[…]]` (`traiter_raccourcis`, avant la
+   wheel ; contenu parsé récursivement) → abréviations `[A|b]` → `{{…}}` / `{…}` (appariement par pile,
+   cf. §3) → HTML inline connu → `_ ` (hardBreak), `-- ` (alinéa), `- ` (puce isolée) → texte.
+   Conséquences : `[[note->art1]]` est un lien entre crochets ; les échappements `\x` (wheel) passent
+   après glossaire, ancres et notes, que `\[` ne protège donc pas (`x\[[n]]` est une note, le `\`
+   reste un fragment brut) ; ils protègent un lien et une abréviation.
    Un simple `\n` dans un paragraphe ou un élément de liste est **significatif** : SPIP 3+ le rend
    `<br class='autobr' />` (`_AUTOBR`, `textwheel/wheels/spip/spip-paragrapher.php`). Il devient un
    `hardBreak {syntax: 'autobr'}` ; `\n_ ` devient un `hardBreak {syntax: 'manual'}` (`<br class='manualbr' />`).
@@ -106,7 +109,7 @@ Règles générales :
 | `codeBlock` | ```` ```langage\n…``` ```` (délimiteur allongé si le code contient ```` ``` ````) ; `openTag` présent (`<code class="…">` d'origine) ou code non représentable entre backticks → `<code…>\n…\n</code>` ; `<code>` et ```` ``` ```` ont le même rendu, la forme n'est donc pas mémorisée |
 | `spipLink` | `[texte\|bulle{lang}->cible]` ; `newWindow` → `->>` ; texte échappé comme ci-dessous |
 | `spipLinkAuto` | `[->cible]`, `[\|bulle{lang}->cible]` |
-| `spipNote` | `[[<nom>contenu]]` ; collée au mot précédent (SPIP supprime l'espace avant l'appel) |
+| `spipNote` | `[[<nom>contenu]]` ; contenu restitué à l'identique s'il n'est pas modifié (carte de segments du sous-document, `spipLead`/`spipTrail` sur le nœud) ; l'espace qui précède reste tel qu'il est dans le texte (SPIP le supprime au rendu) |
 | `spipGlossary` | `[?terme#glossaireN\|bulle{lang}]` |
 | `spipModel`, `spipModelBlock` | `source` si nom, id et paramètres inchangés, sinon `<nameid\|p1\|k=v>` reconstruit |
 | `spipAnchor` | `[#nom<-]` |

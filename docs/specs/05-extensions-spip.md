@@ -38,9 +38,17 @@ Raccourci clavier : `Mod-Alt-N`. Input rule : taper `[[` ouvre une note vide.
 
 ### Sérialisation
 
-`[[` + (`<nom>` si nommée, `<>` si sans appel) + contenu sérialisé + `]]`, sans espace avant
-(SPIP fait `rtrim` avant l'appel). Les paragraphes du contenu sont séparés par une ligne vide à
-l'intérieur des crochets, ce que SPIP accepte. Un `]]` littéral dans le contenu est échappé (`\]\]`).
+`[[` + (`<nom>` si nommée, `<>` si sans appel) + contenu sérialisé + `]]`. Le contenu est un
+sous-document avec sa carte de segments : non modifié, il est restitué à l'identique. Les paragraphes
+du contenu sont séparés par une ligne vide à l'intérieur des crochets, ce que SPIP accepte. Un `]`
+final ou suivi d'un autre `]` s'écrit `&#93;` : `\]` ne suffit pas, le core cherchant le premier `]]`
+avant de traiter les échappements (`[[a\]]]` est la note `a\` suivie de `]`).
+
+Reconnaissance (lot L3.1) : le nom se cherche dans le texte que voit le core, où liens, modèles et
+glossaire sont déjà traités (`[[<doc1>]]` est une note automatique contenant un modèle). Gardées
+brutes : note dont le contenu a d'autres blocs que paragraphes, listes et modèles seuls ; note dont le
+nom n'est pas fait de lettres, chiffres, `_`, `-` alors que le texte contient `</nom>` (le core place
+le nom tel quel dans une regex).
 
 ---
 
@@ -69,6 +77,12 @@ l'intérieur des crochets, ce que SPIP accepte. Un `]]` littéral dans le conten
 ### Sérialisation
 
 `[?` + texte + (`#glossaire` + `numero`) + (`|bulle`) + (`{lang}`) + `]`.
+
+Lot L3.1 : un terme devient une mark si le raccourci se réécrit à l'identique depuis ses attributs et
+que le terme s'écrit tel quel ; sinon il reste brut (`[? SPIP]`, `[??SPIP]`, `[?SPIP|b#mots]`,
+`[?S{P}]`, même rendu). Pas de glossaire ni d'abréviation dans le texte d'un lien (brut). Une mark
+saisie qui ne se relirait pas à l'identique (terme avec accolades, bulle avec `]`…) est abandonnée à
+la sérialisation, le texte restant ; l'interface (L3.2) empêche ces saisies.
 
 ---
 
@@ -171,7 +185,7 @@ avec les évolutions suivantes.
 
 | Raccourci | Traitement |
 |-----------|------------|
-| `[ABBR\|explication{lang}]` | mark `spipAbbr`, popover d'édition |
+| `[ABBR\|explication{lang}]` | mark `spipAbbr` (L3.1 ; mêmes règles que le glossaire : texte écrit tel quel, sinon brut), popover d'édition (L3.2) |
 | `-- ` (alinéa en début de ligne) | `hardBreak` + tiret cadratin, sérialisé `\n-- ` (attribut sur le hardBreak) |
 | `- ` (puce isolée en début de ligne) | conservé en `spipRawInline` (usage rare, rendu SPIP spécifique) |
 | `<intro>…</intro>` | `spipRaw` bloc conteneur affiché avec étiquette « Introduction » (v1 : brut) |
