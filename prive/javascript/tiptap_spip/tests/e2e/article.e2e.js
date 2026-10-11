@@ -3,6 +3,10 @@
 // le même formulaire soumis SANS l'éditeur (le navigateur convertit les fins de ligne d'un
 // textarea en CRLF à la soumission : c'est la référence, pas la source brute).
 // Usage : TTS_SITE=<racine du site jetable> TTS_URL=http://127.0.0.1:<port> npm run e2e
+// Serveur : php -d opcache.revalidate_freq=0 -S 127.0.0.1:<port> -t <racine du site jetable>
+// (site.php active le plugin en ligne de commande, ce qui réécrit les caches de plugins de SPIP ;
+// sans cette option, OPcache du serveur PHP sert encore l'ancien charger_pipelines.php pendant
+// 2 secondes et la première page s'affiche sans l'éditeur)
 import { expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
