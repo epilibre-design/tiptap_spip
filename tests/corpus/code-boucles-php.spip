@@ -1,0 +1,17 @@
+Une boucle :
+
+```spip
+<BOUCLE(ARTICLES){id_article=1}>
+#TITRE
+</BOUCLE>
+```
+
+Du PHP :
+
+```php
+<?php
+  $x = "ok";
+  echo $x;
+```
+
+Et en ligne : `<BOUCLE_a(ARTICLES)>` ou <code><doc12|left></code>.
