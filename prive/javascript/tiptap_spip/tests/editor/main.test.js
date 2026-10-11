@@ -111,4 +111,17 @@ describe('tiptap_spip_init', () => {
 		expect(instances.size).toBe(1);
 		expect(document.querySelector('textarea[name=texte]').dataset.ttsMounted).toBe('oui');
 	});
+
+	it('relie chaque éditeur au formulaire de services de son champ (identifiant d\'instance)', () => {
+		const services = (instance, champ) => `<div class="tts-services" hidden data-tts-instance="${instance}" data-tts-champ="${champ}"><form action="/ecrire/"></form></div>`;
+		page(`<div class="formulaire_spip"><form data-tts-instance="tts-aaa"><textarea name="texte">a</textarea></form></div>${services('tts-aaa', 'texte')}
+			<div class="formulaire_spip"><form data-tts-instance="tts-bbb"><textarea name="texte">b</textarea></form></div>${services('tts-bbb', 'texte')}
+			<div class="formulaire_spip"><form><textarea name="texte">c</textarea></form></div>`);
+		tiptap_spip_init();
+		const [a, b, c] = instances;
+		expect(a.services.container.dataset.ttsInstance).toBe('tts-aaa');
+		expect(b.services.container.dataset.ttsInstance).toBe('tts-bbb');
+		expect(c.services).toBeNull();
+	});
 });
+

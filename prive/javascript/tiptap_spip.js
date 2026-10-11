@@ -2457,7 +2457,7 @@ function isTagRule(rule) {
 function isStyleRule(rule) {
   return rule.style != null;
 }
-var DOMParser = class _DOMParser {
+var DOMParser2 = class _DOMParser {
   /**
   Create a parser that targets the given schema, using the given
   parsing rules.
@@ -9389,7 +9389,7 @@ function parseFromClipboard(view, text2, html, plainText, $context) {
       dom = child;
     }
   if (!slice2) {
-    let parser = view.someProp("clipboardParser") || view.someProp("domParser") || DOMParser.fromSchema(view.state.schema);
+    let parser = view.someProp("clipboardParser") || view.someProp("domParser") || DOMParser2.fromSchema(view.state.schema);
     slice2 = parser.parseSlice(dom, {
       preserveWhitespace: !!(asText || sliceData),
       context: $context,
@@ -11330,7 +11330,7 @@ function parseBetween(view, from_, to_, addedNodes) {
     }
   }
   let startDoc = view.state.doc;
-  let parser = view.someProp("domParser") || DOMParser.fromSchema(view.state.schema);
+  let parser = view.someProp("domParser") || DOMParser2.fromSchema(view.state.schema);
   let $from = startDoc.resolve(from2);
   let sel = null, doc3 = parser.parse(parent, {
     topNode: $from.parent,
@@ -13339,11 +13339,11 @@ function createNodeFromContent(content, schema, options) {
           }]
         } })
       });
-      if (options.slice) DOMParser.fromSchema(contentCheckSchema).parseSlice(elementFromString(content), options.parseOptions);
-      else DOMParser.fromSchema(contentCheckSchema).parse(elementFromString(content), options.parseOptions);
+      if (options.slice) DOMParser2.fromSchema(contentCheckSchema).parseSlice(elementFromString(content), options.parseOptions);
+      else DOMParser2.fromSchema(contentCheckSchema).parse(elementFromString(content), options.parseOptions);
       if (options.errorOnInvalidContent && hasInvalidContent) throw new Error("[tiptap error]: Invalid HTML content", { cause: /* @__PURE__ */ new Error(`Invalid element found: ${invalidContent}`) });
     }
-    const parser = DOMParser.fromSchema(schema);
+    const parser = DOMParser2.fromSchema(schema);
     if (options.slice) return parser.parseSlice(elementFromString(content), options.parseOptions).content;
     return parser.parse(elementFromString(content), options.parseOptions);
   }
@@ -24460,6 +24460,96 @@ var TextareaBridge = class {
   }
 };
 
+// src/services/cvt.js
+var ServiceUnavailable = class extends Error {
+  constructor(message = "services de l'\xE9diteur indisponibles") {
+    super(message);
+    this.name = "ServiceUnavailable";
+  }
+};
+var ServiceError = class extends Error {
+  constructor(erreurs) {
+    super(erreurs.message_erreur || Object.values(erreurs).join(" "));
+    this.name = "ServiceError";
+    this.erreurs = erreurs;
+  }
+};
+var texte = (html) => new DOMParser().parseFromString(String(html), "text/html").body.textContent.trim();
+var lireJSON = (doc3, selecteur) => {
+  const script = doc3.querySelector(selecteur);
+  return script ? JSON.parse(script.textContent) : null;
+};
+function parseResponse(html) {
+  if (!html || !html.includes("ajax-form-is-ok")) return null;
+  const doc3 = new DOMParser().parseFromString(html, "text/html");
+  const form = doc3.querySelector("form");
+  if (!form) return null;
+  const ok = lireJSON(doc3, "script.tts-resultat");
+  const brutes = lireJSON(doc3, "script.tts-erreurs");
+  const erreurs = brutes ? Object.fromEntries(Object.entries(brutes).map(([k, v]) => [k, texte(v)])) : null;
+  return { form, operation: ok?.operation, resultat: ok?.resultat, erreurs };
+}
+var Services = class _Services {
+  /**
+   * Formulaire de services d'un textarea : conteneur dont l'identifiant d'instance est celui du
+   * formulaire d'édition du textarea, et le champ son name.
+   * @param {HTMLTextAreaElement} textarea
+   * @param {{ fetch?: typeof fetch }} [options]
+   * @returns {Services|null} null : pas de services (mode dégradé)
+   */
+  static forTextarea(textarea, options) {
+    const id = textarea.form?.dataset.ttsInstance;
+    if (!id) return null;
+    const container = [...document.querySelectorAll(".tts-services")].find((c) => c.dataset.ttsInstance === id && c.dataset.ttsChamp === textarea.name);
+    return container?.querySelector("form") ? new _Services(container, options) : null;
+  }
+  /** @param {HTMLElement} container  élément .tts-services */
+  constructor(container, { fetch = globalThis.fetch?.bind(globalThis) } = {}) {
+    this.container = container;
+    this.fetch = fetch;
+    this.available = true;
+    this.queue = Promise.resolve();
+  }
+  /**
+   * Appelle une opération ; les appels sont sérialisés (chacun repart du formulaire renouvelé
+   * par la réponse précédente).
+   * @param {string} operation  previsu_modele, titre_lien, rechercher
+   * @param {object} params  valeurs non chaînes envoyées en JSON
+   * @returns {Promise<any>} résultat de l'opération
+   */
+  call(operation, params = {}) {
+    const run2 = () => this.send(operation, params);
+    const promise = this.queue.then(run2, run2);
+    this.queue = promise.catch(() => {
+    });
+    return promise;
+  }
+  async send(operation, params) {
+    if (!this.available) throw new ServiceUnavailable();
+    const form = this.container.querySelector("form");
+    const body = new FormData(form);
+    body.set("var_ajax", "form");
+    body.set("operation", operation);
+    for (const [key, value] of Object.entries(params)) {
+      body.set(key, typeof value === "string" ? value : JSON.stringify(value));
+    }
+    let reponse;
+    try {
+      const res = await this.fetch(form.getAttribute("action"), { method: "POST", body, credentials: "same-origin" });
+      reponse = parseResponse(await res.text());
+    } catch {
+      reponse = null;
+    }
+    if (!reponse) {
+      this.available = false;
+      throw new ServiceUnavailable();
+    }
+    form.replaceWith(document.importNode(reponse.form, true));
+    if (reponse.erreurs) throw new ServiceError(reponse.erreurs);
+    return reponse.resultat;
+  }
+};
+
 // src/main.js
 var SELECTOR = [
   "textarea.inserer_barre_edition",
@@ -24509,6 +24599,7 @@ var Instance = class {
       editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em` } }
     });
     this.bridge = new TextareaBridge({ textarea, editor: this.editor });
+    this.services = Services.forTextarea(textarea);
     textarea.before(this.wrapper);
     this.wrapper.append(textarea);
     textarea.hidden = true;

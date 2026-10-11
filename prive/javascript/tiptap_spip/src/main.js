@@ -1,5 +1,6 @@
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
+import { Services } from './services/cvt.js';
 
 /**
  * Textareas équipés (spec 02 §6) : ceux du porte-plume (classes, et champ texte des formulaires
@@ -67,6 +68,8 @@ class Instance {
 			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em` } },
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
+		// formulaire de services du champ (null : mode dégradé, sans services serveur)
+		this.services = Services.forTextarea(textarea);
 
 		textarea.before(this.wrapper);
 		this.wrapper.append(textarea);
