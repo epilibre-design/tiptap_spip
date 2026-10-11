@@ -12,6 +12,8 @@
  *     <agent> : User-Agent du navigateur de test (la session SPIP en dépend).
  *   SPIP_ROOT=<site> php tests/e2e/site.php texte <id_article>
  *     écrit le texte de l'article, octet pour octet.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php modifier <id_article> < texte.spip
+ *     remplace le texte de l'article par l'entrée standard.
  *   SPIP_ROOT=<site> php tests/e2e/site.php document <id_article>
  *     crée une image (PNG 1×1) liée à l'article ; écrit son id_document.
  *   SPIP_ROOT=<site> php tests/e2e/site.php auteur <statut>
@@ -22,8 +24,8 @@
 
 $root = rtrim((string) getenv('SPIP_ROOT'), '/');
 $commande = $argv[1] ?? '';
-if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'document', 'auteur', 'inserer'], true)) {
-	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | document <id_article> | auteur <statut> | inserer <table> <champs JSON>\n");
+if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'modifier', 'document', 'auteur', 'inserer'], true)) {
+	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | modifier <id_article> | document <id_article> | auteur <statut> | inserer <table> <champs JSON>\n");
 	exit(2);
 }
 
@@ -42,6 +44,11 @@ include_spip('base/abstract_sql');
 
 if ($commande === 'texte') {
 	echo (string) sql_getfetsel('texte', 'spip_articles', 'id_article=' . (int) ($argv[2] ?? 0));
+	exit(0);
+}
+
+if ($commande === 'modifier') {
+	sql_updateq('spip_articles', ['texte' => stream_get_contents(STDIN)], 'id_article=' . (int) ($argv[2] ?? 0));
 	exit(0);
 }
 
