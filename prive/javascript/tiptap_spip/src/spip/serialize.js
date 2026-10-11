@@ -1,4 +1,6 @@
 import { canon, MARK_ORDER, sameMark } from './json.js';
+import { linkEnd } from './links.js';
+import { serializeModel } from './models.js';
 import { canBacktick, encodeCode } from './protect.js';
 
 /**
@@ -70,6 +72,8 @@ export function serializeBlock(b) {
 			return a.openTag + encodeCode(textOf(b)) + a.closeTag;
 		case 'spipRaw':
 			return a.source;
+		case 'spipModelBlock':
+			return serializeModel(a.model);
 		case 'table':
 			return serializeTable(b);
 		default:
@@ -129,6 +133,9 @@ function serializeTable(table) {
 }
 
 const OPEN = { bold: ['{{', '}}'], italic: ['{', '}'], strike: ['<del>', '</del>'], superscript: ['<sup>', '</sup>'], subscript: ['<sub>', '</sub>'] };
+
+/** Délimiteurs d'une mark ; un lien dépend de ses attributs. */
+const delimiters = (mark) => (mark.type === 'spipLink' ? ['[', linkEnd(mark.attrs)] : OPEN[mark.type]);
 const HTML = { bold: ['<strong>', '</strong>'], italic: ['<i>', '</i>'] };
 
 /**
@@ -165,15 +172,16 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			.map((m) => ({ m, run: runLength(i, m) }))
 			.sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
 		for (const { m } of toOpen) {
-			const useHtml = HTML[m.type] && (html || stack.some((s) => OPEN[s.mark.type][0].startsWith('{')));
-			const [open, close] = useHtml ? HTML[m.type] : OPEN[m.type];
+			const useHtml = HTML[m.type] && (html || stack.some((s) => delimiters(s.mark)[0].startsWith('{')));
+			const [open, close] = useHtml ? HTML[m.type] : delimiters(m);
 			out += open;
 			stack.push({ mark: m, close });
 			atLineStart = false;
 		}
+		const inLink = stack.some((s) => s.mark.type === 'spipLink');
 		if (n.type === 'text') {
 			const code = n.marks?.find((m) => m.type === 'code');
-			out += code ? serializeCode(n.text) : escapeText(n.text, atLineStart);
+			out += code ? serializeCode(n.text) : escapeText(n.text, atLineStart, { link: inLink });
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
 			const autobr = n.attrs?.syntax === 'autobr';
@@ -181,6 +189,15 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			atLineStart = autobr;
 		} else if (n.type === 'spipRawInline') {
 			out += n.attrs.source;
+			atLineStart = false;
+		} else if (n.type === 'spipLinkAuto') {
+			out += `[${linkEnd(n.attrs)}`;
+			atLineStart = false;
+		} else if (n.type === 'spipAnchor') {
+			out += `[#${n.attrs.name}<-]`;
+			atLineStart = false;
+		} else if (n.type === 'spipModel') {
+			out += serializeModel(n.attrs.model);
 			atLineStart = false;
 		} else {
 			throw new Error(`serialize: type inline inconnu « ${n.type} »`);
@@ -200,8 +217,12 @@ function serializeCode(code) {
 	return code.includes('`') ? `\`\`${code}\`\`` : `\`${code}\``;
 }
 
-/** Échappe dans du texte ce que SPIP interpréterait comme un raccourci. */
-export function escapeText(value, atLineStart) {
+/**
+ * Échappe dans du texte ce que SPIP interpréterait comme un raccourci.
+ * Dans le texte d'un lien, le collecteur de liens passe avant les échappements : [ ] | et ->
+ * s'écrivent en entités.
+ */
+export function escapeText(value, atLineStart, { link = false } = {}) {
 	let s = value
 		.replace(/\\/g, '\\\\')
 		.replace(/[{}`~]/g, (c) => `\\${c}`)
@@ -212,6 +233,9 @@ export function escapeText(value, atLineStart) {
 		.replace(/\[\?/g, '[&#63;')
 		.replace(/\[\[/g, '[&#91;')
 		.replace(/\[(?=#|$|[^\]]*?(?:->|<-|\|)[^\]]*\])/g, '&#91;');
+	if (link) {
+		s = s.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/\|/g, '&#124;').replace(/->/g, '-&gt;');
+	}
 	if (atLineStart) s = s.replace(/^([-|]|_(?= |_))/, '\\$1');
 	return s;
 }

@@ -1,0 +1,11 @@
+Voir [l'article->art12], [la rubrique|Bulle d'aide->rub3] et [le site{en}->https://www.spip.net].
+
+Lien en {{gras}} : [voir {{la}} doc->art1], {{gras [autour->art2] du lien}}, [{{tout en gras}}->art3].
+
+Sans texte : [->art12], [|avec une bulle->rub3], [->>https://example.org].
+
+Caractères : [a&#124;b&#93;c-&gt;d->art1], [a{zz}->art1], [texte|bulle{zz}->art1], [un \{échappé\}->art1].
+
+Ancres [#haut<-] et [bas<-], lien [vers le haut->#haut], [->art1#section].
+
+Non représentable : [a{}->art1].

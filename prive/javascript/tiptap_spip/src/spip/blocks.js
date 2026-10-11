@@ -1,5 +1,6 @@
 import { parseInline } from './inline.js';
 import { node, text } from './json.js';
+import { parseModel } from './models.js';
 import { FILL, protect, regionsIn } from './protect.js';
 import { segment } from './segment.js';
 
@@ -37,6 +38,7 @@ const textContent = (value) => (value === '' ? undefined : [text(value)]);
 function verbatimBlock(src, regions) {
 	const r = regions.length === 1 && regions[0].start === 0 && regions[0].end === src.length ? regions[0] : null;
 	if (!r) return null;
+	if (r.kind === 'model' && parseModel(src)) return [node('spipModelBlock', { model: parseModel(src) })];
 	if (r.kind === 'backtick' && r.data.ticks.length >= 3) {
 		return [node('codeBlock', { language: r.data.language || null }, textContent(r.data.code))];
 	}

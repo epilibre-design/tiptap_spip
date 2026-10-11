@@ -1,0 +1,13 @@
+<doc12|center>
+
+Un texte avec <img3|left> au milieu et <doc4 | right /> ici.
+
+<emb5|largeur=300|legende=Une <i>légende</i>>
+
+[<img3|left>->art12]
+
+{{Gras <doc6>}} et <span>pas un modèle</span>.
+
+-* <doc7|left> dans une liste
+
+|<doc8>|cellule|

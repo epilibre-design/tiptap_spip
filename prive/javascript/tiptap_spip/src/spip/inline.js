@@ -1,8 +1,16 @@
-import { mergeText, raw, sortMarks, text } from './json.js';
+import { mergeText, node, raw, sortMarks, text } from './json.js';
+import { parseLinkAtts } from './links.js';
+import { parseModel } from './models.js';
+import { protect } from './protect.js';
 
 /** Balises HTML sans attribut équivalentes à une mark (même rendu que le raccourci SPIP). */
 const MARK_TAGS = { strong: 'bold', i: 'italic', del: 'strike', sup: 'superscript', sub: 'subscript' };
 const ENTITIES = { lt: '<', gt: '>', amp: '&', '#91': '[', '#63': '?' };
+/** Dans le texte d'un lien, | et ] s'écrivent en entités (le collecteur de liens passe avant les échappements). */
+const LINK_ENTITIES = { ...ENTITIES, '#124': '|', '#93': ']' };
+const entityRegex = (entities) => new RegExp(`^&(${Object.keys(entities).join('|')});`);
+const RE_ENTITY = entityRegex(ENTITIES);
+const RE_LINK_ENTITY = entityRegex(LINK_ENTITIES);
 
 /**
  * Analyse le contenu inline d'un bloc.
@@ -10,15 +18,28 @@ const ENTITIES = { lt: '<', gt: '>', amp: '&', '#91': '[', '#63': '?' };
  * @param {string} source  texte source du contenu
  * @param {string} masked  même texte masqué (cf. protect.js)
  * @param {import('./protect.js').Region[]} regions  régions, positions relatives à source
- * @param {{ lineStart?: boolean }} options  lineStart : le contenu commence en début de ligne
- *        (paragraphe), donc les marqueurs de début de ligne (`- `, `_ `) s'appliquent
+ * @param {{ lineStart?: boolean, link?: boolean }} options  lineStart : le contenu commence en début
+ *        de ligne (paragraphe), donc les marqueurs de début de ligne (`- `, `_ `) s'appliquent ;
+ *        link : texte d'un lien (entités &#124; et &#93; décodées)
  * @returns {object[]} nœuds inline JSON
  */
-export function parseInline(source, masked, regions, { lineStart = false } = {}) {
-	return buildNodes(tokenize(source, masked, regions, lineStart));
+export function parseInline(source, masked, regions, { lineStart = false, link = false } = {}) {
+	return buildNodes(tokenize(source, masked, regions, lineStart, link));
 }
 
-function tokenize(source, masked, regions, lineStart) {
+/** Région d'un raccourci de lien → jeton : lien (contenu analysé), lien sans texte, ou brut. */
+function linkToken(region, src) {
+	const atts = parseLinkAtts(region.data.part);
+	if (!atts) return { t: 'raw', v: src };
+	const attrs = { href: region.data.href, bulle: atts.bulle, hreflang: atts.hreflang, newWindow: region.data.newWindow };
+	if (atts.text.trim() === '') return { t: 'node', node: node('spipLinkAuto', attrs) };
+	const { masked, regions } = protect(atts.text);
+	return { t: 'link', mark: { type: 'spipLink', attrs }, children: parseInline(atts.text, masked, regions, { link: true }) };
+}
+
+function tokenize(source, masked, regions, lineStart, link) {
+	const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
+	const entities = link ? LINK_ENTITIES : ENTITIES;
 	const tokens = [];
 	const regionAt = new Map(regions.map((r) => [r.start, r]));
 	let buf = '';
@@ -50,6 +71,12 @@ function tokenize(source, masked, regions, lineStart) {
 				buf += region.data.char;
 			} else if (region.kind === 'backtick' && region.data.ticks.length < 3 && region.data.code.trim() !== '') {
 				push({ t: 'code', v: region.data.code.trim() });
+			} else if (region.kind === 'link') {
+				push(linkToken(region, src));
+			} else if (region.kind === 'anchor') {
+				push({ t: 'node', node: node('spipAnchor', { name: region.data.name }) });
+			} else if (region.kind === 'model' && parseModel(src)) {
+				push({ t: 'node', node: node('spipModel', { model: parseModel(src) }) });
 			} else if (region.kind === 'block' && region.data.openTag === '<code>' && !region.data.inner.includes('\n') && region.data.inner !== '' && !region.data.absorbed.includes('backtick')) {
 				push({ t: 'code', v: region.data.inner });
 			} else {
@@ -89,8 +116,8 @@ function tokenize(source, masked, regions, lineStart) {
 		} else if (c === '<' && (m = rest.match(/^(?:<!--[\s\S]*?-->|<\/?[a-z][a-z0-9]*\b[^<>]*>)/i))) {
 			push({ t: 'raw', v: source.slice(i, i + m[0].length) });
 			i += m[0].length;
-		} else if (c === '&' && (m = rest.match(/^&(lt|gt|amp|#91|#63);/))) {
-			buf += ENTITIES[m[1]];
+		} else if (c === '&' && (m = rest.match(reEntity))) {
+			buf += entities[m[1]];
 			i += m[0].length;
 		} else if (c === '&' && (m = rest.match(/^&#?[a-z0-9]+;/i))) {
 			// autre entité HTML : conservée telle quelle
@@ -150,6 +177,14 @@ function buildNodes(tokens) {
 				break;
 			case 'br':
 				nodes.push(withMarks({ type: 'hardBreak', attrs: { syntax: tk.syntax } }));
+				break;
+			case 'node':
+				nodes.push(withMarks(tk.node));
+				break;
+			case 'link':
+				for (const child of tk.children) {
+					nodes.push({ ...child, marks: sortMarks([...marks, tk.mark, ...(child.marks ?? [])]) });
+				}
 				break;
 		}
 	}

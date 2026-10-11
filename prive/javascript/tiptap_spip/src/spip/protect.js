@@ -67,14 +67,19 @@ export function protect(source) {
 	// 3. autres échappements \{ \[ …
 	scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, 'escape', { char: m[1] }));
 
-	// 4. raccourcis encore non éditables dans ce lot : conservés tels quels
+	// 4. raccourcis : modèles, liens et ancres analysés (inline.js), les autres conservés tels quels
 	scan(RE_MODELE, (m, start, end) => {
 		// condition du core : un id ou des paramètres, sinon c'est une balise HTML
-		if (m[2] || m[3]) add(start, end, 'model', {});
+		if (m[2] || m[3]) add(start, end, 'model', { source: m[0] });
 	});
 	scan(RE_NOTE, (m, start, end) => add(start, end, 'note', {}));
-	scan(RE_LIEN, (m, start, end) => add(start, end, 'link', {}));
-	scan(RE_ANCRE, (m, start, end) => add(start, end, 'anchor', {}));
+	// texte et cible relus dans la source : le texte masqué a remplacé les modèles par FILL
+	scan(RE_LIEN, (m, start, end) => add(start, end, 'link', {
+		part: source.slice(start + 1, start + 1 + m[1].length),
+		newWindow: m[3] === '>',
+		href: source.slice(end - 1 - m[4].length, end - 1),
+	}));
+	scan(RE_ANCRE, (m, start, end) => add(start, end, 'anchor', { name: source.slice(end - 3 - m[1].length, end - 3) }));
 	scan(RE_GLOSSAIRE, (m, start, end) => add(start, end, 'glossary', {}));
 	scan(RE_ABBR, (m, start, end) => add(start, end, 'abbr', {}));
 	scan(RE_MULTI, (m, start, end) => add(start, end, 'multi', {}));

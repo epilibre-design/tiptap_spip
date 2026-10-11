@@ -68,7 +68,7 @@ describe('parseInline : caractères', () => {
 		expect(inl('`a {b}` et <code>c</code>')).toEqual([text('a {b}', [C]), text(' et '), text('c', [C])]);
 	});
 
-	it('raccourcis non éditables dans ce lot : bruts', () => {
-		expect(inl('voir [doc->art1][[note]] <doc2>')).toEqual([text('voir '), raw('[doc->art1]'), raw('[[note]]'), text(' '), raw('<doc2>')]);
+	it('notes, glossaire, multi : bruts jusqu\'aux lots L3 et L4', () => {
+		expect(inl('voir [[note]] [?terme] <multi>a</multi>')).toEqual([text('voir '), raw('[[note]]'), text(' '), raw('[?terme]'), text(' '), raw('<multi>a</multi>')]);
 	});
 });
