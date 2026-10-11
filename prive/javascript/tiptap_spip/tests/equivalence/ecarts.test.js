@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diffHtml, hunks, judge, loadEcarts, plafond } from '../../scripts/ecarts.mjs';
+import { diffHtml, hunks, judge, loadEcarts, normalize, plafond } from '../../scripts/ecarts.mjs';
 
 const CODE = "<code class='spip_code'>";
 
@@ -97,5 +97,21 @@ describe('plafond', () => {
 		expect(plafond(100)).toBe(1);
 		expect(plafond(101)).toBe(2);
 		expect(plafond(0)).toBe(0);
+	});
+});
+
+describe('normalize', () => {
+	const appel = (title) => `<span class="spip_note_ref">&nbsp;[<a href="#nb1" class="spip_note" rel="appendix" title="${title}" id="nh1">1</a>]</span>`;
+
+	it('bulle d\'un appel de note : seul son title est ignoré', () => {
+		expect(normalize(appel('a\\]b'))).toBe(normalize(appel('a]b')));
+		expect(normalize(appel('x'))).toContain('id="nh1"');
+	});
+
+	it('les autres title et le texte des notes restent comparés', () => {
+		expect(normalize('<a href="#nh1" class="spip_note" title="Notes 1" rev="appendix">1</a>'))
+			.not.toBe(normalize('<a href="#nh1" class="spip_note" title="Notes 2" rev="appendix">1</a>'));
+		expect(normalize('<abbr title="a">A</abbr>')).not.toBe(normalize('<abbr title="b">A</abbr>'));
+		expect(normalize('<div id="nb1"><p>a]b</p></div>')).not.toBe(normalize('<div id="nb1"><p>a\\]b</p></div>'));
 	});
 });

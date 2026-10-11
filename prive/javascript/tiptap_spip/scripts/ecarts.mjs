@@ -119,3 +119,23 @@ export function judge({ fichier, diff, entries, frozen }) {
 	}
 	return { statut: 'ecart' };
 }
+
+/**
+ * Normalisation : blancs, identifiants qui dépendent de la source et non du rendu (tableaux :
+ * cellules aléatoires, résumé tiré du md5 du bloc ; modèles : classe base64php tirée d'un
+ * uniqid), et caractères de contrôle invisibles que SPIP laisse parfois dans sa sortie
+ * (marqueurs \x01\x15 de la wheel backticks). Seul l'attribut title de l'appel de note
+ * est retiré (décision du lot L3.1, spec 08) : SPIP le tire de l'orthographe brute de la note
+ * (échappements compris), qu'une réécriture équivalente peut changer ; le texte rendu des notes
+ * est comparé en entier (oracle tests/equivalence/propre.php).
+ */
+export const normalize = (html) => html
+	.replace(/(<a href="#nb[^"]*" class="spip_note" rel="appendix") title="[^"]*"/g, '$1')
+	.replace(/ (?:id|headers)='id[0-9a-f]+_c\d+'/g, '')
+	.replace(/\bdby[0-9a-f]{4}\b/g, 'dby')
+	.replace(/\bbase64php[0-9a-f.]+/g, 'base64php')
+	.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+	.replace(/\s+/g, ' ')
+	.replace(/>\s+/g, '>')
+	.replace(/\s+</g, '<')
+	.trim();

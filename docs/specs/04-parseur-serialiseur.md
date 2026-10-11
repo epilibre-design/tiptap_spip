@@ -126,7 +126,7 @@ Le sérialiseur échappe dans le **texte** ce qui serait interprété comme racc
 - `[?` → `[&#63;`, `[[` → `[&#91;` : notes et glossaire sont traités **avant** les échappements `\[`, qui ne les
   protègent pas. `[&#63;` plutôt que `&#91;?` évite l'espace insécable que la typographie française ajoute
   avant `?` ;
-- `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `<-` avant le `]` → `&#91;` (`\[` ne protège pas une ancre, traitée dans `pre_liens`) ; `[` suivi d'une séquence contenant `->` ou `|` → `\[` (protège un lien et une abréviation, comme dans SPIP) ;
+- `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `<-` avant le `]` → `&#91;` (`\[` ne protège pas une ancre, traitée dans `pre_liens`) ; `[` suivi d'une séquence contenant `->` ou `|` → `\[` (protège un lien et une abréviation, comme dans SPIP) ; un `[` final → `\[`, ou `&#91;` devant une note ou un fragment brut (`\[[[n]]` serait une note de texte `[n`). **Décision (lot L3.1)** : `\[` remplace `&#91;` dans ces cas, ce qui change la forme canonique des lots précédents ; c'est l'échappement adapté aux liens et abréviations dans l'ordre de traitement vérifié avec SPIP. L'identité caractère pour caractère d'un texte non modifié reste la règle ; la forme canonique d'un texte réécrit peut évoluer. Tests de régression : `tests/spip/serialize.test.js` (`escapeText`), `tests/spip/notes.test.js` ;
 - en début de ligne : `-`, `|`, `_` suivi d'un espace ou d'un `_` → `\-`, `\|`, `\_` ;
 - dans le **texte d'un lien**, le collecteur de liens passe avant les échappements (`\|` n'y protège rien) :
   `[` → `&#91;`, `]` → `&#93;`, `|` → `&#124;`, `->` → `-&gt;` ; `\{` y fonctionne. Le parseur décode
