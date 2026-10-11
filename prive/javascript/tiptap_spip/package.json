@@ -1,0 +1,14 @@
+{
+  "name": "tiptap-spip",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "equivalence": "node scripts/equivalence.mjs"
+  },
+  "devDependencies": {
+    "vitest": "3.2.4"
+  }
+}
