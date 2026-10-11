@@ -24,8 +24,10 @@ function test_reset_globals(): void {
 test_reset_globals();
 
 if (!function_exists('recuperer_fond')) {
+	/** Simulation : chaîne fixe, ou fonction du contexte. */
 	function recuperer_fond(string $fond, array $contexte = [], array $options = []): string {
-		return $GLOBALS['_test_fonds'][$fond] ?? '';
+		$rendu = $GLOBALS['_test_fonds'][$fond] ?? '';
+		return is_callable($rendu) ? $rendu($contexte) : $rendu;
 	}
 }
 

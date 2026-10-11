@@ -1,0 +1,9 @@
+<div class="formulaire_spip formulaire_tiptap_spip">
+	[(#ENV{editable}|oui)
+	<form method="post" action="#ENV{action}"><div>
+		#ACTION_FORMULAIRE
+	</div></form>
+	]
+	[<script type="application/json" class="tts-resultat">(#ENV*{message_ok})</script>]
+	[<script type="application/json" class="tts-erreurs">(#ENV*{erreurs}|tiptap_spip_json)</script>]
+</div>

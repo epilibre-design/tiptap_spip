@@ -16,6 +16,8 @@
 
 	<pipeline nom="header_prive" inclure="tiptap_spip_pipelines.php" />
 	<pipeline nom="importmap" inclure="tiptap_spip_pipelines.php" />
+	<pipeline nom="formulaire_fond" inclure="tiptap_spip_pipelines.php" />
+	<pipeline nom="autoriser" inclure="tiptap_spip_pipelines.php" />
 
 	<chemin path="" />
 	<chemin path="prive" />
