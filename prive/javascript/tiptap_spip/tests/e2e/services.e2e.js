@@ -1,9 +1,11 @@
 // Formulaire de services de l'éditeur (spec 02 §5) sur un site SPIP JETABLE : appels AJAX réels
 // depuis la page d'édition d'un article. Usage et serveur : cf. article.e2e.js.
 import { expect, test } from '@playwright/test';
-import { configure, creerAuteur, creerDocument, editer, inserer, module } from './site.js';
+import { activer, configure, creerAuteur, creerDocument, editer, inserer, module } from './site.js';
 
 configure(test);
+// tts_test définit le glossaire nommé glossaire_tts()
+test.beforeAll(() => activer('tts_test'));
 
 /** Appelle une opération des services du premier éditeur de la page. */
 const appeler = (page, operation, params) => page.evaluate(async ([operation, params]) => {
@@ -70,6 +72,15 @@ test('rechercher : autorisation appliquée avant de retenir 20 résultats, ordre
 	await module(page);
 	const { resultat } = await appeler(page, 'rechercher', { q: mot, objets: ['article', 'rubrique'] });
 	expect(resultat.map((r) => [r.objet, r.id])).toEqual([['rubrique', rubrique], ['article', visible]]);
+});
+
+test('glossaire : URL de la définition calculée par SPIP, glossaires nommés disponibles', async ({ page }) => {
+	const { resultat } = await appeler(page, 'glossaire', { raccourci: '[?Système de publication]' });
+	expect(resultat).toEqual({ url: 'https://fr.wikipedia.org/wiki/Syst%C3%A8me_de_publication', glossaires: ['tts'] });
+	expect((await appeler(page, 'glossaire', { raccourci: '[?SPIP#tts12|bulle]' })).resultat.url).toBe('https://glossaire.test/SPIP/12');
+	const r = await appeler(page, 'glossaire', { raccourci: '[?a] [?b]' });
+	expect(r).toMatchObject({ erreur: 'ServiceError', disponible: true });
+	expect(r.erreurs.raccourci).toBe('Raccourci de glossaire invalide.');
 });
 
 test('verifier() refuse une demande invalide, le service reste disponible', async ({ page }) => {

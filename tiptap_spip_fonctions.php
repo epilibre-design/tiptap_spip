@@ -23,7 +23,59 @@ function tiptap_spip_json($valeur): string {
 
 /** Opérations du formulaire de services. */
 function tiptap_spip_operations(): array {
-	return ['previsu_modele', 'titre_lien', 'rechercher'];
+	return ['previsu_modele', 'titre_lien', 'rechercher', 'glossaire'];
+}
+
+/** Vrai si $raccourci est exactement un raccourci de glossaire (_RACCOURCI_GLOSSAIRE du core, ancrée). */
+function tiptap_spip_est_glossaire(string $raccourci): bool {
+	return (bool) preg_match('/^\[\?+\s*([^][<>]+)\]$/', $raccourci);
+}
+
+/**
+ * Glossaires nommés disponibles (`[?terme#nom]`) : le core appelle glossaire_<nom>() si elle existe
+ * (liens_implicite_glose_dist()) ; glossaire_std() est le glossaire par défaut.
+ *
+ * @param ?string[] $fonctions  fonctions définies (get_defined_functions() par défaut)
+ * @return string[] noms triés
+ */
+function tiptap_spip_glossaires(?array $fonctions = null): array {
+	$noms = [];
+	foreach ($fonctions ?? get_defined_functions()['user'] as $fonction) {
+		if (preg_match('/^glossaire_(\w+)$/', $fonction, $m) && $m[1] !== 'std') {
+			$noms[$m[1]] = true;
+		}
+	}
+	$noms = array_keys($noms);
+	sort($noms);
+	return $noms;
+}
+
+/**
+ * URL de la définition d'un terme (raccourci valide), telle que SPIP la calcule au rendu de l'objet :
+ * dans sa langue (le glossaire par défaut en dépend : @lang@.wikipedia.org), sinon celle du site.
+ */
+function tiptap_spip_url_glossaire(string $raccourci, string $objet = '', int $id_objet = 0): ?string {
+	include_spip('inc/lien');
+	include_spip('inc/filtres');
+	include_spip('inc/lang');
+	$lang = $objet !== '' && $id_objet > 0 ? tiptap_spip_lang_objet($objet, $id_objet) : '';
+	lang_select($lang ?: ($GLOBALS['meta']['langue_site'] ?? 'fr'));
+	$url = extraire_attribut(traiter_raccourci_glossaire($raccourci), 'href');
+	lang_select();
+	return is_string($url) && $url !== '' ? $url : null;
+}
+
+/** Langue d'un objet, '' si sa table n'en a pas. */
+function tiptap_spip_lang_objet(string $objet, int $id_objet): string {
+	include_spip('base/objets');
+	include_spip('base/abstract_sql');
+	$table = table_objet_sql($objet);
+	$trouver_table = charger_fonction('trouver_table', 'base');
+	$desc = $trouver_table($table);
+	if (!$desc || !isset($desc['field']['lang'])) {
+		return '';
+	}
+	return (string) sql_getfetsel('lang', $table, id_table_objet($objet) . '=' . $id_objet);
 }
 
 /** Objets proposés par la recherche (filtrés ensuite par les tables présentes). */

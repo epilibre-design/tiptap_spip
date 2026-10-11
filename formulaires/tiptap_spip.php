@@ -47,6 +47,7 @@ function formulaires_tiptap_spip_charger_dist($objet = '', $id_objet = 0, $champ
 		'cibles' => '',
 		'q' => '',
 		'objets' => '',
+		'raccourci' => '',
 		'editable' => true,
 	];
 }
@@ -81,6 +82,12 @@ function formulaires_tiptap_spip_verifier_dist($objet = '', $id_objet = 0, $cham
 				$erreurs['objets'] = _T('tiptap_spip:erreur_objets');
 			}
 			break;
+		case 'glossaire':
+			$raccourci = (string) _request('raccourci');
+			if (mb_strlen($raccourci) > 500 || !tiptap_spip_est_glossaire($raccourci)) {
+				$erreurs['raccourci'] = _T('tiptap_spip:erreur_glossaire');
+			}
+			break;
 		default:
 			$erreurs['operation'] = _T('tiptap_spip:erreur_operation');
 	}
@@ -93,6 +100,7 @@ function formulaires_tiptap_spip_traiter_dist($objet = '', $id_objet = 0, $champ
 		'previsu_modele' => tiptap_spip_previsu_modele((string) $objet, intval($id_objet), (string) $champ, (string) _request('modele')),
 		'titre_lien' => array_map('tiptap_spip_titre_lien', tiptap_spip_liste(_request('cibles'), 50, 500)),
 		'rechercher' => tiptap_spip_rechercher(trim((string) _request('q')), tiptap_spip_liste(_request('objets'), 10, 30)),
+		'glossaire' => ['url' => tiptap_spip_url_glossaire((string) _request('raccourci'), (string) $objet, intval($id_objet)), 'glossaires' => tiptap_spip_glossaires()],
 	};
 	return [
 		'message_ok' => tiptap_spip_json(['operation' => $operation, 'resultat' => $resultat]),

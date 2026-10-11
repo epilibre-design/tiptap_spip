@@ -27,6 +27,22 @@ final class FonctionsTest extends TestCase
 		$this->assertSame('doc', tiptap_spip_nom_modele('<DOC12|center>'));
 	}
 
+	public function testUnSeulRaccourciDeGlossaire(): void {
+		foreach (['[?SPIP]', '[??SPIP]', '[? SPIP#mots12|bulle{fr}]', '[?a b]'] as $raccourci) {
+			$this->assertTrue(tiptap_spip_est_glossaire($raccourci), $raccourci);
+		}
+		foreach (['[?]', '[?a] [?b]', 'x [?a]', '[?a<b]', '[SPIP]', '[?a]x', ''] as $raccourci) {
+			$this->assertFalse(tiptap_spip_est_glossaire($raccourci), $raccourci);
+		}
+	}
+
+	public function testGlossairesNommesDesFonctionsDefinies(): void {
+		$this->assertSame(
+			['mots', 'wikipedia'],
+			tiptap_spip_glossaires(['glossaire_wikipedia', 'glossaire_std', 'autre', 'glossaire_mots', 'glossaire_mots', 'glossaire_'])
+		);
+	}
+
 	public function testListeJsonDeChaines(): void {
 		$this->assertSame(['art1', 'rub2'], tiptap_spip_liste('["art1","rub2"]', 50, 500));
 		$this->assertNull(tiptap_spip_liste('[]', 50, 500));
