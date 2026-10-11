@@ -63,6 +63,13 @@ Un écart à l'invariant 3 n'est accepté que s'il est **enregistré** dans `tes
   structure (niveau de titre, liste, tableau, paragraphes).
 - **Non-régression** : le test compare le diff obtenu au diff figé ; un diff différent fait échouer la CI,
   un diff disparu aussi (l'entrée doit alors être supprimée).
-- **Plafond** : au plus 1 % des fichiers du corpus en écart accepté.
+- **Diff figé** : rendus normalisés coupés en une ligne par balise, réduits aux lignes modifiées (sans
+  contexte) ; chaque hunk liste ses lignes retirées (`- `) puis ajoutées (`+ `), les hunks sont séparés par
+  `@@`. Il s'écrit avec `npm run equivalence -- --figer` (entrées déjà enregistrées seulement).
+- **Corpus non versionné** (corpus réel, `npm run equivalence -- <dossier>`) : un écart y est « couvert »
+  quand tous ses hunks figurent dans le diff figé d'une même entrée, c'est-à-dire quand le cas a été réduit
+  à un extrait du corpus versionné et enregistré ; tout autre écart échoue.
+- **Plafond** : au plus 1 % des fichiers examinés en écart accepté ou couvert, arrondi à l'entier
+  supérieur (un écart toléré pour un corpus de moins de 100 fichiers).
 - Ajout d'une entrée : uniquement par PR, approuvée par un mainteneur autre que l'auteur.
 

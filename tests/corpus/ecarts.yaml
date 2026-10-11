@@ -1,0 +1,9 @@
+# Écarts de rendu acceptés (spec 08 §4). Types tolérés : espacement, balisage-equivalent.
+# Le diff figé se (ré)écrit avec : npm run equivalence -- --figer
+# Ajout d'une entrée : par PR, approuvée par un mainteneur autre que l'auteur.
+
+- fichier: code-accoles.spip
+  type: balisage-equivalent
+  diff: ecarts/code-accoles.diff
+  justification: "deux codes inline accolés (<code>a</code><code>b</code>) deviennent un seul <code> : le JSON, comme Tiptap, fusionne les textes voisins de mêmes marks ; même texte, même structure (vu sur demo.spip.org, article 12)"
+  accepte_par: "gilles"
