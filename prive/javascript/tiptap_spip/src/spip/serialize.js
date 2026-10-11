@@ -17,16 +17,26 @@ export function serialize(doc, { conservative = true } = {}) {
 	while (i < blocks.length) {
 		const b = blocks[i];
 		const a = b.attrs ?? {};
+		const sep = separator(i, conservative ? a.spipSep : null);
 		if (conservative && a.spipGroup && typeof a.spipSrc === 'string' && canon(blocks.slice(i, i + a.spipGroup)) === a.spipHash) {
-			out += a.spipSep + a.spipSrc;
+			out += sep + a.spipSrc;
 			i += a.spipGroup;
 			continue;
 		}
-		const sep = conservative && typeof a.spipSep === 'string' ? a.spipSep : (i === 0 ? '' : '\n\n');
 		out += sep + serializeBlock(b);
 		i++;
 	}
 	return out + (conservative ? (doc.attrs?.spipTrail ?? '') : '');
+}
+
+/**
+ * Séparateur avant le bloc i. L'éditeur recopie les attributs techniques quand il coupe un bloc
+ * ou colle une copie : un spipSep n'est donc repris que s'il reste valide à cette place, c'est-à-
+ * dire vide en tête de document, contenant une ligne vide ailleurs.
+ */
+function separator(i, spipSep) {
+	if (i === 0) return '';
+	return typeof spipSep === 'string' && /\n[ \t\r]*\n/.test(spipSep) ? spipSep : '\n\n';
 }
 
 const textOf = (n) => (n.content ?? []).map((c) => c.text ?? '').join('');

@@ -41,6 +41,28 @@ describe('sérialisation conservatrice', () => {
 		doc.content[0] = { ...doc.content[0], content: [text('x')] };
 		expect(serialize(doc)).toBe('x');
 	});
+
+	// l'éditeur recopie les attributs techniques quand il coupe un bloc ou colle une copie
+	const dup = (block, content) => ({ ...block, content });
+
+	it('un bloc coupé en deux reste séparé par une ligne vide', () => {
+		const doc = parse('Premier.\n\nSecond.');
+		const [first, second] = doc.content;
+		doc.content = [dup(first, [text('Pre')]), dup(first, [text('mier.')]), second];
+		expect(serialize(doc)).toBe('Pre\n\nmier.\n\nSecond.');
+	});
+
+	it('une copie intacte du premier bloc collée plus loin n\'est pas recollée au bloc précédent', () => {
+		const doc = parse('Premier.\n\nSecond.');
+		doc.content = [...doc.content, doc.content[0]];
+		expect(serialize(doc)).toBe('Premier.\n\nSecond.\n\nPremier.');
+	});
+
+	it('un bloc déplacé en tête ne garde pas son séparateur', () => {
+		const doc = parse('Premier.\n\n\n\nSecond.');
+		doc.content = [doc.content[1], doc.content[0]];
+		expect(serialize(doc)).toBe('Second.\n\nPremier.');
+	});
 });
 
 describe('serializeInline', () => {
