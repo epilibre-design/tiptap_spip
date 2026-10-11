@@ -17649,7 +17649,7 @@ function markPasteRule(config2) {
 }
 
 // src/spip/json.js
-var MARK_ORDER = ["spipLink", "bold", "italic", "strike", "superscript", "subscript", "code"];
+var MARK_ORDER = ["spipLink", "bold", "italic", "strike", "superscript", "subscript", "spipAbbr", "spipGlossary", "code"];
 var TECH_ATTRS = ["spipSrc", "spipSep", "spipHash", "spipGroup", "spipLead", "spipTrail"];
 var text = (value, marks = []) => marks.length ? { type: "text", text: value, marks } : { type: "text", text: value };
 var node = (type, attrs, content) => {
@@ -17701,6 +17701,14 @@ function stripTech(value) {
 }
 var canon = (value) => JSON.stringify(stripTech(value));
 
+// src/spip/abbr.js
+var RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
+function parseAbbr(src) {
+  const m = src.match(RE_ABBR_SEUL);
+  return m ? { text: m[1], attrs: { title: m[2], lang: m[3] ?? null } } : null;
+}
+var serializeAbbr = (text2, attrs) => `[${text2}|${attrs.title}${attrs.lang ? `{${attrs.lang}}` : ""}]`;
+
 // src/spip/regex.js
 var RE_MODELE = /<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>/gi;
 var RE_LIEN = /\[([^\][]*?([[][^\]>-]*[\]][^\][]*)*)->(>?)([^\]]*)\]/gs;
@@ -17751,6 +17759,20 @@ function parseLinkAtts(part, masked = part) {
 var linkAtts = ({ bulle, hreflang }) => (bulle != null ? `|${bulle}` : "") + (hreflang ? `{${hreflang}}` : "");
 var linkEnd = (attrs) => `${linkAtts(attrs)}->${attrs.newWindow ? ">" : ""}${attrs.href}]`;
 
+// src/spip/glossary.js
+var RE_GLOSSAIRE_SEUL = /^\[\?+\s*([^\][<>]+)\]$/;
+var RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
+function parseGlossary(src) {
+  const m = src.match(RE_GLOSSAIRE_SEUL);
+  const r = m?.[1].match(RE_GLOSES);
+  if (!r) return null;
+  const [, nom, numero] = (r[4] ?? "").match(/^(.*?)(\d*)$/);
+  const atts = parseLinkAtts(r[1] + r[2] + r[5]);
+  if (!atts) return null;
+  return { term: atts.text, attrs: { glossaire: nom || null, numero: numero || null, bulle: atts.bulle, hreflang: atts.hreflang } };
+}
+var serializeGlossary = (term, attrs) => `[?${term}${attrs.glossaire || attrs.numero ? `#${attrs.glossaire ?? ""}${attrs.numero ?? ""}` : ""}${linkAtts(attrs)}]`;
+
 // src/spip/models.js
 function parseModel(source) {
   const m = source.match(RE_MODELE_SEUL);
@@ -17766,6 +17788,30 @@ function serializeModel(model) {
   if (typeof model.source === "string" && sameShape(parseModel(model.source), model)) return model.source;
   const params = model.params.map(({ key, value }) => `|${key === null ? value : `${key}=${value}`}`).join("");
   return `<${model.name}${model.id ?? ""}${params}>`;
+}
+
+// src/spip/notes.js
+var RE_NOTE_SEULE = new RegExp(`^\\[\\[([ \\t\\n\\v\\f\\r]*(<([^>'"]*)>)?([\\s\\S]*?))\\]\\]$`, "d");
+var BLOCS = /* @__PURE__ */ new Set(["paragraph", "bulletList", "orderedList", "spipModelBlock"]);
+function parseNote(src, masked = src) {
+  const m = masked.match(RE_NOTE_SEULE);
+  if (!m) return null;
+  const [, , ref, , texte2] = m;
+  const morceau = (i2) => src.slice(m.indices[i2][0], m.indices[i2][1]);
+  const nom = ref === void 0 ? null : morceau(3);
+  let name = null;
+  let contenu = morceau(1);
+  if (ref !== void 0) {
+    const ferme = texte2.includes(`</${nom}>`);
+    if (ferme && !/^[\w-]*$/.test(nom)) return null;
+    if (!ferme || new RegExp(`<${nom}\\W.*</${nom}>`).test(texte2)) {
+      name = nom;
+      contenu = morceau(4);
+    }
+  }
+  const doc3 = parse(contenu);
+  if (!doc3.content.every((b) => BLOCS.has(b.type))) return null;
+  return { name, content: doc3.content, lead: doc3.attrs.spipLead, trail: doc3.attrs.spipTrail };
 }
 
 // src/spip/protect.js
@@ -17809,18 +17855,32 @@ function protect(source) {
       inner: decodeCode(source.slice(start + openTag.length, end - closeLength))
     });
   });
-  scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, "escape", { char: m[1] }));
+  scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, "escape", { char: m[1], raccourci: true }));
+  const echappements = () => regions.filter((r) => r.kind === "escape" && r.data.raccourci);
+  const scanSansEchappements = (regex, onMatch) => {
+    let texte2 = masked;
+    for (const r of echappements()) texte2 = texte2.slice(0, r.start) + source.slice(r.start, r.end) + texte2.slice(r.end);
+    for (const m of [...texte2.matchAll(regex)]) {
+      const start = m.index;
+      const chevauche = echappements().find((r) => r.start < start && r.end > start);
+      if (chevauche) {
+        regions = regions.filter((r) => r !== chevauche);
+        regions.push({ start: chevauche.start, end: start, kind: "raw", data: { absorbed: [] } });
+      }
+      onMatch(m, start, start + m[0].length);
+    }
+  };
   scan(RE_MODELE, (m, start, end) => {
     if (m[2] || m[3]) add(start, end, "model", { source: m[0] });
   });
-  scan(RE_NOTE, (m, start, end) => add(start, end, "note", {}));
+  scanSansEchappements(RE_GLOSSAIRE, (m, start, end) => add(start, end, "glossary", {}));
+  scanSansEchappements(RE_ANCRE, (m, start, end) => add(start, end, "anchor", { name: source.slice(end - 3 - m[1].length, end - 3) }));
   scan(RE_LIEN, (m, start, end) => add(start, end, "link", {
     part: source.slice(start + 1, start + 1 + m[1].length),
     newWindow: m[3] === ">",
     href: source.slice(end - 1 - m[4].length, end - 1)
   }));
-  scan(RE_ANCRE, (m, start, end) => add(start, end, "anchor", { name: source.slice(end - 3 - m[1].length, end - 3) }));
-  scan(RE_GLOSSAIRE, (m, start, end) => add(start, end, "glossary", {}));
+  scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, "note", { masked: m[0] }));
   scan(RE_ABBR, (m, start, end) => add(start, end, "abbr", {}));
   scan(RE_MULTI, (m, start, end) => add(start, end, "multi", {}));
   scan(RE_IDIOME, (m, start, end) => add(start, end, "idiome", {}));
@@ -17835,9 +17895,277 @@ function regionsIn(regions, start, end) {
   return regions.filter((r) => r.start >= start && r.end <= end).map((r) => ({ ...r, start: r.start - start, end: r.end - start }));
 }
 
+// src/spip/serialize.js
+function serialize(doc3, { conservative = true } = {}) {
+  const avant = contexte;
+  contexte = { ...contexte, conservative };
+  try {
+    return serializeDoc(doc3, conservative);
+  } finally {
+    contexte = avant;
+  }
+}
+var contexte = { conservative: true, note: false };
+function serializeDoc(doc3, conservative) {
+  const blocks2 = doc3.content ?? [];
+  let out = conservative ? doc3.attrs?.spipLead ?? "" : "";
+  let i2 = 0;
+  while (i2 < blocks2.length) {
+    const b = blocks2[i2];
+    const a = b.attrs ?? {};
+    const sep = separator(i2, conservative ? a.spipSep : null);
+    if (conservative && a.spipGroup && typeof a.spipSrc === "string" && canon(blocks2.slice(i2, i2 + a.spipGroup)) === a.spipHash) {
+      out += sep + a.spipSrc;
+      i2 += a.spipGroup;
+      continue;
+    }
+    out += sep + serializeBlock(b);
+    i2++;
+  }
+  return out + (conservative ? doc3.attrs?.spipTrail ?? "" : "");
+}
+function separator(i2, spipSep) {
+  if (i2 === 0) return "";
+  return typeof spipSep === "string" && /\n[ \t\r]*\n/.test(spipSep) ? spipSep : "\n\n";
+}
+var textOf = (n) => (n.content ?? []).map((c) => c.text ?? "").join("");
+var blocks = (content = []) => content.map(serializeBlock).join("\n\n");
+function serializeBlock(b) {
+  const a = b.attrs ?? {};
+  switch (b.type) {
+    case "paragraph":
+      return serializeInline(b.content, { lineStart: true });
+    case "heading":
+      return a.level === 2 ? `{{{${serializeInline(b.content, { html: true })}}}}` : `<h${a.level}>${serializeInline(b.content)}</h${a.level}>`;
+    case "horizontalRule":
+      return "----";
+    case "bulletList":
+    case "orderedList":
+      return serializeList(b, 1);
+    case "blockquote":
+      return `<quote>
+${blocks(b.content)}
+</quote>`;
+    case "spipPoesie":
+      return `<${a.tag ?? "poesie"}>
+${blocks(b.content)}
+</${a.tag ?? "poesie"}>`;
+    case "spipAlign":
+      return `<div class="text-${a.align}">
+
+${blocks(b.content)}
+
+</div>`;
+    case "codeBlock":
+      return serializeCodeBlock(b);
+    case "spipCadre":
+    case "spipHtml":
+    case "spipMath":
+      return a.openTag + encodeCode(textOf(b)) + a.closeTag;
+    case "spipRaw":
+      return a.source;
+    case "spipModelBlock":
+      return serializeModel(a.model);
+    case "table":
+      return serializeTable(b);
+    default:
+      throw new Error(`serialize: type de bloc inconnu \xAB ${b.type} \xBB`);
+  }
+}
+function serializeCodeBlock(b) {
+  const a = b.attrs ?? {};
+  const code2 = textOf(b);
+  if (a.openTag || !canBacktick(code2)) return `${a.openTag ?? "<code>"}
+${encodeCode(code2)}
+</code>`;
+  let fence = "```";
+  while (code2.includes(fence)) fence += "`";
+  return `${fence}${a.language ?? ""}
+${code2}${fence}`;
+}
+function serializeList(list, depth) {
+  const marker = (list.type === "bulletList" ? "*" : "#").repeat(depth);
+  return list.content.map((item) => {
+    const [para, nested] = item.content;
+    const line = `-${marker} ${serializeInline(para.content)}`;
+    return nested ? `${line}
+${serializeList(nested, depth + 1)}` : line;
+  }).join("\n");
+}
+function serializeTable(table) {
+  const a = table.attrs ?? {};
+  const lines = [];
+  if (a.caption != null || a.summary != null) {
+    lines.push(`||${a.caption ?? ""}${a.summary != null ? `|${a.summary}` : ""}||`);
+  }
+  const occ = [];
+  table.content.forEach((row, r) => {
+    var _a;
+    occ[r] ?? (occ[r] = []);
+    let c = 0;
+    for (const cell of row.content) {
+      while (occ[r][c] !== void 0) c++;
+      const { colspan = 1, rowspan = 1 } = cell.attrs ?? {};
+      for (let dr = 0; dr < rowspan; dr++) {
+        occ[_a = r + dr] ?? (occ[_a] = []);
+        for (let dc = 0; dc < colspan; dc++) {
+          occ[r + dr][c + dc] = dr > 0 ? "^" : dc > 0 ? "<" : cell;
+        }
+      }
+      c += colspan;
+    }
+  });
+  for (const row of occ) {
+    const cells = row.map((x) => {
+      if (typeof x === "string") return x;
+      const inline = serializeInline(x.content?.[0]?.content);
+      return x.type === "tableHeader" && inline !== "" ? `{{${inline}}}` : inline;
+    });
+    lines.push(`|${cells.join("|")}|`);
+  }
+  return lines.join("\n");
+}
+var OPEN = { bold: ["{{", "}}"], italic: ["{", "}"], strike: ["<del>", "</del>"], superscript: ["<sup>", "</sup>"], subscript: ["<sub>", "</sub>"] };
+var delimiters = (mark) => {
+  if (mark.type === "spipLink") return ["[", linkEnd(mark.attrs)];
+  if (mark.type === "spipGlossary") return ["[?", serializeGlossary("", mark.attrs).slice(2)];
+  if (mark.type === "spipAbbr") return ["[", serializeAbbr("", mark.attrs).slice(1)];
+  return OPEN[mark.type];
+};
+var ATOMIQUES = ["spipGlossary", "spipAbbr"];
+var avecMarks = (n, marks) => {
+  const { marks: _, ...rest } = n;
+  return marks.length ? { ...rest, marks } : rest;
+};
+function seRelit(n, mark) {
+  const [open, close2] = delimiters(mark);
+  const relu = parse(open + n.text + close2).content;
+  return canon(relu) === canon([node("paragraph", null, [text(n.text, [mark])])]);
+}
+function marksAtomiques(nodes) {
+  let out = nodes.map((n) => {
+    const marks = n.marks ?? [];
+    let garde = marks;
+    if (marks.some((m) => m.type === "spipLink" || m.type === "code")) garde = garde.filter((m) => !ATOMIQUES.includes(m.type));
+    if (garde.some((m) => m.type === "spipGlossary")) garde = garde.filter((m) => m.type !== "spipAbbr");
+    return garde.length === marks.length ? n : avecMarks(n, garde);
+  });
+  for (const type of ATOMIQUES) {
+    const res = [];
+    for (let i2 = 0; i2 < out.length; ) {
+      const mark = out[i2].marks?.find((m) => m.type === type);
+      if (!mark) {
+        res.push(out[i2++]);
+        continue;
+      }
+      let j = i2;
+      while (j < out.length && out[j].marks?.some((m) => sameMark(m, mark))) j++;
+      const run2 = out.slice(i2, j);
+      let fusion = null;
+      if (run2.every((n) => n.type === "text")) {
+        const communes = run2[0].marks.filter((m) => run2.every((n) => n.marks.some((x) => sameMark(x, m))));
+        const candidat = text(run2.map((n) => n.text).join(""), communes);
+        if (seRelit(candidat, mark)) fusion = candidat;
+      }
+      if (fusion) res.push(fusion);
+      else res.push(...run2.map((n) => avecMarks(n, n.marks.filter((m) => !sameMark(m, mark)))));
+      i2 = j;
+    }
+    out = res;
+  }
+  return out;
+}
+var HTML = { bold: ["<strong>", "</strong>"], italic: ["<i>", "</i>"] };
+function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
+  nodes = marksAtomiques(nodes);
+  let out = "";
+  const stack = [];
+  let atLineStart = lineStart;
+  const closeTo = (k) => {
+    while (stack.length > k) out += stack.pop().close;
+  };
+  const marksOf = (n) => (n.marks ?? []).filter((m) => m.type !== "code");
+  const runLength = (i2, mark) => {
+    let j = i2;
+    while (j < nodes.length && marksOf(nodes[j]).some((m) => sameMark(m, mark))) j++;
+    return j - i2;
+  };
+  nodes.forEach((n, i2) => {
+    const marks = marksOf(n);
+    let k = 0;
+    while (k < stack.length && marks.some((m) => sameMark(m, stack[k].mark))) k++;
+    closeTo(k);
+    const toOpen = marks.filter((m) => !stack.some((s) => sameMark(s.mark, m))).map((m) => ({ m, run: runLength(i2, m) })).sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
+    for (const { m } of toOpen) {
+      const useHtml = HTML[m.type] && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")));
+      const [open, close2] = useHtml ? HTML[m.type] : delimiters(m);
+      out += open;
+      stack.push({ mark: m, close: close2 });
+      atLineStart = false;
+    }
+    const inLink = stack.some((s) => s.mark.type === "spipLink");
+    if (n.type === "text") {
+      const code2 = n.marks?.find((m) => m.type === "code");
+      const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
+      const avantCrochets = ["spipNote", "spipRawInline"].includes(nodes[i2 + 1]?.type);
+      out += code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
+      atLineStart = false;
+    } else if (n.type === "hardBreak") {
+      const autobr = n.attrs?.syntax === "autobr";
+      out += autobr ? "\n" : "\n_ ";
+      atLineStart = autobr;
+    } else if (n.type === "spipRawInline") {
+      out += n.attrs.source;
+      atLineStart = false;
+    } else if (n.type === "spipLinkAuto") {
+      out += `[${linkEnd(n.attrs)}`;
+      atLineStart = false;
+    } else if (n.type === "spipAnchor") {
+      out += `[#${n.attrs.name}<-]`;
+      atLineStart = false;
+    } else if (n.type === "spipModel") {
+      out += serializeModel(n.attrs.model);
+      atLineStart = false;
+    } else if (n.type === "spipNote") {
+      out += serializeNote(n.attrs);
+      atLineStart = false;
+    } else {
+      throw new Error(`serialize: type inline inconnu \xAB ${n.type} \xBB`);
+    }
+  });
+  closeTo(0);
+  return out;
+}
+function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) {
+  const avant = contexte;
+  contexte = { ...contexte, note: true };
+  try {
+    const doc3 = { type: "doc", attrs: { spipLead, spipTrail }, content: content?.length ? content : [node("paragraph")] };
+    return `[[${name == null ? "" : `<${name}>`}${serialize(doc3, { conservative: avant.conservative })}]]`;
+  } finally {
+    contexte = avant;
+  }
+}
+function serializeCode(code2) {
+  const backtick = code2 === code2.trim() && canBacktick(code2) && !/^`|`$|``/.test(code2);
+  if (!backtick) return `<code>${encodeCode(code2)}</code>`;
+  return code2.includes("`") ? `\`\`${code2}\`\`` : `\`${code2}\``;
+}
+function escapeText(value, atLineStart, { link = false, avantCrochets = false } = {}) {
+  let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:])/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
+  if (!link) {
+    s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
+  } else {
+    s = s.replace(/\[/g, "&#91;").replace(/\]/g, "&#93;").replace(/\|/g, "&#124;").replace(/->/g, "-&gt;");
+  }
+  if (contexte.note && !link) s = s.replace(/\](?=\]|$)/g, "&#93;");
+  if (atLineStart) s = s.replace(/^([-|]|_(?= |_))/, "\\$1");
+  return s;
+}
+
 // src/spip/inline.js
 var MARK_TAGS = { strong: "bold", i: "italic", del: "strike", sup: "superscript", sub: "subscript" };
-var ENTITIES = { lt: "<", gt: ">", amp: "&", "#91": "[", "#63": "?" };
+var ENTITIES = { lt: "<", gt: ">", amp: "&", "#91": "[", "#93": "]", "#63": "?" };
 var LINK_ENTITIES = { ...ENTITIES, "#124": "|", "#93": "]" };
 var entityRegex = (entities) => new RegExp(`^&(${Object.keys(entities).join("|")});`);
 var RE_ENTITY = entityRegex(ENTITIES);
@@ -17861,6 +18189,25 @@ function linkToken(region, src) {
   if (atts.text.trim() === "") return { t: "node", node: node("spipLinkAuto", attrs) };
   const { masked, regions } = protect(atts.text);
   return { t: "link", mark: { type: "spipLink", attrs }, children: parseInline(atts.text, masked, regions, { link: true }) };
+}
+var MARKED = {
+  glossary: { type: "spipGlossary", parse: (src) => {
+    const r = parseGlossary(src);
+    return r && { v: r.term, attrs: r.attrs };
+  }, write: serializeGlossary },
+  abbr: { type: "spipAbbr", parse: (src) => {
+    const r = parseAbbr(src);
+    return r && { v: r.text, attrs: r.attrs };
+  }, write: serializeAbbr }
+};
+function markedToken(region, src) {
+  const def = MARKED[region.kind];
+  const r = def.parse(src);
+  if (!r || /[\r\n]/.test(r.v) || escapeText(r.v, false) !== r.v || def.write(r.v, r.attrs) !== src) return null;
+  return { t: "marked", mark: { type: def.type, attrs: r.attrs }, v: r.v };
+}
+function noteNode({ name, content, lead, trail }) {
+  return node("spipNote", { ...name === null ? {} : { name }, content, spipLead: lead, spipTrail: trail });
 }
 function tokenize(source, masked, regions, lineStart, link) {
   const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
@@ -17895,6 +18242,10 @@ function tokenize(source, masked, regions, lineStart, link) {
         push({ t: "code", v: region.data.code.trim() });
       } else if (region.kind === "link") {
         push(linkToken(region, src));
+      } else if (MARKED[region.kind] && !link && markedToken(region, src)) {
+        push(markedToken(region, src));
+      } else if (region.kind === "note" && parseNote(src, region.data.masked)) {
+        push({ t: "node", node: noteNode(parseNote(src, region.data.masked)) });
       } else if (region.kind === "anchor") {
         push({ t: "node", node: node("spipAnchor", { name: region.data.name }) });
       } else if (region.kind === "model" && parseModel(src)) {
@@ -17991,6 +18342,9 @@ function buildNodes(tokens) {
         break;
       case "code":
         nodes.push(text(tk.v, sortMarks([...marks, { type: "code" }])));
+        break;
+      case "marked":
+        nodes.push(text(tk.v, sortMarks([...marks, tk.mark])));
         break;
       case "br":
         nodes.push(withMarks({ type: "hardBreak", attrs: { syntax: tk.syntax } }));
@@ -24114,7 +24468,7 @@ var SpipHardBreak = src_default6.extend({
     }
   })
 });
-var SpipCode = src_default3.extend({ excludes: "" });
+var SpipCode = src_default3.extend({ excludes: "spipGlossary spipAbbr" });
 var SpipCodeBlock = src_default4.extend({
   addAttributes() {
     return { ...this.parent?.(), openTag: hidden() };
@@ -24208,10 +24562,36 @@ var linkAttributes = () => ({
 var SpipLink = Mark2.create({
   name: "spipLink",
   inclusive: false,
+  // pas de lien dans un lien, ni sur un glossaire ou une abréviation : le lien les remplace
+  excludes: "spipLink spipGlossary spipAbbr",
   addAttributes: linkAttributes,
   // un lien sans texte (data-tts-auto) est un nœud, pas cette mark
   parseHTML: () => [{ tag: "a[data-tts-href]", getAttrs: (el) => el.hasAttribute("data-tts-auto") ? false : null }],
   renderHTML: ({ HTMLAttributes }) => ["a", { ...HTMLAttributes, class: "tts-link" }, 0]
+});
+var SpipGlossary = Mark2.create({
+  name: "spipGlossary",
+  inclusive: false,
+  excludes: "spipGlossary spipLink spipAbbr code",
+  addAttributes: () => ({
+    glossaire: { default: null, parseHTML: (el) => el.getAttribute("data-tts-glossary") || null, renderHTML: (a) => ({ "data-tts-glossary": a.glossaire ?? "" }) },
+    numero: { default: null, parseHTML: (el) => el.getAttribute("data-tts-numero"), renderHTML: (a) => a.numero ? { "data-tts-numero": a.numero } : {} },
+    bulle: { default: null, parseHTML: (el) => el.getAttribute("title"), renderHTML: (a) => a.bulle == null ? {} : { title: a.bulle } },
+    hreflang: { default: null, parseHTML: (el) => el.getAttribute("hreflang"), renderHTML: (a) => a.hreflang ? { hreflang: a.hreflang } : {} }
+  }),
+  parseHTML: () => [{ tag: "span[data-tts-glossary]" }],
+  renderHTML: ({ HTMLAttributes }) => ["span", { ...HTMLAttributes, class: "tts-glossary" }, 0]
+});
+var SpipAbbr = Mark2.create({
+  name: "spipAbbr",
+  inclusive: false,
+  excludes: "spipAbbr spipLink spipGlossary code",
+  addAttributes: () => ({
+    title: { default: "", parseHTML: (el) => el.getAttribute("title") ?? "", renderHTML: (a) => ({ title: a.title }) },
+    lang: { default: null, parseHTML: (el) => el.getAttribute("lang"), renderHTML: (a) => a.lang ? { lang: a.lang } : {} }
+  }),
+  parseHTML: () => [{ tag: "abbr[title]" }],
+  renderHTML: ({ HTMLAttributes }) => ["abbr", { ...HTMLAttributes, class: "tts-abbr" }, 0]
 });
 var SpipLinkAuto = Node3.create({
   name: "spipLinkAuto",
@@ -24268,6 +24648,79 @@ var SpipModelBlock = Node3.create({
   parseHTML: () => [{ tag: "div[data-tts-model]" }],
   renderHTML: ({ node: node2, HTMLAttributes }) => ["div", { ...HTMLAttributes, class: "tts-model tts-model-block" }, node2.attrs.model?.source ?? ""]
 });
+function apercu(content, max = 80) {
+  const morceaux = [];
+  const parcourir = (n) => {
+    if (n.text) morceaux.push(n.text);
+    else if (n.attrs?.source) morceaux.push(n.attrs.source);
+    else if (n.attrs?.model?.source) morceaux.push(n.attrs.model.source);
+    (n.content ?? []).forEach(parcourir);
+    if (n.type === "paragraph") morceaux.push(" ");
+  };
+  (content ?? []).forEach(parcourir);
+  const texte2 = morceaux.join("").replace(/\s+/g, " ").trim();
+  return texte2.length > max ? `${texte2.slice(0, max - 1)}\u2026` : texte2;
+}
+var SpipNote = Node3.create({
+  name: "spipNote",
+  group: "inline",
+  inline: true,
+  atom: true,
+  selectable: true,
+  addAttributes: () => ({
+    // null : numérotée automatiquement ; '' : sans appel
+    name: {
+      default: null,
+      parseHTML: (el) => el.getAttribute("data-tts-note-name"),
+      renderHTML: (a) => a.name == null ? {} : { "data-tts-note-name": a.name }
+    },
+    content: {
+      default: null,
+      parseHTML: (el) => {
+        try {
+          return JSON.parse(el.getAttribute("data-tts-note"));
+        } catch {
+          return null;
+        }
+      },
+      renderHTML: (a) => ({ "data-tts-note": JSON.stringify(a.content ?? []) })
+    },
+    spipLead: hidden(),
+    spipTrail: hidden()
+  }),
+  // avant la mark exposant, qui lit aussi <sup>
+  parseHTML: () => [{ tag: "sup[data-tts-note]", priority: 60 }],
+  renderHTML: ({ node: node2, HTMLAttributes }) => ["sup", { ...HTMLAttributes, class: "tts-note", title: apercu(node2.attrs.content) }]
+});
+var SpipNoteNumbers = Extension.create({
+  name: "spipNoteNumbers",
+  addProseMirrorPlugins() {
+    const key = new PluginKey("spipNoteNumbers");
+    const numeroter = (doc3) => {
+      const decorations = [];
+      let n = 0;
+      doc3.descendants((node2, pos) => {
+        if (node2.type.name !== "spipNote") return;
+        const { name } = node2.attrs;
+        const label2 = name == null ? String(++n) : name;
+        const aria = name === "" ? "Note sans appel" : `Note ${label2}`;
+        decorations.push(Decoration.node(pos, pos + node2.nodeSize, {
+          "data-tts-label": label2,
+          "aria-label": `${aria} : ${apercu(node2.attrs.content)}`
+        }));
+      });
+      return DecorationSet.create(doc3, decorations);
+    };
+    return [new Plugin({
+      key,
+      state: {
+        init: (_, { doc: doc3 }) => numeroter(doc3),
+        apply: (tr, set) => tr.docChanged ? numeroter(tr.doc) : set
+      },
+      props: { decorations: (state) => key.getState(state) }
+    })];
+  }
+});
 var SpipUi = Extension.create({
   name: "spipUi",
   addOptions: () => ({ ui: null }),
@@ -24308,15 +24761,19 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
     SpipRawInline,
     withView(SpipLinkAuto, linkAutoView, Boolean(ui?.titles)),
     SpipAnchor,
+    SpipNote,
+    SpipNoteNumbers,
     withView(SpipModel, modelView, Boolean(ui?.previews)),
     withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
-    // marks : ordre canonique spipLink, bold, italic, strike, superscript, subscript, code
+    // marks : ordre canonique de MARK_ORDER
     SpipLink,
     src_default2,
     src_default9,
     src_default11,
     src_default13,
     src_default12,
+    SpipAbbr,
+    SpipGlossary,
     SpipCode,
     SegmentMap,
     Dropcursor,
@@ -24339,197 +24796,6 @@ function createEditor({ element, source, ui = null, extensions = coreExtensions(
       throw error;
     }
   });
-}
-
-// src/spip/serialize.js
-function serialize(doc3, { conservative = true } = {}) {
-  const blocks2 = doc3.content ?? [];
-  let out = conservative ? doc3.attrs?.spipLead ?? "" : "";
-  let i2 = 0;
-  while (i2 < blocks2.length) {
-    const b = blocks2[i2];
-    const a = b.attrs ?? {};
-    const sep = separator(i2, conservative ? a.spipSep : null);
-    if (conservative && a.spipGroup && typeof a.spipSrc === "string" && canon(blocks2.slice(i2, i2 + a.spipGroup)) === a.spipHash) {
-      out += sep + a.spipSrc;
-      i2 += a.spipGroup;
-      continue;
-    }
-    out += sep + serializeBlock(b);
-    i2++;
-  }
-  return out + (conservative ? doc3.attrs?.spipTrail ?? "" : "");
-}
-function separator(i2, spipSep) {
-  if (i2 === 0) return "";
-  return typeof spipSep === "string" && /\n[ \t\r]*\n/.test(spipSep) ? spipSep : "\n\n";
-}
-var textOf = (n) => (n.content ?? []).map((c) => c.text ?? "").join("");
-var blocks = (content = []) => content.map(serializeBlock).join("\n\n");
-function serializeBlock(b) {
-  const a = b.attrs ?? {};
-  switch (b.type) {
-    case "paragraph":
-      return serializeInline(b.content, { lineStart: true });
-    case "heading":
-      return a.level === 2 ? `{{{${serializeInline(b.content, { html: true })}}}}` : `<h${a.level}>${serializeInline(b.content)}</h${a.level}>`;
-    case "horizontalRule":
-      return "----";
-    case "bulletList":
-    case "orderedList":
-      return serializeList(b, 1);
-    case "blockquote":
-      return `<quote>
-${blocks(b.content)}
-</quote>`;
-    case "spipPoesie":
-      return `<${a.tag ?? "poesie"}>
-${blocks(b.content)}
-</${a.tag ?? "poesie"}>`;
-    case "spipAlign":
-      return `<div class="text-${a.align}">
-
-${blocks(b.content)}
-
-</div>`;
-    case "codeBlock":
-      return serializeCodeBlock(b);
-    case "spipCadre":
-    case "spipHtml":
-    case "spipMath":
-      return a.openTag + encodeCode(textOf(b)) + a.closeTag;
-    case "spipRaw":
-      return a.source;
-    case "spipModelBlock":
-      return serializeModel(a.model);
-    case "table":
-      return serializeTable(b);
-    default:
-      throw new Error(`serialize: type de bloc inconnu \xAB ${b.type} \xBB`);
-  }
-}
-function serializeCodeBlock(b) {
-  const a = b.attrs ?? {};
-  const code2 = textOf(b);
-  if (a.openTag || !canBacktick(code2)) return `${a.openTag ?? "<code>"}
-${encodeCode(code2)}
-</code>`;
-  let fence = "```";
-  while (code2.includes(fence)) fence += "`";
-  return `${fence}${a.language ?? ""}
-${code2}${fence}`;
-}
-function serializeList(list, depth) {
-  const marker = (list.type === "bulletList" ? "*" : "#").repeat(depth);
-  return list.content.map((item) => {
-    const [para, nested] = item.content;
-    const line = `-${marker} ${serializeInline(para.content)}`;
-    return nested ? `${line}
-${serializeList(nested, depth + 1)}` : line;
-  }).join("\n");
-}
-function serializeTable(table) {
-  const a = table.attrs ?? {};
-  const lines = [];
-  if (a.caption != null || a.summary != null) {
-    lines.push(`||${a.caption ?? ""}${a.summary != null ? `|${a.summary}` : ""}||`);
-  }
-  const occ = [];
-  table.content.forEach((row, r) => {
-    var _a;
-    occ[r] ?? (occ[r] = []);
-    let c = 0;
-    for (const cell of row.content) {
-      while (occ[r][c] !== void 0) c++;
-      const { colspan = 1, rowspan = 1 } = cell.attrs ?? {};
-      for (let dr = 0; dr < rowspan; dr++) {
-        occ[_a = r + dr] ?? (occ[_a] = []);
-        for (let dc = 0; dc < colspan; dc++) {
-          occ[r + dr][c + dc] = dr > 0 ? "^" : dc > 0 ? "<" : cell;
-        }
-      }
-      c += colspan;
-    }
-  });
-  for (const row of occ) {
-    const cells = row.map((x) => {
-      if (typeof x === "string") return x;
-      const inline = serializeInline(x.content?.[0]?.content);
-      return x.type === "tableHeader" && inline !== "" ? `{{${inline}}}` : inline;
-    });
-    lines.push(`|${cells.join("|")}|`);
-  }
-  return lines.join("\n");
-}
-var OPEN = { bold: ["{{", "}}"], italic: ["{", "}"], strike: ["<del>", "</del>"], superscript: ["<sup>", "</sup>"], subscript: ["<sub>", "</sub>"] };
-var delimiters = (mark) => mark.type === "spipLink" ? ["[", linkEnd(mark.attrs)] : OPEN[mark.type];
-var HTML = { bold: ["<strong>", "</strong>"], italic: ["<i>", "</i>"] };
-function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
-  let out = "";
-  const stack = [];
-  let atLineStart = lineStart;
-  const closeTo = (k) => {
-    while (stack.length > k) out += stack.pop().close;
-  };
-  const marksOf = (n) => (n.marks ?? []).filter((m) => m.type !== "code");
-  const runLength = (i2, mark) => {
-    let j = i2;
-    while (j < nodes.length && marksOf(nodes[j]).some((m) => sameMark(m, mark))) j++;
-    return j - i2;
-  };
-  nodes.forEach((n, i2) => {
-    const marks = marksOf(n);
-    let k = 0;
-    while (k < stack.length && marks.some((m) => sameMark(m, stack[k].mark))) k++;
-    closeTo(k);
-    const toOpen = marks.filter((m) => !stack.some((s) => sameMark(s.mark, m))).map((m) => ({ m, run: runLength(i2, m) })).sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
-    for (const { m } of toOpen) {
-      const useHtml = HTML[m.type] && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")));
-      const [open, close2] = useHtml ? HTML[m.type] : delimiters(m);
-      out += open;
-      stack.push({ mark: m, close: close2 });
-      atLineStart = false;
-    }
-    const inLink = stack.some((s) => s.mark.type === "spipLink");
-    if (n.type === "text") {
-      const code2 = n.marks?.find((m) => m.type === "code");
-      out += code2 ? serializeCode(n.text) : escapeText(n.text, atLineStart, { link: inLink });
-      atLineStart = false;
-    } else if (n.type === "hardBreak") {
-      const autobr = n.attrs?.syntax === "autobr";
-      out += autobr ? "\n" : "\n_ ";
-      atLineStart = autobr;
-    } else if (n.type === "spipRawInline") {
-      out += n.attrs.source;
-      atLineStart = false;
-    } else if (n.type === "spipLinkAuto") {
-      out += `[${linkEnd(n.attrs)}`;
-      atLineStart = false;
-    } else if (n.type === "spipAnchor") {
-      out += `[#${n.attrs.name}<-]`;
-      atLineStart = false;
-    } else if (n.type === "spipModel") {
-      out += serializeModel(n.attrs.model);
-      atLineStart = false;
-    } else {
-      throw new Error(`serialize: type inline inconnu \xAB ${n.type} \xBB`);
-    }
-  });
-  closeTo(0);
-  return out;
-}
-function serializeCode(code2) {
-  const backtick = code2 === code2.trim() && canBacktick(code2) && !/^`|`$|``/.test(code2);
-  if (!backtick) return `<code>${encodeCode(code2)}</code>`;
-  return code2.includes("`") ? `\`\`${code2}\`\`` : `\`${code2}\``;
-}
-function escapeText(value, atLineStart, { link = false } = {}) {
-  let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:])/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;").replace(/\[(?=#|$|[^\]]*?(?:->|<-|\|)[^\]]*\])/g, "&#91;");
-  if (link) {
-    s = s.replace(/\[/g, "&#91;").replace(/\]/g, "&#93;").replace(/\|/g, "&#124;").replace(/->/g, "-&gt;");
-  }
-  if (atLineStart) s = s.replace(/^([-|]|_(?= |_))/, "\\$1");
-  return s;
 }
 
 // src/editor/TextareaBridge.js
@@ -24743,7 +25009,7 @@ async function servicesALaDemande(textarea, ctx, { fetch = globalThis.fetch?.bin
 }
 
 // src/hosts/contexte.js
-function contexte(textarea) {
+function contexte2(textarea) {
   const { ttsObjet, ttsIdObjet, ttsChamp } = textarea.dataset;
   if (ttsObjet !== void 0) {
     return { objet: ttsObjet, id: Number(ttsIdObjet) || 0, champ: ttsChamp || textarea.name };
@@ -25141,16 +25407,16 @@ var Instance = class {
     this.wrapper.append(toolbar, this.content);
     this.services = Services.forTextarea(textarea);
     this.chargement = this.services ? null : new AbortController();
-    this.servicesPrets = this.services ? Promise.resolve(this.services) : servicesALaDemande(textarea, contexte(textarea), { signal: this.chargement.signal });
+    this.servicesPrets = this.services ? Promise.resolve(this.services) : servicesALaDemande(textarea, contexte2(textarea), { signal: this.chargement.signal });
     this.servicesPrets.then((s) => {
       this.services = s;
     });
-    const contexte2 = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.servicesPrets, titles: this.ui.titles });
+    const contexte3 = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.servicesPrets, titles: this.ui.titles });
     this.ui = {
       previews: new ModelPreviews(this.servicesPrets),
       titles: new LinkTitles(this.servicesPrets),
-      openLink: () => openLinkPopover(contexte2()),
-      editModel: (pos) => openModelPopover(contexte2(), pos)
+      openLink: () => openLinkPopover(contexte3()),
+      editModel: (pos) => openModelPopover(contexte3(), pos)
     };
     this.editor = createEditor2({
       element: this.content,

@@ -59,8 +59,11 @@ const SpipHardBreak = HardBreak.extend({
 	}),
 });
 
-/** Code inline combinable avec les autres marks (`{{`a`}}` existe en SPIP). */
-const SpipCode = Code.extend({ excludes: '' });
+/**
+ * Code inline combinable avec les autres marks (`{{`a`}}` existe en SPIP), sauf glossaire et
+ * abréviation (exclusion déclarée des deux côtés : la mark ajoutée remplace l'autre).
+ */
+const SpipCode = Code.extend({ excludes: 'spipGlossary spipAbbr' });
 
 /** Bloc de code : ```` ``` ```` ou <code> multiligne ; openTag garde un <code …> avec attributs. */
 const SpipCodeBlock = CodeBlock.extend({
@@ -181,6 +184,8 @@ const linkAttributes = () => ({
 const SpipLink = Mark.create({
 	name: 'spipLink',
 	inclusive: false,
+	// pas de lien dans un lien, ni sur un glossaire ou une abréviation : le lien les remplace
+	excludes: 'spipLink spipGlossary spipAbbr',
 	addAttributes: linkAttributes,
 	// un lien sans texte (data-tts-auto) est un nœud, pas cette mark
 	parseHTML: () => [{ tag: 'a[data-tts-href]', getAttrs: (el) => (el.hasAttribute('data-tts-auto') ? false : null) }],
@@ -209,7 +214,7 @@ const SpipGlossary = Mark.create({
 const SpipAbbr = Mark.create({
 	name: 'spipAbbr',
 	inclusive: false,
-	excludes: 'spipAbbr spipLink code',
+	excludes: 'spipAbbr spipLink spipGlossary code',
 	addAttributes: () => ({
 		title: { default: '', parseHTML: (el) => el.getAttribute('title') ?? '', renderHTML: (a) => ({ title: a.title }) },
 		lang: { default: null, parseHTML: (el) => el.getAttribute('lang'), renderHTML: (a) => (a.lang ? { lang: a.lang } : {}) },
@@ -329,7 +334,8 @@ const SpipNote = Node.create({
 		spipLead: hidden(),
 		spipTrail: hidden(),
 	}),
-	parseHTML: () => [{ tag: 'sup[data-tts-note]' }],
+	// avant la mark exposant, qui lit aussi <sup>
+	parseHTML: () => [{ tag: 'sup[data-tts-note]', priority: 60 }],
 	renderHTML: ({ node, HTMLAttributes }) => ['sup', { ...HTMLAttributes, class: 'tts-note', title: apercu(node.attrs.content) }],
 });
 

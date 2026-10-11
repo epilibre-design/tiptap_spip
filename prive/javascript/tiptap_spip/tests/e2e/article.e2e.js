@@ -13,7 +13,7 @@ import { configure, crlf, editer, enregistrer, repo, texte } from './site.js';
 
 configure(test);
 
-for (const fichier of ['base.spip', 'melanges.spip', 'blancs.spip', 'liens.spip', 'modeles.spip']) {
+for (const fichier of ['base.spip', 'melanges.spip', 'blancs.spip', 'liens.spip', 'modeles.spip', 'notes.spip', 'glossaire.spip']) {
 	test(`${fichier} : enregistré sans modification, le texte est inchangé`, async ({ page }) => {
 		const source = readFileSync(`${repo}tests/corpus/${fichier}`, 'utf8');
 		const id = await editer(page, source);

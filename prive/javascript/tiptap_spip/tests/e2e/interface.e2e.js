@@ -61,3 +61,16 @@ test('bouton Modèle : raccourci inséré en bloc, prévisualisé, enregistré',
 	await enregistrer(page);
 	expect(texte(id)).toBe(crlf(`Texte\n\n<doc${doc}|center>`));
 });
+
+test('notes : appels numérotés comme SPIP, renumérotés après suppression, enregistrés', async ({ page }) => {
+	const id = await editer(page, 'Un[[première]] deux[[<A>nommée]] trois[[seconde]] quatre[[<>cachée]].');
+	const appels = page.locator('.ProseMirror .tts-note');
+	const affiche = () => appels.evaluateAll((els) => els.map((el) => getComputedStyle(el, '::before').content));
+	expect(await affiche()).toEqual(['"[1]"', '"[A]"', '"[2]"', '"•"']);
+	await appels.first().click();
+	await page.keyboard.press('Delete');
+	await expect(appels).toHaveCount(3);
+	expect(await affiche()).toEqual(['"[A]"', '"[1]"', '"•"']);
+	await enregistrer(page);
+	expect(texte(id)).toBe('Un deux[[<A>nommée]] trois[[seconde]] quatre[[<>cachée]].');
+});
