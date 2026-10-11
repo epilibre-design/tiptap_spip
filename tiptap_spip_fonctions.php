@@ -61,6 +61,40 @@ function tiptap_spip_modele_existe(string $nom): bool {
 }
 
 /**
+ * Fusionne des suites de lignes triées par `maj` décroissante (date de dernière modification) en
+ * une liste des $max plus récentes. Les suites sont lues au fur et à mesure (générateurs) : rien
+ * n'est lu au-delà du nécessaire. À `maj` égale, l'ordre des suites départage.
+ *
+ * @param iterable[] $suites
+ * @return array[]
+ */
+function tiptap_spip_fusionner_recents(array $suites, int $max): array {
+	$iterateurs = [];
+	foreach ($suites as $suite) {
+		$iterateur = $suite instanceof \Iterator ? $suite : new \ArrayIterator(is_array($suite) ? $suite : iterator_to_array($suite, false));
+		$iterateur->rewind();
+		if ($iterateur->valid()) {
+			$iterateurs[] = $iterateur;
+		}
+	}
+	$resultat = [];
+	while (count($resultat) < $max && $iterateurs) {
+		$meilleur = null;
+		foreach ($iterateurs as $k => $iterateur) {
+			if ($meilleur === null || strcmp((string) $iterateur->current()['maj'], (string) $iterateurs[$meilleur]->current()['maj']) > 0) {
+				$meilleur = $k;
+			}
+		}
+		$resultat[] = $iterateurs[$meilleur]->current();
+		$iterateurs[$meilleur]->next();
+		if (!$iterateurs[$meilleur]->valid()) {
+			unset($iterateurs[$meilleur]);
+		}
+	}
+	return $resultat;
+}
+
+/**
  * Liste JSON de chaînes, de 1 à $max éléments d'au plus $longueur caractères chacun ; null sinon.
  *
  * @return string[]|null

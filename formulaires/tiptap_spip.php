@@ -147,7 +147,9 @@ function tiptap_spip_titre_lien(string $cible): array {
 }
 
 /**
- * Objets dont le titre contient $q, visibles par l'auteur, 20 au plus, les plus récents d'abord.
+ * Objets dont le titre contient $q, visibles par l'auteur, 20 au plus, les plus récemment
+ * modifiés d'abord tous types confondus. L'autorisation est appliquée avant de retenir les 20 :
+ * des objets invisibles en tête ne masquent pas les objets visibles qui suivent.
  *
  * @param string[] $objets
  * @return list<array{objet: string, id: int, titre: string, raccourci: string}>
@@ -156,7 +158,7 @@ function tiptap_spip_rechercher(string $q, array $objets): array {
 	include_spip('base/objets');
 	include_spip('base/abstract_sql');
 	$trouver_table = charger_fonction('trouver_table', 'base');
-	$trouves = [];
+	$suites = [];
 	foreach ($objets as $objet) {
 		$table = table_objet_sql($objet);
 		$desc = $trouver_table($table);
@@ -168,25 +170,43 @@ function tiptap_spip_rechercher(string $q, array $objets): array {
 		if (!isset($desc['field'][$champ_titre])) {
 			continue;
 		}
-		$id_table = id_table_objet($objet);
 		$where = [$champ_titre . ' LIKE ' . sql_quote('%' . addcslashes($q, '%_\\') . '%')];
 		if (isset($desc['field']['statut'])) {
 			$where[] = "statut != 'poubelle'";
 		}
-		foreach (sql_allfetsel("$id_table AS id, $champ_titre AS titre", $table, $where, '', "$id_table DESC", '0,40') as $ligne) {
+		$suites[] = tiptap_spip_objets_visibles($objet, $table, $champ_titre, isset($desc['field']['maj']), $where);
+	}
+	return array_map(
+		static fn (array $ligne) => [
+			'objet' => $ligne['objet'],
+			'id' => $ligne['id'],
+			'titre' => supprimer_tags(typo($ligne['titre'])),
+			'raccourci' => $ligne['objet'] . $ligne['id'],
+		],
+		tiptap_spip_fusionner_recents($suites, 20)
+	);
+}
+
+/**
+ * Objets d'un type qui vérifient $where, du plus récemment modifié au plus ancien, visibles par
+ * l'auteur. Lus par pages de 50, au fur et à mesure que la fusion les demande.
+ *
+ * @return \Generator<array{objet: string, id: int, titre: string, maj: string}>
+ */
+function tiptap_spip_objets_visibles(string $objet, string $table, string $champ_titre, bool $avec_maj, array $where): \Generator {
+	$id_table = id_table_objet($objet);
+	$maj = $avec_maj ? 'maj' : "''";
+	$ordre = $avec_maj ? "maj DESC, $id_table DESC" : "$id_table DESC";
+	$page = 50;
+	$debut = 0;
+	do {
+		$lignes = sql_allfetsel("$id_table AS id, $champ_titre AS titre, $maj AS maj", $table, $where, '', $ordre, "$debut,$page");
+		foreach ($lignes as $ligne) {
 			$id = intval($ligne['id']);
 			if (autoriser('voir', $objet, $id)) {
-				$trouves[] = [
-					'objet' => $objet,
-					'id' => $id,
-					'titre' => supprimer_tags(typo($ligne['titre'])),
-					'raccourci' => $objet . $id,
-				];
-				if (count($trouves) >= 20) {
-					return $trouves;
-				}
+				yield ['objet' => $objet, 'id' => $id, 'titre' => (string) $ligne['titre'], 'maj' => (string) $ligne['maj']];
 			}
 		}
-	}
-	return $trouves;
+		$debut += $page;
+	} while (count($lignes) === $page);
 }

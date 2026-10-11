@@ -11,6 +11,8 @@ const env = { ...process.env, SPIP_ROOT: process.env.TTS_SITE };
 export const php = (args, input) => execFileSync('php', [driver, ...args], { env, input, encoding: 'utf8' });
 export const texte = (id) => php(['texte', String(id)]);
 export const creerDocument = (id) => Number(php(['document', String(id)]));
+export const creerAuteur = (statut) => Number(php(['auteur', statut]));
+export const inserer = (table, champs) => Number(php(['inserer', table, JSON.stringify(champs)]));
 
 /** Fins de ligne telles que le navigateur les soumet. */
 export const crlf = (s) => s.replace(/\r?\n/g, '\r\n');
@@ -19,12 +21,13 @@ export const configure = (test) => test.skip(!process.env.TTS_SITE || !process.e
 
 /**
  * Crée un article, ouvre une session et charge sa page d'édition.
- * @param {{ sansEditeur?: boolean, avant?: (id: number) => void, titre?: string }} options  sansEditeur :
- *        bundle bloqué, textarea natif ; avant : préparation après la création de l'article (document
- *        lié…) ; titre : titre de l'article (défaut « Test tiptap_spip »)
+ * @param {{ sansEditeur?: boolean, avant?: (id: number) => void, titre?: string, auteur?: number }} options
+ *        sansEditeur : bundle bloqué, textarea natif ; avant : préparation après la création de
+ *        l'article (document lié…) ; titre : titre de l'article (défaut « Test tiptap_spip ») ;
+ *        auteur : auteur de l'article et de la session (1, l'administrateur, par défaut)
  */
-export async function editer(page, source, { sansEditeur = false, avant, titre = 'Test tiptap_spip' } = {}) {
-	const { id_article: id, cookie } = JSON.parse(php(['preparer', 'tts-e2e', titre], source));
+export async function editer(page, source, { sansEditeur = false, avant, titre = 'Test tiptap_spip', auteur = 1 } = {}) {
+	const { id_article: id, cookie } = JSON.parse(php(['preparer', 'tts-e2e', titre, String(auteur)], source));
 	avant?.(id);
 	const url = new URL(process.env.TTS_URL);
 	await page.context().addCookies([{ name: 'spip_session', value: cookie, domain: url.hostname, path: '/' }]);

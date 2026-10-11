@@ -38,4 +38,35 @@ final class FonctionsTest extends TestCase
 		$this->assertNull(tiptap_spip_liste('pas du json', 50, 500));
 		$this->assertNull(tiptap_spip_liste(null, 50, 500));
 	}
+
+	public function testFusionDesPlusRecentsEntreTypes(): void {
+		$lignes = static fn (string $objet, array $majs) => array_map(
+			static fn ($maj, $i) => ['objet' => $objet, 'id' => $i + 1, 'maj' => $maj],
+			$majs,
+			array_keys($majs)
+		);
+		$articles = $lignes('article', ['2026-10-05', '2026-10-01']);
+		$rubriques = $lignes('rubrique', ['2026-10-09', '2026-10-03', '2026-09-01']);
+
+		$fusion = tiptap_spip_fusionner_recents([$articles, $rubriques, []], 4);
+
+		$this->assertSame(
+			[['rubrique', 1], ['article', 1], ['rubrique', 2], ['article', 2]],
+			array_map(static fn ($l) => [$l['objet'], $l['id']], $fusion)
+		);
+	}
+
+	public function testFusionNeConsommeQueLeNecessaire(): void {
+		$lus = 0;
+		$source = static function () use (&$lus) {
+			foreach (['2026-10-09', '2026-10-08', '2026-10-07', '2026-10-06'] as $i => $maj) {
+				$lus++;
+				yield ['objet' => 'article', 'id' => $i + 1, 'maj' => $maj];
+			}
+		};
+
+		$this->assertCount(2, tiptap_spip_fusionner_recents([$source()], 2));
+		$this->assertLessThanOrEqual(3, $lus);
+	}
 }
+

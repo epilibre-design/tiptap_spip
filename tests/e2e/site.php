@@ -5,20 +5,25 @@
  * commande active le plugin et ouvre une session d'administrateur).
  *
  * Usage :
- *   SPIP_ROOT=<site> php tests/e2e/site.php preparer <agent> [titre] < texte.spip
- *     active le plugin tiptap_spip, crée un article avec le texte lu sur l'entrée standard et
- *     une session pour l'auteur 1 ; écrit {"id_article": …, "cookie": …} sur la sortie.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] < texte.spip
+ *     active le plugin tiptap_spip, crée un article avec le texte lu sur l'entrée standard, lié à
+ *     l'auteur (1 par défaut), et une session pour cet auteur ; écrit
+ *     {"id_article": …, "cookie": …} sur la sortie.
  *     <agent> : User-Agent du navigateur de test (la session SPIP en dépend).
  *   SPIP_ROOT=<site> php tests/e2e/site.php texte <id_article>
  *     écrit le texte de l'article, octet pour octet.
  *   SPIP_ROOT=<site> php tests/e2e/site.php document <id_article>
  *     crée une image (PNG 1×1) liée à l'article ; écrit son id_document.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php auteur <statut>
+ *     crée un auteur (0minirezo, 1comite…) ; écrit son id_auteur.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php inserer <table> <champs JSON>
+ *     insère une ligne telle quelle ; écrit son id.
  */
 
 $root = rtrim((string) getenv('SPIP_ROOT'), '/');
 $commande = $argv[1] ?? '';
-if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'document'], true)) {
-	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> | texte <id_article> | document <id_article>\n");
+if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'document', 'auteur', 'inserer'], true)) {
+	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | document <id_article> | auteur <statut> | inserer <table> <champs JSON>\n");
 	exit(2);
 }
 
@@ -37,6 +42,17 @@ include_spip('base/abstract_sql');
 
 if ($commande === 'texte') {
 	echo (string) sql_getfetsel('texte', 'spip_articles', 'id_article=' . (int) ($argv[2] ?? 0));
+	exit(0);
+}
+
+if ($commande === 'auteur') {
+	$login = 'tts' . bin2hex(random_bytes(4));
+	echo (int) sql_insertq('spip_auteurs', ['nom' => $login, 'login' => $login, 'statut' => (string) ($argv[2] ?? '1comite'), 'email' => $login . '@exemple.test']), "\n";
+	exit(0);
+}
+
+if ($commande === 'inserer') {
+	echo (int) sql_insertq((string) ($argv[2] ?? ''), json_decode((string) ($argv[3] ?? '{}'), true)), "\n";
 	exit(0);
 }
 
@@ -80,10 +96,11 @@ $id_article = (int) sql_insertq('spip_articles', [
 	'date' => date('Y-m-d H:i:s'),
 	'lang' => 'fr',
 ]);
-sql_insertq('spip_auteurs_liens', ['id_auteur' => 1, 'objet' => 'article', 'id_objet' => $id_article]);
+$id_auteur = (int) ($argv[4] ?? 1);
+sql_insertq('spip_auteurs_liens', ['id_auteur' => $id_auteur, 'objet' => 'article', 'id_objet' => $id_article]);
 
 include_spip('inc/session');
-$auteur = sql_fetsel('*', 'spip_auteurs', 'id_auteur=1');
+$auteur = sql_fetsel('*', 'spip_auteurs', 'id_auteur=' . $id_auteur);
 unset($_COOKIE['spip_session']);
 $cookie = ajouter_session($auteur);
 

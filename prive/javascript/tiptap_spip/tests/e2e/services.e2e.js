@@ -1,7 +1,7 @@
 // Formulaire de services de l'éditeur (spec 02 §5) sur un site SPIP JETABLE : appels AJAX réels
 // depuis la page d'édition d'un article. Usage et serveur : cf. article.e2e.js.
 import { expect, test } from '@playwright/test';
-import { configure, creerDocument, editer, module } from './site.js';
+import { configure, creerAuteur, creerDocument, editer, inserer, module } from './site.js';
 
 configure(test);
 
@@ -56,6 +56,20 @@ test('rechercher : objets dont le titre correspond, les plus récents d\'abord',
 	const tous = (await appeler(page, 'rechercher', { q: 'Test tiptap', objets: ['article'] })).resultat;
 	expect(tous[0].id).toBe(id);
 	expect(tous.length).toBeLessThanOrEqual(20);
+});
+
+test('rechercher : autorisation appliquée avant de retenir 20 résultats, ordre commun entre types', async ({ page }) => {
+	const mot = `Visibilite${Date.now()}`;
+	const article = (titre, statut, maj) => inserer('spip_articles', { titre, statut, maj, date: maj, id_rubrique: 1, id_secteur: 1, lang: 'fr' });
+	// 45 articles en préparation d'un autre auteur, les plus récents : invisibles pour un rédacteur
+	for (let i = 0; i < 45; i++) article(`${mot} caché ${i}`, 'prepa', '2026-01-02 00:00:00');
+	const visible = article(`${mot} publié`, 'publie', '2020-01-01 00:00:00');
+	const rubrique = inserer('spip_rubriques', { titre: `${mot} rubrique`, statut: 'publie', id_parent: 0, id_secteur: 0, maj: '2025-01-01 00:00:00' });
+
+	await editer(page, 'x', { auteur: creerAuteur('1comite') });
+	await module(page);
+	const { resultat } = await appeler(page, 'rechercher', { q: mot, objets: ['article', 'rubrique'] });
+	expect(resultat.map((r) => [r.objet, r.id])).toEqual([['rubrique', rubrique], ['article', visible]]);
 });
 
 test('verifier() refuse une demande invalide, le service reste disponible', async ({ page }) => {
