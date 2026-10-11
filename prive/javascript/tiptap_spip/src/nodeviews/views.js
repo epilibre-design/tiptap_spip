@@ -1,3 +1,5 @@
+import { apercu, partieAffichee } from '../editor/texte.js';
+import { serializeIdiome } from '../spip/multi.js';
 import { label } from '../ui/labels.js';
 import { previewFragment } from '../ui/sanitize.js';
 
@@ -94,6 +96,77 @@ export const linkAutoView = (ui) => ({ node }) => {
 		ui.titles.get(demande).then(
 			(r) => {
 				if (demande === cible && r?.titre) dom.textContent = r.titre;
+			},
+			() => {},
+		);
+	};
+	render(node.attrs);
+	return {
+		dom,
+		update(updated) {
+			if (updated.type !== node.type) return false;
+			render(updated.attrs);
+			return true;
+		},
+		ignoreMutation: () => true,
+	};
+};
+
+/**
+ * Multi dans une phrase : texte de la partie de la langue affichée (décoration de SpipLangues, sinon
+ * langue de l'interface), toutes les parties en infobulle.
+ */
+export const multiView = () => ({ node, decorations }) => {
+	const dom = document.createElement('span');
+	dom.className = 'tts-multi';
+	dom.contentEditable = 'false';
+	const render = (n, decos) => {
+		const langue = decos?.find((d) => d.spec?.langue !== undefined)?.spec.langue;
+		const parts = n.attrs.parts ?? [];
+		const affichee = partieAffichee(parts, langue ?? undefined);
+		dom.textContent = apercu(affichee?.content ?? []);
+		// mêmes attributs que renderHTML : le HTML de la vue se relit (copier-coller)
+		dom.dataset.ttsMulti = JSON.stringify(parts);
+		dom.dataset.ttsLang = affichee?.lang ?? '';
+		dom.title = parts.map((p) => `${p.lang ?? '*'} : ${apercu(p.content)}`).join(' · ');
+	};
+	render(node, decorations);
+	return {
+		dom,
+		update(updated, decos) {
+			if (updated.type !== node.type) return false;
+			render(updated, decos);
+			return true;
+		},
+		ignoreMutation: () => true,
+	};
+};
+
+/**
+ * Idiome <:module:cle:> : traduction calculée par SPIP (opération idiomes), le raccourci en
+ * infobulle ; le raccourci affiché tant qu'elle manque.
+ * @param {{ idiomes: import('../services/cache.js').IdiomTranslations }} ui
+ */
+export const idiomeView = (ui) => ({ node }) => {
+	const dom = document.createElement('code');
+	dom.className = 'tts-idiome';
+	dom.contentEditable = 'false';
+	let raccourci = null;
+	const render = (attrs) => {
+		const r = serializeIdiome(attrs);
+		if (r === raccourci) return;
+		raccourci = r;
+		dom.dataset.ttsIdiome = attrs.cle;
+		if (attrs.module) dom.dataset.ttsModule = attrs.module;
+		else delete dom.dataset.ttsModule;
+		dom.textContent = r;
+		dom.title = r;
+		dom.classList.remove('tts-idiome--traduit');
+		ui.idiomes.get(attrs.module ? `${attrs.module}:${attrs.cle}` : attrs.cle).then(
+			(t) => {
+				if (raccourci !== r || !t?.texte) return;
+				dom.textContent = t.texte;
+				dom.classList.add('tts-idiome--traduit');
 			},
 			() => {},
 		);

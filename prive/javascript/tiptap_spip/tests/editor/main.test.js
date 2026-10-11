@@ -100,6 +100,32 @@ describe('tiptap_spip_init', () => {
 		expect(bouton.disabled).toBe(false);
 	});
 
+	it('sélecteur de langue : présent avec des multis, langues du texte, change la langue affichée', () => {
+		page('<textarea class="inserer_barre_edition">a <multi>[fr]chat[en]cat[de]Katze</multi></textarea>');
+		document.documentElement.lang = 'fr';
+		try {
+			tiptap_spip_init();
+			const select = document.querySelector('.tts-toolbar .tts-langues');
+			expect(select.hidden).toBe(false);
+			expect([...select.options].map((o) => o.value)).toEqual(['fr', 'en', 'de']);
+			select.value = 'de';
+			select.dispatchEvent(new Event('change'));
+			expect(document.querySelector('.tts-multi').textContent).toBe('Katze');
+			expect(document.querySelector('.tts-bouton-multi').disabled).toBe(false);
+			document.querySelector('.tts-mode').click();
+			expect(select.disabled).toBe(true);
+			expect(document.querySelector('.tts-bouton-multi').disabled).toBe(true);
+		} finally {
+			document.documentElement.lang = '';
+		}
+	});
+
+	it('sélecteur de langue masqué sans multi', () => {
+		page('<textarea class="inserer_barre_edition">rien</textarea>');
+		tiptap_spip_init();
+		expect(document.querySelector('.tts-langues').hidden).toBe(true);
+	});
+
 	it('panneau des notes recalculé au retour du mode source', () => {
 		page('<textarea class="inserer_barre_edition">a[[un]] b[[deux]]</textarea>');
 		tiptap_spip_init();

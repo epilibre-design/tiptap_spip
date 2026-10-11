@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { node, raw, text } from '../../src/spip/json.js';
 import { parse } from '../../src/spip/parse.js';
-import { noteSeRelit, seRelitInline } from '../../src/spip/valider.js';
+import { multiSeRelit, noteSeRelit, seRelitInline } from '../../src/spip/valider.js';
 
 const gloss = (extra = {}) => ({ type: 'spipGlossary', attrs: { glossaire: null, numero: null, bulle: null, hreflang: null, ...extra } });
 const abbr = (title, lang = null) => ({ type: 'spipAbbr', attrs: { title, lang } });
@@ -44,5 +44,18 @@ describe('noteSeRelit', () => {
 		expect(noteSeRelit({ name: 'i', content: [p(text('a'), raw('</i>'))] })).toBe(false);
 		expect(noteSeRelit({ name: 'a>b', content: contenu })).toBe(false);
 		expect(noteSeRelit({ name: null, content: [node('heading', { level: 2 }, [text('t')])] })).toBe(false);
+	});
+});
+
+describe('multiSeRelit', () => {
+	it('parties qui se relisent, partie sans langue en tête', () => {
+		expect(multiSeRelit([{ lang: 'fr', content: [text('chat')] }, { lang: 'en', content: [text('c[en]t')] }])).toBe(true);
+		expect(multiSeRelit([{ lang: 'fr', content: [text('a')] }, { lang: null, content: [text('sans')] }])).toBe(true);
+		expect(multiSeRelit([{ lang: 'fr', content: [] }, { lang: 'en', content: [text('b')] }])).toBe(true);
+	});
+
+	it('code de langue invalide, partie qui ne se relit pas', () => {
+		expect(multiSeRelit([{ lang: 'fr', content: [text('a')] }, { lang: 'e n', content: [text('b')] }])).toBe(false);
+		expect(multiSeRelit([{ lang: 'francais', content: [text('a')] }])).toBe(false);
 	});
 });

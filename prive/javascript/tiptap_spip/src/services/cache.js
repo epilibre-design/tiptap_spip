@@ -36,25 +36,29 @@ export class ModelPreviews {
 }
 
 /**
- * Titres des liens [->cible]. Les cibles demandées dans le même tour de boucle d'événements partent
- * ensemble, par lots de 50 (limite de verifier()).
+ * Résultats demandés un par un, envoyés au serveur par lots : les demandes faites dans le même tour
+ * de boucle d'événements partent ensemble, par lots de `batch` (limite de verifier()).
  */
-export class LinkTitles {
-	/** @param {import('./cvt.js').Services|Promise<?import('./cvt.js').Services>|null} services */
-	constructor(services, { batch = 50 } = {}) {
+class CacheParLots {
+	/**
+	 * @param {import('./cvt.js').Services|Promise<?import('./cvt.js').Services>|null} services
+	 * @param {{ operation: string, parametre: string, champ: string, vide: (cle: string) => object, batch?: number }} options
+	 *        parametre : nom de la liste envoyée ; champ : clé de chaque résultat ; vide : résultat
+	 *        d'une clé absente de la réponse
+	 */
+	constructor(services, { operation, parametre, champ, vide, batch = 50 }) {
 		this.services = services;
-		this.batch = batch;
+		Object.assign(this, { operation, parametre, champ, vide, batch });
 		this.cache = new Map();
 		this.pending = new Map();
 		this.scheduled = false;
 	}
 
-	/** @returns {Promise<{ cible: string, titre: ?string, url: ?string, objet: ?string, id: ?number }>} */
-	get(cible) {
-		if (this.cache.has(cible)) return this.cache.get(cible);
-		const promise = new Promise((resolve, reject) => this.pending.set(cible, { resolve, reject }));
-		this.cache.set(cible, promise);
-		promise.catch(() => this.cache.delete(cible));
+	get(cle) {
+		if (this.cache.has(cle)) return this.cache.get(cle);
+		const promise = new Promise((resolve, reject) => this.pending.set(cle, { resolve, reject }));
+		this.cache.set(cle, promise);
+		promise.catch(() => this.cache.delete(cle));
 		if (!this.scheduled) {
 			this.scheduled = true;
 			queueMicrotask(() => this.flush());
@@ -68,13 +72,27 @@ export class LinkTitles {
 		this.pending.clear();
 		for (let i = 0; i < demandes.length; i += this.batch) {
 			const lot = demandes.slice(i, i + this.batch);
-			disponibles(this.services).then((s) => s.call('titre_lien', { cibles: lot.map(([cible]) => cible) })).then(
+			disponibles(this.services).then((s) => s.call(this.operation, { [this.parametre]: lot.map(([cle]) => cle) })).then(
 				(resultats) => {
-					const parCible = new Map(resultats.map((r) => [r.cible, r]));
-					for (const [cible, { resolve }] of lot) resolve(parCible.get(cible) ?? { cible, titre: null, url: null });
+					const parCle = new Map(resultats.map((r) => [r[this.champ], r]));
+					for (const [cle, { resolve }] of lot) resolve(parCle.get(cle) ?? this.vide(cle));
 				},
 				(erreur) => lot.forEach(([, { reject }]) => reject(erreur)),
 			);
 		}
+	}
+}
+
+/** Titres des liens [->cible] (opération titre_lien). */
+export class LinkTitles extends CacheParLots {
+	constructor(services, { batch = 50 } = {}) {
+		super(services, { operation: 'titre_lien', parametre: 'cibles', champ: 'cible', vide: (cible) => ({ cible, titre: null, url: null }), batch });
+	}
+}
+
+/** Traductions des idiomes <:module:cle:> (opération idiomes), par clé `module:cle` ou `cle`. */
+export class IdiomTranslations extends CacheParLots {
+	constructor(services, { batch = 50 } = {}) {
+		super(services, { operation: 'idiomes', parametre: 'cles', champ: 'cle', vide: (cle) => ({ cle, texte: null }), batch });
 	}
 }

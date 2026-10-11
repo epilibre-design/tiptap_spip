@@ -50,6 +50,15 @@ final class FonctionsTest extends TestCase
 		);
 	}
 
+	public function testCleDIdiome(): void {
+		foreach (['tiptap_spip:lien', 'info_titre', 'A_b:C9'] as $cle) {
+			$this->assertTrue(tiptap_spip_est_cle_idiome($cle), $cle);
+		}
+		foreach (['', 'a:b:c', 'a b', ':cle', '<:cle:>'] as $cle) {
+			$this->assertFalse(tiptap_spip_est_cle_idiome($cle), $cle);
+		}
+	}
+
 	public function testListeJsonDeChaines(): void {
 		$this->assertSame(['art1', 'rub2'], tiptap_spip_liste('["art1","rub2"]', 50, 500));
 		$this->assertNull(tiptap_spip_liste('[]', 50, 500));

@@ -158,3 +158,37 @@ test('glossaire et abréviation : posés depuis l\'interface, définition ouvert
 	await enregistrer(page);
 	expect(texte(id)).toBe('Le [?SPIP#tts12] et le [CMS|Content Management System] [?Wiki]');
 });
+
+test('multilinguisme : multi inséré sur une sélection, multi bloc et ses langues, idiome traduit ; source enregistrée', async ({ page }) => {
+	const id = await editer(page, 'Un chat\n\n<multi>[fr]Un\n\nDeux[en]One\n\nTwo</multi>\n\nVoir <:info_titre:>');
+	await expect(page.locator('.ProseMirror .tts-idiome')).toHaveText('Titre :');
+	await expect(page.locator('.tts-langues')).toBeVisible();
+	// « chat » sélectionné, bouton Multi : deux parties, la première dans la langue de l'interface
+	await finDuTexte(page);
+	for (let i = 0; i < 4; i++) await page.keyboard.press('Shift+ArrowLeft');
+	await selectionStable(page);
+	await page.locator('.tts-toolbar .tts-bouton-multi').click();
+	const popover = page.locator('.tts-popover--multi');
+	const langues = popover.locator('input[name=langue]');
+	// langue de l'interface (<html lang>, celle de l'auteur : anglais dans Playwright)
+	await expect(langues.first()).toHaveValue(await page.evaluate(() => document.documentElement.lang));
+	await langues.first().fill('fr');
+	await langues.nth(1).fill('en');
+	await popover.locator('.tts-multi__texte .ProseMirror').nth(1).click();
+	await page.keyboard.type('cat');
+	await popover.locator('button[name=appliquer]').click();
+	// langue affichée choisie dans la barre
+	await page.locator('.tts-langues').selectOption('fr');
+	await expect(page.locator('.ProseMirror .tts-multi')).toHaveText('chat');
+	await page.locator('.tts-langues').selectOption('en');
+	await expect(page.locator('.ProseMirror .tts-multi')).toHaveText('cat');
+	// multi bloc : langue ajoutée
+	await page.locator('.ProseMirror .tts-multi-block p', { hasText: 'One' }).click();
+	await page.locator('.tts-toolbar .tts-bouton-multi').click();
+	await page.locator('.tts-popover button[name=ajouter_langue]').click();
+	await page.locator('.tts-popover input[name=langue]').nth(2).fill('de');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('.ProseMirror .tts-lang')).toHaveCount(3);
+	await enregistrer(page);
+	expect(texte(id)).toBe(crlf('Un <multi>[fr]chat[en]cat</multi>\n\n<multi>[fr]Un\n\nDeux[en]One\n\nTwo[de]</multi>\n\nVoir <:info_titre:>'));
+});

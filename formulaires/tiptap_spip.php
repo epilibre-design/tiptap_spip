@@ -48,6 +48,7 @@ function formulaires_tiptap_spip_charger_dist($objet = '', $id_objet = 0, $champ
 		'q' => '',
 		'objets' => '',
 		'raccourci' => '',
+		'cles' => '',
 		'editable' => true,
 	];
 }
@@ -94,6 +95,12 @@ function formulaires_tiptap_spip_verifier_dist($objet = '', $id_objet = 0, $cham
 				$erreurs['raccourci'] = _T('tiptap_spip:erreur_glossaire_inconnu');
 			}
 			break;
+		case 'idiomes':
+			$cles = tiptap_spip_liste(_request('cles'), 50, 100);
+			if ($cles === null || array_filter($cles, static fn ($c) => !tiptap_spip_est_cle_idiome($c))) {
+				$erreurs['cles'] = _T('tiptap_spip:erreur_idiomes');
+			}
+			break;
 		default:
 			$erreurs['operation'] = _T('tiptap_spip:erreur_operation');
 	}
@@ -110,6 +117,7 @@ function formulaires_tiptap_spip_traiter_dist($objet = '', $id_objet = 0, $champ
 			'url' => _request('raccourci') ? tiptap_spip_url_glossaire((string) _request('raccourci'), (string) $objet, intval($id_objet)) : null,
 			'glossaires' => tiptap_spip_glossaires(),
 		],
+		'idiomes' => tiptap_spip_traduire_idiomes(tiptap_spip_liste(_request('cles'), 50, 100), (string) $objet, intval($id_objet)),
 	};
 	return [
 		'message_ok' => tiptap_spip_json(['operation' => $operation, 'resultat' => $resultat]),

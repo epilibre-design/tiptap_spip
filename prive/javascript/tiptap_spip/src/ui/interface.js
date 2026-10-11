@@ -1,7 +1,8 @@
-import { LinkTitles, ModelPreviews } from '../services/cache.js';
+import { IdiomTranslations, LinkTitles, ModelPreviews } from '../services/cache.js';
 import { openLinkPopover } from './LinkPopover.js';
 import { openAbbrPopover, openGlossaryPopover } from './MarkPopover.js';
 import { openModelPopover } from './ModelPopover.js';
+import { openIdiomePopover, openMultiPopover } from './MultiPopover.js';
 import { openNotePopover } from './NotePopover.js';
 
 /**
@@ -17,11 +18,14 @@ export function creerInterface({ editor, wrapper, services }) {
 	const ui = {
 		previews: services ? new ModelPreviews(services) : null,
 		titles: services ? new LinkTitles(services) : null,
+		idiomes: services ? new IdiomTranslations(services) : null,
 		openLink: () => openLinkPopover(contexte()),
 		editModel: (pos) => openModelPopover(contexte(), pos),
 		editNote: (pos) => openNotePopover(contexte(), pos),
 		openGlossary: () => openGlossaryPopover(contexte()),
 		openAbbr: () => openAbbrPopover(contexte()),
+		editMulti: (pos) => openMultiPopover(contexte(), pos),
+		editIdiome: (pos) => openIdiomePopover(contexte(), pos),
 	};
 	return ui;
 }

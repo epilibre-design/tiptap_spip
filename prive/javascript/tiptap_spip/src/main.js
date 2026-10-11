@@ -1,4 +1,5 @@
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
+import { langueAffichee, languesDuDocument } from './editor/extensions.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
 import { contexte as contexteHote } from './hosts/contexte.js';
@@ -79,12 +80,19 @@ class Instance {
 			bouton('tts-bouton-glossaire', label('glossaire'), () => this.ui.openGlossary()),
 			bouton('tts-bouton-abbr', label('abbr'), () => this.ui.openAbbr()),
 			bouton('tts-modele', label('modele'), () => this.ui.editModel(null)),
+			bouton('tts-bouton-multi', label('multi'), () => this.ui.editMulti(null)),
 		];
 		const [linkButton, noteButton, glossaryButton] = this.visualButtons;
 		this.glossaryButton = glossaryButton;
 		linkButton.title = `${label('lien')} (Ctrl+K)`;
 		noteButton.title = `${label('note')} (Ctrl+Alt+N)`;
 		glossaryButton.title = `${label('glossaire')} (Ctrl+Alt+G)`;
+		// langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis
+		this.langues = document.createElement('select');
+		this.langues.className = 'tts-langues';
+		this.langues.setAttribute('aria-label', label('langue_affichee'));
+		this.langues.addEventListener('change', () => this.editor.commands.setLangueAffichee(this.langues.value));
+		toolbar.append(this.langues);
 		this.modeButton = bouton('tts-mode', label('mode_source'), () => this.toggleMode());
 		this.modeButton.setAttribute('aria-pressed', 'false');
 		this.content = document.createElement('div');
@@ -121,6 +129,17 @@ class Instance {
 			this.glossaryButton.disabled = this.bridge.mode === 'source' || /[[\]<>]/.test(this.editor.state.doc.textBetween(from, to, ' '));
 		};
 		this.editor.on('selectionUpdate', this.majGlossaire);
+		this.majLangues = ({ transaction } = {}) => {
+			if (transaction && !transaction.docChanged) return;
+			const langues = languesDuDocument(this.editor.state.doc);
+			const affichee = langueAffichee(this.editor.state);
+			const options = [...new Set([...(affichee ? [affichee] : []), ...langues])];
+			this.langues.replaceChildren(...options.map((l) => Object.assign(document.createElement('option'), { value: l, textContent: l })));
+			this.langues.value = affichee;
+			this.langues.hidden = langues.length === 0;
+		};
+		this.editor.on('transaction', this.majLangues);
+		this.majLangues();
 		this.content.after(this.notes.element);
 
 		textarea.before(this.wrapper);
@@ -136,6 +155,7 @@ class Instance {
 		this.content.hidden = source;
 		this.notes.setMode(source);
 		for (const b of this.visualButtons) b.disabled = source;
+		this.langues.disabled = source;
 		this.majGlossaire();
 		this.modeButton.setAttribute('aria-pressed', String(source));
 		(source ? this.textarea : this.editor).focus?.();

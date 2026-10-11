@@ -27,6 +27,8 @@ export const RE_MULTI = /<multi>(.*?)<\/multi>/gs;
 // ecrire/src/Texte/Collecteur/Multis.php — extraire_trads() : marqueur de langue [fr], [pt_br]…
 const CODE_LANGUE = '[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?';
 export const RE_LANGUE_MULTI = new RegExp(`\\[(${CODE_LANGUE})\\]`, 'gi');
+// code de langue seul (saisie d'une langue de multi)
+export const RE_CODE_LANGUE = new RegExp(`^${CODE_LANGUE}$`, 'i');
 // [ d'un marqueur de langue (même code), à écrire en entité dans le texte d'une partie
 export const RE_AVANT_LANGUE = new RegExp(`\\[(?=${CODE_LANGUE}\\])`, 'gi');
 // ligne vide (paragraphes) : un multi qui en contient une n'est représentable qu'en bloc

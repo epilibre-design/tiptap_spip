@@ -18,9 +18,10 @@ import Text from '@tiptap/extension-text';
 import { Dropcursor, Gapcursor, UndoRedo } from '@tiptap/extensions';
 import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { linkAutoView, modelView } from '../nodeviews/views.js';
+import { idiomeView, linkAutoView, modelView, multiView } from '../nodeviews/views.js';
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
 import { serializeIdiome } from '../spip/multi.js';
+import { apercu, partieAffichee } from './texte.js';
 import { label as libelle } from '../ui/labels.js';
 
 /**
@@ -329,18 +330,6 @@ const langAttr = () => ({
 });
 
 /**
- * Partie d'un multi affichée : celle de la langue de l'interface (code exact, puis langue de base ;
- * la dernière si la langue est en double, comme SPIP), sinon la première.
- */
-export function partieAffichee(parts, langue = globalThis.document?.documentElement?.lang ?? '') {
-	const l = langue.toLowerCase();
-	const base = l.split(/[-_]/)[0];
-	return parts.findLast((p) => p.lang?.toLowerCase() === l)
-		?? parts.findLast((p) => p.lang?.toLowerCase().split(/[-_]/)[0] === base)
-		?? parts[0];
-}
-
-/**
  * Multi dans une phrase (spec 05 §5) : atome, une partie par langue ; affiché dans la langue de
  * l'interface, les autres en infobulle. Édité dans un popover (lot L4.2).
  */
@@ -352,6 +341,8 @@ const SpipMultiInline = Node.create({
 	selectable: true,
 	addAttributes: () => ({ ...jsonAttr('parts', 'data-tts-multi', []), spipSrc: hidden(), spipHash: hidden() }),
 	parseHTML: () => [{ tag: 'span[data-tts-multi]' }],
+	// langue affichée : décorations de SpipLangues (sélecteur de la barre)
+	addNodeView: () => multiView(),
 	renderHTML: ({ node, HTMLAttributes }) => {
 		const parts = node.attrs.parts ?? [];
 		const affichee = partieAffichee(parts);
@@ -380,7 +371,10 @@ const SpipMultiBlock = Node.create({
 	renderHTML: () => ['div', { class: 'tts-multi-block', 'data-tts-multi-block': '' }, 0],
 });
 
-/** Idiome <:module:cle:> : chaîne de langue de SPIP, affichée par son raccourci (traduction : L4.2). */
+/**
+ * Idiome <:module:cle:> : chaîne de langue de SPIP, affichée par son raccourci ; avec les services,
+ * par sa traduction (NodeView), le raccourci en infobulle.
+ */
 const SpipIdiome = Node.create({
 	name: 'spipIdiome',
 	group: 'inline',
@@ -395,26 +389,76 @@ const SpipIdiome = Node.create({
 	renderHTML: ({ node, HTMLAttributes }) => ['code', { ...HTMLAttributes, class: 'tts-idiome' }, serializeIdiome(node.attrs)],
 });
 
-/** Texte d'une note, sans mise en forme, pour l'infobulle de son appel et le panneau des notes. */
-export function apercu(content, max = 80) {
-	const morceaux = [];
-	const parcourir = (n) => {
-		if (n.text) morceaux.push(n.text);
-		else if (n.attrs?.source) morceaux.push(n.attrs.source);
-		else if (n.attrs?.model?.source) morceaux.push(n.attrs.model.source);
-		(n.content ?? []).forEach(parcourir);
-		if (n.type === 'paragraph') morceaux.push(' ');
-	};
-	(content ?? []).forEach(parcourir);
-	const texte = morceaux.join('').replace(/\s+/g, ' ').trim();
-	return texte.length > max ? `${texte.slice(0, max - 1)}…` : texte;
-}
 
 /** Note sélectionnée (NodeSelection), ou null. */
 export function noteSelectionnee(state) {
 	const { selection } = state;
 	return selection instanceof NodeSelection && selection.node.type.name === 'spipNote' ? selection : null;
 }
+
+const clefLangues = new PluginKey('spipLangues');
+
+/** Langues citées par les multis d'un document, dans l'ordre d'apparition. */
+export function languesDuDocument(doc) {
+	const langues = new Set();
+	doc.descendants((node) => {
+		if (node.type.name === 'spipMultiInline') (node.attrs.parts ?? []).forEach((p) => p.lang && langues.add(p.lang));
+		if (node.type.name === 'spipLangBlock' && node.attrs.lang) langues.add(node.attrs.lang);
+	});
+	return [...langues];
+}
+
+/** Langue affichée par les multis (sélecteur de la barre), la langue de l'interface par défaut. */
+export const langueAffichee = (state) => clefLangues.getState(state)?.langue ?? '';
+
+/**
+ * Langue affichée par les multis (spec 05 §5, à la place des onglets) : un multi en ligne montre sa
+ * partie de cette langue ; dans un multi bloc, les autres parties sont estompées. Décorations
+ * recalculées quand le document ou la langue change.
+ */
+const SpipLangues = Extension.create({
+	name: 'spipLangues',
+	addCommands: () => ({
+		setLangueAffichee: (langue) => ({ tr, dispatch }) => {
+			if (dispatch) tr.setMeta(clefLangues, langue);
+			return true;
+		},
+	}),
+	addProseMirrorPlugins() {
+		const decorer = (doc, langue) => {
+			const decorations = [];
+			doc.descendants((node, pos) => {
+				if (node.type.name === 'spipMultiInline') {
+					decorations.push(Decoration.node(pos, pos + node.nodeSize, {}, { langue }));
+				} else if (node.type.name === 'spipMultiBlock') {
+					const parts = [];
+					node.forEach((part, offset) => parts.push({ lang: part.attrs.lang, pos: pos + 1 + offset, size: part.nodeSize }));
+					const montree = partieAffichee(parts, langue);
+					for (const p of parts) {
+						if (p !== montree) decorations.push(Decoration.node(p.pos, p.pos + p.size, { class: 'tts-lang--autre' }));
+					}
+					return false;
+				}
+			});
+			return DecorationSet.create(doc, decorations);
+		};
+		return [new Plugin({
+			key: clefLangues,
+			state: {
+				init: (_, { doc }) => {
+					const langue = globalThis.document?.documentElement?.lang ?? '';
+					return { langue, decorations: decorer(doc, langue) };
+				},
+				apply: (tr, valeur) => {
+					const langue = tr.getMeta(clefLangues) ?? valeur.langue;
+					if (!tr.docChanged && langue === valeur.langue) return valeur;
+					return { langue, decorations: decorer(tr.doc, langue) };
+				},
+			},
+			props: { decorations: (state) => clefLangues.getState(state).decorations },
+		})];
+	},
+});
 
 /**
  * Note [[…]] (spec 05 §1) : appel de note, contenu en attribut (document JSON avec sa carte de
@@ -514,6 +558,9 @@ const SpipNoteNumbers = Extension.create({
 	},
 });
 
+/** Atomes dont un clic ou Entrée ouvre le popover : action de l'interface. */
+const POPOVERS = { spipNote: 'editNote', spipMultiInline: 'editMulti', spipIdiome: 'editIdiome' };
+
 /** Raccourcis clavier de l'interface (spec 06 §6). */
 const SpipUi = Extension.create({
 	name: 'spipUi',
@@ -525,22 +572,23 @@ const SpipUi = Extension.create({
 			'Mod-k': ouvrir('openLink'),
 			'Mod-Alt-n': ouvrir('editNote'),
 			'Mod-Alt-g': ouvrir('openGlossary'),
-			// Entrée sur un appel de note sélectionné : son popover (spec 05 §1)
+			// Entrée sur un atome sélectionné (note, multi, idiome) : son popover (spec 05 §1, §5)
 			Enter: ({ editor }) => {
-				const note = noteSelectionnee(editor.state);
-				return Boolean(note && this.options.ui?.editNote?.(note.from));
+				const { selection } = editor.state;
+				const action = selection instanceof NodeSelection && POPOVERS[selection.node.type.name];
+				return Boolean(action && this.options.ui?.[action]?.(selection.from));
 			},
 		};
 	},
-	// clic sur un appel de note : son popover
+	// clic sur un atome (note, multi, idiome) : son popover
 	addProseMirrorPlugins() {
 		const ui = () => this.options.ui;
 		return [new Plugin({
 			key: new PluginKey('spipUiClic'),
 			props: {
 				handleClickOn: (view, pos, node, nodePos, event, direct) => {
-					if (!direct || node.type.name !== 'spipNote') return false;
-					return Boolean(ui()?.editNote?.(nodePos));
+					const action = direct && POPOVERS[node.type.name];
+					return Boolean(action && ui()?.[action]?.(nodePos));
 				},
 			},
 		})];
@@ -600,7 +648,8 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		SpipMultiInline,
 		SpipMultiBlock,
 		SpipLangBlock,
-		SpipIdiome,
+		withView(SpipIdiome, idiomeView, Boolean(ui?.idiomes)),
+		SpipLangues,
 		withView(SpipModel, modelView, Boolean(ui?.previews)),
 		withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
 		// marks : ordre canonique de MARK_ORDER
@@ -634,4 +683,20 @@ export function noteExtensions({ ui = null } = {}) {
 	return coreExtensions({ ui })
 		.filter((e) => !['spipNote', 'spipNoteNumbers'].includes(e.name))
 		.map((e) => (e.name === 'doc' ? NoteDocument : e));
+}
+
+/** Une partie de multi en ligne : un seul paragraphe. */
+const PartieDocument = SpipDocument.extend({ content: 'paragraph' });
+
+/**
+ * Schéma du sous-éditeur d'une partie de multi en ligne (spec 05 §5) : celui de l'éditeur, sans
+ * multi en ligne (pas de multi dans un multi), avec un seul paragraphe (les blocs, multi bloc
+ * compris, restent déclarés mais inaccessibles).
+ *
+ * @param {{ ui?: object | null }} options  ui : interface du sous-éditeur (lien, glossaire…)
+ */
+export function partieExtensions({ ui = null } = {}) {
+	return coreExtensions({ ui })
+		.filter((e) => e.name !== 'spipMultiInline')
+		.map((e) => (e.name === 'doc' ? PartieDocument : e));
 }

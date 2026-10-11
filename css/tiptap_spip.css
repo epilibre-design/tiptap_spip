@@ -337,3 +337,41 @@
 	background: #f3eefb;
 	border-radius: 3px;
 }
+
+/* Partie d'un multi bloc dans une autre langue que celle affichée : estompée. */
+.tts-lang--autre {
+	opacity: 0.55;
+}
+
+.tts-idiome--traduit {
+	font-family: inherit;
+}
+
+/* Popover de multi : une ligne par langue (code, texte, retirer). */
+.tts-popover--multi {
+	min-width: 24em;
+	max-width: 36em;
+}
+
+.tts-multi__partie {
+	display: flex;
+	gap: 4px;
+	align-items: flex-start;
+	margin-bottom: 0.4em;
+}
+
+.tts-multi__texte {
+	flex: 1;
+}
+
+.tts-multi__texte .tts-prosemirror {
+	min-height: 1.6em;
+	padding: 0.15em 0.4em;
+	border: 1px solid #aaa;
+	border-radius: 3px;
+	background: #fff;
+}
+
+.tts-langues[hidden] {
+	display: none;
+}

@@ -23,7 +23,7 @@ function tiptap_spip_json($valeur): string {
 
 /** Opérations du formulaire de services. */
 function tiptap_spip_operations(): array {
-	return ['previsu_modele', 'titre_lien', 'rechercher', 'glossaire'];
+	return ['previsu_modele', 'titre_lien', 'rechercher', 'glossaire', 'idiomes'];
 }
 
 /** Vrai si $raccourci est exactement un raccourci de glossaire (_RACCOURCI_GLOSSAIRE du core, ancrée). */
@@ -76,6 +76,29 @@ function tiptap_spip_url_glossaire(string $raccourci, string $objet = '', int $i
 	$url = extraire_attribut(traiter_raccourci_glossaire($raccourci), 'href');
 	lang_select();
 	return is_string($url) && $url !== '' ? $url : null;
+}
+
+/** Vrai si $cle est la clé d'un idiome <:module:cle:> (regex de Idiomes::collecter(), module facultatif). */
+function tiptap_spip_est_cle_idiome(string $cle): bool {
+	return (bool) preg_match('/^(?:[a-z0-9_]+:)?[a-z0-9_]+$/i', $cle);
+}
+
+/**
+ * Traductions d'idiomes, comme Idiomes::traiter() les calcule au rendu de l'objet : dans sa langue,
+ * sinon celle du site ; texte sans balises, null si la chaîne n'existe pas (SPIP laisse alors le
+ * raccourci).
+ *
+ * @param string[] $cles  module:cle ou cle
+ * @return list<array{cle: string, texte: ?string}>
+ */
+function tiptap_spip_traduire_idiomes(array $cles, string $objet = '', int $id_objet = 0): array {
+	$traduire = charger_fonction('traduire', 'inc');
+	$lang = ($objet !== '' && $id_objet > 0 ? tiptap_spip_lang_objet($objet, $id_objet) : '') ?: ($GLOBALS['meta']['langue_site'] ?? 'fr');
+	return array_map(static function (string $cle) use ($traduire, $lang) {
+		$desc = $traduire($cle, $lang, true);
+		$texte = is_object($desc) ? (string) ($desc->texte ?? '') : '';
+		return ['cle' => $cle, 'texte' => $texte === '' ? null : supprimer_tags($texte)];
+	}, $cles);
 }
 
 /** Langue d'un objet, '' si sa table n'en a pas. */

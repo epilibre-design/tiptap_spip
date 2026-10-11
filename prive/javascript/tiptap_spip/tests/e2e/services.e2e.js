@@ -85,6 +85,17 @@ test('glossaire : URL de la définition calculée par SPIP, glossaires nommés d
 	expect(r.erreurs.raccourci).toBe('Raccourci de glossaire invalide.');
 });
 
+test('idiomes : traductions de SPIP dans la langue de l\'objet, null pour une chaîne absente', async ({ page }) => {
+	const { resultat } = await appeler(page, 'idiomes', { cles: ['tiptap_spip:lien', 'info_titre', 'inconnu:absente'] });
+	expect(resultat).toEqual([
+		{ cle: 'tiptap_spip:lien', texte: 'Lien' },
+		// traduction telle que dans le fichier de langue (espace insécable avant le deux-points)
+		{ cle: 'info_titre', texte: 'Titre\u00a0:' },
+		{ cle: 'inconnu:absente', texte: null },
+	]);
+	expect((await appeler(page, 'idiomes', { cles: ['<:x:>'] })).erreurs.cles).toBe('Liste d’idiomes invalide.');
+});
+
 test('verifier() refuse une demande invalide, le service reste disponible', async ({ page }) => {
 	const r = await appeler(page, 'previsu_modele', { modele: '<doc1> <doc2>' });
 	expect(r).toMatchObject({ erreur: 'ServiceError', disponible: true });

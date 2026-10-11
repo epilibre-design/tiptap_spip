@@ -206,6 +206,16 @@ Lot L4.1 (vérifié avec l'oracle, rendu dans chaque langue) :
 - **Idiomes :** affichés par leur raccourci (traduction : L4.2).
 - **Choix d'affichage :** toutes les parties d'un multi bloc restent visibles. Le sélecteur de la langue affichée, qui remplace les onglets, est prévu au lot L4.2.
 
+Lot L4.2 :
+- **Langue affichée :** un sélecteur de la barre, présent quand le texte a des multis, liste les langues du texte. Un multi en ligne montre sa partie dans cette langue ; dans un multi bloc, les autres parties sont estompées. Il remplace les onglets.
+- **Bouton « Multilingue »**, selon la sélection :
+  - multi en ligne sélectionné, ou clic, ou `Entrée` : popover avec une ligne par partie (code de langue, sous-éditeur d'un paragraphe sans multi, retirer) et « Ajouter une langue » ;
+  - curseur dans un multi bloc : popover des langues de ses parties (code, retirer, ajouter) ;
+  - paragraphe vide : nouveau multi bloc dans la langue affichée ;
+  - sinon : nouveau multi en ligne, dont la première partie est le texte sélectionné.
+- **Validation :** codes de la regex du core, une seule partie sans langue, multi relu à l'identique (`multiSeRelit`). Une partie ouverte et non modifiée garde son contenu d'origine. « Supprimer le multi » garde le texte de la langue affichée. Lien et glossaire d'une partie s'ouvrent en popovers enfants.
+- **Idiomes :** traduction calculée par SPIP (opération `idiomes`, par lots, cache) affichée à la place du raccourci, qui passe en infobulle. Clic ou `Entrée` : popover du raccourci brut, validé par le parseur, et suppression.
+
 ## 6. Blocs protégés — `codeBlock`, `spipCadre`, `spipHtml`, `spipMath`, `spipPoesie`
 
 - Code : backticks (`` `x` `` → mark `code`, ```` ```php … ``` ```` → `codeBlock` avec `language`) et forme

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import { createEditor } from '../../src/editor/createEditor.js';
-import { partieAffichee } from '../../src/editor/extensions.js';
+import { partieAffichee } from '../../src/editor/texte.js';
 import { serialize } from '../../src/spip/index.js';
 
 let editor;

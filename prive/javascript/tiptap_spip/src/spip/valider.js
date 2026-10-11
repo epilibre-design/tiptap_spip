@@ -29,3 +29,22 @@ export function noteSeRelit({ name = null, content }) {
 	if (appel?.type !== 'spipNote' || reste.length) return false;
 	return (appel.attrs.name ?? null) === (name ?? null) && canon(appel.attrs.content) === canon(parse(ecrire(content)).content);
 }
+
+/**
+ * Multi en ligne qui se relit à l'identique : mêmes parties, dans l'ordre où elles s'écrivent
+ * (partie sans langue en tête), chacune identique à ce que son contenu devient écrit seul.
+ *
+ * @param {{ lang: ?string, content: object[] }[]} parts
+ */
+export function multiSeRelit(parts) {
+	const multi = node('spipMultiInline', { parts });
+	const relu = parse(ecrire([node('paragraph', null, [text('x'), multi])])).content;
+	const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];
+	if (appel?.type !== 'spipMultiInline' || reste.length) return false;
+	const ordre = [...parts.filter((p) => !p.lang), ...parts.filter((p) => p.lang)];
+	const seul = (content) => parse(ecrire([node('paragraph', null, content)])).content[0]?.content ?? [];
+	return appel.attrs.parts.length === ordre.length && ordre.every((part, i) => {
+		const r = appel.attrs.parts[i];
+		return (r.lang ?? null) === (part.lang || null) && canon(r.content) === canon(seul(part.content ?? []));
+	});
+}

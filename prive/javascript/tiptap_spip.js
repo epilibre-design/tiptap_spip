@@ -17711,6 +17711,7 @@ var RE_ABBR = /\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]/g;
 var RE_MULTI = /<multi>(.*?)<\/multi>/gs;
 var CODE_LANGUE = "[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?";
 var RE_LANGUE_MULTI = new RegExp(`\\[(${CODE_LANGUE})\\]`, "gi");
+var RE_CODE_LANGUE = new RegExp(`^${CODE_LANGUE}$`, "i");
 var RE_AVANT_LANGUE = new RegExp(`\\[(?=${CODE_LANGUE}\\])`, "gi");
 var LIGNE_VIDE = /\n[ \t\r]*\n/;
 var RE_IDIOME = /<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>/gi;
@@ -24390,6 +24391,26 @@ var UndoRedo = Extension.create({
   }
 });
 
+// src/editor/texte.js
+function apercu(content, max = 80) {
+  const morceaux = [];
+  const parcourir = (n) => {
+    if (n.text) morceaux.push(n.text);
+    else if (n.attrs?.source) morceaux.push(n.attrs.source);
+    else if (n.attrs?.model?.source) morceaux.push(n.attrs.model.source);
+    (n.content ?? []).forEach(parcourir);
+    if (n.type === "paragraph") morceaux.push(" ");
+  };
+  (content ?? []).forEach(parcourir);
+  const texte2 = morceaux.join("").replace(/\s+/g, " ").trim();
+  return texte2.length > max ? `${texte2.slice(0, max - 1)}\u2026` : texte2;
+}
+function partieAffichee(parts, langue = globalThis.document?.documentElement?.lang ?? "") {
+  const l = langue.toLowerCase();
+  const base2 = l.split(/[-_]/)[0];
+  return parts.findLast((p) => p.lang?.toLowerCase() === l) ?? parts.findLast((p) => p.lang?.toLowerCase().split(/[-_]/)[0] === base2) ?? parts[0];
+}
+
 // src/ui/labels.js
 var DEFAUTS = {
   mode_source: "Source",
@@ -24433,6 +24454,19 @@ var DEFAUTS = {
   note_invalide: "Cette note ne peut pas s\u2019\xE9crire telle quelle (nom ou texte).",
   note_vide: "La note est vide.",
   notes: "Notes",
+  multi: "Multilingue",
+  multi_texte: "Texte dans cette langue",
+  multi_ajouter: "Ajouter une langue",
+  multi_retirer_langue: "Retirer",
+  multi_supprimer: "Supprimer le multi",
+  multi_langues: "Langues du multi",
+  multi_invalide: "Ce multi ne peut pas s\u2019\xE9crire tel quel (code de langue, langue sans code en double, texte).",
+  multi_vide: "Le multi est vide.",
+  langue_affichee: "Langue affich\xE9e",
+  idiome: "Idiome",
+  idiome_raccourci: "Raccourci (<:module:cle:>)",
+  idiome_invalide: "Ce n\u2019est pas un raccourci d\u2019idiome.",
+  idiome_retirer: "Supprimer l\u2019idiome",
   appliquer: "Appliquer",
   annuler: "Annuler"
 };
@@ -24543,6 +24577,66 @@ var linkAutoView = (ui) => ({ node: node2 }) => {
     ui.titles.get(demande).then(
       (r) => {
         if (demande === cible && r?.titre) dom.textContent = r.titre;
+      },
+      () => {
+      }
+    );
+  };
+  render2(node2.attrs);
+  return {
+    dom,
+    update(updated) {
+      if (updated.type !== node2.type) return false;
+      render2(updated.attrs);
+      return true;
+    },
+    ignoreMutation: () => true
+  };
+};
+var multiView = () => ({ node: node2, decorations }) => {
+  const dom = document.createElement("span");
+  dom.className = "tts-multi";
+  dom.contentEditable = "false";
+  const render2 = (n, decos) => {
+    const langue = decos?.find((d) => d.spec?.langue !== void 0)?.spec.langue;
+    const parts = n.attrs.parts ?? [];
+    const affichee = partieAffichee(parts, langue ?? void 0);
+    dom.textContent = apercu(affichee?.content ?? []);
+    dom.dataset.ttsMulti = JSON.stringify(parts);
+    dom.dataset.ttsLang = affichee?.lang ?? "";
+    dom.title = parts.map((p) => `${p.lang ?? "*"} : ${apercu(p.content)}`).join(" \xB7 ");
+  };
+  render2(node2, decorations);
+  return {
+    dom,
+    update(updated, decos) {
+      if (updated.type !== node2.type) return false;
+      render2(updated, decos);
+      return true;
+    },
+    ignoreMutation: () => true
+  };
+};
+var idiomeView = (ui) => ({ node: node2 }) => {
+  const dom = document.createElement("code");
+  dom.className = "tts-idiome";
+  dom.contentEditable = "false";
+  let raccourci = null;
+  const render2 = (attrs) => {
+    const r = serializeIdiome(attrs);
+    if (r === raccourci) return;
+    raccourci = r;
+    dom.dataset.ttsIdiome = attrs.cle;
+    if (attrs.module) dom.dataset.ttsModule = attrs.module;
+    else delete dom.dataset.ttsModule;
+    dom.textContent = r;
+    dom.title = r;
+    dom.classList.remove("tts-idiome--traduit");
+    ui.idiomes.get(attrs.module ? `${attrs.module}:${attrs.cle}` : attrs.cle).then(
+      (t) => {
+        if (raccourci !== r || !t?.texte) return;
+        dom.textContent = t.texte;
+        dom.classList.add("tts-idiome--traduit");
       },
       () => {
       }
@@ -24813,11 +24907,6 @@ var langAttr = () => ({
     renderHTML: (a) => a.lang == null ? {} : { "data-tts-lang": a.lang }
   }
 });
-function partieAffichee(parts, langue = globalThis.document?.documentElement?.lang ?? "") {
-  const l = langue.toLowerCase();
-  const base2 = l.split(/[-_]/)[0];
-  return parts.findLast((p) => p.lang?.toLowerCase() === l) ?? parts.findLast((p) => p.lang?.toLowerCase().split(/[-_]/)[0] === base2) ?? parts[0];
-}
 var SpipMultiInline = Node3.create({
   name: "spipMultiInline",
   group: "inline",
@@ -24826,6 +24915,8 @@ var SpipMultiInline = Node3.create({
   selectable: true,
   addAttributes: () => ({ ...jsonAttr("parts", "data-tts-multi", []), spipSrc: hidden(), spipHash: hidden() }),
   parseHTML: () => [{ tag: "span[data-tts-multi]" }],
+  // langue affichée : décorations de SpipLangues (sélecteur de la barre)
+  addNodeView: () => multiView(),
   renderHTML: ({ node: node2, HTMLAttributes }) => {
     const parts = node2.attrs.parts ?? [];
     const affichee = partieAffichee(parts);
@@ -24862,23 +24953,63 @@ var SpipIdiome = Node3.create({
   parseHTML: () => [{ tag: "code[data-tts-idiome]", priority: 60 }],
   renderHTML: ({ node: node2, HTMLAttributes }) => ["code", { ...HTMLAttributes, class: "tts-idiome" }, serializeIdiome(node2.attrs)]
 });
-function apercu(content, max = 80) {
-  const morceaux = [];
-  const parcourir = (n) => {
-    if (n.text) morceaux.push(n.text);
-    else if (n.attrs?.source) morceaux.push(n.attrs.source);
-    else if (n.attrs?.model?.source) morceaux.push(n.attrs.model.source);
-    (n.content ?? []).forEach(parcourir);
-    if (n.type === "paragraph") morceaux.push(" ");
-  };
-  (content ?? []).forEach(parcourir);
-  const texte2 = morceaux.join("").replace(/\s+/g, " ").trim();
-  return texte2.length > max ? `${texte2.slice(0, max - 1)}\u2026` : texte2;
-}
 function noteSelectionnee(state) {
   const { selection } = state;
   return selection instanceof NodeSelection && selection.node.type.name === "spipNote" ? selection : null;
 }
+var clefLangues = new PluginKey("spipLangues");
+function languesDuDocument(doc4) {
+  const langues = /* @__PURE__ */ new Set();
+  doc4.descendants((node2) => {
+    if (node2.type.name === "spipMultiInline") (node2.attrs.parts ?? []).forEach((p) => p.lang && langues.add(p.lang));
+    if (node2.type.name === "spipLangBlock" && node2.attrs.lang) langues.add(node2.attrs.lang);
+  });
+  return [...langues];
+}
+var langueAffichee = (state) => clefLangues.getState(state)?.langue ?? "";
+var SpipLangues = Extension.create({
+  name: "spipLangues",
+  addCommands: () => ({
+    setLangueAffichee: (langue) => ({ tr, dispatch }) => {
+      if (dispatch) tr.setMeta(clefLangues, langue);
+      return true;
+    }
+  }),
+  addProseMirrorPlugins() {
+    const decorer = (doc4, langue) => {
+      const decorations = [];
+      doc4.descendants((node2, pos) => {
+        if (node2.type.name === "spipMultiInline") {
+          decorations.push(Decoration.node(pos, pos + node2.nodeSize, {}, { langue }));
+        } else if (node2.type.name === "spipMultiBlock") {
+          const parts = [];
+          node2.forEach((part, offset) => parts.push({ lang: part.attrs.lang, pos: pos + 1 + offset, size: part.nodeSize }));
+          const montree = partieAffichee(parts, langue);
+          for (const p of parts) {
+            if (p !== montree) decorations.push(Decoration.node(p.pos, p.pos + p.size, { class: "tts-lang--autre" }));
+          }
+          return false;
+        }
+      });
+      return DecorationSet.create(doc4, decorations);
+    };
+    return [new Plugin({
+      key: clefLangues,
+      state: {
+        init: (_, { doc: doc4 }) => {
+          const langue = globalThis.document?.documentElement?.lang ?? "";
+          return { langue, decorations: decorer(doc4, langue) };
+        },
+        apply: (tr, valeur) => {
+          const langue = tr.getMeta(clefLangues) ?? valeur.langue;
+          if (!tr.docChanged && langue === valeur.langue) return valeur;
+          return { langue, decorations: decorer(tr.doc, langue) };
+        }
+      },
+      props: { decorations: (state) => clefLangues.getState(state).decorations }
+    })];
+  }
+});
 var SpipNote = Node3.create({
   name: "spipNote",
   group: "inline",
@@ -24960,6 +25091,7 @@ var SpipNoteNumbers = Extension.create({
     })];
   }
 });
+var POPOVERS = { spipNote: "editNote", spipMultiInline: "editMulti", spipIdiome: "editIdiome" };
 var SpipUi = Extension.create({
   name: "spipUi",
   addOptions: () => ({ ui: null }),
@@ -24969,22 +25101,23 @@ var SpipUi = Extension.create({
       "Mod-k": ouvrir("openLink"),
       "Mod-Alt-n": ouvrir("editNote"),
       "Mod-Alt-g": ouvrir("openGlossary"),
-      // Entrée sur un appel de note sélectionné : son popover (spec 05 §1)
+      // Entrée sur un atome sélectionné (note, multi, idiome) : son popover (spec 05 §1, §5)
       Enter: ({ editor }) => {
-        const note = noteSelectionnee(editor.state);
-        return Boolean(note && this.options.ui?.editNote?.(note.from));
+        const { selection } = editor.state;
+        const action = selection instanceof NodeSelection && POPOVERS[selection.node.type.name];
+        return Boolean(action && this.options.ui?.[action]?.(selection.from));
       }
     };
   },
-  // clic sur un appel de note : son popover
+  // clic sur un atome (note, multi, idiome) : son popover
   addProseMirrorPlugins() {
     const ui = () => this.options.ui;
     return [new Plugin({
       key: new PluginKey("spipUiClic"),
       props: {
         handleClickOn: (view, pos, node2, nodePos, event, direct) => {
-          if (!direct || node2.type.name !== "spipNote") return false;
-          return Boolean(ui()?.editNote?.(nodePos));
+          const action = direct && POPOVERS[node2.type.name];
+          return Boolean(action && ui()?.[action]?.(nodePos));
         }
       }
     })];
@@ -25034,7 +25167,8 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
     SpipMultiInline,
     SpipMultiBlock,
     SpipLangBlock,
-    SpipIdiome,
+    withView(SpipIdiome, idiomeView, Boolean(ui?.idiomes)),
+    SpipLangues,
     withView(SpipModel, modelView, Boolean(ui?.previews)),
     withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
     // marks : ordre canonique de MARK_ORDER
@@ -25057,6 +25191,10 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
 var NoteDocument = SpipDocument.extend({ content: "(paragraph | bulletList | orderedList | spipModelBlock)+" });
 function noteExtensions({ ui = null } = {}) {
   return coreExtensions({ ui }).filter((e) => !["spipNote", "spipNoteNumbers"].includes(e.name)).map((e) => e.name === "doc" ? NoteDocument : e);
+}
+var PartieDocument = SpipDocument.extend({ content: "paragraph" });
+function partieExtensions({ ui = null } = {}) {
+  return coreExtensions({ ui }).filter((e) => e.name !== "spipMultiInline").map((e) => e.name === "doc" ? PartieDocument : e);
 }
 
 // src/editor/createEditor.js
@@ -25325,21 +25463,25 @@ var ModelPreviews = class {
     return this.cache.get(source);
   }
 };
-var LinkTitles = class {
-  /** @param {import('./cvt.js').Services|Promise<?import('./cvt.js').Services>|null} services */
-  constructor(services, { batch = 50 } = {}) {
+var CacheParLots = class {
+  /**
+   * @param {import('./cvt.js').Services|Promise<?import('./cvt.js').Services>|null} services
+   * @param {{ operation: string, parametre: string, champ: string, vide: (cle: string) => object, batch?: number }} options
+   *        parametre : nom de la liste envoyée ; champ : clé de chaque résultat ; vide : résultat
+   *        d'une clé absente de la réponse
+   */
+  constructor(services, { operation, parametre, champ, vide: vide2, batch = 50 }) {
     this.services = services;
-    this.batch = batch;
+    Object.assign(this, { operation, parametre, champ, vide: vide2, batch });
     this.cache = /* @__PURE__ */ new Map();
     this.pending = /* @__PURE__ */ new Map();
     this.scheduled = false;
   }
-  /** @returns {Promise<{ cible: string, titre: ?string, url: ?string, objet: ?string, id: ?number }>} */
-  get(cible) {
-    if (this.cache.has(cible)) return this.cache.get(cible);
-    const promise = new Promise((resolve, reject) => this.pending.set(cible, { resolve, reject }));
-    this.cache.set(cible, promise);
-    promise.catch(() => this.cache.delete(cible));
+  get(cle) {
+    if (this.cache.has(cle)) return this.cache.get(cle);
+    const promise = new Promise((resolve, reject) => this.pending.set(cle, { resolve, reject }));
+    this.cache.set(cle, promise);
+    promise.catch(() => this.cache.delete(cle));
     if (!this.scheduled) {
       this.scheduled = true;
       queueMicrotask(() => this.flush());
@@ -25352,14 +25494,24 @@ var LinkTitles = class {
     this.pending.clear();
     for (let i2 = 0; i2 < demandes.length; i2 += this.batch) {
       const lot = demandes.slice(i2, i2 + this.batch);
-      disponibles(this.services).then((s) => s.call("titre_lien", { cibles: lot.map(([cible]) => cible) })).then(
+      disponibles(this.services).then((s) => s.call(this.operation, { [this.parametre]: lot.map(([cle]) => cle) })).then(
         (resultats) => {
-          const parCible = new Map(resultats.map((r) => [r.cible, r]));
-          for (const [cible, { resolve }] of lot) resolve(parCible.get(cible) ?? { cible, titre: null, url: null });
+          const parCle = new Map(resultats.map((r) => [r[this.champ], r]));
+          for (const [cle, { resolve }] of lot) resolve(parCle.get(cle) ?? this.vide(cle));
         },
         (erreur) => lot.forEach(([, { reject }]) => reject(erreur))
       );
     }
+  }
+};
+var LinkTitles = class extends CacheParLots {
+  constructor(services, { batch = 50 } = {}) {
+    super(services, { operation: "titre_lien", parametre: "cibles", champ: "cible", vide: (cible) => ({ cible, titre: null, url: null }), batch });
+  }
+};
+var IdiomTranslations = class extends CacheParLots {
+  constructor(services, { batch = 50 } = {}) {
+    super(services, { operation: "idiomes", parametre: "cles", champ: "cle", vide: (cle) => ({ cle, texte: null }), batch });
   }
 };
 
@@ -25376,6 +25528,18 @@ function noteSeRelit({ name = null, content }) {
   const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];
   if (appel?.type !== "spipNote" || reste.length) return false;
   return (appel.attrs.name ?? null) === (name ?? null) && canon(appel.attrs.content) === canon(parse(ecrire(content)).content);
+}
+function multiSeRelit(parts) {
+  const multi = node("spipMultiInline", { parts });
+  const relu = parse(ecrire([node("paragraph", null, [text("x"), multi])])).content;
+  const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];
+  if (appel?.type !== "spipMultiInline" || reste.length) return false;
+  const ordre = [...parts.filter((p) => !p.lang), ...parts.filter((p) => p.lang)];
+  const seul = (content) => parse(ecrire([node("paragraph", null, content)])).content[0]?.content ?? [];
+  return appel.attrs.parts.length === ordre.length && ordre.every((part, i2) => {
+    const r = appel.attrs.parts[i2];
+    return (r.lang ?? null) === (part.lang || null) && canon(r.content) === canon(seul(part.content ?? []));
+  });
 }
 
 // src/ui/popover.js
@@ -25770,6 +25934,282 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
   return popover;
 }
 
+// src/ui/MultiPopover.js
+var langueParDefaut = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || "").replace("-", "_");
+var languesValides = (langues) => langues.every((l) => l === null || RE_CODE_LANGUE.test(l)) && langues.filter((l) => l === null).length <= 1;
+function openMultiPopover(contexte3, pos = null) {
+  const { editor } = contexte3;
+  lireSelection(editor);
+  if (pos !== null) editor.commands.setNodeSelection(pos);
+  const { selection } = editor.state;
+  if (selection instanceof NodeSelection && selection.node.type.name === "spipMultiInline") return multiEnLigne(contexte3, selection);
+  const { $from } = selection;
+  for (let d = $from.depth; d > 0; d--) {
+    if ($from.node(d).type.name === "spipMultiBlock") return languesDuBloc(contexte3, $from.before(d));
+  }
+  if (selection.empty && $from.depth === 1 && $from.parent.type.name === "paragraph" && $from.parent.content.size === 0) {
+    const { schema } = editor;
+    const bloc = schema.nodes.spipMultiBlock.create(null, schema.nodes.spipLangBlock.create({ lang: langueParDefaut(editor) || null }, schema.nodes.paragraph.create()));
+    const debut = $from.before();
+    editor.chain().focus().command(({ tr }) => {
+      tr.replaceWith(debut, $from.after(), bloc);
+      return true;
+    }).setTextSelection(debut + 3).run();
+    return languesDuBloc(contexte3, debut);
+  }
+  return multiEnLigne(contexte3, null);
+}
+function multiEnLigne(contexte3, existant) {
+  const { editor, wrapper } = contexte3;
+  const { selection } = editor.state;
+  const { $from, $to } = selection;
+  const morceau = !existant && !selection.empty && $from.sameParent($to) && $from.parent.isTextblock ? $from.parent.slice($from.parentOffset, $to.parentOffset).content.toJSON() : null;
+  const suivi = suivrePosition(editor, existant ? existant.from : morceau ? selection.from : selection.to);
+  const fin = existant ? null : suivrePosition(editor, selection.to);
+  const lignes = [];
+  const popover = new Popover({
+    editor,
+    wrapper,
+    titre: label("multi"),
+    className: "tts-popover--multi",
+    onSubmit: () => appliquer(),
+    onClose: () => {
+      suivi.fin();
+      fin?.fin();
+      lignes.forEach((l) => l.sous.destroy());
+    }
+  });
+  const liste = document.createElement("div");
+  liste.className = "tts-multi__parties";
+  popover.actions.before(liste);
+  const schema = getSchema(partieExtensions());
+  const ajouter = (lang, origine) => {
+    const ligne = document.createElement("div");
+    ligne.className = "tts-multi__partie";
+    const langue = document.createElement("input");
+    langue.name = "langue";
+    langue.size = 6;
+    langue.value = lang ?? "";
+    langue.setAttribute("aria-label", label("langue"));
+    const zone = document.createElement("div");
+    zone.className = "tts-multi__texte";
+    const retirer = document.createElement("button");
+    retirer.type = "button";
+    retirer.name = "retirer_langue";
+    retirer.textContent = label("multi_retirer_langue");
+    ligne.append(langue, zone, retirer);
+    liste.append(ligne);
+    const content = schemaJSON({ type: "doc", content: [{ type: "paragraph", content: origine?.length ? origine : void 0 }] }, schema);
+    const l = { langue, sous: null, origine, modifie: false, ligne };
+    const sousUi = {
+      previews: contexte3.previews ?? null,
+      titles: contexte3.titles ?? null,
+      openLink: () => openLinkPopover({ ...contexte3, editor: l.sous, parent: popover }),
+      openGlossary: () => openGlossaryPopover({ ...contexte3, editor: l.sous, parent: popover })
+    };
+    const sous = new Editor({
+      element: zone,
+      extensions: partieExtensions({ ui: sousUi }),
+      content,
+      editorProps: { attributes: { class: "tts-prosemirror", "aria-label": label("multi_texte") } }
+    });
+    l.sous = sous;
+    sous.on("update", () => {
+      l.modifie = true;
+    });
+    retirer.addEventListener("click", () => {
+      sous.destroy();
+      ligne.remove();
+      lignes.splice(lignes.indexOf(l), 1);
+    });
+    lignes.push(l);
+    return l;
+  };
+  if (existant) {
+    for (const p of existant.node.attrs.parts ?? []) ajouter(p.lang, p.content);
+  } else {
+    ajouter(langueParDefaut(editor), morceau);
+    ajouter("", null);
+  }
+  const appliquer = () => {
+    const parts = lignes.map((l) => ({
+      lang: l.langue.value.trim() || null,
+      content: l.modifie || !l.origine ? l.sous.getJSON().content?.[0]?.content ?? [] : l.origine
+    })).filter((p2) => p2.lang || p2.content.length);
+    if (!parts.length) {
+      popover.error(label("multi_vide"));
+      return false;
+    }
+    if (!languesValides(parts.map((p2) => p2.lang)) || !multiSeRelit(parts)) {
+      popover.error(label("multi_invalide"));
+      return false;
+    }
+    const p = suivi.pos();
+    if (existant) {
+      const node2 = p === null ? null : editor.state.doc.nodeAt(p);
+      if (node2?.type.name !== "spipMultiInline") return true;
+      editor.chain().focus().command(({ tr }) => {
+        tr.setNodeMarkup(p, void 0, { ...node2.attrs, parts });
+        return true;
+      }).run();
+    } else {
+      const to = fin.pos() ?? editor.state.selection.to;
+      editor.chain().focus().insertContentAt({ from: Math.min(p ?? to, to), to }, { type: "spipMultiInline", attrs: { parts } }).run();
+    }
+    return true;
+  };
+  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover.button(label("multi_ajouter"), () => {
+    ajouter("", null).langue.focus();
+    return false;
+  }, { name: "ajouter_langue" });
+  if (existant) {
+    popover.button(label("multi_supprimer"), () => {
+      const p = suivi.pos();
+      const node2 = p === null ? null : editor.state.doc.nodeAt(p);
+      if (node2?.type.name !== "spipMultiInline") return;
+      const garde = partieAffichee(node2.attrs.parts ?? [], langueAffichee(editor.state) || void 0)?.content ?? [];
+      editor.chain().focus().insertContentAt({ from: p, to: p + node2.nodeSize }, garde).run();
+    }, { name: "supprimer" });
+  }
+  popover.button(label("annuler"), () => {
+  }, { name: "annuler" });
+  popover.open(lignes[0]?.langue);
+  return popover;
+}
+function languesDuBloc({ editor, wrapper }, pos) {
+  const multi = editor.state.doc.nodeAt(pos);
+  const suivi = suivrePosition(editor, pos);
+  const popover = new Popover({
+    editor,
+    wrapper,
+    titre: label("multi_langues"),
+    className: "tts-popover--multi-langues",
+    onSubmit: () => appliquer(),
+    onClose: () => suivi.fin()
+  });
+  const lignes = [];
+  const liste = document.createElement("div");
+  liste.className = "tts-multi__parties";
+  popover.actions.before(liste);
+  const ajouter = (lang, partie) => {
+    const ligne = document.createElement("div");
+    ligne.className = "tts-multi__partie";
+    const langue = document.createElement("input");
+    langue.name = "langue";
+    langue.size = 6;
+    langue.value = lang ?? "";
+    langue.setAttribute("aria-label", label("langue"));
+    const retirer = document.createElement("button");
+    retirer.type = "button";
+    retirer.name = "retirer_langue";
+    retirer.textContent = label("multi_retirer_langue");
+    const l = { langue, partie };
+    retirer.addEventListener("click", () => {
+      ligne.remove();
+      lignes.splice(lignes.indexOf(l), 1);
+    });
+    ligne.append(langue, retirer);
+    liste.append(ligne);
+    lignes.push(l);
+    return l;
+  };
+  multi.forEach((partie) => ajouter(partie.attrs.lang, partie));
+  const courant = () => {
+    const p = suivi.pos();
+    const node2 = p === null ? null : editor.state.doc.nodeAt(p);
+    return node2?.type.name === "spipMultiBlock" ? { p, node: node2 } : null;
+  };
+  const appliquer = () => {
+    const langues = lignes.map((l) => l.langue.value.trim() || null);
+    if (!lignes.length) {
+      popover.error(label("multi_vide"));
+      return false;
+    }
+    if (!languesValides(langues)) {
+      popover.error(label("multi_invalide"));
+      return false;
+    }
+    const c = courant();
+    if (!c) return true;
+    const { schema } = editor;
+    const parties = lignes.map((l, i2) => l.partie ? schema.nodes.spipLangBlock.create({ lang: langues[i2] }, l.partie.content) : schema.nodes.spipLangBlock.create({ lang: langues[i2] }, schema.nodes.paragraph.create()));
+    const relatif = editor.state.selection.from - c.p;
+    const nouveau = schema.nodes.spipMultiBlock.create(c.node.attrs, parties);
+    editor.chain().focus().command(({ tr }) => {
+      tr.replaceWith(c.p, c.p + c.node.nodeSize, nouveau);
+      const dedans = Math.max(c.p + 1, Math.min(c.p + relatif, c.p + nouveau.nodeSize - 1));
+      tr.setSelection(TextSelection.near(tr.doc.resolve(dedans)));
+      return true;
+    }).run();
+    return true;
+  };
+  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover.button(label("multi_ajouter"), () => {
+    ajouter("", null).langue.focus();
+    return false;
+  }, { name: "ajouter_langue" });
+  popover.button(label("multi_supprimer"), () => {
+    const c = courant();
+    if (!c) return;
+    const parties = [];
+    c.node.forEach((partie) => parties.push({ lang: partie.attrs.lang, partie }));
+    const garde = partieAffichee(parties, langueAffichee(editor.state) || void 0).partie;
+    editor.chain().focus().command(({ tr }) => {
+      tr.replaceWith(c.p, c.p + c.node.nodeSize, garde.content);
+      return true;
+    }).run();
+  }, { name: "supprimer" });
+  popover.button(label("annuler"), () => {
+  }, { name: "annuler" });
+  popover.open(lignes[0]?.langue);
+  return popover;
+}
+function openIdiomePopover({ editor, wrapper }, pos = null) {
+  if (pos !== null) editor.commands.setNodeSelection(pos);
+  const { selection } = editor.state;
+  if (!(selection instanceof NodeSelection) || selection.node.type.name !== "spipIdiome") return null;
+  const suivi = suivrePosition(editor, selection.from);
+  const { module, cle } = selection.node.attrs;
+  const popover = new Popover({
+    editor,
+    wrapper,
+    titre: label("idiome"),
+    className: "tts-popover--idiome",
+    onSubmit: () => appliquer(),
+    onClose: () => suivi.fin()
+  });
+  const raccourci = popover.input(label("idiome_raccourci"), { value: `<:${module ? `${module}:` : ""}${cle}:>`, name: "raccourci" });
+  const idiome = () => {
+    const p = suivi.pos();
+    return p !== null && editor.state.doc.nodeAt(p)?.type.name === "spipIdiome" ? p : null;
+  };
+  const appliquer = () => {
+    const attrs = parseIdiome(raccourci.value.trim());
+    if (!attrs) {
+      popover.error(label("idiome_invalide"));
+      return false;
+    }
+    const p = idiome();
+    if (p !== null) {
+      editor.chain().focus().command(({ tr }) => {
+        tr.setNodeMarkup(p, void 0, { module: attrs.module ?? null, cle: attrs.cle });
+        return true;
+      }).run();
+    }
+    return true;
+  };
+  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover.button(label("idiome_retirer"), () => {
+    const p = idiome();
+    if (p !== null) editor.chain().focus().deleteRange({ from: p, to: p + 1 }).run();
+  }, { name: "retirer" });
+  popover.button(label("annuler"), () => {
+  }, { name: "annuler" });
+  popover.open(raccourci);
+  return popover;
+}
+
 // src/ui/NotePopover.js
 var vide = (content) => content.every((b) => b.type === "paragraph" && !b.content?.length);
 function openNotePopover(contexte3, pos = null) {
@@ -25913,11 +26353,14 @@ function creerInterface({ editor, wrapper, services }) {
   const ui = {
     previews: services ? new ModelPreviews(services) : null,
     titles: services ? new LinkTitles(services) : null,
+    idiomes: services ? new IdiomTranslations(services) : null,
     openLink: () => openLinkPopover(contexte3()),
     editModel: (pos) => openModelPopover(contexte3(), pos),
     editNote: (pos) => openNotePopover(contexte3(), pos),
     openGlossary: () => openGlossaryPopover(contexte3()),
-    openAbbr: () => openAbbrPopover(contexte3())
+    openAbbr: () => openAbbrPopover(contexte3()),
+    editMulti: (pos) => openMultiPopover(contexte3(), pos),
+    editIdiome: (pos) => openIdiomePopover(contexte3(), pos)
   };
   return ui;
 }
@@ -26023,13 +26466,19 @@ var Instance = class {
       bouton("tts-bouton-note", label("note"), () => this.ui.editNote(null)),
       bouton("tts-bouton-glossaire", label("glossaire"), () => this.ui.openGlossary()),
       bouton("tts-bouton-abbr", label("abbr"), () => this.ui.openAbbr()),
-      bouton("tts-modele", label("modele"), () => this.ui.editModel(null))
+      bouton("tts-modele", label("modele"), () => this.ui.editModel(null)),
+      bouton("tts-bouton-multi", label("multi"), () => this.ui.editMulti(null))
     ];
     const [linkButton, noteButton, glossaryButton] = this.visualButtons;
     this.glossaryButton = glossaryButton;
     linkButton.title = `${label("lien")} (Ctrl+K)`;
     noteButton.title = `${label("note")} (Ctrl+Alt+N)`;
     glossaryButton.title = `${label("glossaire")} (Ctrl+Alt+G)`;
+    this.langues = document.createElement("select");
+    this.langues.className = "tts-langues";
+    this.langues.setAttribute("aria-label", label("langue_affichee"));
+    this.langues.addEventListener("change", () => this.editor.commands.setLangueAffichee(this.langues.value));
+    toolbar.append(this.langues);
     this.modeButton = bouton("tts-mode", label("mode_source"), () => this.toggleMode());
     this.modeButton.setAttribute("aria-pressed", "false");
     this.content = document.createElement("div");
@@ -26055,6 +26504,17 @@ var Instance = class {
       this.glossaryButton.disabled = this.bridge.mode === "source" || /[[\]<>]/.test(this.editor.state.doc.textBetween(from2, to, " "));
     };
     this.editor.on("selectionUpdate", this.majGlossaire);
+    this.majLangues = ({ transaction } = {}) => {
+      if (transaction && !transaction.docChanged) return;
+      const langues = languesDuDocument(this.editor.state.doc);
+      const affichee = langueAffichee(this.editor.state);
+      const options = [.../* @__PURE__ */ new Set([...affichee ? [affichee] : [], ...langues])];
+      this.langues.replaceChildren(...options.map((l) => Object.assign(document.createElement("option"), { value: l, textContent: l })));
+      this.langues.value = affichee;
+      this.langues.hidden = langues.length === 0;
+    };
+    this.editor.on("transaction", this.majLangues);
+    this.majLangues();
     this.content.after(this.notes.element);
     textarea.before(this.wrapper);
     this.wrapper.append(textarea);
@@ -26068,6 +26528,7 @@ var Instance = class {
     this.content.hidden = source;
     this.notes.setMode(source);
     for (const b of this.visualButtons) b.disabled = source;
+    this.langues.disabled = source;
     this.majGlossaire();
     this.modeButton.setAttribute("aria-pressed", String(source));
     (source ? this.textarea : this.editor).focus?.();

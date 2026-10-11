@@ -1,4 +1,5 @@
-import { apercu, notesDuDocument } from '../editor/extensions.js';
+import { notesDuDocument } from '../editor/extensions.js';
+import { apercu } from '../editor/texte.js';
 import { label } from './labels.js';
 
 /**
