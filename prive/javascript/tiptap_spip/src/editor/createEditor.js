@@ -7,10 +7,11 @@ import { coreExtensions } from './extensions.js';
  * Lève une exception si la source donne un contenu invalide pour le schéma : l'appelant laisse
  * alors le textarea tel quel (jamais d'édition d'un contenu que l'éditeur altérerait).
  *
- * @param {{ element: HTMLElement, source: string, extensions?: object[], editorProps?: object }} options
+ * @param {{ element: HTMLElement, source: string, ui?: object, extensions?: object[], editorProps?: object }} options
+ *        ui : interface de l'instance (cf. coreExtensions)
  * @returns {Editor}
  */
-export function createEditor({ element, source, extensions = coreExtensions(), editorProps = {} }) {
+export function createEditor({ element, source, ui = null, extensions = coreExtensions({ ui }), editorProps = {} }) {
 	const content = toEditorJSON(source, getSchema(extensions));
 	return new Editor({
 		element,

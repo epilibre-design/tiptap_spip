@@ -83,3 +83,122 @@
 	padding: 0.5em;
 	border: 1px dashed #9ab;
 }
+
+/* Barre : boutons de l'éditeur à gauche, bascule de mode à droite. */
+.tts-toolbar .tts-mode {
+	margin-left: auto;
+}
+
+/* Modèles prévisualisés (lot L2.3) : rendu calculé par SPIP, inerte. */
+.tts-editor {
+	position: relative;
+}
+
+.tts-model {
+	position: relative;
+	display: inline-block;
+	max-width: 100%;
+	vertical-align: middle;
+	font-family: inherit;
+	font-size: inherit;
+	padding: 0;
+	background: none;
+}
+
+.tts-model-block {
+	display: block;
+}
+
+.tts-model.ProseMirror-selectednode {
+	outline: 2px solid #1a5fb4;
+}
+
+.tts-model__preview img {
+	max-width: 100%;
+	height: auto;
+}
+
+.tts-model .tts-chip {
+	font-family: monospace;
+	font-size: 0.9em;
+	padding: 0 0.25em;
+	border-radius: 3px;
+	background: #eef3fb;
+}
+
+.tts-model--chargement .tts-chip {
+	opacity: 0.6;
+}
+
+.tts-model--erreur .tts-chip {
+	background: #fbeeee;
+}
+
+.tts-model__modifier {
+	position: absolute;
+	top: 0;
+	right: 0;
+	display: none;
+	font-size: 0.8em;
+}
+
+.tts-model:hover .tts-model__modifier,
+.tts-model.ProseMirror-selectednode .tts-model__modifier {
+	display: block;
+}
+
+/* Popovers (lien, modèle). */
+.tts-popover {
+	position: absolute;
+	z-index: 10;
+	min-width: 18em;
+	max-width: 28em;
+	padding: 0.5em;
+	background: #fff;
+	border: 1px solid #aaa;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tts-popover__champ {
+	display: block;
+	margin-bottom: 0.4em;
+}
+
+.tts-popover__champ > span {
+	display: block;
+	font-size: 0.85em;
+}
+
+.tts-popover__champ input:not([type="checkbox"]) {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.tts-popover__suggestions {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	max-height: 12em;
+	overflow-y: auto;
+}
+
+.tts-popover__suggestions li {
+	padding: 0.15em 0.3em;
+	cursor: pointer;
+}
+
+.tts-popover__suggestions li:hover {
+	background: #eef3fb;
+}
+
+.tts-popover__erreur {
+	margin: 0 0 0.4em;
+	color: #a00;
+}
+
+.tts-popover__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}

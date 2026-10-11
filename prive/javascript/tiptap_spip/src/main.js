@@ -1,6 +1,10 @@
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
+import { LinkTitles, ModelPreviews } from './services/cache.js';
 import { Services } from './services/cvt.js';
+import { label } from './ui/labels.js';
+import { openLinkPopover } from './ui/LinkPopover.js';
+import { openModelPopover } from './ui/ModelPopover.js';
 
 /**
  * Textareas équipés (spec 02 §6) : ceux du porte-plume (classes, et champ texte des formulaires
@@ -18,9 +22,6 @@ const MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
 
 /** Éditeurs montés dans la page. */
 export const instances = new Set();
-
-const config = () => globalThis.spipConfig?.tiptap_spip ?? {};
-const label = (key, fallback) => config().i18n?.[key] ?? fallback;
 
 let observer = null;
 
@@ -51,30 +52,46 @@ class Instance {
 		this.wrapper.className = 'tts-editor';
 		const toolbar = document.createElement('div');
 		toolbar.className = 'tts-toolbar';
-		this.modeButton = document.createElement('button');
-		this.modeButton.type = 'button';
-		this.modeButton.className = 'tts-mode';
-		this.modeButton.textContent = label('mode_source', 'Source');
+		const bouton = (className, texte, onClick) => {
+			const b = document.createElement('button');
+			b.type = 'button';
+			b.className = className;
+			b.textContent = texte;
+			b.addEventListener('click', onClick);
+			toolbar.append(b);
+			return b;
+		};
+		this.linkButton = bouton('tts-lien', label('lien'), () => this.ui.openLink());
+		this.linkButton.title = `${label('lien')} (Ctrl+K)`;
+		this.modelButton = bouton('tts-modele', label('modele'), () => this.ui.editModel(null));
+		this.modeButton = bouton('tts-mode', label('mode_source'), () => this.toggleMode());
 		this.modeButton.setAttribute('aria-pressed', 'false');
-		toolbar.append(this.modeButton);
 		this.content = document.createElement('div');
 		this.content.className = 'tts-content';
 		this.wrapper.append(toolbar, this.content);
+
+		// formulaire de services du champ (null : mode dégradé, sans services serveur)
+		this.services = Services.forTextarea(textarea);
+		const contexte = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.services, titles: this.ui.titles });
+		this.ui = {
+			previews: this.services ? new ModelPreviews(this.services) : null,
+			titles: this.services ? new LinkTitles(this.services) : null,
+			openLink: () => openLinkPopover(contexte()),
+			editModel: (pos) => openModelPopover(contexte(), pos),
+		};
 
 		// l'éditeur est créé avant de toucher au DOM : en cas d'échec, rien n'a changé
 		this.editor = createEditor({
 			element: this.content,
 			source: textarea.value,
+			ui: this.ui,
 			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em` } },
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
-		// formulaire de services du champ (null : mode dégradé, sans services serveur)
-		this.services = Services.forTextarea(textarea);
 
 		textarea.before(this.wrapper);
 		this.wrapper.append(textarea);
 		textarea.hidden = true;
-		this.modeButton.addEventListener('click', () => this.toggleMode());
 	}
 
 	toggleMode() {
@@ -83,6 +100,8 @@ class Instance {
 		const source = mode === 'source';
 		this.textarea.hidden = !source;
 		this.content.hidden = source;
+		this.linkButton.disabled = source;
+		this.modelButton.disabled = source;
 		this.modeButton.setAttribute('aria-pressed', String(source));
 		(source ? this.textarea : this.editor).focus?.();
 	}

@@ -16,6 +16,7 @@ import Superscript from '@tiptap/extension-superscript';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Text from '@tiptap/extension-text';
 import { Dropcursor, Gapcursor, UndoRedo } from '@tiptap/extensions';
+import { linkAutoView, modelView } from '../nodeviews/views.js';
 
 /**
  * Schéma de l'éditeur (spec 03) : seulement ce que la syntaxe SPIP sait exprimer.
@@ -249,11 +250,30 @@ const SpipModelBlock = Node.create({
 	renderHTML: ({ node, HTMLAttributes }) => ['div', { ...HTMLAttributes, class: 'tts-model tts-model-block' }, node.attrs.model?.source ?? ''],
 });
 
+/** Raccourcis clavier de l'interface (spec 06 §6). */
+const SpipUi = Extension.create({
+	name: 'spipUi',
+	addOptions: () => ({ ui: null }),
+	addKeyboardShortcuts() {
+		return {
+			'Mod-k': () => {
+				this.options.ui?.openLink?.();
+				return true;
+			},
+		};
+	},
+});
+
 /**
  * Extensions du cœur, marks dans l'ordre canonique de src/spip/json.js (MARK_ORDER) : le
  * schéma range les marks d'un texte dans l'ordre de déclaration.
+ *
+ * @param {{ headingLevels?: number[], ui?: { previews?, titles?, editModel?, openLink? } | null }} options
+ *        ui : interface de l'instance ; avec `previews` et `titles` (services serveur présents), les
+ *        modèles sont prévisualisés et les liens sans texte affichent leur titre
  */
-export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6] } = {}) {
+export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
+	const withView = (node, view, enabled) => (enabled ? node.extend({ addNodeView: () => view(ui) }) : node);
 	return [
 		SpipDocument,
 		Paragraph,
@@ -278,10 +298,10 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6] } = {}) {
 		SpipMath,
 		SpipRaw,
 		SpipRawInline,
-		SpipLinkAuto,
+		withView(SpipLinkAuto, linkAutoView, Boolean(ui?.titles)),
 		SpipAnchor,
-		SpipModel,
-		SpipModelBlock,
+		withView(SpipModel, modelView, Boolean(ui?.previews)),
+		withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
 		// marks : ordre canonique spipLink, bold, italic, strike, superscript, subscript, code
 		SpipLink,
 		Bold,
@@ -294,5 +314,6 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6] } = {}) {
 		Dropcursor,
 		Gapcursor,
 		UndoRedo,
+		SpipUi.configure({ ui }),
 	];
 }

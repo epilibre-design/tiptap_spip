@@ -5851,24 +5851,24 @@ var FieldDesc = class {
 };
 var baseFields = [
   new FieldDesc("doc", {
-    init(config2) {
-      return config2.doc || config2.schema.topNodeType.createAndFill();
+    init(config) {
+      return config.doc || config.schema.topNodeType.createAndFill();
     },
     apply(tr) {
       return tr.doc;
     }
   }),
   new FieldDesc("selection", {
-    init(config2, instance) {
-      return config2.selection || Selection.atStart(instance.doc);
+    init(config, instance) {
+      return config.selection || Selection.atStart(instance.doc);
     },
     apply(tr) {
       return tr.selection;
     }
   }),
   new FieldDesc("storedMarks", {
-    init(config2) {
-      return config2.storedMarks || null;
+    init(config) {
+      return config.storedMarks || null;
     },
     apply(tr, _marks, _old, state) {
       return state.selection.$cursor ? tr.storedMarks : null;
@@ -5904,8 +5904,8 @@ var EditorState = class _EditorState {
   /**
   @internal
   */
-  constructor(config2) {
-    this.config = config2;
+  constructor(config) {
+    this.config = config;
   }
   /**
   The schema of the state's document.
@@ -5996,11 +5996,11 @@ var EditorState = class _EditorState {
   /**
   Create a new state.
   */
-  static create(config2) {
-    let $config = new Configuration(config2.doc ? config2.doc.type.schema : config2.schema, config2.plugins);
+  static create(config) {
+    let $config = new Configuration(config.doc ? config.doc.type.schema : config.schema, config.plugins);
     let instance = new _EditorState($config);
     for (let i2 = 0; i2 < $config.fields.length; i2++)
-      instance[$config.fields[i2].name] = $config.fields[i2].init(config2, instance);
+      instance[$config.fields[i2].name] = $config.fields[i2].init(config, instance);
     return instance;
   }
   /**
@@ -6011,12 +6011,12 @@ var EditorState = class _EditorState {
   [`init`](https://prosemirror.net/docs/ref/#state.StateField.init) method, passing in the new
   configuration object..
   */
-  reconfigure(config2) {
-    let $config = new Configuration(this.schema, config2.plugins);
+  reconfigure(config) {
+    let $config = new Configuration(this.schema, config.plugins);
     let fields = $config.fields, instance = new _EditorState($config);
     for (let i2 = 0; i2 < fields.length; i2++) {
       let name = fields[i2].name;
-      instance[name] = this.hasOwnProperty(name) ? this[name] : fields[i2].init(config2, instance);
+      instance[name] = this.hasOwnProperty(name) ? this[name] : fields[i2].init(config, instance);
     }
     return instance;
   }
@@ -6048,31 +6048,31 @@ var EditorState = class _EditorState {
   to deserialize the state of plugins, by associating plugin
   instances with the property names they use in the JSON object.
   */
-  static fromJSON(config2, json, pluginFields) {
+  static fromJSON(config, json, pluginFields) {
     if (!json)
       throw new RangeError("Invalid input for EditorState.fromJSON");
-    if (!config2.schema)
+    if (!config.schema)
       throw new RangeError("Required config field 'schema' missing");
-    let $config = new Configuration(config2.schema, config2.plugins);
+    let $config = new Configuration(config.schema, config.plugins);
     let instance = new _EditorState($config);
     $config.fields.forEach((field) => {
       if (field.name == "doc") {
-        instance.doc = Node2.fromJSON(config2.schema, json.doc);
+        instance.doc = Node2.fromJSON(config.schema, json.doc);
       } else if (field.name == "selection") {
         instance.selection = Selection.fromJSON(instance.doc, json.selection);
       } else if (field.name == "storedMarks") {
         if (json.storedMarks)
-          instance.storedMarks = json.storedMarks.map(config2.schema.markFromJSON);
+          instance.storedMarks = json.storedMarks.map(config.schema.markFromJSON);
       } else {
         if (pluginFields)
           for (let prop in pluginFields) {
             let plugin = pluginFields[prop], state = plugin.spec.state;
             if (plugin.key == field.name && state && state.fromJSON && Object.prototype.hasOwnProperty.call(json, prop)) {
-              instance[field.name] = state.fromJSON.call(plugin, config2, json[prop], instance);
+              instance[field.name] = state.fromJSON.call(plugin, config, json[prop], instance);
               return;
             }
           }
-        instance[field.name] = field.init(config2, instance);
+        instance[field.name] = field.init(config, instance);
       }
     });
     return instance;
@@ -12797,10 +12797,10 @@ function closeHistory(tr) {
 }
 var historyKey = new PluginKey("history");
 var closeHistoryKey = new PluginKey("closeHistory");
-function history(config2 = {}) {
-  config2 = {
-    depth: config2.depth || 100,
-    newGroupDelay: config2.newGroupDelay || 500
+function history(config = {}) {
+  config = {
+    depth: config.depth || 100,
+    newGroupDelay: config.newGroupDelay || 500
   };
   return new Plugin({
     key: historyKey,
@@ -12809,10 +12809,10 @@ function history(config2 = {}) {
         return new HistoryState(Branch.empty, Branch.empty, null, 0, -1);
       },
       apply(tr, hist, state) {
-        return applyTransaction(hist, state, tr, config2);
+        return applyTransaction(hist, state, tr, config);
       }
     },
-    config: config2,
+    config,
     props: {
       handleDOMEvents: {
         beforeinput(view, e) {
@@ -12846,8 +12846,8 @@ var undoNoScroll = buildCommand(false, false);
 var redoNoScroll = buildCommand(true, false);
 
 // node_modules/@tiptap/core/dist/index.js
-function createChainableState(config2) {
-  const { state, transaction } = config2;
+function createChainableState(config) {
+  const { state, transaction } = config;
   let { selection } = transaction;
   let { doc: doc3 } = transaction;
   let { storedMarks } = transaction;
@@ -15525,15 +15525,15 @@ function isPlainObject(value) {
 function isValidCSSStyleValue(value) {
   return typeof value === "string" && value.trim().length > 0 && !/[;{}]/.test(value);
 }
-function parseIndentedBlocks(src, config2, lexer) {
+function parseIndentedBlocks(src, config, lexer) {
   const lines = src.split("\n");
   const items = [];
   let totalRaw = "";
   let i2 = 0;
-  const baseIndentSize = config2.baseIndentSize || 2;
+  const baseIndentSize = config.baseIndentSize || 2;
   while (i2 < lines.length) {
     const currentLine = lines[i2];
-    const itemMatch = currentLine.match(config2.itemPattern);
+    const itemMatch = currentLine.match(config.itemPattern);
     if (!itemMatch) {
       if (items.length > 0) break;
       else if (currentLine.trim() === "") {
@@ -15543,7 +15543,7 @@ function parseIndentedBlocks(src, config2, lexer) {
         continue;
       } else return;
     }
-    const itemData = config2.extractItemData(itemMatch);
+    const itemData = config.extractItemData(itemMatch);
     const { indentLevel, mainContent } = itemData;
     totalRaw = `${totalRaw}${currentLine}
 `;
@@ -15576,11 +15576,11 @@ function parseIndentedBlocks(src, config2, lexer) {
     if (nestedContent.length > 0) {
       const dedentedNested = nestedContent.map((nestedLine) => nestedLine.slice(indentLevel + baseIndentSize)).join("\n");
       if (dedentedNested.trim()) {
-        if (config2.customNestedParser) nestedTokens = config2.customNestedParser(dedentedNested);
+        if (config.customNestedParser) nestedTokens = config.customNestedParser(dedentedNested);
         else nestedTokens = lexer.blockTokens(dedentedNested);
       }
     }
-    const token = config2.createToken(itemData, nestedTokens);
+    const token = config.createToken(itemData, nestedTokens);
     items.push(token);
   }
   if (items.length === 0) return;
@@ -15656,11 +15656,11 @@ function updateMarkViewAttributes(checkMark, editor, attrs = {}) {
   if (tr.docChanged) editor.view.dispatch(tr);
 }
 var InputRule = class {
-  constructor(config2) {
+  constructor(config) {
     var _config$undoable;
-    this.find = config2.find;
-    this.handler = config2.handler;
-    this.undoable = (_config$undoable = config2.undoable) !== null && _config$undoable !== void 0 ? _config$undoable : true;
+    this.find = config.find;
+    this.handler = config.handler;
+    this.undoable = (_config$undoable = config.undoable) !== null && _config$undoable !== void 0 ? _config$undoable : true;
   }
 };
 var inputRuleMatcherHandler = (text2, find) => {
@@ -15677,8 +15677,8 @@ var inputRuleMatcherHandler = (text2, find) => {
   }
   return result;
 };
-function createRuleTransaction(config2) {
-  const { editor, from: from2, to, text: text2, insertText } = config2;
+function createRuleTransaction(config) {
+  const { editor, from: from2, to, text: text2, insertText } = config;
   if (!insertText) return {
     inputTransaction: null,
     tr: editor.view.state.tr
@@ -15693,8 +15693,8 @@ function createRuleTransaction(config2) {
     }).tr
   };
 }
-function applyRule(config2) {
-  const { editor, from: from2, to, text: text2, rule, match, plugin, insertText } = config2;
+function applyRule(config) {
+  const { editor, from: from2, to, text: text2, rule, match, plugin, insertText } = config;
   const { view } = editor;
   const { inputTransaction, tr } = createRuleTransaction({
     editor,
@@ -15745,9 +15745,9 @@ function matchesDocument($from, match, text2) {
   const matchStartOffset = $from.parentOffset - matchedDocLength;
   return matchStartOffset >= 0 && $from.parent.textBetween(matchStartOffset, $from.parentOffset) === match[0].slice(0, matchedDocLength);
 }
-function run$1(config2) {
+function run$1(config) {
   var _ref;
-  const { editor, from: from2, to, text: text2, rules, plugin, insertText } = config2;
+  const { editor, from: from2, to, text: text2, rules, plugin, insertText } = config;
   const { view } = editor;
   if (view.composing) return false;
   const $from = view.state.doc.resolve(from2);
@@ -15843,7 +15843,7 @@ function inputRulesPlugin(props) {
   return plugin;
 }
 var Extendable = class {
-  constructor(config2 = {}) {
+  constructor(config = {}) {
     this.type = "extendable";
     this.parent = null;
     this.child = null;
@@ -15851,7 +15851,7 @@ var Extendable = class {
     this.config = { name: this.name };
     this.config = {
       ...this.config,
-      ...config2
+      ...config
     };
     this.name = this.config.name;
   }
@@ -15896,8 +15896,8 @@ var Mark2 = class Mark3 extends Extendable {
   * Create a new Mark instance
   * @param config - Mark configuration object or a function that returns a configuration object
   */
-  static create(config2 = {}) {
-    const resolvedConfig = typeof config2 === "function" ? config2() : config2;
+  static create(config = {}) {
+    const resolvedConfig = typeof config === "function" ? config() : config;
     return new Mark3(resolvedConfig);
   }
   static handleExit({ editor, mark }) {
@@ -15923,9 +15923,9 @@ var Mark2 = class Mark3 extends Extendable {
   }
 };
 var PasteRule = class {
-  constructor(config2) {
-    this.find = config2.find;
-    this.handler = config2.handler;
+  constructor(config) {
+    this.find = config.find;
+    this.handler = config.handler;
   }
 };
 var pasteRuleMatcherHandler = (text2, find, event) => {
@@ -15944,8 +15944,8 @@ var pasteRuleMatcherHandler = (text2, find, event) => {
     return result;
   });
 };
-function run(config2) {
-  const { editor, state, from: from2, to, rule, pasteEvent, dropEvent } = config2;
+function run(config) {
+  const { editor, state, from: from2, to, rule, pasteEvent, dropEvent } = config;
   const { commands, chain, can } = new CommandManager({
     editor,
     state
@@ -16437,8 +16437,8 @@ var Extension = class Extension2 extends Extendable {
   * Create a new Extension instance
   * @param config - Extension configuration object or a function that returns a configuration object
   */
-  static create(config2 = {}) {
-    const resolvedConfig = typeof config2 === "function" ? config2() : config2;
+  static create(config = {}) {
+    const resolvedConfig = typeof config === "function" ? config() : config;
     return new Extension2(resolvedConfig);
   }
   configure(options) {
@@ -17508,11 +17508,11 @@ var Editor = class extends EventEmitter {
     return this.$pos(0);
   }
 };
-function markInputRule(config2) {
+function markInputRule(config) {
   return new InputRule({
-    find: config2.find,
+    find: config.find,
     handler: ({ state, range, match }) => {
-      const attributes = callOrReturn(config2.getAttributes, void 0, match);
+      const attributes = callOrReturn(config.getAttributes, void 0, match);
       if (attributes === false || attributes === null) return null;
       const { tr } = state;
       const captureGroup = match[match.length - 1];
@@ -17522,27 +17522,27 @@ function markInputRule(config2) {
         const textStart = range.from + fullMatch.indexOf(captureGroup);
         const textEnd = textStart + captureGroup.length;
         if (getMarksBetween(range.from, range.to, state.doc).filter((item) => {
-          return item.mark.type.excluded.find((type) => type === config2.type && type !== item.mark.type);
+          return item.mark.type.excluded.find((type) => type === config.type && type !== item.mark.type);
         }).filter((item) => item.to > textStart).length) return null;
         if (textEnd < range.to) tr.delete(textEnd, range.to);
         if (textStart > range.from) tr.delete(range.from + startSpaces, textStart);
         const markEnd = range.from + startSpaces + captureGroup.length;
-        tr.addMark(range.from + startSpaces, markEnd, config2.type.create(attributes || {}));
-        tr.removeStoredMark(config2.type);
+        tr.addMark(range.from + startSpaces, markEnd, config.type.create(attributes || {}));
+        tr.removeStoredMark(config.type);
       }
     },
-    undoable: config2.undoable
+    undoable: config.undoable
   });
 }
-function nodeInputRule(config2) {
+function nodeInputRule(config) {
   return new InputRule({
-    find: config2.find,
+    find: config.find,
     handler: ({ state, range, match }) => {
-      const attributes = callOrReturn(config2.getAttributes, void 0, match) || {};
+      const attributes = callOrReturn(config.getAttributes, void 0, match) || {};
       const { tr } = state;
       const start = range.from;
       let end = range.to;
-      const newNode = config2.type.create(attributes);
+      const newNode = config.type.create(attributes);
       if (match[1]) {
         let matchStart = start + match[0].lastIndexOf(match[1]);
         if (matchStart > end) matchStart = end;
@@ -17551,53 +17551,53 @@ function nodeInputRule(config2) {
         tr.insertText(lastChar, start + match[0].length - 1);
         tr.replaceWith(matchStart, end, newNode);
       } else if (match[0]) {
-        const insertionStart = config2.type.isInline ? start : start - 1;
-        tr.insert(insertionStart, config2.type.create(attributes)).delete(tr.mapping.map(start), tr.mapping.map(end));
+        const insertionStart = config.type.isInline ? start : start - 1;
+        tr.insert(insertionStart, config.type.create(attributes)).delete(tr.mapping.map(start), tr.mapping.map(end));
       }
       tr.scrollIntoView();
     },
-    undoable: config2.undoable
+    undoable: config.undoable
   });
 }
-function textblockTypeInputRule(config2) {
+function textblockTypeInputRule(config) {
   return new InputRule({
-    find: config2.find,
+    find: config.find,
     handler: ({ state, range, match }) => {
       const $start = state.doc.resolve(range.from);
-      const attributes = callOrReturn(config2.getAttributes, void 0, match) || {};
-      if (!$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config2.type)) return null;
-      state.tr.delete(range.from, range.to).setBlockType(range.from, range.from, config2.type, attributes);
+      const attributes = callOrReturn(config.getAttributes, void 0, match) || {};
+      if (!$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config.type)) return null;
+      state.tr.delete(range.from, range.to).setBlockType(range.from, range.from, config.type, attributes);
     },
-    undoable: config2.undoable
+    undoable: config.undoable
   });
 }
-function wrappingInputRule(config2) {
+function wrappingInputRule(config) {
   return new InputRule({
-    find: config2.find,
+    find: config.find,
     handler: ({ state, range, match, chain }) => {
-      const attributes = callOrReturn(config2.getAttributes, void 0, match) || {};
+      const attributes = callOrReturn(config.getAttributes, void 0, match) || {};
       const tr = state.tr.delete(range.from, range.to);
       const blockRange = tr.doc.resolve(range.from).blockRange();
-      const wrapping = blockRange && findWrapping(blockRange, config2.type, attributes);
+      const wrapping = blockRange && findWrapping(blockRange, config.type, attributes);
       if (!wrapping) return null;
       tr.wrap(blockRange, wrapping);
-      if (config2.keepMarks && config2.editor) {
+      if (config.keepMarks && config.editor) {
         const { selection, storedMarks } = state;
-        const { splittableMarks } = config2.editor.extensionManager;
+        const { splittableMarks } = config.editor.extensionManager;
         const marks = storedMarks || selection.$to.parentOffset && selection.$from.marks();
         if (marks) {
           const filteredMarks = marks.filter((mark) => splittableMarks.includes(mark.type.name));
           tr.ensureMarks(filteredMarks);
         }
       }
-      if (config2.keepAttributes) {
-        const nodeType = config2.type.name === "bulletList" || config2.type.name === "orderedList" ? "listItem" : "taskList";
+      if (config.keepAttributes) {
+        const nodeType = config.type.name === "bulletList" || config.type.name === "orderedList" ? "listItem" : "taskList";
         chain().updateAttributes(nodeType, attributes).run();
       }
       const before = tr.doc.resolve(range.from - 1).nodeBefore;
-      if (before && before.type === config2.type && canJoin(tr.doc, range.from - 1) && (!config2.joinPredicate || config2.joinPredicate(match, before))) tr.join(range.from - 1);
+      if (before && before.type === config.type && canJoin(tr.doc, range.from - 1) && (!config.joinPredicate || config.joinPredicate(match, before))) tr.join(range.from - 1);
     },
-    undoable: config2.undoable
+    undoable: config.undoable
   });
 }
 var Node3 = class Node4 extends Extendable {
@@ -17609,8 +17609,8 @@ var Node3 = class Node4 extends Extendable {
   * Create a new Node instance
   * @param config - Node configuration object or a function that returns a configuration object
   */
-  static create(config2 = {}) {
-    const resolvedConfig = typeof config2 === "function" ? config2() : config2;
+  static create(config = {}) {
+    const resolvedConfig = typeof config === "function" ? config() : config;
     return new Node4(resolvedConfig);
   }
   configure(options) {
@@ -17621,11 +17621,11 @@ var Node3 = class Node4 extends Extendable {
     return super.extend(resolvedConfig);
   }
 };
-function markPasteRule(config2) {
+function markPasteRule(config) {
   return new PasteRule({
-    find: config2.find,
+    find: config.find,
     handler: ({ state, range, match, pasteEvent }) => {
-      const attributes = callOrReturn(config2.getAttributes, void 0, match, pasteEvent);
+      const attributes = callOrReturn(config.getAttributes, void 0, match, pasteEvent);
       if (attributes === false || attributes === null) return null;
       const { tr } = state;
       const captureGroup = match[match.length - 1];
@@ -17636,13 +17636,13 @@ function markPasteRule(config2) {
         const textStart = range.from + fullMatch.indexOf(captureGroup);
         const textEnd = textStart + captureGroup.length;
         if (getMarksBetween(range.from, range.to, state.doc).filter((item) => {
-          return item.mark.type.excluded.find((type) => type === config2.type && type !== item.mark.type);
+          return item.mark.type.excluded.find((type) => type === config.type && type !== item.mark.type);
         }).filter((item) => item.to > textStart).length) return null;
         if (textEnd < range.to) tr.delete(textEnd, range.to);
         if (textStart > range.from) tr.delete(range.from + startSpaces, textStart);
         markEnd = range.from + startSpaces + captureGroup.length;
-        tr.addMark(range.from + startSpaces, markEnd, config2.type.create(attributes || {}));
-        if (!(match.index !== void 0 && match.input !== void 0 && match.index + match[0].length >= match.input.length)) tr.removeStoredMark(config2.type);
+        tr.addMark(range.from + startSpaces, markEnd, config.type.create(attributes || {}));
+        if (!(match.index !== void 0 && match.input !== void 0 && match.index + match[0].length >= match.input.length)) tr.removeStoredMark(config.type);
       }
     }
   });
@@ -23931,6 +23931,145 @@ var UndoRedo = Extension.create({
   }
 });
 
+// src/ui/labels.js
+var DEFAUTS = {
+  mode_source: "Source",
+  lien: "Lien",
+  modele: "Mod\xE8le",
+  lien_cible: "Cible (art12, rub3, https://\u2026)",
+  lien_rechercher: "Rechercher un contenu",
+  lien_bulle: "Bulle d\u2019aide",
+  lien_langue: "Langue de la cible",
+  lien_nouvelle_fenetre: "Ouvrir dans une nouvelle fen\xEAtre",
+  lien_ouvrir: "Ouvrir",
+  lien_retirer: "Retirer le lien",
+  lien_figer: "Figer le titre",
+  lien_cible_obligatoire: "Indiquez une cible.",
+  modele_raccourci: "Raccourci du mod\xE8le",
+  modele_modifier: "Modifier",
+  modele_invalide: "Ce n\u2019est pas un raccourci de mod\xE8le.",
+  appliquer: "Appliquer",
+  annuler: "Annuler"
+};
+var label = (key) => globalThis.spipConfig?.tiptap_spip?.i18n?.[key] ?? DEFAUTS[key] ?? key;
+
+// src/ui/sanitize.js
+var RETIRES = "script, style, link, meta, base, object, embed, form";
+var INTERACTIFS = "a[href], area, button, input, select, textarea, iframe, video, audio, [tabindex], [contenteditable]";
+function previewFragment(html) {
+  const template = document.createElement("template");
+  template.innerHTML = String(html);
+  const root = template.content;
+  root.querySelectorAll(RETIRES).forEach((el) => el.remove());
+  for (const el of root.querySelectorAll("*")) {
+    for (const { name, value } of [...el.attributes]) {
+      if (/^on/i.test(name) || /^\s*(javascript|vbscript|data):/i.test(value) && /^(href|src|action|formaction|xlink:href)$/i.test(name)) {
+        el.removeAttribute(name);
+      }
+    }
+  }
+  for (const el of root.querySelectorAll(INTERACTIFS)) {
+    el.tabIndex = -1;
+    if ("disabled" in el) el.disabled = true;
+    if (el.isContentEditable || el.hasAttribute("contenteditable")) el.setAttribute("contenteditable", "false");
+  }
+  root.querySelectorAll("iframe").forEach((el) => el.setAttribute("sandbox", ""));
+  return root;
+}
+
+// src/nodeviews/views.js
+var chip = (text2) => {
+  const span = document.createElement("span");
+  span.className = "tts-chip";
+  span.textContent = text2;
+  return span;
+};
+var modelView = (ui) => ({ node: node2, getPos }) => {
+  const block = node2.type.name === "spipModelBlock";
+  const dom = document.createElement(block ? "div" : "span");
+  dom.className = `tts-model${block ? " tts-model-block" : ""}`;
+  dom.contentEditable = "false";
+  const preview = document.createElement(block ? "div" : "span");
+  preview.className = "tts-model__preview";
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  bouton.className = "tts-model__modifier";
+  bouton.textContent = label("modele_modifier");
+  bouton.addEventListener("click", () => ui.editModel(getPos()));
+  dom.append(preview, bouton);
+  let source = null;
+  const render2 = (model) => {
+    if (model?.source === source) return;
+    source = model?.source ?? "";
+    dom.dataset.ttsModel = JSON.stringify(model);
+    dom.title = source;
+    preview.replaceChildren(chip(source));
+    dom.classList.add("tts-model--chargement");
+    dom.classList.remove("tts-model--erreur", "tts-model--vide");
+    const demande = source;
+    ui.previews.get(demande).then(
+      (html) => {
+        if (demande !== source) return;
+        dom.classList.remove("tts-model--chargement");
+        const fragment = previewFragment(html);
+        if (fragment.textContent.trim() === "" && !fragment.querySelector("img, svg, iframe, video, audio")) {
+          dom.classList.add("tts-model--vide");
+          return;
+        }
+        preview.replaceChildren(fragment);
+      },
+      () => {
+        if (demande !== source) return;
+        dom.classList.remove("tts-model--chargement");
+        dom.classList.add("tts-model--erreur");
+      }
+    );
+  };
+  render2(node2.attrs.model);
+  return {
+    dom,
+    update(updated) {
+      if (updated.type !== node2.type) return false;
+      render2(updated.attrs.model);
+      return true;
+    },
+    // le bouton gère ses événements ; le reste (clic, glisser) revient à ProseMirror
+    stopEvent: (event) => event.target === bouton,
+    ignoreMutation: () => true
+  };
+};
+var linkAutoView = (ui) => ({ node: node2 }) => {
+  const dom = document.createElement("a");
+  dom.className = "tts-link tts-link-auto";
+  dom.contentEditable = "false";
+  let cible = null;
+  const render2 = (attrs) => {
+    if (attrs.href === cible) return;
+    cible = attrs.href;
+    dom.dataset.ttsHref = cible;
+    dom.textContent = `\u2192 ${cible}`;
+    dom.title = cible;
+    const demande = cible;
+    ui.titles.get(demande).then(
+      (r) => {
+        if (demande === cible && r?.titre) dom.textContent = r.titre;
+      },
+      () => {
+      }
+    );
+  };
+  render2(node2.attrs);
+  return {
+    dom,
+    update(updated) {
+      if (updated.type !== node2.type) return false;
+      render2(updated.attrs);
+      return true;
+    },
+    ignoreMutation: () => true
+  };
+};
+
 // src/editor/extensions.js
 var hidden = (fallback = null, keepOnSplit = true) => ({ default: fallback, rendered: false, keepOnSplit });
 var TOP_BLOCKS = [
@@ -24124,7 +24263,20 @@ var SpipModelBlock = Node3.create({
   parseHTML: () => [{ tag: "div[data-tts-model]" }],
   renderHTML: ({ node: node2, HTMLAttributes }) => ["div", { ...HTMLAttributes, class: "tts-model tts-model-block" }, node2.attrs.model?.source ?? ""]
 });
-function coreExtensions({ headingLevels = [2, 3, 4, 5, 6] } = {}) {
+var SpipUi = Extension.create({
+  name: "spipUi",
+  addOptions: () => ({ ui: null }),
+  addKeyboardShortcuts() {
+    return {
+      "Mod-k": () => {
+        this.options.ui?.openLink?.();
+        return true;
+      }
+    };
+  }
+});
+function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
+  const withView = (node2, view, enabled) => enabled ? node2.extend({ addNodeView: () => view(ui) }) : node2;
   return [
     SpipDocument,
     src_default10,
@@ -24149,10 +24301,10 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6] } = {}) {
     SpipMath,
     SpipRaw,
     SpipRawInline,
-    SpipLinkAuto,
+    withView(SpipLinkAuto, linkAutoView, Boolean(ui?.titles)),
     SpipAnchor,
-    SpipModel,
-    SpipModelBlock,
+    withView(SpipModel, modelView, Boolean(ui?.previews)),
+    withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
     // marks : ordre canonique spipLink, bold, italic, strike, superscript, subscript, code
     SpipLink,
     src_default2,
@@ -24164,12 +24316,13 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6] } = {}) {
     SegmentMap,
     Dropcursor,
     Gapcursor,
-    UndoRedo
+    UndoRedo,
+    SpipUi.configure({ ui })
   ];
 }
 
 // src/editor/createEditor.js
-function createEditor({ element, source, extensions = coreExtensions(), editorProps = {} }) {
+function createEditor({ element, source, ui = null, extensions = coreExtensions({ ui }), editorProps = {} }) {
   const content = toEditorJSON(source, getSchema(extensions));
   return new Editor({
     element,
@@ -24460,6 +24613,61 @@ var TextareaBridge = class {
   }
 };
 
+// src/services/cache.js
+var ModelPreviews = class {
+  /** @param {import('./cvt.js').Services} services */
+  constructor(services) {
+    this.services = services;
+    this.cache = /* @__PURE__ */ new Map();
+  }
+  /** @returns {Promise<string>} HTML calculé par SPIP (passé par safehtml) */
+  get(source) {
+    if (!this.cache.has(source)) {
+      const promise = this.services.call("previsu_modele", { modele: source });
+      this.cache.set(source, promise);
+      promise.catch(() => this.cache.delete(source));
+    }
+    return this.cache.get(source);
+  }
+};
+var LinkTitles = class {
+  /** @param {import('./cvt.js').Services} services */
+  constructor(services, { batch = 50 } = {}) {
+    this.services = services;
+    this.batch = batch;
+    this.cache = /* @__PURE__ */ new Map();
+    this.pending = /* @__PURE__ */ new Map();
+    this.scheduled = false;
+  }
+  /** @returns {Promise<{ cible: string, titre: ?string, url: ?string, objet: ?string, id: ?number }>} */
+  get(cible) {
+    if (this.cache.has(cible)) return this.cache.get(cible);
+    const promise = new Promise((resolve, reject) => this.pending.set(cible, { resolve, reject }));
+    this.cache.set(cible, promise);
+    promise.catch(() => this.cache.delete(cible));
+    if (!this.scheduled) {
+      this.scheduled = true;
+      queueMicrotask(() => this.flush());
+    }
+    return promise;
+  }
+  flush() {
+    this.scheduled = false;
+    const demandes = [...this.pending];
+    this.pending.clear();
+    for (let i2 = 0; i2 < demandes.length; i2 += this.batch) {
+      const lot = demandes.slice(i2, i2 + this.batch);
+      this.services.call("titre_lien", { cibles: lot.map(([cible]) => cible) }).then(
+        (resultats) => {
+          const parCible = new Map(resultats.map((r) => [r.cible, r]));
+          for (const [cible, { resolve }] of lot) resolve(parCible.get(cible) ?? { cible, titre: null, url: null });
+        },
+        (erreur) => lot.forEach(([, { reject }]) => reject(erreur))
+      );
+    }
+  }
+};
+
 // src/services/cvt.js
 var ServiceUnavailable = class extends Error {
   constructor(message = "services de l'\xE9diteur indisponibles") {
@@ -24550,6 +24758,250 @@ var Services = class _Services {
   }
 };
 
+// src/ui/popover.js
+var Popover = class _Popover {
+  /**
+   * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
+   *           onSubmit: () => boolean|void }} options  onSubmit renvoie false pour garder le popover ouvert
+   */
+  constructor({ editor, wrapper, titre, className, onSubmit }) {
+    this.editor = editor;
+    this.wrapper = wrapper;
+    this.form = document.createElement("form");
+    this.form.className = `tts-popover ${className ?? ""}`.trim();
+    this.form.setAttribute("role", "dialog");
+    this.form.setAttribute("aria-label", titre);
+    this.erreur = document.createElement("p");
+    this.erreur.className = "tts-popover__erreur";
+    this.erreur.setAttribute("role", "alert");
+    this.erreur.hidden = true;
+    this.actions = document.createElement("div");
+    this.actions.className = "tts-popover__actions";
+    this.form.append(this.erreur, this.actions);
+    this.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (onSubmit() !== false) this.close();
+    });
+    this.form.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        this.close();
+      }
+    });
+  }
+  /** Champ libellé ; renvoie l'élément de saisie. */
+  field(texte2, input) {
+    const etiquette = document.createElement("label");
+    etiquette.className = "tts-popover__champ";
+    const span = document.createElement("span");
+    span.textContent = texte2;
+    etiquette.append(span, input);
+    this.actions.before(etiquette);
+    return input;
+  }
+  input(texte2, { value = "", type = "text", name } = {}) {
+    const input = document.createElement("input");
+    input.type = type;
+    input.name = name ?? "";
+    if (type === "checkbox") input.checked = Boolean(value);
+    else input.value = value ?? "";
+    return this.field(texte2, input);
+  }
+  /** Bouton d'action ; type submit pour l'action principale. */
+  button(texte2, onClick, { submit = false, name } = {}) {
+    const bouton = document.createElement("button");
+    bouton.type = submit ? "submit" : "button";
+    bouton.textContent = texte2;
+    if (name) bouton.name = name;
+    if (!submit) {
+      bouton.addEventListener("click", () => {
+        if (onClick() !== false) this.close();
+      });
+    }
+    this.actions.append(bouton);
+    return bouton;
+  }
+  error(message) {
+    this.erreur.textContent = message;
+    this.erreur.hidden = !message;
+  }
+  open(focus2) {
+    _Popover.current?.close({ refocus: false });
+    _Popover.current = this;
+    this.wrapper.append(this.form);
+    this.place();
+    (focus2 ?? this.form.querySelector("input, button"))?.focus();
+  }
+  /** Sous la sélection, dans le repère de .tts-editor (sans effet sans moteur de mise en page). */
+  place() {
+    try {
+      const { from: from2 } = this.editor.state.selection;
+      const coords = this.editor.view.coordsAtPos(from2);
+      const box = this.wrapper.getBoundingClientRect();
+      this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
+      this.form.style.top = `${coords.bottom - box.top + 4}px`;
+    } catch {
+    }
+  }
+  close({ refocus = true } = {}) {
+    if (_Popover.current === this) _Popover.current = null;
+    this.form.remove();
+    if (refocus && !this.editor.isDestroyed) this.editor.commands.focus();
+  }
+};
+Popover.current = null;
+
+// src/ui/LinkPopover.js
+var VIDE = { href: "", bulle: null, hreflang: null, newWindow: false };
+function openLinkPopover({ editor, wrapper, services, titles }) {
+  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+  const { state } = editor;
+  const { selection } = state;
+  const auto = selection instanceof NodeSelection && selection.node.type.name === "spipLinkAuto" ? selection : null;
+  const mark = !auto && editor.isActive("spipLink");
+  const attrs = auto ? auto.node.attrs : mark ? editor.getAttributes("spipLink") : VIDE;
+  const existant = Boolean(auto || mark);
+  const popover = new Popover({ editor, wrapper, titre: label("lien"), className: "tts-popover--lien", onSubmit: () => appliquer() });
+  const cible = popover.input(label("lien_cible"), { value: attrs.href, name: "cible" });
+  const suggestions = document.createElement("ul");
+  suggestions.className = "tts-popover__suggestions";
+  suggestions.setAttribute("role", "listbox");
+  suggestions.setAttribute("aria-label", label("lien_rechercher"));
+  cible.after(suggestions);
+  const bulle = popover.input(label("lien_bulle"), { value: attrs.bulle ?? "", name: "bulle" });
+  const langue = popover.input(label("lien_langue"), { value: attrs.hreflang ?? "", name: "langue" });
+  const fenetre = popover.input(label("lien_nouvelle_fenetre"), { value: attrs.newWindow, type: "checkbox", name: "nouvelle_fenetre" });
+  const valeurs = () => ({
+    href: cible.value.trim(),
+    bulle: bulle.value === "" ? null : bulle.value,
+    hreflang: langue.value.trim() === "" ? null : langue.value.trim(),
+    newWindow: fenetre.checked
+  });
+  const appliquer = () => {
+    const nouveaux = valeurs();
+    if (!nouveaux.href) {
+      popover.error(label("lien_cible_obligatoire"));
+      return false;
+    }
+    const chain = editor.chain().focus();
+    if (auto) {
+      chain.command(({ tr }) => {
+        tr.setNodeMarkup(auto.from, void 0, nouveaux);
+        return true;
+      });
+    } else if (mark) {
+      chain.extendMarkRange("spipLink").setMark("spipLink", nouveaux);
+    } else if (selection.empty) {
+      chain.insertContent({ type: "spipLinkAuto", attrs: nouveaux });
+    } else {
+      chain.setMark("spipLink", nouveaux);
+    }
+    chain.run();
+    return true;
+  };
+  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  if (existant) {
+    popover.button(label("lien_retirer"), () => {
+      if (auto) editor.chain().focus().deleteSelection().run();
+      else editor.chain().focus().extendMarkRange("spipLink").unsetMark("spipLink").run();
+    }, { name: "retirer" });
+    if (titles) {
+      const ouvrir = popover.button(label("lien_ouvrir"), () => {
+        titles.get(attrs.href).then((r) => r?.url && globalThis.open?.(r.url, "_blank", "noopener"), () => {
+        });
+        return false;
+      }, { name: "ouvrir" });
+      ouvrir.classList.add("tts-popover__secondaire");
+    }
+  }
+  if (auto && titles) {
+    popover.button(label("lien_figer"), () => {
+      titles.get(auto.node.attrs.href).then((r) => {
+        if (!r?.titre) return;
+        editor.chain().focus().insertContentAt({ from: auto.from, to: auto.to }, {
+          type: "text",
+          text: r.titre,
+          marks: [{ type: "spipLink", attrs: valeurs() }]
+        }).run();
+      }, () => {
+      });
+    }, { name: "figer" });
+  }
+  popover.button(label("annuler"), () => {
+  }, { name: "annuler" });
+  let attente = null;
+  let derniere = "";
+  const rechercher = () => {
+    const q = cible.value.trim();
+    suggestions.replaceChildren();
+    if (!services?.available || q.length < 2 || /^[a-z_]+\d+$|^\w+:\/\/|^#/.test(q)) return;
+    derniere = q;
+    services.call("rechercher", { q, objets: ["article", "rubrique", "breve", "document", "auteur", "mot", "site"] }).then((resultats) => {
+      if (q !== derniere) return;
+      suggestions.replaceChildren(...resultats.map((r) => {
+        const li = document.createElement("li");
+        li.setAttribute("role", "option");
+        li.tabIndex = -1;
+        li.dataset.raccourci = r.raccourci;
+        li.textContent = `${r.titre} (${r.raccourci})`;
+        li.addEventListener("mousedown", (event) => event.preventDefault());
+        li.addEventListener("click", () => {
+          cible.value = r.raccourci;
+          suggestions.replaceChildren();
+          cible.focus();
+        });
+        return li;
+      }));
+    }, () => {
+    });
+  };
+  cible.addEventListener("input", () => {
+    clearTimeout(attente);
+    attente = setTimeout(rechercher, 250);
+  });
+  popover.open(cible);
+  return popover;
+}
+
+// src/ui/ModelPopover.js
+function openModelPopover({ editor, wrapper }, pos = null) {
+  if (pos !== null) editor.commands.setNodeSelection(pos);
+  const { selection } = editor.state;
+  const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
+  const popover = new Popover({ editor, wrapper, titre: label("modele"), className: "tts-popover--modele", onSubmit: () => appliquer() });
+  const raccourci = popover.input(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci" });
+  const appliquer = () => {
+    const model = parseModel(raccourci.value.trim());
+    if (!model) {
+      popover.error(label("modele_invalide"));
+      return false;
+    }
+    if (courant) {
+      editor.chain().focus().command(({ tr }) => {
+        tr.setNodeMarkup(courant.from, void 0, { model });
+        return true;
+      }).run();
+      return true;
+    }
+    const { $from } = editor.state.selection;
+    const paragrapheVide = $from.parent.type.name === "paragraph" && $from.parent.content.size === 0 && $from.depth === 1;
+    if (paragrapheVide) {
+      editor.chain().focus().command(({ tr }) => {
+        tr.replaceWith($from.before(), $from.after(), editor.schema.nodes.spipModelBlock.create({ model }));
+        return true;
+      }).run();
+    } else {
+      editor.chain().focus().insertContent({ type: "spipModel", attrs: { model } }).run();
+    }
+    return true;
+  };
+  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover.button(label("annuler"), () => {
+  }, { name: "annuler" });
+  popover.open(raccourci);
+  return popover;
+}
+
 // src/main.js
 var SELECTOR = [
   "textarea.inserer_barre_edition",
@@ -24559,8 +25011,6 @@ var SELECTOR = [
 ].join(", ");
 var MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
 var instances = /* @__PURE__ */ new Set();
-var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
-var label = (key, fallback) => config().i18n?.[key] ?? fallback;
 var observer = null;
 function watchRemovals() {
   if (observer || typeof MutationObserver === "undefined") return;
@@ -24584,26 +25034,41 @@ var Instance = class {
     this.wrapper.className = "tts-editor";
     const toolbar = document.createElement("div");
     toolbar.className = "tts-toolbar";
-    this.modeButton = document.createElement("button");
-    this.modeButton.type = "button";
-    this.modeButton.className = "tts-mode";
-    this.modeButton.textContent = label("mode_source", "Source");
+    const bouton = (className, texte2, onClick) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = className;
+      b.textContent = texte2;
+      b.addEventListener("click", onClick);
+      toolbar.append(b);
+      return b;
+    };
+    this.linkButton = bouton("tts-lien", label("lien"), () => this.ui.openLink());
+    this.linkButton.title = `${label("lien")} (Ctrl+K)`;
+    this.modelButton = bouton("tts-modele", label("modele"), () => this.ui.editModel(null));
+    this.modeButton = bouton("tts-mode", label("mode_source"), () => this.toggleMode());
     this.modeButton.setAttribute("aria-pressed", "false");
-    toolbar.append(this.modeButton);
     this.content = document.createElement("div");
     this.content.className = "tts-content";
     this.wrapper.append(toolbar, this.content);
+    this.services = Services.forTextarea(textarea);
+    const contexte = () => ({ editor: this.editor, wrapper: this.wrapper, services: this.services, titles: this.ui.titles });
+    this.ui = {
+      previews: this.services ? new ModelPreviews(this.services) : null,
+      titles: this.services ? new LinkTitles(this.services) : null,
+      openLink: () => openLinkPopover(contexte()),
+      editModel: (pos) => openModelPopover(contexte(), pos)
+    };
     this.editor = createEditor2({
       element: this.content,
       source: textarea.value,
+      ui: this.ui,
       editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em` } }
     });
     this.bridge = new TextareaBridge({ textarea, editor: this.editor });
-    this.services = Services.forTextarea(textarea);
     textarea.before(this.wrapper);
     this.wrapper.append(textarea);
     textarea.hidden = true;
-    this.modeButton.addEventListener("click", () => this.toggleMode());
   }
   toggleMode() {
     const mode = this.bridge.mode === "visual" ? "source" : "visual";
@@ -24611,6 +25076,8 @@ var Instance = class {
     const source = mode === "source";
     this.textarea.hidden = !source;
     this.content.hidden = source;
+    this.linkButton.disabled = source;
+    this.modelButton.disabled = source;
     this.modeButton.setAttribute("aria-pressed", String(source));
     (source ? this.textarea : this.editor).focus?.();
   }
