@@ -9,3 +9,5 @@ Caractères : [a&#124;b&#93;c-&gt;d->art1], [a{zz}->art1], [texte|bulle{zz}->art
 Ancres [#haut<-] et [bas<-], lien [vers le haut->#haut], [->art1#section].
 
 Non représentable : [a{}->art1].
+
+Code dans un lien : [`a|b`->art1], [<code>c|d</code>->art2], [`e|f`|bulle{en}->art3], [`g]h`->art4], [`i->j`->art5].

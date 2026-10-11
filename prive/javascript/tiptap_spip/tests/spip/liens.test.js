@@ -67,6 +67,21 @@ describe('liens', () => {
 		expect(serializeInline([node('spipLinkAuto', { href: 'art1', bulle: 'b', hreflang: null, newWindow: false })])).toBe('[|b->art1]');
 	});
 
+	it('code dans un lien : son | n\'est pas le séparateur de la bulle (le core protège le code avant)', () => {
+		const C = { type: 'code' };
+		for (const source of ['[`a|b`->art1]', '[<code>a|b</code>->art1]']) {
+			const nodes = inline(source);
+			expect(nodes).toEqual([text('a|b', [link('art1'), C])]);
+			// sérialisation, réanalyse : même JSON
+			const written = canonical(source);
+			expect(written).toBe('[`a|b`->art1]');
+			expect(inline(written)).toEqual(nodes);
+		}
+		expect(inline('[`a|b`|bulle{en}->art1]')).toEqual([text('a|b', [link('art1', { bulle: 'bulle', hreflang: 'en' }), C])]);
+		// découpage sur le texte masqué (région de code entière masquée), morceaux repris dans la source
+		expect(parseLinkAtts('`a|b`|c', `${'\uE000'.repeat(5)}|c`)).toEqual({ text: '`a|b`', bulle: 'c', hreflang: null });
+	});
+
 	it('deux liens voisins restent deux liens', () => {
 		expect(serializeInline([text('a', [link('art1')]), text('b', [link('art2')])])).toBe('[a->art1][b->art2]');
 	});

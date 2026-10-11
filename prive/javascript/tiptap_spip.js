@@ -17732,12 +17732,14 @@ var RE_ATTRIBUTS_LIEN = /^((?:[^[]*?(?:\[[^\]]*\])?)*?)([|]([^<>]*?))?([{]([a-z_
 var RE_MODELE_SEUL = /^<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>$/i;
 
 // src/spip/links.js
-function parseLinkAtts(part) {
+function parseLinkAtts(part, masked = part) {
   const whole = { text: part, bulle: null, hreflang: null };
-  if (!/[|{]/.test(part)) return whole;
-  const m = part.match(RE_ATTRIBUTS_LIEN);
+  if (!/[|{]/.test(masked)) return whole;
+  const m = masked.match(RE_ATTRIBUTS_LIEN);
   if (!m) return whole;
-  const [, text2, pipe, bulle, brace, lang] = m;
+  const [, maskedText, pipe, maskedBulle, brace, lang] = m;
+  const text2 = part.slice(0, maskedText.length);
+  const bulle = pipe !== void 0 ? part.slice(maskedText.length + 1, maskedText.length + 1 + maskedBulle.length) : void 0;
   if (brace !== void 0) {
     if (lang === "") return null;
     if (!LANGUES.has(lang)) {
@@ -17843,8 +17845,17 @@ var RE_LINK_ENTITY = entityRegex(LINK_ENTITIES);
 function parseInline(source, masked, regions, { lineStart = false, link = false } = {}) {
   return buildNodes(tokenize(source, masked, regions, lineStart, link));
 }
+function maskCode(part) {
+  let masked = part;
+  for (const r of protect(part).regions) {
+    if (r.kind === "backtick" || r.kind === "block") {
+      masked = masked.slice(0, r.start) + FILL.repeat(r.end - r.start) + masked.slice(r.end);
+    }
+  }
+  return masked;
+}
 function linkToken(region, src) {
-  const atts = parseLinkAtts(region.data.part);
+  const atts = parseLinkAtts(region.data.part, maskCode(region.data.part));
   if (!atts) return { t: "raw", v: src };
   const attrs = { href: region.data.href, bulle: atts.bulle, hreflang: atts.hreflang, newWindow: region.data.newWindow };
   if (atts.text.trim() === "") return { t: "node", node: node("spipLinkAuto", attrs) };

@@ -1,7 +1,7 @@
 import { mergeText, node, raw, sortMarks, text } from './json.js';
 import { parseLinkAtts } from './links.js';
 import { parseModel } from './models.js';
-import { protect } from './protect.js';
+import { FILL, protect } from './protect.js';
 
 /** Balises HTML sans attribut équivalentes à une mark (même rendu que le raccourci SPIP). */
 const MARK_TAGS = { strong: 'bold', i: 'italic', del: 'strike', sup: 'superscript', sub: 'subscript' };
@@ -27,9 +27,21 @@ export function parseInline(source, masked, regions, { lineStart = false, link =
 	return buildNodes(tokenize(source, masked, regions, lineStart, link));
 }
 
+/** Texte où seul le code (backticks, <code>, <cadre>…) est masqué : ce que voit le core quand il
+ * découpe le texte d'un lien. */
+function maskCode(part) {
+	let masked = part;
+	for (const r of protect(part).regions) {
+		if (r.kind === 'backtick' || r.kind === 'block') {
+			masked = masked.slice(0, r.start) + FILL.repeat(r.end - r.start) + masked.slice(r.end);
+		}
+	}
+	return masked;
+}
+
 /** Région d'un raccourci de lien → jeton : lien (contenu analysé), lien sans texte, ou brut. */
 function linkToken(region, src) {
-	const atts = parseLinkAtts(region.data.part);
+	const atts = parseLinkAtts(region.data.part, maskCode(region.data.part));
 	if (!atts) return { t: 'raw', v: src };
 	const attrs = { href: region.data.href, bulle: atts.bulle, hreflang: atts.hreflang, newWindow: region.data.newWindow };
 	if (atts.text.trim() === '') return { t: 'node', node: node('spipLinkAuto', attrs) };
