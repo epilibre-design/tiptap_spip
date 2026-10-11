@@ -1,0 +1,17 @@
+<paquet
+	prefix="tts_test"
+	categorie="edition"
+	version="1.0.0"
+	etat="test"
+	compatibilite="[4.2.0;5.*]"
+>
+	<nom>Tests de l'éditeur visuel</nom>
+	<!-- Plugin des tests de bout en bout de tiptap_spip : un formulaire public déclaré par
+	tiptap_spip_contextes, et la page qui l'affiche. Jamais installé sur un site réel. -->
+
+	<necessite nom="tiptap_spip" />
+
+	<pipeline nom="tiptap_spip_contextes" inclure="tts_test_pipelines.php" />
+
+	<chemin path="" />
+</paquet>

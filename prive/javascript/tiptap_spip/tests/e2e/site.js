@@ -10,10 +10,13 @@ const env = { ...process.env, SPIP_ROOT: process.env.TTS_SITE };
 
 export const php = (args, input) => execFileSync('php', [driver, ...args], { env, input, encoding: 'utf8' });
 export const texte = (id) => php(['texte', String(id)]);
-export const ecrireTexte = (id, source) => php(['modifier', String(id)], source);
+export const ecrireTexte = (id, source, champ = 'texte') => php(['modifier', String(id), champ], source);
 export const creerDocument = (id) => Number(php(['document', String(id)]));
 export const creerAuteur = (statut) => Number(php(['auteur', statut]));
 export const inserer = (table, champs) => Number(php(['inserer', table, JSON.stringify(champs)]));
+export const activer = (...prefixes) => php(['activer', ...prefixes]);
+export const publier = (id) => php(['publier', String(id)]);
+export const configurer = (cle, valeur) => php(['config', cle, valeur]);
 
 /** Fins de ligne telles que le navigateur les soumet. */
 export const crlf = (s) => s.replace(/\r?\n/g, '\r\n');

@@ -12,20 +12,26 @@
  *     <agent> : User-Agent du navigateur de test (la session SPIP en dépend).
  *   SPIP_ROOT=<site> php tests/e2e/site.php texte <id_article>
  *     écrit le texte de l'article, octet pour octet.
- *   SPIP_ROOT=<site> php tests/e2e/site.php modifier <id_article> < texte.spip
- *     remplace le texte de l'article par l'entrée standard.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php modifier <id_article> [champ] < texte.spip
+ *     remplace un champ de l'article (texte par défaut) par l'entrée standard.
  *   SPIP_ROOT=<site> php tests/e2e/site.php document <id_article>
  *     crée une image (PNG 1×1) liée à l'article ; écrit son id_document.
  *   SPIP_ROOT=<site> php tests/e2e/site.php auteur <statut>
  *     crée un auteur (0minirezo, 1comite…) ; écrit son id_auteur.
  *   SPIP_ROOT=<site> php tests/e2e/site.php inserer <table> <champs JSON>
  *     insère une ligne telle quelle ; écrit son id.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php publier <id_article>
+ *     publie l'article (et sa rubrique), pour le site public.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php activer <préfixe>…
+ *     active des plugins présents dans plugins/ (Crayons, tts_test).
+ *   SPIP_ROOT=<site> php tests/e2e/site.php config <clé> <valeur>
+ *     écrit une configuration (ecrire_config), par exemple tiptap_spip/public oui.
  */
 
 $root = rtrim((string) getenv('SPIP_ROOT'), '/');
 $commande = $argv[1] ?? '';
-if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'modifier', 'document', 'auteur', 'inserer'], true)) {
-	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | modifier <id_article> | document <id_article> | auteur <statut> | inserer <table> <champs JSON>\n");
+if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'modifier', 'document', 'auteur', 'inserer', 'publier', 'activer', 'config'], true)) {
+	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | modifier <id_article> [champ] | document <id_article> | auteur <statut> | inserer <table> <champs JSON> | publier <id_article> | activer <préfixe>… | config <clé> <valeur>\n");
 	exit(2);
 }
 
@@ -47,8 +53,33 @@ if ($commande === 'texte') {
 	exit(0);
 }
 
+if ($commande === 'publier') {
+	$id_article = (int) ($argv[2] ?? 0);
+	$date = date('Y-m-d H:i:s', time() - 60);
+	sql_updateq('spip_articles', ['statut' => 'publie', 'date' => $date], 'id_article=' . $id_article);
+	$id_rubrique = (int) sql_getfetsel('id_rubrique', 'spip_articles', 'id_article=' . $id_article);
+	sql_updateq('spip_rubriques', ['statut' => 'publie', 'date' => $date], 'id_rubrique=' . $id_rubrique);
+	exit(0);
+}
+
+if ($commande === 'activer') {
+	include_spip('inc/plugin');
+	ecrire_plugin_actifs(array_slice($argv, 2), false, 'ajoute');
+	exit(0);
+}
+
+if ($commande === 'config') {
+	include_spip('inc/config');
+	ecrire_config((string) ($argv[2] ?? ''), (string) ($argv[3] ?? ''));
+	exit(0);
+}
+
 if ($commande === 'modifier') {
-	sql_updateq('spip_articles', ['texte' => stream_get_contents(STDIN)], 'id_article=' . (int) ($argv[2] ?? 0));
+	$champ = (string) ($argv[3] ?? 'texte');
+	if (!in_array($champ, ['texte', 'chapo', 'ps', 'descriptif'], true)) {
+		exit(2);
+	}
+	sql_updateq('spip_articles', [$champ => stream_get_contents(STDIN)], 'id_article=' . (int) ($argv[2] ?? 0));
 	exit(0);
 }
 
