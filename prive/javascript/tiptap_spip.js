@@ -17701,18 +17701,10 @@ function stripTech(value) {
 }
 var canon = (value) => JSON.stringify(stripTech(value));
 
-// src/spip/abbr.js
-var RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
-function parseAbbr(src) {
-  const m = src.match(RE_ABBR_SEUL);
-  return m ? { text: m[1], attrs: { title: m[2], lang: m[3] ?? null } } : null;
-}
-var serializeAbbr = (text2, attrs) => `[${text2}|${attrs.title}${attrs.lang ? `{${attrs.lang}}` : ""}]`;
-
 // src/spip/regex.js
 var RE_MODELE = /<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>/gi;
 var RE_LIEN = /\[([^\][]*?([[][^\]>-]*[\]][^\][]*)*)->(>?)([^\]]*)\]/gs;
-var RE_NOTE = /\[\[(\s*(<([^>'"]*)>)?(.*?))\]\]/gs;
+var RE_NOTE = /\[\[([ \t\n\v\f\r]*(<([^>'"]*)>)?(.*?))\]\]/gs;
 var RE_GLOSSAIRE = /\[\?+\s*([^\][<>]+)\]/g;
 var RE_ANCRE = /\[#?([^\][]*)<-\]/g;
 var RE_ABBR = /\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]/g;
@@ -17737,7 +17729,18 @@ scn sd sg sh sh_latn sh_cyrl si sk sl sm sn so sq sr src sro ss st su sv sw ta t
 tn to tr ts tt tw ty ug uk ur uz vi vo wa wo xh yi yo za zh zh_tw zu
 `.trim().split(/\s+/));
 var RE_ATTRIBUTS_LIEN = /^((?:[^[]*?(?:\[[^\]]*\])?)*?)([|]([^<>]*?))?([{]([a-z_]*)[}])?$/;
+var RE_NOTE_SEULE = new RegExp(`^\\[\\[([ \\t\\n\\v\\f\\r]*(<([^>'"]*)>)?([\\s\\S]*?))\\]\\]$`, "d");
+var RE_GLOSSAIRE_SEUL = /^\[\?+\s*([^\][<>]+)\]$/;
+var RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
+var RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
 var RE_MODELE_SEUL = /^<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>$/i;
+
+// src/spip/abbr.js
+function parseAbbr(src) {
+  const m = src.match(RE_ABBR_SEUL);
+  return m ? { text: m[1], attrs: { title: m[2], lang: m[3] ?? null } } : null;
+}
+var serializeAbbr = (text2, attrs) => `[${text2}|${attrs.title}${attrs.lang ? `{${attrs.lang}}` : ""}]`;
 
 // src/spip/links.js
 function parseLinkAtts(part, masked = part) {
@@ -17760,8 +17763,6 @@ var linkAtts = ({ bulle, hreflang }) => (bulle != null ? `|${bulle}` : "") + (hr
 var linkEnd = (attrs) => `${linkAtts(attrs)}->${attrs.newWindow ? ">" : ""}${attrs.href}]`;
 
 // src/spip/glossary.js
-var RE_GLOSSAIRE_SEUL = /^\[\?+\s*([^\][<>]+)\]$/;
-var RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
 function parseGlossary(src) {
   const m = src.match(RE_GLOSSAIRE_SEUL);
   const r = m?.[1].match(RE_GLOSES);
@@ -17791,7 +17792,6 @@ function serializeModel(model) {
 }
 
 // src/spip/notes.js
-var RE_NOTE_SEULE = new RegExp(`^\\[\\[([ \\t\\n\\v\\f\\r]*(<([^>'"]*)>)?([\\s\\S]*?))\\]\\]$`, "d");
 var BLOCS = /* @__PURE__ */ new Set(["paragraph", "bulletList", "orderedList", "spipModelBlock"]);
 function parseNote(src, masked = src) {
   const m = masked.match(RE_NOTE_SEULE);
@@ -17809,9 +17809,11 @@ function parseNote(src, masked = src) {
       contenu = morceau(4);
     }
   }
-  const doc3 = parse(contenu);
+  const fin = contenu.match(/(?<!\\)(?:\\\\)*\\[ \t\n\r\0\x0B]*$/)?.[0] ?? "";
+  const invisible = fin === "" ? "" : fin.slice(fin.lastIndexOf("\\"));
+  const doc3 = parse(contenu.slice(0, contenu.length - invisible.length));
   if (!doc3.content.every((b) => BLOCS.has(b.type))) return null;
-  return { name, content: doc3.content, lead: doc3.attrs.spipLead, trail: doc3.attrs.spipTrail };
+  return { name, content: doc3.content, lead: doc3.attrs.spipLead, trail: doc3.attrs.spipTrail + invisible };
 }
 
 // src/spip/protect.js
@@ -18236,16 +18238,18 @@ function tokenize(source, masked, regions, lineStart, link) {
     const region = regionAt.get(i2);
     if (region) {
       const src = source.slice(region.start, region.end);
+      let note;
+      let marque;
       if (region.kind === "escape") {
         buf += region.data.char;
       } else if (region.kind === "backtick" && region.data.ticks.length < 3 && region.data.code.trim() !== "") {
         push({ t: "code", v: region.data.code.trim() });
       } else if (region.kind === "link") {
         push(linkToken(region, src));
-      } else if (MARKED[region.kind] && !link && markedToken(region, src)) {
-        push(markedToken(region, src));
-      } else if (region.kind === "note" && parseNote(src, region.data.masked)) {
-        push({ t: "node", node: noteNode(parseNote(src, region.data.masked)) });
+      } else if (MARKED[region.kind] && !link && (marque = markedToken(region, src))) {
+        push(marque);
+      } else if (region.kind === "note" && (note = parseNote(src, region.data.masked))) {
+        push({ t: "node", node: noteNode(note) });
       } else if (region.kind === "anchor") {
         push({ t: "node", node: node("spipAnchor", { name: region.data.name }) });
       } else if (region.kind === "model" && parseModel(src)) {

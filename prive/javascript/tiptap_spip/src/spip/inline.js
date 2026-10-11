@@ -105,17 +105,19 @@ function tokenize(source, masked, regions, lineStart, link) {
 		const region = regionAt.get(i);
 		if (region) {
 			const src = source.slice(region.start, region.end);
+			let note;
+			let marque;
 			if (region.kind === 'escape') {
 				buf += region.data.char;
 			} else if (region.kind === 'backtick' && region.data.ticks.length < 3 && region.data.code.trim() !== '') {
 				push({ t: 'code', v: region.data.code.trim() });
 			} else if (region.kind === 'link') {
 				push(linkToken(region, src));
-			} else if (MARKED[region.kind] && !link && markedToken(region, src)) {
+			} else if (MARKED[region.kind] && !link && (marque = markedToken(region, src))) {
 				// pas de glossaire ni d'abréviation dans le texte d'un lien
-				push(markedToken(region, src));
-			} else if (region.kind === 'note' && parseNote(src, region.data.masked)) {
-				push({ t: 'node', node: noteNode(parseNote(src, region.data.masked)) });
+				push(marque);
+			} else if (region.kind === 'note' && (note = parseNote(src, region.data.masked))) {
+				push({ t: 'node', node: noteNode(note) });
 			} else if (region.kind === 'anchor') {
 				push({ t: 'node', node: node('spipAnchor', { name: region.data.name }) });
 			} else if (region.kind === 'model' && parseModel(src)) {

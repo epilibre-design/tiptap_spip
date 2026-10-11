@@ -11,6 +11,6 @@ Deuxième paragraphe avec une liste :
 
 <doc1|left>]].
 
-Cas limites : [[note->art1]], x\[[échappée ?]], [[a\]b]] et [[ <B> nommée après des blancs]].
+Cas limites : [[note->art1]], x\[[échappée ?]], [[a\]b]], [[barre finale\]] et [[ <B> nommée après des blancs]].
 
 Vide[[]] et non représentable[[{{{intertitre}}}]].

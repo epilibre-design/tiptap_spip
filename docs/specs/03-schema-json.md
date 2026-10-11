@@ -99,7 +99,10 @@ Remarques :
 - Un lien sans texte n'a rien à porter une mark : c'est un **nœud** `spipLinkAuto`, affiché avec le titre
   résolu par le serveur (décoration, jamais stocké). Saisir un texte dans le popover le convertit en texte
   marqué `spipLink` ; vider le texte d'un lien le reconvertit en `spipLinkAuto`.
-- `spipGlossary` ne s'applique qu'à du texte sans autre mark (la regex SPIP interdit `[]<>` dans le terme).
+- `spipGlossary` et `spipAbbr` : aucune autre mark à l'intérieur du terme (la regex SPIP interdit `[]<>` dans
+  le terme) ; une mark qui l'englobe est permise (`{{[?SPIP]}}`). Ni lien, ni code sur le même texte, et
+  pas d'abréviation sur un terme de glossaire : exclusions déclarées des deux côtés dans le schéma (la mark
+  ajoutée remplace l'autre).
 - Un `spipModel` peut porter la mark `spipLink` (cas `[<img3>->art12]`).
 - Jusqu'au lot L2.3, `spipLinkAuto` affiche sa cible (`→ art12`), `spipModel` et `spipModelBlock` leur
   raccourci : la prévisualisation et les titres viennent des services serveur.
@@ -149,7 +152,9 @@ forme de **fragment JSON** (contenu d'un mini-document), édité dans un sous-é
 ```
 
 Contenu autorisé dans une note : `paragraph+` (les paragraphes deviennent des lignes vides dans `[[…]]`),
-listes, marks inline ; **pas de note dans une note**.
+listes, modèles seuls dans leur paragraphe (`spipModelBlock`), marks inline ; **pas de note dans une
+note**. Les blocs du contenu gardent leur carte de segments ; `spipLead` / `spipTrail` (attributs
+techniques du nœud) gardent les blancs autour du contenu et un `\` final, que SPIP n'affiche pas.
 
 La **numérotation** n'est pas stockée : elle est recalculée à l'affichage (notes auto numérotées dans
 l'ordre du document, notes nommées affichant leur nom, `[[<>…]]` sans appel visible).

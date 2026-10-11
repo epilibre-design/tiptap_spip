@@ -1,8 +1,5 @@
 import { parse } from './parse.js';
-
-// plugins-dist/textwheel/inc/notes.php — _NOTES_RACCOURCI, ancrée sur un raccourci entier (\s de PCRE
-// sans /u : les seuls blancs ASCII)
-const RE_NOTE_SEULE = /^\[\[([ \t\n\v\f\r]*(<([^>'"]*)>)?([\s\S]*?))\]\]$/d;
+import { RE_NOTE_SEULE } from './regex.js';
 
 /** Blocs qu'une note peut contenir (spec 03 §5). */
 const BLOCS = new Set(['paragraph', 'bulletList', 'orderedList', 'spipModelBlock']);
@@ -38,7 +35,11 @@ export function parseNote(src, masked = src) {
 			contenu = morceau(4);
 		}
 	}
-	const doc = parse(contenu);
+	// SPIP rend le texte rogné juste avant </div> : un \ final (non échappé) y devient \< et
+	// disparaît. Il n'appartient donc pas au contenu ; il reste dans la fin technique de la note.
+	const fin = contenu.match(/(?<!\\)(?:\\\\)*\\[ \t\n\r\0\x0B]*$/)?.[0] ?? '';
+	const invisible = fin === '' ? '' : fin.slice(fin.lastIndexOf('\\'));
+	const doc = parse(contenu.slice(0, contenu.length - invisible.length));
 	if (!doc.content.every((b) => BLOCS.has(b.type))) return null;
-	return { name, content: doc.content, lead: doc.attrs.spipLead, trail: doc.attrs.spipTrail };
+	return { name, content: doc.content, lead: doc.attrs.spipLead, trail: doc.attrs.spipTrail + invisible };
 }

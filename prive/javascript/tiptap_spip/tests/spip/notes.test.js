@@ -56,6 +56,16 @@ describe('notes', () => {
 		)]));
 	});
 
+	it('\\ final du texte d\'une note : invisible au rendu (il précède </div>), gardé hors du contenu', () => {
+		expect(inline('a [[x\\]] b')[1]).toEqual(note([p(text('x'))]));
+		expect(serialize(parse('a [[x\\]] b'))).toBe('a [[x\\]] b');
+		expect(canonical('a [[x\\]] b')).toBe('a [[x]] b');
+		// \\\\ est un \\ échappé, qui reste
+		expect(inline('a [[x\\\\]] b')[1]).toEqual(note([p(text('x\\'))]));
+		expect(serialize(parse('a [[x\\ ]] b'))).toBe('a [[x\\ ]] b');
+		expect(canonical('a [[x\\ ]] b')).toBe('a [[x]] b');
+	});
+
 	it('note vide, nommée vide', () => {
 		expect(inline('x[[]]')).toEqual([text('x'), note([p()])]);
 		expect(inline('x[[<A>]]')).toEqual([text('x'), note([p()], 'A')]);
@@ -71,7 +81,7 @@ describe('notes', () => {
 
 	it('\\] dans une note', () => {
 		expect(inline('x[[a\\]b]]')).toEqual([text('x'), note([p(text('a]b'))])]);
-		expect(inline('x[[a\\]]')).toEqual([text('x'), note([p(text('a\\'))])]);
+		expect(inline('x[[a\\]]')).toEqual([text('x'), note([p(text('a'))])]);
 		expect(serialize(parse('x[[a\\]b]]'))).toBe('x[[a\\]b]]');
 		// un ] isolé n'a pas besoin d'être échappé
 		expect(canonical('x[[a\\]b]]')).toBe('x[[a]b]]');

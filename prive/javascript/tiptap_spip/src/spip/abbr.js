@@ -1,5 +1,4 @@
-// plugins-dist/textwheel/wheels/spip/spip.json — règle abbr, ancrée sur un raccourci entier
-const RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
+import { RE_ABBR_SEUL } from './regex.js';
 
 /**
  * Abréviation [ABBR|explication{lang}] (règle abbr de la wheel, inserer_abbr()).

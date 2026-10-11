@@ -1,8 +1,5 @@
 import { linkAtts, parseLinkAtts } from './links.js';
-
-// plugins-dist/textwheel/inc/lien.php — _RACCOURCI_GLOSSAIRE (ancrée) et _RACCOURCI_GLOSES
-const RE_GLOSSAIRE_SEUL = /^\[\?+\s*([^\][<>]+)\]$/;
-const RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
+import { RE_GLOSES, RE_GLOSSAIRE_SEUL } from './regex.js';
 
 /**
  * Terme de glossaire [?terme#glossaireN|bulle{lang}], découpé comme traiter_raccourci_glossaire()

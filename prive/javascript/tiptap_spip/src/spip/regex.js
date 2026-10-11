@@ -11,8 +11,8 @@ export const RE_MODELE = /<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\
 // ecrire/src/Texte/Collecteur/Liens.php — _RACCOURCI_LIEN
 export const RE_LIEN = /\[([^\][]*?([[][^\]>-]*[\]][^\][]*)*)->(>?)([^\]]*)\]/gs;
 
-// plugins-dist/textwheel/inc/notes.php — _NOTES_RACCOURCI
-export const RE_NOTE = /\[\[(\s*(<([^>'"]*)>)?(.*?))\]\]/gs;
+// plugins-dist/textwheel/inc/notes.php — _NOTES_RACCOURCI (\s de PCRE sans /u : blancs ASCII)
+export const RE_NOTE = /\[\[([ \t\n\v\f\r]*(<([^>'"]*)>)?(.*?))\]\]/gs;
 
 // plugins-dist/textwheel/inc/lien.php — _RACCOURCI_GLOSSAIRE, _RACCOURCI_ANCRE
 export const RE_GLOSSAIRE = /\[\?+\s*([^\][<>]+)\]/g;
@@ -59,5 +59,13 @@ tn to tr ts tt tw ty ug uk ur uz vi vo wa wo xh yi yo za zh zh_tw zu
 // plugins-dist/textwheel/inc/lien.php — _RACCOURCI_ATTRIBUTS : texte|bulle{lang} d'un lien
 export const RE_ATTRIBUTS_LIEN = /^((?:[^[]*?(?:\[[^\]]*\])?)*?)([|]([^<>]*?))?([{]([a-z_]*)[}])?$/;
 
-// ecrire/src/Texte/Collecteur/Modeles.php — même regex que RE_MODELE, ancrée sur un raccourci entier
+// Formes ancrées sur un raccourci entier (analyse d'une région repérée par protect.js) :
+// plugins-dist/textwheel/inc/notes.php — _NOTES_RACCOURCI ; d : positions des groupes
+export const RE_NOTE_SEULE = /^\[\[([ \t\n\v\f\r]*(<([^>'"]*)>)?([\s\S]*?))\]\]$/d;
+// plugins-dist/textwheel/inc/lien.php — _RACCOURCI_GLOSSAIRE, puis _RACCOURCI_GLOSES sur son contenu
+export const RE_GLOSSAIRE_SEUL = /^\[\?+\s*([^\][<>]+)\]$/;
+export const RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
+// plugins-dist/textwheel/wheels/spip/spip.json — règle abbr
+export const RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
+// ecrire/src/Texte/Collecteur/Modeles.php — même regex que RE_MODELE
 export const RE_MODELE_SEUL = /^<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>$/i;
