@@ -65,6 +65,28 @@ describe('sérialisation conservatrice', () => {
 	});
 });
 
+describe('imbrication des marks', () => {
+	const S = { type: 'strike' };
+	const canonical = (source) => serialize(parse(source), { conservative: false });
+
+	it('une mark qui continue reste ouverte, la mark intérieure s\'imbrique', () => {
+		expect(serializeInline([text('a ', [I]), text('b', [B, I]), text(' c', [I])])).toBe('{a <strong>b</strong> c}');
+		expect(serializeInline([text('a ', [S]), text('b', [B, S]), text(' c', [S])])).toBe('<del>a {{b}} c</del>');
+	});
+
+	it('la mark qui s\'étend le plus loin s\'ouvre en premier', () => {
+		expect(serializeInline([text('a', [B, S]), text('b', [B])])).toBe('{{<del>a</del>b}}');
+		expect(serializeInline([text('a', [B, S]), text('b', [S])])).toBe('<del>{{a}}b</del>');
+	});
+
+	it('la source garde sa structure après réécriture', () => {
+		expect(canonical('{a {{b}} c}')).toBe('{a <strong>b</strong> c}');
+		expect(canonical('{{a {b} c}}')).toBe('{{a <i>b</i> c}}');
+		expect(canonical('<del>a {{b}} c</del>')).toBe('<del>a {{b}} c</del>');
+		expect(canonical('{{a <del>b</del> c}}')).toBe('{{a <del>b</del> c}}');
+	});
+});
+
 describe('serializeInline', () => {
 	it('gras et italique imbriqués : la mark intérieure en HTML, jamais {{{', () => {
 		expect(serializeInline([text('a', [B, I])])).toBe('{{<i>a</i>}}');

@@ -1,0 +1,7 @@
+Un {texte {{très}} important}.
+
+Un {{texte {plutôt} gras}}.
+
+<del>Barré {{en partie}} seulement</del>, {{gras <del>barré</del> gras}}.
+
+{{<del>Les deux</del> puis gras}}.

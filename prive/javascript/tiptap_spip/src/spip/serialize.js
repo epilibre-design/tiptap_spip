@@ -1,4 +1,4 @@
-import { canon } from './json.js';
+import { canon, MARK_ORDER, sameMark } from './json.js';
 import { canBacktick, encodeCode } from './protect.js';
 
 /**
@@ -146,16 +146,29 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 	const closeTo = (k) => {
 		while (stack.length > k) out += stack.pop().close;
 	};
-	for (const n of nodes) {
-		const marks = (n.marks ?? []).filter((m) => m.type !== 'code');
+	const marksOf = (n) => (n.marks ?? []).filter((m) => m.type !== 'code');
+	// longueur de la suite de nœuds portant la mark à partir du nœud i
+	const runLength = (i, mark) => {
+		let j = i;
+		while (j < nodes.length && marksOf(nodes[j]).some((m) => sameMark(m, mark))) j++;
+		return j - i;
+	};
+	nodes.forEach((n, i) => {
+		const marks = marksOf(n);
+		// les marks déjà ouvertes qui continuent restent ouvertes (du bas de la pile vers le haut)
 		let k = 0;
-		while (k < stack.length && k < marks.length && stack[k].type === marks[k].type) k++;
+		while (k < stack.length && marks.some((m) => sameMark(m, stack[k].mark))) k++;
 		closeTo(k);
-		for (const m of marks.slice(k)) {
-			const useHtml = HTML[m.type] && (html || stack.some((s) => OPEN[s.type][0].startsWith('{')));
+		// les autres s'ouvrent de la plus longue à la plus courte : la plus longue est extérieure
+		const toOpen = marks
+			.filter((m) => !stack.some((s) => sameMark(s.mark, m)))
+			.map((m) => ({ m, run: runLength(i, m) }))
+			.sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
+		for (const { m } of toOpen) {
+			const useHtml = HTML[m.type] && (html || stack.some((s) => OPEN[s.mark.type][0].startsWith('{')));
 			const [open, close] = useHtml ? HTML[m.type] : OPEN[m.type];
 			out += open;
-			stack.push({ type: m.type, close });
+			stack.push({ mark: m, close });
 			atLineStart = false;
 		}
 		if (n.type === 'text') {
@@ -172,7 +185,7 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 		} else {
 			throw new Error(`serialize: type inline inconnu « ${n.type} »`);
 		}
-	}
+	});
 	closeTo(0);
 	return out;
 }
