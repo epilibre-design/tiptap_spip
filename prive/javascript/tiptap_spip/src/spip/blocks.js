@@ -1,6 +1,7 @@
-import { parseInline } from './inline.js';
+import { LIGNE_VIDE, parseInline } from './inline.js';
 import { node, text } from './json.js';
 import { parseModel } from './models.js';
+import { parseMulti } from './multi.js';
 import { FILL, protect, regionsIn } from './protect.js';
 import { segment } from './segment.js';
 
@@ -39,6 +40,7 @@ function verbatimBlock(src, regions) {
 	const r = regions.length === 1 && regions[0].start === 0 && regions[0].end === src.length ? regions[0] : null;
 	if (!r) return null;
 	if (r.kind === 'model' && parseModel(src)) return [node('spipModelBlock', { model: parseModel(src) })];
+	if (r.kind === 'multi') return multiBlock(src, r.data.masked);
 	if (r.kind === 'backtick' && r.data.ticks.length >= 3) {
 		return [node('codeBlock', { language: r.data.language || null }, textContent(r.data.code))];
 	}
@@ -55,6 +57,21 @@ function verbatimBlock(src, regions) {
 	}
 	const type = { cadre: 'spipCadre', frame: 'spipCadre', html: 'spipHtml', math: 'spipMath' }[tag];
 	return [type ? node(type, { openTag, closeTag }, textContent(inner)) : node('spipRaw', { source: src })];
+}
+
+/**
+ * Multi seul dans son segment, sur plusieurs paragraphes : une partie par langue, chacune faite de
+ * paragraphes (SPIP mêle les parties d'une liste, d'un intertitre… : gardé brut). Sans ligne vide,
+ * c'est un multi en ligne dans un paragraphe.
+ */
+function multiBlock(src, masked) {
+	if (!LIGNE_VIDE.test(src)) return null;
+	const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
+		const content = parseContent(src.slice(start, end));
+		if (content.some((b) => b.type !== 'paragraph')) throw new Fallback();
+		return node('spipLangBlock', { lang }, content);
+	});
+	return [node('spipMultiBlock', null, parts)];
 }
 
 function containerBlock(src, msk) {

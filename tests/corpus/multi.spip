@@ -1,0 +1,19 @@
+Un <multi>[fr]chat[en]cat[de]Katze</multi> ici, <multi>sans langue[en]no language</multi>.
+
+{{<multi>[fr]Gras[en]Bold</multi>}} et <multi>[fr]avec [un lien->art1] et une note[[Note en français.]][en]with [a link->art1][[English note.]]</multi>.
+
+<multi>[fr]Premier paragraphe.
+
+Deuxième paragraphe, {{gras}}.[en]First paragraph.
+
+Second paragraph.</multi>
+
+<multi>[fr]Un
+
+-* liste[en]One
+
+Two</multi>
+
+Idiomes : <:tiptap_spip:lien:>, <:info_titre:>, <:inconnu:cle_absente:>.
+
+<multi>[pt_br]Olá[FR]Salut[en]</multi> et <multi>[fr]&#91;en] dans le texte[en]text</multi>

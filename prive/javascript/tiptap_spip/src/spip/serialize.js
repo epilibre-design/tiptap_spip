@@ -3,6 +3,7 @@ import { serializeGlossary } from './glossary.js';
 import { canon, MARK_ORDER, node, sameMark, text } from './json.js';
 import { linkEnd } from './links.js';
 import { serializeModel } from './models.js';
+import { serializeIdiome, serializeMulti } from './multi.js';
 import { parse } from './parse.js';
 import { canBacktick, encodeCode } from './protect.js';
 
@@ -27,9 +28,10 @@ export function serialize(doc, { conservative = true } = {}) {
 
 /**
  * Contexte de la sérialisation en cours : conservative (forme canonique ou non, transmise au
- * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer).
+ * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer) ; multi
+ * (partie d'un multi : un [xx] s'écrit en entité).
  */
-let contexte = { conservative: true, note: false };
+let contexte = { conservative: true, note: false, multi: false };
 
 function serializeDoc(doc, conservative) {
 	const blocks = doc.content ?? [];
@@ -93,6 +95,11 @@ export function serializeBlock(b) {
 			return a.source;
 		case 'spipModelBlock':
 			return serializeModel(a.model);
+		case 'spipMultiBlock':
+			return enMulti(() => serializeMulti(b.content.map((part) => ({
+				lang: part.attrs?.lang ?? null,
+				texte: serialize(node('doc', null, part.content), { conservative: false }),
+			}))));
 		case 'table':
 			return serializeTable(b);
 		default:
@@ -285,6 +292,12 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 		} else if (n.type === 'spipNote') {
 			out += serializeNote(n.attrs);
 			atLineStart = false;
+		} else if (n.type === 'spipMultiInline') {
+			out += serializeMultiInline(n.attrs);
+			atLineStart = false;
+		} else if (n.type === 'spipIdiome') {
+			out += serializeIdiome(n.attrs);
+			atLineStart = false;
 		} else {
 			throw new Error(`serialize: type inline inconnu « ${n.type} »`);
 		}
@@ -306,6 +319,23 @@ function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) 
 	} finally {
 		contexte = avant;
 	}
+}
+
+/** Contexte d'un multi : un [xx] du texte s'écrit en entité (il serait un marqueur de langue). */
+function enMulti(f) {
+	const avant = contexte;
+	contexte = { ...contexte, multi: true };
+	try {
+		return f();
+	} finally {
+		contexte = avant;
+	}
+}
+
+/** Multi dans une phrase : réécrit tel quel si ses parties n'ont pas changé (sérialisation conservatrice). */
+function serializeMultiInline({ parts = [], spipSrc = null, spipHash = null }) {
+	if (contexte.conservative && typeof spipSrc === 'string' && spipHash === canon(parts)) return spipSrc;
+	return enMulti(() => serializeMulti(parts.map(({ lang, content }) => ({ lang, texte: serializeInline(content ?? []) }))));
 }
 
 /**
@@ -333,6 +363,8 @@ export function escapeText(value, atLineStart, { link = false, avantCrochets = f
 		// notes et glossaire sont traités avant les échappements \[ : on passe par des entités
 		.replace(/\[\?/g, '[&#63;')
 		.replace(/\[\[/g, '[&#91;');
+	// marqueur de langue d'un multi : \[ ne le protège pas (typo() passe après les échappements)
+	if (contexte.multi) s = s.replace(/\[(?=[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?\])/gi, '&#91;');
 	if (!link) {
 		// \[ protège un lien ou une abréviation, comme dans SPIP ; pas une ancre (pre_liens) : entité
 		s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, '&#91;')

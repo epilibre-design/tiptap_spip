@@ -24,6 +24,9 @@ export const RE_ABBR = /\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]/g;
 // ecrire/src/Texte/Collecteur/Multis.php
 export const RE_MULTI = /<multi>(.*?)<\/multi>/gs;
 
+// ecrire/src/Texte/Collecteur/Multis.php — extraire_trads() : marqueur de langue [fr], [pt_br]…
+export const RE_LANGUE_MULTI = /\[([a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?)\]/gi;
+
 // ecrire/src/Texte/Collecteur/Idiomes.php
 export const RE_IDIOME = /<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>/gi;
 
@@ -67,5 +70,9 @@ export const RE_GLOSSAIRE_SEUL = /^\[\?+\s*([^\][<>]+)\]$/;
 export const RE_GLOSES = /^([^|#{]*\w[^|#{]*)([^#]*)(#([^|{}]*))?(.*)$/;
 // plugins-dist/textwheel/wheels/spip/spip.json — règle abbr
 export const RE_ABBR_SEUL = /^\[([^|[\]>]+)\|([^|\]{>]+)(?:\{([a-z]+)\})?\]$/;
+// ecrire/src/Texte/Collecteur/Idiomes.php — même regex que RE_IDIOME
+export const RE_IDIOME_SEUL = /^<:(?:([a-z0-9_]+):)?([a-z0-9_]+):>$/i;
+// code de langue seul (marqueur [xx] d'un multi)
+export const RE_CODE_LANGUE = /^[a-z]{2,3}(?:_[a-z]{2,3})?(?:_[a-z]{2,3})?$/i;
 // ecrire/src/Texte/Collecteur/Modeles.php — même regex que RE_MODELE
 export const RE_MODELE_SEUL = /^<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>$/i;

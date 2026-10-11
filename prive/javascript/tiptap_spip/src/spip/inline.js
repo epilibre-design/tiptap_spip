@@ -1,8 +1,9 @@
 import { parseAbbr, serializeAbbr } from './abbr.js';
 import { parseGlossary, serializeGlossary } from './glossary.js';
-import { mergeText, node, raw, sortMarks, text } from './json.js';
+import { canon, mergeText, node, raw, sortMarks, text } from './json.js';
 import { parseLinkAtts } from './links.js';
 import { parseModel } from './models.js';
+import { parseIdiome, parseMulti } from './multi.js';
 import { parseNote } from './notes.js';
 import { FILL, protect } from './protect.js';
 import { escapeText } from './serialize.js';
@@ -70,6 +71,23 @@ function markedToken(region, src) {
 	return { t: 'marked', mark: { type: def.type, attrs: r.attrs }, v: r.v };
 }
 
+/** Ligne vide : un multi qui en contient une n'est représentable qu'en bloc (blocks.js). */
+export const LIGNE_VIDE = /\n[ \t\r]*\n/;
+
+/**
+ * Multi dans une phrase : atome dont chaque partie est analysée en inline. La source et la forme
+ * canonique des parties sont gardées : un multi inchangé est réécrit tel quel.
+ */
+function multiNode(src, masked) {
+	if (LIGNE_VIDE.test(src)) return null;
+	const parts = parseMulti(src, masked).map(({ lang, start, end }) => {
+		const part = src.slice(start, end);
+		const p = protect(part);
+		return { lang, content: parseInline(part, p.masked, p.regions) };
+	});
+	return node('spipMultiInline', { parts, spipSrc: src, spipHash: canon(parts) });
+}
+
 /** Nœud spipNote : name absent pour une note automatique. */
 function noteNode({ name, content, lead, trail }) {
 	return node('spipNote', { ...(name === null ? {} : { name }), content, spipLead: lead, spipTrail: trail });
@@ -107,6 +125,8 @@ function tokenize(source, masked, regions, lineStart, link) {
 			const src = source.slice(region.start, region.end);
 			let note;
 			let marque;
+			let multi;
+			let idiome;
 			if (region.kind === 'escape') {
 				buf += region.data.char;
 			} else if (region.kind === 'backtick' && region.data.ticks.length < 3 && region.data.code.trim() !== '') {
@@ -120,6 +140,11 @@ function tokenize(source, masked, regions, lineStart, link) {
 				push({ t: 'node', node: noteNode(note) });
 			} else if (region.kind === 'anchor') {
 				push({ t: 'node', node: node('spipAnchor', { name: region.data.name }) });
+			} else if (region.kind === 'multi' && !link && (multi = multiNode(src, region.data.masked))) {
+				// pas de multi dans le texte d'un lien
+				push({ t: 'node', node: multi });
+			} else if (region.kind === 'idiome' && (idiome = parseIdiome(src))) {
+				push({ t: 'node', node: node('spipIdiome', idiome) });
 			} else if (region.kind === 'model' && parseModel(src)) {
 				push({ t: 'node', node: node('spipModel', { model: parseModel(src) }) });
 			} else if (region.kind === 'block' && region.data.openTag === '<code>' && !region.data.inner.includes('\n') && region.data.inner !== '' && !region.data.absorbed.includes('backtick')) {

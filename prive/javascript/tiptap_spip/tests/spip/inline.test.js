@@ -68,7 +68,7 @@ describe('parseInline : caractères', () => {
 		expect(inl('`a {b}` et <code>c</code>')).toEqual([text('a {b}', [C]), text(' et '), text('c', [C])]);
 	});
 
-	it('multi : brut jusqu\'au lot L4', () => {
-		expect(inl('voir <multi>a</multi>')).toEqual([text('voir '), raw('<multi>a</multi>')]);
+	it('multi : nœud inline (lot L4), parties analysées', () => {
+		expect(inl('voir <multi>a</multi>')[1]).toMatchObject({ type: 'spipMultiInline', attrs: { parts: [{ lang: null, content: [text('a')] }] } });
 	});
 });
