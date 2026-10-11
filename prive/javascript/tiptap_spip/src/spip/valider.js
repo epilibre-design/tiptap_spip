@@ -1,0 +1,31 @@
+import { canon, mergeText, node, text } from './json.js';
+import { parse } from './parse.js';
+import { serialize } from './serialize.js';
+
+/**
+ * Validation des saisies de l'interface : une saisie n'est acceptée que si ce qu'elle écrit se relit
+ * à l'identique. Le sérialiseur abandonne sinon la mark (texte gardé) ; l'interface préfère refuser.
+ */
+
+const doc = (content) => node('doc', null, content);
+const ecrire = (content) => serialize(doc(content), { conservative: false });
+
+/** Contenu inline (texte marqué d'un lien, glossaire, abréviation…) qui se relit à l'identique. */
+export function seRelitInline(content) {
+	const relu = parse(ecrire([node('paragraph', null, content)])).content;
+	return canon(relu) === canon([node('paragraph', null, mergeText(content))]);
+}
+
+/**
+ * Note qui se relit à l'identique : même nom, et contenu identique à ce qu'il devient écrit seul
+ * (les crochets et le nom de la note ne le changent pas).
+ *
+ * @param {{ name: ?string, content: object[] }} note  name : null automatique, '' sans appel
+ */
+export function noteSeRelit({ name = null, content }) {
+	const note = node('spipNote', { name, content });
+	const relu = parse(ecrire([node('paragraph', null, [text('x'), note])])).content;
+	const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];
+	if (appel?.type !== 'spipNote' || reste.length) return false;
+	return (appel.attrs.name ?? null) === (name ?? null) && canon(appel.attrs.content) === canon(parse(ecrire(content)).content);
+}
