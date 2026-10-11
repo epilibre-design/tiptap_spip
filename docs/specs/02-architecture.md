@@ -198,10 +198,21 @@ Champ `operation` + paramètres, validés dans `verifier()` (liste blanche, tail
 
 | Opération | Paramètres | Contrôles `verifier()` | Résultat |
 |-----------|------------|------------------------|----------|
-| `previsu_modele` | `modele` | exactement **un** raccourci de modèle (regex du core, ancrée), ≤ 2 000 caractères, squelette `modeles/<nom>.html` existant, nom non exclu par la config | HTML via `traitements_previsu(modele, champ, objet)` puis `safehtml` ; contexte limité à `objet`, `id_objet`, `champ` signés (jamais `$_POST`) |
-| `titre_lien` | `cible` | `_RACCOURCI_URL` ou URL ; ≤ 500 caractères ; au plus 50 cibles par appel | `{titre, url, objet, id}` ; titre fourni seulement si `autoriser('voir', objet, id)` |
-| `glossaire` | `terme`, `glossaire`, `numero`, `lang` | glossaire connu (`glossaire_*` existante) | `{url}` (aucun appel réseau sortant) |
-| `rechercher` | `q`, `objets[]` | `q` ≥ 2 caractères, objets dans la liste configurée | `[{objet, id, titre, raccourci}]`, filtré par `autoriser('voir')`, 20 résultats max |
+| `previsu_modele` | `modele` | exactement **un** raccourci de modèle (regex du core, ancrée), ≤ 2 000 caractères, modèle existant : déclaré par un objet (`modeles` de `lister_tables_objets_sql()`, cas de `doc`, `img`, `emb`, résolus par `styliser_modele()` sans squelette `modeles/doc.html`) ou trouvé par `trouve_modele()` ; nom non exclu par la config (lot L5) | HTML via les traitements du champ (`tiptap_spip_traitements_previsu`, repris de `traitements_previsu`) puis `safehtml` ; contexte limité à `objet`, `id_objet`, `id_<objet>` signés (jamais `$_POST`) |
+| `titre_lien` | `cibles` (liste JSON) | 1 à 50 cibles, ≤ 500 caractères chacune | `[{cible, titre, url, objet, id}]` ; pour un objet SPIP (`typer_raccourci`), titre et URL seulement si `autoriser('voir', objet, id)` ; URL explicite : titre et URL de `calculer_url()` ; `#ancre` : rien |
+| `glossaire` | `terme`, `glossaire`, `numero`, `lang` | glossaire connu (`glossaire_*` existante) | `{url}` (aucun appel réseau sortant) — **lot L3** |
+| `rechercher` | `q`, `objets` (liste JSON) | `q` de 2 à 100 caractères, objets parmi `article, rubrique, breve, document, auteur, mot, site` | `[{objet, id, titre, raccourci}]` (`raccourci` = `article12`), filtré par `autoriser('voir')`, hors poubelle, 20 résultats max, les plus récents d'abord |
+
+Réalisé au lot L2.2 (`formulaires/tiptap_spip.php`, `src/services/cvt.js`). Constats sur SPIP 4.4 :
+
+- pour un formulaire d'objet (`editer_article`…), `formulaire_fond` reçoit `args = ['type' => …, 'id' => …]`
+  et non les arguments de la balise ; un nouvel objet a l'id 0 ;
+- champs équipés par défaut : `texte` (`tiptap_spip_champs()`), le seul que le lancement JS équipe dans
+  `editer_article` ;
+- SPIP enveloppe chaque erreur de `verifier()` dans `<span role='alert'>` : `cvt.js` n'en garde que le texte ;
+- arguments signés ou signature de session falsifiés : SPIP ne traite pas le formulaire et renvoie la page
+  complète ; session absente : script de redirection vers la connexion. Dans les deux cas, pas
+  d'`ajax-form-is-ok` : `cvt.js` passe en mode dégradé et ne rappelle plus le service.
 
 ### Format de réponse
 
