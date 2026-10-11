@@ -1,0 +1,114 @@
+import { describe, expect, it } from 'vitest';
+import { node, raw, stripTech, text } from '../../src/spip/json.js';
+import { parseNote } from '../../src/spip/notes.js';
+import { parse } from '../../src/spip/parse.js';
+import { protect } from '../../src/spip/protect.js';
+import { serialize } from '../../src/spip/serialize.js';
+
+const inline = (source) => stripTech(parse(source).content[0].content);
+const canonical = (source) => serialize(parse(source), { conservative: false });
+const p = (...content) => node('paragraph', null, content.length ? content : undefined);
+const note = (content, name) => node('spipNote', name === undefined ? { content } : { name, content });
+const link = (href) => ({ type: 'spipLink', attrs: { href, newWindow: false } });
+
+describe('parseNote (traiter_raccourci_notes du core)', () => {
+	it('automatique, nommée, sans appel', () => {
+		expect(parseNote('[[Une note.]]')).toMatchObject({ name: null });
+		expect(parseNote('[[<A>Nommée]]')).toMatchObject({ name: 'A' });
+		expect(parseNote('[[<>Sans appel]]')).toMatchObject({ name: '' });
+		expect(parseNote('[[ <B>x]]')).toMatchObject({ name: 'B' });
+	});
+
+	it('une balise HTML en tête n\'est pas un nom si sa fermante suit', () => {
+		expect(parseNote('[[<i>x</i> y]]')).toMatchObject({ name: null });
+		expect(parseNote('[[<i>x]]')).toMatchObject({ name: 'i' });
+		expect(parseNote('[[<i>a <i>b</i>]]')).toMatchObject({ name: 'i' });
+	});
+
+	it('un modèle, un lien ou un glossaire en tête ne sont pas un nom (traités avant les notes)', () => {
+		const { masked } = protect('[[<doc1>]]').regions[0].data;
+		expect(parseNote('[[<doc1>]]', masked)).toMatchObject({ name: null });
+		expect(parseNote('[[<doc1>]]', masked).content[0].type).toBe('spipModelBlock');
+		expect(inline('x[[<doc1|left>]]')[1]).toMatchObject({ type: 'spipNote', attrs: { content: [{ type: 'spipModelBlock' }] } });
+		expect(inline('x[[<doc1|left>]]')[1].attrs.name).toBeUndefined();
+	});
+
+	it('nom à caractères spéciaux et fermante présente (regex PHP non échappée) : non représentable', () => {
+		expect(parseNote('[[<a.b>x</a.b>]]')).toBeNull();
+		expect(parseNote('[[<a.b>x]]')).toMatchObject({ name: 'a.b' });
+	});
+
+	it('contenu : paragraphes, listes, modèle seul ; autres blocs non représentables', () => {
+		expect(stripTech(parseNote('[[Premier.\n\nSecond.]]').content)).toEqual([p(text('Premier.')), p(text('Second.'))]);
+		expect(parseNote('[[-* a\n-* b]]').content[0].type).toBe('bulletList');
+		expect(parseNote('[[Voir\n\n<doc1>]]').content[1].type).toBe('spipModelBlock');
+		expect(parseNote('[[{{{titre}}}]]')).toBeNull();
+	});
+});
+
+describe('notes', () => {
+	it('appel collé ou non, contenu analysé', () => {
+		expect(inline('Texte[[Une note.]] suite')).toEqual([text('Texte'), note([p(text('Une note.'))]), text(' suite')]);
+		expect(inline('Voir [[<A>a]] et [[<>b]]')).toEqual([text('Voir '), note([p(text('a'))], 'A'), text(' et '), note([p(text('b'))], '')]);
+		expect(inline('x [[Voir [la doc->art1], {{gras}} et [?SPIP].]]')[1]).toEqual(note([p(
+			text('Voir '), text('la doc', [link('art1')]), text(', '), text('gras', [{ type: 'bold' }]), text(' et '),
+			text('SPIP', [{ type: 'spipGlossary' }]), text('.'),
+		)]));
+	});
+
+	it('note vide, nommée vide', () => {
+		expect(inline('x[[]]')).toEqual([text('x'), note([p()])]);
+		expect(inline('x[[<A>]]')).toEqual([text('x'), note([p()], 'A')]);
+	});
+
+	it('[[note->art1]] : un lien entre crochets', () => {
+		expect(inline('[[note->art1]]')).toEqual([text('['), text('note', [link('art1')]), text(']')]);
+	});
+
+	it('non représentable : brut', () => {
+		expect(inline('x[[{{{titre}}}]]')).toEqual([text('x'), raw('[[{{{titre}}}]]')]);
+	});
+
+	it('\\] dans une note', () => {
+		expect(inline('x[[a\\]b]]')).toEqual([text('x'), note([p(text('a]b'))])]);
+		expect(inline('x[[a\\]]')).toEqual([text('x'), note([p(text('a\\'))])]);
+		expect(serialize(parse('x[[a\\]b]]'))).toBe('x[[a\\]b]]');
+		// un ] isolé n'a pas besoin d'être échappé
+		expect(canonical('x[[a\\]b]]')).toBe('x[[a]b]]');
+	});
+});
+
+describe('sérialisation des notes', () => {
+	it('identité et forme canonique', () => {
+		for (const source of ['Texte[[Une note.]]', 'Voir[[<A>a]] et[[<>b]]', 'x[[Premier.\n\nSecond.]]', 'x[[-* a\n-* b]]', 'x[[<doc1|left>]]', 'x[[Voir\n\n<doc1>]]', 'x[[]]']) {
+			expect(serialize(parse(source))).toBe(source);
+			expect(canonical(source)).toBe(source);
+		}
+	});
+
+	it('paragraphe modifié : le contenu non modifié de la note est restitué à l\'identique', () => {
+		const doc = parse('Avant[[ Premier.\n\n\nSecond.]]');
+		doc.content[0].content[0].text = 'Après';
+		expect(serialize(doc)).toBe('Après[[ Premier.\n\n\nSecond.]]');
+	});
+
+	it('forme canonique : blancs de tête et de fin du contenu retirés (SPIP les retire)', () => {
+		expect(canonical('x[[\nTexte\n]]')).toBe('x[[Texte]]');
+	});
+
+	it('] en fin de texte ou suivi de ] dans une note : &#93; (\\] ne la protège pas)', () => {
+		const doc = node('doc', null, [p(text('x'), note([p(text('a]] b] c]'))]))]);
+		expect(serialize(doc)).toBe('x[[a&#93;] b] c&#93;]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('[ juste avant une note : entité (\\[[[n]] serait une note de texte [n)', () => {
+		const doc = node('doc', null, [p(text('x ['), note([p(text('n'))]))]);
+		expect(serialize(doc)).toBe('x &#91;[[n]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('note saisie sans contenu', () => {
+		expect(serialize(node('doc', null, [p(text('x'), node('spipNote', { name: null, content: null }))]))).toBe('x[[]]');
+	});
+});

@@ -27,9 +27,13 @@ const propre = (text) => execFileSync('php', [oracle], { input: text, encoding: 
  * Normalisation : blancs, identifiants qui dépendent de la source et non du rendu (tableaux :
  * cellules aléatoires, résumé tiré du md5 du bloc ; modèles : classe base64php tirée d'un
  * uniqid), et caractères de contrôle invisibles que SPIP laisse parfois dans sa sortie
- * (marqueurs \x01\x15 de la wheel backticks).
+ * (marqueurs \x01\x15 de la wheel backticks). La bulle d'un appel de note est retirée : SPIP la
+ * tire du texte brut de la note (échappements compris), dont la forme canonique peut changer
+ * l'orthographe ; l'éditeur restitue à l'identique une note non modifiée, et le texte rendu des
+ * notes, lui, est comparé en entier (oracle tests/equivalence/propre.php).
  */
 export const normalize = (html) => html
+	.replace(/(<a href="#nb[^"]*" class="spip_note" rel="appendix") title="[^"]*"/g, '$1')
 	.replace(/ (?:id|headers)='id[0-9a-f]+_c\d+'/g, '')
 	.replace(/\bdby[0-9a-f]{4}\b/g, 'dby')
 	.replace(/\bbase64php[0-9a-f.]+/g, 'base64php')

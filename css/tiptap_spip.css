@@ -77,6 +77,36 @@
 	background: #f3eefb;
 }
 
+/* appel de note : numéro calculé (décoration data-tts-label), puce pour une note sans appel */
+.tts-note {
+	cursor: pointer;
+	color: #2d5aa0;
+}
+
+.tts-note::before {
+	content: "[" attr(data-tts-label) "]";
+}
+
+.tts-note[data-tts-note-name=""]::before {
+	content: "•";
+}
+
+.tts-note.ProseMirror-selectednode {
+	outline: 2px solid #2d5aa0;
+}
+
+.tts-glossary,
+.tts-abbr {
+	text-decoration: underline dotted;
+}
+
+.tts-glossary::after {
+	content: "?";
+	font-size: 0.7em;
+	vertical-align: super;
+	color: #888;
+}
+
 .tts-model-block {
 	display: block;
 	margin: 0.5em 0;

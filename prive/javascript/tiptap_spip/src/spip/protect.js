@@ -100,7 +100,8 @@ export function protect(source) {
 		newWindow: m[3] === '>',
 		href: source.slice(end - 1 - m[4].length, end - 1),
 	}));
-	scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, 'note', {}));
+	// texte de la note tel que le voit le core : liens, modèles, glossaire déjà remplacés (masqués)
+	scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, 'note', { masked: m[0] }));
 	scan(RE_ABBR, (m, start, end) => add(start, end, 'abbr', {}));
 	scan(RE_MULTI, (m, start, end) => add(start, end, 'multi', {}));
 	scan(RE_IDIOME, (m, start, end) => add(start, end, 'idiome', {}));

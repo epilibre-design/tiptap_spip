@@ -1,0 +1,16 @@
+Une note automatique[[Le texte de la note.]] et une autre [[Avec un [lien->art1], du {{gras}} et un [?terme].]].
+
+Nommée[[<A>Une note nommée.]], sans appel[[<>Note sans appel.]], et une balise en tête[[<i>italique</i> au début]].
+
+Note longue[[Premier paragraphe.
+
+
+Deuxième paragraphe avec une liste :
+-* un
+-* deux]] puis un modèle[[Voir
+
+<doc1|left>]].
+
+Cas limites : [[note->art1]], x\[[échappée ?]], [[a\]b]] et [[ <B> nommée après des blancs]].
+
+Vide[[]] et non représentable[[{{{intertitre}}}]].

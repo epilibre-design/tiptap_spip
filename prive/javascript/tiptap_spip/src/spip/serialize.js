@@ -16,6 +16,22 @@ import { canBacktick, encodeCode } from './protect.js';
  * @returns {string}
  */
 export function serialize(doc, { conservative = true } = {}) {
+	const avant = contexte;
+	contexte = { ...contexte, conservative };
+	try {
+		return serializeDoc(doc, conservative);
+	} finally {
+		contexte = avant;
+	}
+}
+
+/**
+ * Contexte de la sérialisation en cours : conservative (forme canonique ou non, transmise au
+ * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer).
+ */
+let contexte = { conservative: true, note: false };
+
+function serializeDoc(doc, conservative) {
 	const blocks = doc.content ?? [];
 	let out = conservative ? (doc.attrs?.spipLead ?? '') : '';
 	let i = 0;
@@ -246,7 +262,9 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			const code = n.marks?.find((m) => m.type === 'code');
 			const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
 			// texte d'un glossaire ou d'une abréviation : validé par marksAtomiques, écrit tel quel
-			out += code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink });
+			// un [ final devant une note ou un fragment brut s'écrit en entité (\[[[n]] serait une note)
+			const avantCrochets = ['spipNote', 'spipRawInline'].includes(nodes[i + 1]?.type);
+			out += code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
 			const autobr = n.attrs?.syntax === 'autobr';
@@ -264,12 +282,30 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 		} else if (n.type === 'spipModel') {
 			out += serializeModel(n.attrs.model);
 			atLineStart = false;
+		} else if (n.type === 'spipNote') {
+			out += serializeNote(n.attrs);
+			atLineStart = false;
 		} else {
 			throw new Error(`serialize: type inline inconnu « ${n.type} »`);
 		}
 	});
 	closeTo(0);
 	return out;
+}
+
+/**
+ * Note : [[ + <nom> (nommée) ou <> (sans appel) + contenu + ]]. Le contenu est un document dont les
+ * blocs gardent leur carte de segments : non modifié, il est restitué à l'identique.
+ */
+function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) {
+	const avant = contexte;
+	contexte = { ...contexte, note: true };
+	try {
+		const doc = { type: 'doc', attrs: { spipLead, spipTrail }, content: content?.length ? content : [node('paragraph')] };
+		return `[[${name == null ? '' : `<${name}>`}${serialize(doc, { conservative: avant.conservative })}]]`;
+	} finally {
+		contexte = avant;
+	}
 }
 
 /**
@@ -287,7 +323,7 @@ function serializeCode(code) {
  * Dans le texte d'un lien, le collecteur de liens passe avant les échappements : [ ] | et ->
  * s'écrivent en entités.
  */
-export function escapeText(value, atLineStart, { link = false } = {}) {
+export function escapeText(value, atLineStart, { link = false, avantCrochets = false } = {}) {
 	let s = value
 		.replace(/\\/g, '\\\\')
 		.replace(/[{}`~]/g, (c) => `\\${c}`)
@@ -299,10 +335,15 @@ export function escapeText(value, atLineStart, { link = false } = {}) {
 		.replace(/\[\[/g, '[&#91;');
 	if (!link) {
 		// \[ protège un lien ou une abréviation, comme dans SPIP ; pas une ancre (pre_liens) : entité
-		s = s.replace(/\[(?=#|$|[^\]]*?<-[^\]]*\])/g, '&#91;').replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, '\\[');
+		s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, '&#91;')
+			.replace(/\[$/, avantCrochets ? '&#91;' : '\\[')
+			.replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, '\\[');
 	} else {
 		s = s.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/\|/g, '&#124;').replace(/->/g, '-&gt;');
 	}
+	// dans une note, un ] suivi d'un autre ou en fin de texte la fermerait (]]) ; \] n'y suffit pas
+	// (le core cherche le premier ]] avant de traiter les échappements) : entité
+	if (contexte.note && !link) s = s.replace(/\](?=\]|$)/g, '&#93;');
 	if (atLineStart) s = s.replace(/^([-|]|_(?= |_))/, '\\$1');
 	return s;
 }

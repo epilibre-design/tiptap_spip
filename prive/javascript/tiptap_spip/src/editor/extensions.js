@@ -16,6 +16,8 @@ import Superscript from '@tiptap/extension-superscript';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Text from '@tiptap/extension-text';
 import { Dropcursor, Gapcursor, UndoRedo } from '@tiptap/extensions';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { linkAutoView, modelView } from '../nodeviews/views.js';
 
 /**
@@ -281,6 +283,88 @@ const SpipModelBlock = Node.create({
 	renderHTML: ({ node, HTMLAttributes }) => ['div', { ...HTMLAttributes, class: 'tts-model tts-model-block' }, node.attrs.model?.source ?? ''],
 });
 
+/** Texte d'une note, sans mise en forme, pour l'infobulle de son appel. */
+function apercu(content, max = 80) {
+	const morceaux = [];
+	const parcourir = (n) => {
+		if (n.text) morceaux.push(n.text);
+		else if (n.attrs?.source) morceaux.push(n.attrs.source);
+		else if (n.attrs?.model?.source) morceaux.push(n.attrs.model.source);
+		(n.content ?? []).forEach(parcourir);
+		if (n.type === 'paragraph') morceaux.push(' ');
+	};
+	(content ?? []).forEach(parcourir);
+	const texte = morceaux.join('').replace(/\s+/g, ' ').trim();
+	return texte.length > max ? `${texte.slice(0, max - 1)}…` : texte;
+}
+
+/**
+ * Note [[…]] (spec 05 §1) : appel de note, contenu en attribut (document JSON avec sa carte de
+ * segments). Le numéro n'est pas stocké : SpipNoteNumbers le calcule.
+ */
+const SpipNote = Node.create({
+	name: 'spipNote',
+	group: 'inline',
+	inline: true,
+	atom: true,
+	selectable: true,
+	addAttributes: () => ({
+		// null : numérotée automatiquement ; '' : sans appel
+		name: {
+			default: null,
+			parseHTML: (el) => el.getAttribute('data-tts-note-name'),
+			renderHTML: (a) => (a.name == null ? {} : { 'data-tts-note-name': a.name }),
+		},
+		content: {
+			default: null,
+			parseHTML: (el) => {
+				try {
+					return JSON.parse(el.getAttribute('data-tts-note'));
+				} catch {
+					return null;
+				}
+			},
+			renderHTML: (a) => ({ 'data-tts-note': JSON.stringify(a.content ?? []) }),
+		},
+		spipLead: hidden(),
+		spipTrail: hidden(),
+	}),
+	parseHTML: () => [{ tag: 'sup[data-tts-note]' }],
+	renderHTML: ({ node, HTMLAttributes }) => ['sup', { ...HTMLAttributes, class: 'tts-note', title: apercu(node.attrs.content) }],
+});
+
+/** Numéros des appels de note, recalculés à chaque changement du document (décorations). */
+const SpipNoteNumbers = Extension.create({
+	name: 'spipNoteNumbers',
+	addProseMirrorPlugins() {
+		const key = new PluginKey('spipNoteNumbers');
+		const numeroter = (doc) => {
+			const decorations = [];
+			let n = 0;
+			doc.descendants((node, pos) => {
+				if (node.type.name !== 'spipNote') return;
+				const { name } = node.attrs;
+				// comme SPIP : seules les notes automatiques sont comptées
+				const label = name == null ? String(++n) : name;
+				const aria = name === '' ? 'Note sans appel' : `Note ${label}`;
+				decorations.push(Decoration.node(pos, pos + node.nodeSize, {
+					'data-tts-label': label,
+					'aria-label': `${aria} : ${apercu(node.attrs.content)}`,
+				}));
+			});
+			return DecorationSet.create(doc, decorations);
+		};
+		return [new Plugin({
+			key,
+			state: {
+				init: (_, { doc }) => numeroter(doc),
+				apply: (tr, set) => (tr.docChanged ? numeroter(tr.doc) : set),
+			},
+			props: { decorations: (state) => key.getState(state) },
+		})];
+	},
+});
+
 /** Raccourcis clavier de l'interface (spec 06 §6). */
 const SpipUi = Extension.create({
 	name: 'spipUi',
@@ -331,6 +415,8 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		SpipRawInline,
 		withView(SpipLinkAuto, linkAutoView, Boolean(ui?.titles)),
 		SpipAnchor,
+		SpipNote,
+		SpipNoteNumbers,
 		withView(SpipModel, modelView, Boolean(ui?.previews)),
 		withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
 		// marks : ordre canonique de MARK_ORDER

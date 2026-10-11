@@ -3,12 +3,13 @@ import { parseGlossary, serializeGlossary } from './glossary.js';
 import { mergeText, node, raw, sortMarks, text } from './json.js';
 import { parseLinkAtts } from './links.js';
 import { parseModel } from './models.js';
+import { parseNote } from './notes.js';
 import { FILL, protect } from './protect.js';
 import { escapeText } from './serialize.js';
 
 /** Balises HTML sans attribut équivalentes à une mark (même rendu que le raccourci SPIP). */
 const MARK_TAGS = { strong: 'bold', i: 'italic', del: 'strike', sup: 'superscript', sub: 'subscript' };
-const ENTITIES = { lt: '<', gt: '>', amp: '&', '#91': '[', '#63': '?' };
+const ENTITIES = { lt: '<', gt: '>', amp: '&', '#91': '[', '#93': ']', '#63': '?' };
 /** Dans le texte d'un lien, | et ] s'écrivent en entités (le collecteur de liens passe avant les échappements). */
 const LINK_ENTITIES = { ...ENTITIES, '#124': '|', '#93': ']' };
 const entityRegex = (entities) => new RegExp(`^&(${Object.keys(entities).join('|')});`);
@@ -69,6 +70,11 @@ function markedToken(region, src) {
 	return { t: 'marked', mark: { type: def.type, attrs: r.attrs }, v: r.v };
 }
 
+/** Nœud spipNote : name absent pour une note automatique. */
+function noteNode({ name, content, lead, trail }) {
+	return node('spipNote', { ...(name === null ? {} : { name }), content, spipLead: lead, spipTrail: trail });
+}
+
 function tokenize(source, masked, regions, lineStart, link) {
 	const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
 	const entities = link ? LINK_ENTITIES : ENTITIES;
@@ -108,6 +114,8 @@ function tokenize(source, masked, regions, lineStart, link) {
 			} else if (MARKED[region.kind] && !link && markedToken(region, src)) {
 				// pas de glossaire ni d'abréviation dans le texte d'un lien
 				push(markedToken(region, src));
+			} else if (region.kind === 'note' && parseNote(src, region.data.masked)) {
+				push({ t: 'node', node: noteNode(parseNote(src, region.data.masked)) });
 			} else if (region.kind === 'anchor') {
 				push({ t: 'node', node: node('spipAnchor', { name: region.data.name }) });
 			} else if (region.kind === 'model' && parseModel(src)) {

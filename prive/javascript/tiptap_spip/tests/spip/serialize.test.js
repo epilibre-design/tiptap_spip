@@ -121,6 +121,11 @@ describe('escapeText', () => {
 		expect(escapeText(input, false)).toBe(expected);
 	});
 
+	it('[ final : \\[, ou entité devant une note ou un fragment brut', () => {
+		expect(escapeText('a [', false)).toBe('a \\[');
+		expect(escapeText('a [', false, { avantCrochets: true })).toBe('a &#91;');
+	});
+
 	it('début de ligne : - _ | échappés', () => {
 		expect(escapeText('- a', true)).toBe('\\- a');
 		expect(escapeText('_ a', true)).toBe('\\_ a');
