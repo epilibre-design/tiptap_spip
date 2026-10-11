@@ -8,42 +8,10 @@
 // sans cette option, OPcache du serveur PHP sert encore l'ancien charger_pipelines.php pendant
 // 2 secondes et la première page s'affiche sans l'éditeur)
 import { expect, test } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { configure, crlf, editer, enregistrer, repo, texte } from './site.js';
 
-const repo = fileURLToPath(new URL('../../../../../', import.meta.url));
-const driver = `${repo}tests/e2e/site.php`;
-const env = { ...process.env, SPIP_ROOT: process.env.TTS_SITE };
-
-const php = (args, input) => execFileSync('php', [driver, ...args], { env, input, encoding: 'utf8' });
-const texte = (id) => php(['texte', String(id)]);
-
-/**
- * Crée un article, ouvre une session et charge sa page d'édition.
- * @param {{ sansEditeur?: boolean }} options  sansEditeur : bundle bloqué, textarea natif
- */
-async function editer(page, source, { sansEditeur = false } = {}) {
-	const { id_article: id, cookie } = JSON.parse(php(['preparer', 'tts-e2e'], source));
-	const url = new URL(process.env.TTS_URL);
-	await page.context().addCookies([{ name: 'spip_session', value: cookie, domain: url.hostname, path: '/' }]);
-	if (sansEditeur) await page.route(/tiptap_spip(\.min)?\.js/, (route) => route.abort());
-	await page.goto(`/ecrire/?exec=article_edit&id_article=${id}`);
-	if (!sansEditeur) await expect(page.locator('.tts-editor .ProseMirror')).toBeVisible();
-	return id;
-}
-
-/** Fins de ligne telles que le navigateur les soumet. */
-const crlf = (s) => s.replace(/\r?\n/g, '\r\n');
-
-const enregistrer = async (page) => {
-	await Promise.all([
-		page.waitForURL(/exec=article&/),
-		page.locator('.formulaire_editer_article .boutons [type=submit]').first().click(),
-	]);
-};
-
-test.skip(!process.env.TTS_SITE || !process.env.TTS_URL, 'TTS_SITE et TTS_URL requis');
+configure(test);
 
 for (const fichier of ['base.spip', 'melanges.spip', 'blancs.spip', 'liens.spip', 'modeles.spip']) {
 	test(`${fichier} : enregistré sans modification, le texte est inchangé`, async ({ page }) => {

@@ -5,18 +5,20 @@
  * commande active le plugin et ouvre une session d'administrateur).
  *
  * Usage :
- *   SPIP_ROOT=<site> php tests/e2e/site.php preparer <agent> < texte.spip
+ *   SPIP_ROOT=<site> php tests/e2e/site.php preparer <agent> [titre] < texte.spip
  *     active le plugin tiptap_spip, crée un article avec le texte lu sur l'entrée standard et
  *     une session pour l'auteur 1 ; écrit {"id_article": …, "cookie": …} sur la sortie.
  *     <agent> : User-Agent du navigateur de test (la session SPIP en dépend).
  *   SPIP_ROOT=<site> php tests/e2e/site.php texte <id_article>
  *     écrit le texte de l'article, octet pour octet.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php document <id_article>
+ *     crée une image (PNG 1×1) liée à l'article ; écrit son id_document.
  */
 
 $root = rtrim((string) getenv('SPIP_ROOT'), '/');
 $commande = $argv[1] ?? '';
-if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte'], true)) {
-	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> | texte <id_article>\n");
+if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'document'], true)) {
+	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> | texte <id_article> | document <id_article>\n");
 	exit(2);
 }
 
@@ -38,6 +40,29 @@ if ($commande === 'texte') {
 	exit(0);
 }
 
+if ($commande === 'document') {
+	$id_article = (int) ($argv[2] ?? 0);
+	$fichier = 'png/tts-' . bin2hex(random_bytes(4)) . '.png';
+	@mkdir(_DIR_IMG . 'png', 0777, true);
+	file_put_contents(_DIR_IMG . $fichier, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+	$id_document = (int) sql_insertq('spip_documents', [
+		'extension' => 'png',
+		'titre' => 'Image de test',
+		'fichier' => $fichier,
+		'taille' => filesize(_DIR_IMG . $fichier),
+		'largeur' => 1,
+		'hauteur' => 1,
+		'media' => 'image',
+		'mode' => 'document',
+		'distant' => 'non',
+		'statut' => 'publie',
+		'date' => date('Y-m-d H:i:s'),
+	]);
+	sql_insertq('spip_documents_liens', ['id_document' => $id_document, 'objet' => 'article', 'id_objet' => $id_article, 'vu' => 'non']);
+	echo $id_document, "\n";
+	exit(0);
+}
+
 include_spip('inc/plugin');
 ecrire_plugin_actifs(['tiptap_spip'], false, 'ajoute');
 
@@ -47,7 +72,7 @@ if (!$id_rubrique) {
 	sql_updateq('spip_rubriques', ['id_secteur' => $id_rubrique], 'id_rubrique=' . $id_rubrique);
 }
 $id_article = (int) sql_insertq('spip_articles', [
-	'titre' => 'Test tiptap_spip',
+	'titre' => (string) ($argv[3] ?? 'Test tiptap_spip'),
 	'texte' => stream_get_contents(STDIN),
 	'id_rubrique' => $id_rubrique,
 	'id_secteur' => $id_rubrique,
