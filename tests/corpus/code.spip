@@ -1,0 +1,15 @@
+du `code {x}` et <code>a{b}</code>
+
+```php
+$a = 1;
+```
+
+<code class="js">
+x = 1;
+</code>
+
+<cadre>
+{pas} italique
+</cadre>
+
+<html><b>brut</b></html>
