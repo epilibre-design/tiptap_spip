@@ -19,4 +19,8 @@ if (is_file($root . '/vendor/autoload.php')) {
 	include_once $root . '/ecrire/inc_version.php';
 }
 include_spip('inc/texte');
-echo propre(stream_get_contents(STDIN));
+$html = propre(stream_get_contents(STDIN));
+// le texte des notes n'est pas dans propre() : SPIP l'accumule pour #NOTES
+$notes = charger_fonction('notes', 'inc', true);
+$bas = $notes ? (string) $notes([]) : '';
+echo $html . ($bas === '' ? '' : "\n<!-- notes -->\n" . $bas);
