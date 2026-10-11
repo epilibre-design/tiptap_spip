@@ -111,7 +111,9 @@ export class Popover {
 		if (Popover.current === this) Popover.current = this.parent;
 		if (this.parent?.enfant === this) this.parent.enfant = null;
 		this.form.remove();
-		if (refocus && !this.editor.isDestroyed) this.editor.commands.focus();
+		// focus rendu tout de suite (la commande focus de Tiptap attend l'image suivante) : une touche
+		// pressée juste après agit dans l'éditeur, sur la sélection gardée
+		if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
 		this.onClose?.();
 	}
 }

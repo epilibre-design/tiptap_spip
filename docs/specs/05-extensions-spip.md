@@ -44,6 +44,14 @@ du contenu sont séparés par une ligne vide à l'intérieur des crochets, ce qu
 final ou suivi d'un autre `]` s'écrit `&#93;` : `\]` ne suffit pas, le core cherchant le premier `]]`
 avant de traiter les échappements (`[[a\]]]` est la note `a\` suivie de `]`).
 
+Lot L3.2 : popover ouvert par le bouton « Note », `Mod-Alt-N`, la frappe de `[[`, un clic ou `Entrée`
+sur un appel, ou le panneau des notes. Le sous-éditeur a le schéma de l'éditeur sans notes, avec les
+seuls blocs permis dans une note (`noteExtensions()`) ; sa barre réduite a gras, italique, lien et
+glossaire, ouverts en popovers enfants. Une note ouverte puis appliquée sans que son texte change
+garde son contenu d'origine (identité) ; une note vide est refusée, comme une note qui ne se relirait
+pas à l'identique (nom `a>b`, nom `i` devant un texte contenant `</i>` brut…). La note est suivie
+pendant que le popover est ouvert : supprimée entre-temps, rien n'est modifié.
+
 Reconnaissance (lot L3.1) : le nom se cherche dans le texte que voit le core, où liens, modèles et
 glossaire sont déjà traités (`[[<doc1>]]` est une note automatique contenant un modèle). Gardées
 brutes : note dont le contenu a d'autres blocs que paragraphes, listes et modèles seuls ; note dont le
@@ -83,6 +91,13 @@ que le terme s'écrit tel quel ; sinon il reste brut (`[? SPIP]`, `[??SPIP]`, `[
 `[?S{P}]`, même rendu). Pas de glossaire ni d'abréviation dans le texte d'un lien (brut). Une mark
 saisie qui ne se relirait pas à l'identique (terme avec accolades, bulle avec `]`…) est abandonnée à
 la sérialisation, le texte restant ; l'interface (L3.2) empêche ces saisies.
+
+Lot L3.2 : popover du bouton « Glossaire » ou de `Mod-Alt-G` : curseur ou sélection dans un terme →
+modification du terme entier ou retrait ; texte d'un même paragraphe sélectionné → nouveau terme ;
+curseur seul → champ « Terme » et insertion. Toute saisie est validée par relecture
+(`src/spip/valider.js`). Avec les services : glossaires nommés du site proposés (`datalist`) et
+« Voir la définition ». La frappe de `[?terme…]` pose le terme si le raccourci se réécrit à
+l'identique (sinon le texte reste, comme le parseur le garde brut).
 
 ---
 
@@ -147,7 +162,8 @@ avec les évolutions suivantes.
   bouton « Lien ») : sélection vide → lien sans texte, texte sélectionné → nouveau lien, curseur dans un
   lien → modification du lien entier ; recherche à partir de 2 caractères (250 ms), sauf pour une cible
   déjà au format `art12`, une URL ou `#ancre` ; « Ouvrir » utilise l'URL résolue par `titre_lien`.
-  Proposition des ancres du document : lots suivants.
+  Proposition des ancres du document : lots suivants. Lot L3.2 : une cible ou une bulle qui couperait
+  le raccourci (`a]b`, bulle avec `->`) est refusée (relecture, `src/spip/valider.js`).
 - Cibles reconnues : `art12`, `article12`, `rub3`, `br5`, `doc7`, `aut2`, `mot4`, `site8`, `12` (article),
   types d'objets déclarés (`_RACCOURCI_URL`), `#ancre`, `art12#ancre`, URL absolues, `mailto:`.
 - **Liens sans texte** `[->art12]` : nœud `spipLinkAuto` ([03](03-schema-json.md) §3), affiché avec le titre
@@ -185,7 +201,7 @@ avec les évolutions suivantes.
 
 | Raccourci | Traitement |
 |-----------|------------|
-| `[ABBR\|explication{lang}]` | mark `spipAbbr` (L3.1 ; mêmes règles que le glossaire : texte écrit tel quel, sinon brut), popover d'édition (L3.2) |
+| `[ABBR\|explication{lang}]` | mark `spipAbbr` (L3.1 ; mêmes règles que le glossaire : texte écrit tel quel, sinon brut), popover (L3.2) : bouton « Abréviation », mêmes règles de sélection que le glossaire, explication obligatoire |
 | `-- ` (alinéa en début de ligne) | `hardBreak` + tiret cadratin, sérialisé `\n-- ` (attribut sur le hardBreak) |
 | `- ` (puce isolée en début de ligne) | conservé en `spipRawInline` (usage rare, rendu SPIP spécifique) |
 | `<intro>…</intro>` | `spipRaw` bloc conteneur affiché avec étiquette « Introduction » (v1 : brut) |

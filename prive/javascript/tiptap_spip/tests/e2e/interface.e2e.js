@@ -1,10 +1,13 @@
-// Interface des liens et modèles (lot L2.3) sur un site SPIP JETABLE : prévisualisation, titres des
-// liens sans texte, popover de lien avec recherche, insertion de modèle, enregistrement.
+// Interface des liens et modèles (lot L2.3), des notes, du glossaire et des abréviations (lot L3.2,
+// critère d'acceptation 4) sur un site SPIP JETABLE : prévisualisation, titres des liens sans texte,
+// popovers, insertion, modification, suppression, enregistrement.
 // Usage et serveur : cf. article.e2e.js.
 import { expect, test } from '@playwright/test';
-import { configure, creerDocument, crlf, ecrireTexte, editer, enregistrer, selectionStable, texte } from './site.js';
+import { activer, configure, creerDocument, crlf, ecrireTexte, editer, enregistrer, selectionStable, texte } from './site.js';
 
 configure(test);
+// tts_test définit le glossaire nommé glossaire_tts()
+test.beforeAll(() => activer('tts_test'));
 
 test('un modèle de document est prévisualisé, un lien sans texte affiche le titre de sa cible', async ({ page }) => {
 	let doc;
@@ -67,10 +70,91 @@ test('notes : appels numérotés comme SPIP, renumérotés après suppression, e
 	const appels = page.locator('.ProseMirror .tts-note');
 	const affiche = () => appels.evaluateAll((els) => els.map((el) => getComputedStyle(el, '::before').content));
 	expect(await affiche()).toEqual(['"[1]"', '"[A]"', '"[2]"', '"•"']);
+	// un clic ouvre le popover de la note ; Échap le ferme, la note reste sélectionnée
 	await appels.first().click();
+	await expect(page.locator('.tts-popover--note')).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.tts-popover--note')).toHaveCount(0);
 	await page.keyboard.press('Delete');
 	await expect(appels).toHaveCount(3);
 	expect(await affiche()).toEqual(['"[A]"', '"[1]"', '"•"']);
 	await enregistrer(page);
 	expect(texte(id)).toBe('Un deux[[<A>nommée]] trois[[seconde]] quatre[[<>cachée]].');
+});
+
+/** Curseur en fin du premier paragraphe de l'éditeur. */
+const finDuTexte = async (page) => {
+	await page.locator('.ProseMirror p').first().click();
+	await page.keyboard.press('End');
+	await selectionStable(page);
+};
+
+test('notes : insérer au clavier, modifier, supprimer depuis l\'interface ; source enregistrée', async ({ page }) => {
+	const id = await editer(page, 'Un texte');
+	const note = page.locator('.tts-popover--note');
+	const sousEditeur = note.locator('.tts-note__texte .ProseMirror');
+	await finDuTexte(page);
+	// [[ tapé : popover d'une nouvelle note, texte saisi dans le sous-éditeur avec du gras
+	await page.keyboard.type(' [[');
+	await expect(sousEditeur).toBeFocused();
+	await page.keyboard.type('Ma ');
+	await page.keyboard.press('ControlOrMeta+b');
+	await page.keyboard.type('note');
+	await note.locator('button[name=appliquer]').click();
+	await expect(note).toHaveCount(0);
+	// Ctrl+Alt+N : note nommée
+	await page.keyboard.type(' et');
+	await page.keyboard.press('ControlOrMeta+Alt+n');
+	await expect(sousEditeur).toBeFocused();
+	await page.keyboard.type('Nommée');
+	await note.locator('input[name=nom]').fill('A');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('.ProseMirror .tts-note')).toHaveCount(2);
+	await expect(page.locator('.tts-notes summary')).toHaveText('Notes (2)');
+	// modification depuis le panneau des notes
+	await page.locator('.tts-notes summary').click();
+	await page.locator('.tts-notes__note').first().click();
+	await expect(sousEditeur).toHaveText('Ma note');
+	await sousEditeur.click();
+	await page.keyboard.press('ControlOrMeta+a');
+	await page.keyboard.type('Autre note');
+	await note.locator('button[name=appliquer]').click();
+	// suppression de la note nommée
+	await page.locator('.ProseMirror .tts-note').nth(1).click();
+	await note.locator('button[name=retirer]').click();
+	await expect(page.locator('.ProseMirror .tts-note')).toHaveCount(1);
+	await enregistrer(page);
+	expect(texte(id)).toBe('Un texte [[Autre note]] et');
+});
+
+test('glossaire et abréviation : posés depuis l\'interface, définition ouverte ; source enregistrée', async ({ page }) => {
+	await page.context().route('https://glossaire.test/**', (route) => route.fulfill({ body: 'définition' }));
+	const id = await editer(page, 'Le SPIP et le CMS');
+	const popover = page.locator('.tts-popover');
+	// double-clic sur SPIP, Ctrl+Alt+G : glossaire nommé du site, proposé par la liste
+	await page.locator('.ProseMirror p').first().dblclick({ position: { x: 30, y: 5 } });
+	await selectionStable(page);
+	await page.keyboard.press('ControlOrMeta+Alt+g');
+	await expect(popover.locator('datalist option[value=tts]')).toHaveCount(1);
+	await popover.locator('input[name=glossaire]').fill('tts');
+	await popover.locator('input[name=numero]').fill('12');
+	const [definition] = await Promise.all([page.waitForEvent('popup'), popover.locator('button[name=definition]').click()]);
+	await expect.poll(() => definition.url()).toBe('https://glossaire.test/SPIP/12');
+	await definition.close();
+	await popover.locator('button[name=appliquer]').click();
+	await expect(page.locator('.ProseMirror .tts-glossary')).toHaveText('SPIP');
+	// sélection de CMS, bouton Abréviation
+	await finDuTexte(page);
+	for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowLeft');
+	await selectionStable(page);
+	await page.locator('.tts-toolbar .tts-bouton-abbr').click();
+	await popover.locator('input[name=explication]').fill('Content Management System');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('.ProseMirror abbr')).toHaveText('CMS');
+	// [?terme] tapé
+	await page.keyboard.press('End');
+	await page.keyboard.type(' [?Wiki]');
+	await expect(page.locator('.ProseMirror .tts-glossary')).toHaveCount(2);
+	await enregistrer(page);
+	expect(texte(id)).toBe('Le [?SPIP#tts12] et le [CMS|Content Management System] [?Wiki]');
 });

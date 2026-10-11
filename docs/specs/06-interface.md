@@ -76,6 +76,11 @@ Barre contextuelle (bubble menu, optionnelle) sur sélection de texte : gras, it
 
 Tous les popovers : fermeture par `Échap`, focus rendu à l'éditeur, validation par `Entrée`.
 
+Lot L3.2 : un popover peut en ouvrir un autre (lien ou glossaire depuis le sous-éditeur d'une note) :
+l'enfant s'ouvre sans fermer son parent, rend le focus au sous-éditeur, et se ferme avec lui. Le focus
+est rendu tout de suite (`view.focus()`) : une touche pressée juste après agit dans l'éditeur. Les
+popovers d'une instance se ferment à sa destruction.
+
 ## 5. Anomalies de syntaxe
 
 Les nœuds `spipRaw*` issus d'un raccourci cassé (accolade orpheline, `[[` non fermé…) sont surlignés
@@ -97,6 +102,9 @@ Les nœuds bruts légitimes (HTML inconnu volontaire) ne sont pas signalés comm
 | Plein écran | `F11` dans l'éditeur, `Échap` pour sortir |
 
 Lot L2.3 : barre minimale (Lien, Modèle, Source ; Lien et Modèle désactivés en mode source) et `Mod-K`.
+Lot L3.2 : boutons Note, Glossaire, Abréviation, désactivés en mode source comme Lien et Modèle ;
+`Mod-Alt-N`, `Mod-Alt-G` ; règles de saisie `[[` et `[?x]` ; panneau des notes sous l'éditeur, masqué
+sans note et en mode source.
 ProseMirror lit la sélection du navigateur sur `selectionchange`, asynchrone dans Chromium : une commande
 clavier qui suit de près `Maj+flèches` verrait l'ancienne sélection. Le popover de lien force donc cette
 lecture avant d'agir.
