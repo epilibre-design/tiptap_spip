@@ -138,6 +138,7 @@ function tiptap_spip_traitements_previsu(string $texte, string $nom_champ, strin
 	}
 
 	// PHP issu des modèles : pas d'eval final ici, contrairement aux pages SPIP
+	include_spip('inc/autoriser');
 	if (defined('_PROTEGE_PHP_MODELES') && autoriser('previsualiser', 'modelesphp')) {
 		$texte = echappe_retour($texte, 'php' . _PROTEGE_PHP_MODELES, 'tiptap_spip_eval_php_modeles');
 	}

@@ -1,0 +1,45 @@
+/*
+ * Rendu du contenu dans l'éditeur, proche du site public (spec 03 §7) : seulement quand l'hôte le
+ * demande (classe tts-styles-contenu : espace privé par défaut, ou data-tts-styles="contenu").
+ * Dans le site public, ce sont les styles du site qui s'appliquent. Surchargeable par le squelette.
+ */
+.tts-styles-contenu .tts-prosemirror {
+	line-height: 1.5;
+}
+
+.tts-styles-contenu .tts-prosemirror > * + * {
+	margin-top: 0.75em;
+}
+
+.tts-styles-contenu .tts-prosemirror h2.spip,
+.tts-styles-contenu .tts-prosemirror h3.spip {
+	font-size: 1.3em;
+	margin-top: 1.25em;
+}
+
+.tts-styles-contenu .tts-prosemirror ul.spip,
+.tts-styles-contenu .tts-prosemirror ol.spip {
+	padding-left: 1.5em;
+}
+
+.tts-styles-contenu .tts-prosemirror blockquote.spip {
+	margin-left: 0;
+	padding-left: 1em;
+	border-left: 3px solid #ccc;
+}
+
+.tts-styles-contenu .tts-prosemirror table.spip {
+	border-collapse: collapse;
+}
+
+.tts-styles-contenu .tts-prosemirror table.spip td,
+.tts-styles-contenu .tts-prosemirror table.spip th {
+	border: 1px solid #ccc;
+	padding: 0.25em 0.5em;
+}
+
+.tts-styles-contenu .tts-prosemirror .spip_code_block {
+	padding: 0.5em;
+	background: #f6f6f6;
+	white-space: pre-wrap;
+}

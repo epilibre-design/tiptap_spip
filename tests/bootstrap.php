@@ -19,6 +19,8 @@ function test_reset_globals(): void {
 	$GLOBALS['spip_version_branche'] = '4.4.21';
 	$GLOBALS['_test_fonds'] = [];
 	$GLOBALS['_test_chemins'] = [];
+	$GLOBALS['_test_config'] = [];
+	$GLOBALS['_test_pipelines'] = [];
 }
 
 test_reset_globals();
@@ -28,6 +30,26 @@ if (!function_exists('recuperer_fond')) {
 	function recuperer_fond(string $fond, array $contexte = [], array $options = []): string {
 		$rendu = $GLOBALS['_test_fonds'][$fond] ?? '';
 		return is_callable($rendu) ? $rendu($contexte) : $rendu;
+	}
+}
+
+if (!function_exists('include_spip')) {
+	function include_spip(string $chemin): bool {
+		return true;
+	}
+}
+
+if (!function_exists('lire_config')) {
+	function lire_config(string $cle, $defaut = null) {
+		return $GLOBALS['_test_config'][$cle] ?? $defaut;
+	}
+}
+
+if (!function_exists('pipeline')) {
+	/** Simulation : fonction de $GLOBALS['_test_pipelines'][$nom] appliquée au flux, sinon flux inchangé. */
+	function pipeline(string $nom, $flux = null) {
+		$f = $GLOBALS['_test_pipelines'][$nom] ?? null;
+		return $f ? $f($flux) : $flux;
 	}
 }
 

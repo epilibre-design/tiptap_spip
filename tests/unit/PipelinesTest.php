@@ -49,6 +49,29 @@ final class PipelinesTest extends TestCase
 		$this->assertSame('<head>', tiptap_spip_header_prive('<head>'));
 	}
 
+	public function testConfigurationCalculeeSelonLEspace(): void {
+		$contextes = [];
+		$GLOBALS['_test_fonds']['prive/javascript/_inits/09_tiptap_spip_config.js'] = static function (array $c) use (&$contextes) {
+			$contextes[] = $c;
+			return 'window.spipConfig ??= {};';
+		};
+		$GLOBALS['_test_chemins']['css/tiptap_spip_contenu.css'] = 'plugins/tiptap_spip/css/tiptap_spip_contenu.css';
+		$GLOBALS['_test_config']['tiptap_spip/public'] = 'oui';
+
+		$prive = tiptap_spip_header_prive('');
+		tiptap_spip_insert_head('');
+
+		$this->assertSame([['prive' => 'oui'], ['prive' => 'non']], $contextes);
+		$this->assertStringContainsString('href="plugins/tiptap_spip/css/tiptap_spip_contenu.css?1700000000"', $prive);
+	}
+
+	public function testSitePublicSeulementSiActive(): void {
+		$this->assertSame('<head>', tiptap_spip_insert_head('<head>'));
+
+		$GLOBALS['_test_config']['tiptap_spip/public'] = 'oui';
+		$this->assertStringContainsString('tiptap_spip_init();', tiptap_spip_insert_head('<head>'));
+	}
+
 	public function testImportmapDeclareLeBundle(): void {
 		$flux = tiptap_spip_importmap(['args' => [], 'data' => ['autre.js']]);
 

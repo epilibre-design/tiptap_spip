@@ -9,29 +9,52 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 }
 
 /**
- * SPIP 4 : charge la configuration, la feuille de style et le bundle de l'éditeur.
- * SPIP 5 passe par l'importmap et les scripts prive/javascript/_inits/.
+ * Configuration, feuilles de style et bundle de l'éditeur, à insérer dans le <head> (SPIP 4).
+ * La configuration est calculée avec `prive` dans son contexte : le même squelette sert l'espace
+ * privé et le site public sans partager son cache.
  */
-function tiptap_spip_header_prive($flux) {
-	if ((int) substr($GLOBALS['spip_version_branche'] ?? '4', 0, 1) >= 5) {
-		return $flux;
-	}
-	$config = recuperer_fond('prive/javascript/_inits/09_tiptap_spip_config.js');
+function tiptap_spip_head(bool $prive): string {
+	$config = recuperer_fond('prive/javascript/_inits/09_tiptap_spip_config.js', ['prive' => $prive ? 'oui' : 'non']);
 	$lib = find_in_path('prive/javascript/tiptap_spip.min.js') ?: find_in_path('prive/javascript/tiptap_spip.js');
 	if (!$config || !$lib) {
-		return $flux;
+		return '';
 	}
-	if ($css = find_in_path('css/tiptap_spip.css')) {
-		$flux .= '<link rel="stylesheet" href="' . timestamp($css) . '" type="text/css" />' . "\n";
+	$head = '';
+	foreach (['css/tiptap_spip.css', 'css/tiptap_spip_contenu.css'] as $feuille) {
+		if ($css = find_in_path($feuille)) {
+			$head .= '<link rel="stylesheet" href="' . timestamp($css) . '" type="text/css" />' . "\n";
+		}
 	}
-	$flux .= "<script>\n" . $config . "\n</script>\n";
-	$flux .= "<script type=\"module\">\n"
+	$head .= "<script>\n" . $config . "\n</script>\n";
+	$head .= "<script type=\"module\">\n"
 		. "import { tiptap_spip_init } from '" . protocole_implicite(url_absolue(timestamp($lib))) . "';\n"
 		. "tiptap_spip_init();\n"
 		. "onAjaxLoad(function () { tiptap_spip_init(this); });\n"
 		. "</script>\n";
 
-	return $flux;
+	return $head;
+}
+
+/**
+ * Espace privé, SPIP 4. SPIP 5 passe par l'importmap et les scripts prive/javascript/_inits/.
+ */
+function tiptap_spip_header_prive($flux) {
+	if ((int) substr($GLOBALS['spip_version_branche'] ?? '4', 0, 1) >= 5) {
+		return $flux;
+	}
+	return $flux . tiptap_spip_head(true);
+}
+
+/**
+ * Site public : seulement si la configuration l'active (`tiptap_spip/public`), pour les
+ * formulaires publics et Crayons (spec 02 §6).
+ */
+function tiptap_spip_insert_head($flux) {
+	include_spip('inc/config');
+	if (lire_config('tiptap_spip/public', 'non') !== 'oui') {
+		return $flux;
+	}
+	return $flux . tiptap_spip_head(false);
 }
 
 /**
@@ -54,26 +77,71 @@ function tiptap_spip_champs(string $objet): array {
 }
 
 /**
- * Ajoute après le </form> d'un formulaire d'édition (editer_<objet>) les formulaires de services de
- * l'éditeur, un par champ équipé, reliés au formulaire d'édition par un identifiant d'instance
- * aléatoire (spec 02 §5 « Intégration ») : deux formulaires d'édition du même objet dans une page
- * gardent chacun leurs services.
+ * Contextes des formulaires autres que editer_* qui embarquent l'éditeur (spec 02 §6) : nom du
+ * formulaire → fonction qui, à partir des arguments de la balise et du contexte du formulaire,
+ * renvoie ['objet' => …, 'id_objet' => …, 'champs' => [...]] (objet vide : mode sans objet), ou
+ * null pour ne rien équiper. Les plugins complètent la liste par le pipeline tiptap_spip_contextes.
+ *
+ * @return array<string, callable>
+ */
+function tiptap_spip_contextes(): array {
+	$contextes = [
+		// réglages d'identité du site : descriptif du site, sans objet
+		'configurer_identite' => static fn () => ['objet' => '', 'id_objet' => 0, 'champs' => ['descriptif_site']],
+	];
+	return pipeline('tiptap_spip_contextes', $contextes) ?: $contextes;
+}
+
+/**
+ * Contexte de l'éditeur pour un formulaire : formulaires d'objet (editer_<objet>), ou déclarés par
+ * tiptap_spip_contextes.
+ *
+ * @return array{objet: string, id_objet: int, champs: string[], marquer: bool}|null  marquer : poser
+ *         data-tts-toolbar sur les textareas des champs (le lancement JS ne les reconnaît pas seul)
+ */
+function tiptap_spip_contexte_formulaire(string $form, array $args, array $contexte): ?array {
+	if (str_starts_with($form, 'editer_')) {
+		// formulaires d'objet (editer_objet) : SPIP transmet ['type' => objet, 'id' => id] comme args
+		$objet = (string) ($args['type'] ?? substr($form, 7));
+		$id_objet = intval($args['id'] ?? $args[0] ?? 0);
+		return ['objet' => $objet, 'id_objet' => max(0, $id_objet), 'champs' => tiptap_spip_champs($objet), 'marquer' => false];
+	}
+	$declares = tiptap_spip_contextes();
+	if (!isset($declares[$form]) || !is_callable($declares[$form])) {
+		return null;
+	}
+	$c = $declares[$form]($args, $contexte);
+	if (!is_array($c) || empty($c['champs'])) {
+		return null;
+	}
+	return [
+		'objet' => (string) ($c['objet'] ?? ''),
+		'id_objet' => max(0, intval($c['id_objet'] ?? 0)),
+		'champs' => array_values(array_map('strval', $c['champs'])),
+		'marquer' => true,
+	];
+}
+
+/**
+ * Ajoute après le </form> d'un formulaire équipé (editer_<objet>, ou déclaré par
+ * tiptap_spip_contextes) les formulaires de services de l'éditeur, un par champ, reliés au
+ * formulaire par un identifiant d'instance aléatoire (spec 02 §5 « Intégration ») : deux formulaires
+ * d'édition du même objet dans une page gardent chacun leurs services.
  */
 function tiptap_spip_formulaire_fond($flux) {
 	$form = $flux['args']['form'] ?? '';
-	if (!str_starts_with($form, 'editer_') || !str_contains($flux['data'], '<form')) {
+	if ($form === 'tiptap_spip' || !str_contains($flux['data'], '<form')) {
 		return $flux;
 	}
-	// formulaires d'objet (editer_objet) : SPIP transmet ['type' => objet, 'id' => id] comme args
-	$args = $flux['args']['args'] ?? [];
-	$objet = (string) ($args['type'] ?? substr($form, 7));
-	$id_objet = intval($args['id'] ?? $args[0] ?? 0);
-	$id_objet = $id_objet > 0 ? $id_objet : 0;
+	$c = tiptap_spip_contexte_formulaire($form, (array) ($flux['args']['args'] ?? []), (array) ($flux['args']['contexte'] ?? []));
+	if (!$c) {
+		return $flux;
+	}
 	$services = '';
-	foreach (tiptap_spip_champs($objet) as $champ) {
+	foreach ($c['champs'] as $champ) {
 		$services .= recuperer_fond('inclure/tiptap_spip_services', [
-			'objet' => $objet,
-			'id_objet' => $id_objet,
+			'objet' => $c['objet'],
+			'id_objet' => $c['id_objet'],
 			'champ' => $champ,
 		]);
 	}
@@ -81,8 +149,17 @@ function tiptap_spip_formulaire_fond($flux) {
 		return $flux;
 	}
 	$instance = 'tts-' . bin2hex(random_bytes(6));
-	$flux['data'] = preg_replace('/<form\b/i', '<form data-tts-instance="' . $instance . '"', $flux['data'], 1);
-	$flux['data'] .= str_replace('data-tts-instance=""', 'data-tts-instance="' . $instance . '"', $services);
+	$data = preg_replace('/<form\b/i', '<form data-tts-instance="' . $instance . '"', $flux['data'], 1);
+	if ($c['marquer']) {
+		foreach ($c['champs'] as $champ) {
+			$data = preg_replace(
+				'/<textarea\b(?![^>]*\bdata-tts-toolbar=)(?=[^>]*\bname=([\'"])' . preg_quote($champ, '/') . '\1)/i',
+				'<textarea data-tts-toolbar="minimale"',
+				$data
+			);
+		}
+	}
+	$flux['data'] = $data . str_replace('data-tts-instance=""', 'data-tts-instance="' . $instance . '"', $services);
 
 	return $flux;
 }

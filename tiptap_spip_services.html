@@ -1,0 +1,9 @@
+[(#REM)
+	Formulaire de services de l'éditeur à la demande (spec 02 §6), pour les hôtes qui ne passent
+	pas par formulaire_fond (Crayons, textarea quelconque, mode sans objet). Le contexte vient de la
+	requête : charger() le vérifie (autorisation, champ texte de l'objet) avant de rendre quoi que
+	ce soit, puis il est signé dans le formulaire.
+]#CACHE{0}
+#HTTP_HEADER{Content-Type: text/html; charset=#CHARSET}
+#HTTP_HEADER{X-Robots-Tag: noindex}
+<INCLURE{fond=inclure/tiptap_spip_services, objet=#ENV{objet}, id_objet=#ENV{id_objet}, champ=#ENV{champ}}>

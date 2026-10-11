@@ -1,7 +1,11 @@
+[(#REM) Pas de cache : la configuration (tiptap_spip/crayons) doit s'appliquer dès qu'elle change ]#CACHE{0}
 window.spipConfig ??= {};
 Object.assign(window.spipConfig, {
 	tiptap_spip: {
 		css: "@import url('[(#CHEMIN{css/tiptap_spip.css}|timestamp|url_absolue)]')",
+		prive: [(#ENV{prive,oui}|=={oui}|?{true,false})],
+		crayons: [(#CONFIG{tiptap_spip/crayons}|=={oui}|?{true,false})],
+		services: "[(#URL_PAGE{tiptap_spip_services}|url_absolue|texte_script)]",
 		i18n: {
 			mode_source: "<:tiptap_spip:mode_source|texte_script:>",
 			lien: "<:tiptap_spip:lien|texte_script:>",

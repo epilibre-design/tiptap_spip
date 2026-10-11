@@ -14,6 +14,8 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 }
 
 include_spip('tiptap_spip_fonctions');
+// dans le site public, autoriser() n'est pas chargé d'office (formulaire chargé à la demande, Crayons)
+include_spip('inc/autoriser');
 
 /**
  * Vrai si l'auteur connecté peut utiliser les services pour ce champ.

@@ -1,4 +1,5 @@
 [(#REM) Formulaire de services d'un champ, ajouté après le formulaire d'édition (pipeline formulaire_fond)
-]<div class="tts-services" hidden data-tts-instance="" data-tts-objet="#ENV{objet}" data-tts-id="#ENV{id_objet}" data-tts-champ="#ENV{champ}">
+	ou chargé à la demande (tiptap_spip_services.html)
+]<div class="tts-services" hidden data-tts-instance="" data-tts-objet="[(#ENV{objet}|attribut_html)]" data-tts-id="[(#ENV{id_objet}|intval)]" data-tts-champ="[(#ENV{champ}|attribut_html)]">
 #FORMULAIRE_TIPTAP_SPIP{#ENV{objet}, #ENV{id_objet}, #ENV{champ}}
 </div>
