@@ -1,0 +1,107 @@
+import { describe, expect, it } from 'vitest';
+import { parseContent } from '../../src/spip/blocks.js';
+import { node, raw, text } from '../../src/spip/json.js';
+
+const p = (...content) => node('paragraph', null, content);
+const item = (inline, nested) => node('listItem', null, nested ? [p(text(inline)), nested] : [p(text(inline))]);
+const cell = (type, value, colspan = 1, rowspan = 1) => node(type, { colspan, rowspan }, [value === '' ? node('paragraph') : p(text(value))]);
+
+describe('blocs simples', () => {
+	it('paragraphes, intertitres, filet', () => {
+		expect(parseContent('{{{Titre {i}}}}\n\n<h3>Sous</h3>\n\n----\n\nfin')).toEqual([
+			node('heading', { level: 2 }, [text('Titre '), text('i', [{ type: 'italic' }])]),
+			node('heading', { level: 3 }, [text('Sous')]),
+			node('horizontalRule'),
+			p(text('fin')),
+		]);
+	});
+
+	it('un segment peut donner plusieurs blocs, comme le rendu SPIP', () => {
+		expect(parseContent('{{{T}}}\ntexte\n----\nfin')).toEqual([
+			node('heading', { level: 2 }, [text('T')]), p(text('texte')), node('horizontalRule'), p(text('fin')),
+		]);
+	});
+
+	it('un intertitre contenant du gras n\'est pas un intertitre éditable', () => {
+		expect(parseContent('{{{a {{b}} c}}}')).toEqual([p(raw('{{{'), text('a '), text('b', [{ type: 'bold' }]), text(' c'), raw('}}}'))]);
+	});
+});
+
+describe('listes', () => {
+	it('imbrication et lignes de continuation', () => {
+		expect(parseContent('texte\n-* a\n-** b\nsuite\n-* c')).toEqual([
+			p(text('texte')),
+			node('bulletList', null, [
+				item('a', node('bulletList', null, [node('listItem', null, [p(text('b'), { type: 'hardBreak', attrs: { syntax: 'autobr' } }, text('suite'))])])),
+				item('c'),
+			]),
+		]);
+	});
+
+	it('changement de type entre éléments de même profondeur : nouvelle liste', () => {
+		expect(parseContent('-* a\n-# b')).toEqual([node('bulletList', null, [item('a')]), node('orderedList', null, [item('b')])]);
+	});
+
+	it('en remontant d\'un niveau, la liste existante continue (comme SPIP)', () => {
+		expect(parseContent('-* a\n-## b\n-# c')).toEqual([
+			node('bulletList', null, [item('a', node('orderedList', null, [item('b')])), item('c')]),
+		]);
+	});
+
+	it('saut de profondeur ou deux sous-listes dans un élément : bloc brut', () => {
+		expect(parseContent('-* a\n-*** b')).toEqual([node('spipRaw', { source: '-* a\n-*** b' })]);
+		expect(parseContent('-* a\n-** b\n-## c')).toEqual([node('spipRaw', { source: '-* a\n-** b\n-## c' })]);
+	});
+});
+
+describe('conteneurs', () => {
+	it('<quote>, <poesie>, <div class="text-…">', () => {
+		expect(parseContent('<quote>\na\n\nb\n</quote>')).toEqual([node('blockquote', null, [p(text('a')), p(text('b'))])]);
+		expect(parseContent('<poesie>\nv1\nv2\n</poesie>')).toEqual([
+			node('spipPoesie', { tag: 'poesie' }, [p(text('v1'), { type: 'hardBreak', attrs: { syntax: 'autobr' } }, text('v2'))]),
+		]);
+		expect(parseContent('<div class="text-justify">\n\na\n\n</div>')).toEqual([node('spipAlign', { align: 'justify' }, [p(text('a'))])]);
+	});
+
+	it('autre <div> : bloc brut', () => {
+		expect(parseContent('<div class="x">\n\na\n\n</div>')).toEqual([
+			p(raw('<div class="x">')), p(text('a')), p(raw('</div>')),
+		]);
+	});
+});
+
+describe('blocs verbatim', () => {
+	it('code', () => {
+		expect(parseContent('```php\n$a;\n```')).toEqual([node('codeBlock', { language: 'php' }, [text('$a;\n')])]);
+		expect(parseContent('<code>\nx\n</code>')).toEqual([node('codeBlock', null, [text('x')])]);
+		expect(parseContent('<code class="js">\nx\n</code>')).toEqual([node('codeBlock', { openTag: '<code class="js">' }, [text('x')])]);
+		expect(parseContent('<code>x</code>')).toEqual([p(text('x', [{ type: 'code' }]))]);
+	});
+
+	it('cadre, html, math', () => {
+		expect(parseContent('<cadre>\n{x}\n</cadre>')).toEqual([node('spipCadre', { openTag: '<cadre>', closeTag: '</cadre>' }, [text('\n{x}\n')])]);
+		expect(parseContent('<html><b>x</b></html>')).toEqual([node('spipHtml', { openTag: '<html>', closeTag: '</html>' }, [text('<b>x</b>')])]);
+		expect(parseContent('<math>$x$</math>')).toEqual([node('spipMath', { openTag: '<math>', closeTag: '</math>' }, [text('$x$')])]);
+	});
+
+	it('bloc contenant du code en backticks : brut', () => {
+		expect(parseContent('<html>`x`</html>')).toEqual([node('spipRaw', { source: '<html>`x`</html>' })]);
+	});
+});
+
+describe('tableaux', () => {
+	it('en-tête, légende, fusions', () => {
+		expect(parseContent('||Légende|Résumé||\n|{{A}}||{{C}}|\n|1|<|3|\n|^|^|4|')).toEqual([
+			node('table', { caption: 'Légende', summary: 'Résumé' }, [
+				node('tableRow', null, [cell('tableHeader', 'A'), cell('tableHeader', ''), cell('tableHeader', 'C')]),
+				node('tableRow', null, [cell('tableCell', '1', 2, 2), cell('tableCell', '3')]),
+				node('tableRow', null, [cell('tableCell', '4')]),
+			]),
+		]);
+	});
+
+	it('lignes de longueurs différentes ou fusion incohérente : bloc brut', () => {
+		expect(parseContent('|a|b|\n|c|')[0].type).toBe('spipRaw');
+		expect(parseContent('|a|b|\n|3|<|\n|^|4|')[0].type).toBe('spipRaw');
+	});
+});
