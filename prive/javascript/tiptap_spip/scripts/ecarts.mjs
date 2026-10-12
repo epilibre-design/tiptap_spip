@@ -145,8 +145,16 @@ export function judge({ fichier, diff, entries, frozen }) {
  * est retiré (décision du lot L3.1, spec 08) : SPIP le tire de l'orthographe brute de la note
  * (échappements compris), qu'une réécriture équivalente peut changer ; le texte rendu des notes
  * est comparé en entier (oracle tests/equivalence/propre.php).
+ * Une entité vaut le caractère qu'elle code (`&#124;` et `|`, `&gt;` et `>` : même texte dans le
+ * DOM), sauf `<`, `&`, les guillemets et les blancs, qui changent l'analyse du HTML ou ses espaces.
  */
 export const normalize = (html) => html
+	.replace(/&(?:gt|#(\d+)|#x([0-9a-f]+));/gi, (e, dec, hex) => {
+		const point = dec ? Number(dec) : hex ? parseInt(hex, 16) : 0x3e;
+		if (point > 0x10ffff) return e;
+		const c = String.fromCodePoint(point);
+		return /[<&"'\s]/.test(c) ? e : c;
+	})
 	.replace(/(<a href="#nb[^"]*" class="spip_note" rel="appendix") title="[^"]*"/g, '$1')
 	.replace(/ (?:id|headers)='id[0-9a-f]+_c\d+'/g, '')
 	.replace(/\bdby[0-9a-f]{4}\b/g, 'dby')

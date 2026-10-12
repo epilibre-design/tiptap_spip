@@ -137,4 +137,18 @@ describe('normalize', () => {
 		expect(normalize('<abbr title="a">A</abbr>')).not.toBe(normalize('<abbr title="b">A</abbr>'));
 		expect(normalize('<div id="nb1"><p>a]b</p></div>')).not.toBe(normalize('<div id="nb1"><p>a\\]b</p></div>'));
 	});
+
+	it('une entité vaut le caractère qu\'elle code (même texte dans le DOM)', () => {
+		expect(normalize('<p>&lt;code&gt; in</p>')).toBe(normalize('<p>&lt;code> in</p>'));
+		expect(normalize('<a href="x">link|title</a>')).toBe(normalize('<a href="x">link&#124;title</a>'));
+		expect(normalize('<p>a&#x5B;b</p>')).toBe(normalize('<p>a[b</p>'));
+	});
+
+	it('sauf <, &, les guillemets et les blancs, qui changent l\'analyse du HTML ou ses espaces', () => {
+		expect(normalize('<p>&#60;b></p>')).not.toBe(normalize('<p><b></p>'));
+		expect(normalize('<p>&#38;lt;</p>')).not.toBe(normalize('<p>&lt;</p>'));
+		expect(normalize('<a title="&#34;">x</a>')).not.toBe(normalize('<a title=""">x</a>'));
+		expect(normalize('<p>a&#160;b</p>')).not.toBe(normalize('<p>a b</p>'));
+		expect(normalize('<p>&#99999999;</p>')).toBe('<p>&#99999999;</p>');
+	});
 });
