@@ -1,5 +1,6 @@
 // Tests de bout en bout sur un site SPIP jetable (voir tests/e2e/article.e2e.js).
-import { defineConfig } from '@playwright/test';
+// Critère 8 (spec 08) : Chromium, Firefox et WebKit ; un seul : --project=chromium.
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
 	testDir: 'tests/e2e',
@@ -10,4 +11,9 @@ export default defineConfig({
 		baseURL: process.env.TTS_URL,
 		userAgent: 'tts-e2e',
 	},
+	projects: ['chromium', 'firefox', 'webkit'].map((nom) => ({
+		name: nom,
+		// userAgent fixe (la session SPIP en dépend) : celui du projet n'est pas repris
+		use: { ...devices[{ chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit: 'Desktop Safari' }[nom]], userAgent: 'tts-e2e' },
+	})),
 });

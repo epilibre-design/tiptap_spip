@@ -26295,7 +26295,13 @@ function openGlossaryPopover(contexte3) {
       const voir = popover2.button(label("glossaire_definition"), () => {
         const { terme, attrs } = valeurs();
         const raccourci = serializeGlossary(terme, attrs);
-        glossaire(services, raccourci).then((r) => r?.url && globalThis.open?.(r.url, "_blank", "noopener"));
+        const fenetre = globalThis.open?.("", "_blank");
+        if (fenetre) fenetre.opener = null;
+        glossaire(services, raccourci).then((r) => {
+          if (!fenetre) return;
+          if (r?.url) fenetre.location = r.url;
+          else fenetre.close();
+        });
         return false;
       }, { name: "definition" });
       voir.classList.add("tts-popover__secondaire");

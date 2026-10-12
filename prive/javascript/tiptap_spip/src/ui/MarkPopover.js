@@ -123,7 +123,16 @@ export function openGlossaryPopover(contexte) {
 			const voir = popover.button(label('glossaire_definition'), () => {
 				const { terme, attrs } = valeurs();
 				const raccourci = serializeGlossary(terme, attrs);
-				glossaire(services, raccourci).then((r) => r?.url && globalThis.open?.(r.url, '_blank', 'noopener'));
+				// fenêtre ouverte pendant le clic : ouverte au retour du serveur, hors de l'action de
+				// l'utilisateur, elle serait bloquée (Firefox si la réponse tarde, Safari toujours).
+				// Sans opener (noopener rendrait null), puis envoyée à l'URL, ou refermée sans URL
+				const fenetre = globalThis.open?.('', '_blank');
+				if (fenetre) fenetre.opener = null;
+				glossaire(services, raccourci).then((r) => {
+					if (!fenetre) return;
+					if (r?.url) fenetre.location = r.url;
+					else fenetre.close();
+				});
 				return false;
 			}, { name: 'definition' });
 			voir.classList.add('tts-popover__secondaire');

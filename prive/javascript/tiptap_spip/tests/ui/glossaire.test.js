@@ -67,7 +67,9 @@ describe('popover de glossaire', () => {
 
 	it('services : liste des glossaires du site, « Voir la définition » ouvre l\'URL calculée par SPIP', async () => {
 		const services = fakeServices({ glossaire: ({ raccourci }) => ({ url: `https://def/${raccourci}`, glossaires: ['mots', 'wikipedia'] }) });
-		const open = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
+		// fenêtre ouverte au clic, avant la réponse du serveur (bloqueurs de fenêtres) : envoyée à l'URL
+		const fenetre = { opener: 'page', location: null, close: vi.fn() };
+		const open = vi.spyOn(globalThis, 'open').mockImplementation(() => fenetre);
 		try {
 			const { ui } = monter('Le [?SPIP] ici', services);
 			editor.commands.setTextSelection(apres('SP'));
@@ -77,10 +79,18 @@ describe('popover de glossaire', () => {
 			expect(champ('glossaire').getAttribute('list')).toBe(document.querySelector('datalist').id);
 			remplir('glossaire', 'mots');
 			cliquer('definition');
+			expect(open).toHaveBeenCalledWith('', '_blank');
+			expect(fenetre.opener).toBeNull();
 			await tick();
 			expect(services.call).toHaveBeenLastCalledWith('glossaire', { raccourci: '[?SPIP#mots]' });
-			expect(open).toHaveBeenCalledWith('https://def/[?SPIP#mots]', '_blank', 'noopener');
+			expect(fenetre.location).toBe('https://def/[?SPIP#mots]');
+			expect(fenetre.close).not.toHaveBeenCalled();
 			expect(popovers()).toHaveLength(1);
+			// pas d'URL (glossaire inconnu, services en échec) : la fenêtre ouverte est refermée
+			services.call.mockResolvedValueOnce({ url: null, glossaires: [] });
+			cliquer('definition');
+			await tick();
+			expect(fenetre.close).toHaveBeenCalled();
 		} finally {
 			open.mockRestore();
 		}

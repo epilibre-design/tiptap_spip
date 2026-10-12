@@ -3,6 +3,7 @@
 // le même formulaire soumis SANS l'éditeur (le navigateur convertit les fins de ligne d'un
 // textarea en CRLF à la soumission : c'est la référence, pas la source brute).
 // Usage : TTS_SITE=<racine du site jetable> TTS_URL=http://127.0.0.1:<port> npm run e2e
+// (Chromium, Firefox et WebKit, installés par `npx playwright install` ; un seul : -- --project=chromium)
 // Serveur : php -d opcache.revalidate_freq=0 -S 127.0.0.1:<port> -t <racine du site jetable>
 // (site.php active le plugin en ligne de commande, ce qui réécrit les caches de plugins de SPIP ;
 // sans cette option, OPcache du serveur PHP sert encore l'ancien charger_pipelines.php pendant

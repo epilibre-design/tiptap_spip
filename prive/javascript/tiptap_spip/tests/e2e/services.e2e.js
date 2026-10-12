@@ -107,7 +107,8 @@ test('verifier() refuse une demande invalide, le service reste disponible', asyn
 for (const champ of ['formulaire_action_args', 'formulaire_action_sign']) {
 	test(`${champ} falsifié : SPIP ne traite pas la demande, mode dégradé`, async ({ page }) => {
 		await page.evaluate((champ) => {
-			const input = document.querySelector(`.tts-services [name=${champ}]`);
+			// formulaire de services du champ de l'éditeur (un par champ équipé dans la page)
+			const input = [...window.__tts.instances][0].services.container.querySelector(`[name=${champ}]`);
 			input.value = `${input.value.slice(0, -4)}${input.value.endsWith('AAAA') ? 'BBBB' : 'AAAA'}`;
 		}, champ);
 		expect(await appeler(page, 'titre_lien', { cibles: [`art${id}`] })).toMatchObject({ erreur: 'ServiceUnavailable', disponible: false });

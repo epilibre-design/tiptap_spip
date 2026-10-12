@@ -41,12 +41,20 @@ L'équivalence de rendu tourne en CI avec une image SPIP 4.4 et une SPIP 5 (spip
    l'interface produit la source attendue.
 5. Une modification d'un paragraphe ne change, dans la révision SPIP, que ce paragraphe.
 6. Performance : parse + montage < 150 ms pour 50 000 caractères (mesuré en CI, Chromium).
+   Vérifié en e2e (lot L5.3) :
+   - texte : le corpus d'équivalence répété ;
+   - mesure : médiane de 5 montages, après un premier de chauffe ;
+   - résultat : 104 à 134 ms selon les passes, une passe sur six au-dessus de 150 ms (152 ms) dans la
+     suite complète sur un poste chargé ; 199 ms avant les optimisations de `protect()`, `regionsIn()` et
+     des empreintes. Le montage de chauffe prend environ 170 ms.
 7. Accessibilité : barre et popovers utilisables au clavier seul ; audit axe sans erreur critique.
    Vérifié en e2e (lots L5.1 et L5.2) :
    - barre au clavier seul, jusqu'à l'enregistrement ;
    - audit axe de l'éditeur, d'un menu ouvert et d'un popover ouvert : aucune violation critique ni
-     sérieuse.
+     sérieuse ; depuis le lot L5.3, aucune violation du tout.
 8. Fonctionne dans l'espace privé SPIP 4.2, 4.4 et 5.x (Firefox ESR, Chromium, Safari récents).
+   Lot L5.3 : la suite e2e tourne sous Chromium, Firefox et WebKit (projets Playwright), sur SPIP 4.4. Les
+   sites jetables SPIP 4.2 et 5.x restent à fournir.
 
 ## 4. Écarts de rendu acceptés
 

@@ -11,7 +11,7 @@ const dossier = new URL('../fixtures/cvt/', import.meta.url);
 
 /** Poste le formulaire de services comme cvt.js, sans passer par lui, et renvoie la réponse brute. */
 const poster = (page, params, { sansSession = false } = {}) => page.evaluate(async ([params, sansSession]) => {
-	const form = document.querySelector('.tts-services form');
+	const form = document.querySelector('.tts-services[data-tts-champ=texte] form');
 	const data = new FormData(form);
 	data.set('var_ajax', 'form');
 	for (const [k, v] of Object.entries(params)) data.set(k, v);
@@ -26,7 +26,7 @@ test('fixtures de cvt.js', async ({ page }) => {
 	const id = await editer(page, 'Texte');
 	mkdirSync(dossier, { recursive: true });
 	const ecrire = (nom, html) => writeFileSync(new URL(`${nom}.html`, dossier), html);
-	ecrire('formulaire', await page.evaluate(() => document.querySelector('.tts-services').outerHTML));
+	ecrire('formulaire', await page.evaluate(() => document.querySelector('.tts-services[data-tts-champ=texte]').outerHTML));
 	ecrire('titre_lien', await poster(page, { operation: 'titre_lien', cibles: JSON.stringify([`art${id}`, 'https://www.spip.net/fr', 'art999999']) }));
 	ecrire('erreurs', await poster(page, { operation: 'previsu_modele', modele: '<zzz1>' }));
 	ecrire('sans_session', await poster(page, { operation: 'titre_lien', cibles: JSON.stringify([`art${id}`]) }, { sansSession: true }));

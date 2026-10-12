@@ -223,8 +223,13 @@ Lot L5.2 :
 - **Piège de focus :** `Tab` sur le dernier élément d'un popover revient au premier, `Maj+Tab` sur le premier va
   au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'est pas reprise.
 - **Audit axe** (`@axe-core/playwright`, e2e) de l'éditeur, d'un menu ouvert et d'un popover ouvert : aucune
-  violation critique ni sérieuse. Reste une violation mineure (`aria-allowed-role`) : le popover est un
-  `<form role="dialog">`, et le rôle `dialog` n'est pas permis sur un `form`.
+  violation critique ni sérieuse.
+
+Lot L5.3 :
+- **Popovers :** le dialogue est un `div role="dialog"` nommé, et décrit pour le nœud brut. Il contient le
+  `<form>`, car le rôle `dialog` n'est pas permis sur un `form` (violation `aria-allowed-role`).
+- **Audit axe :** l'éditeur, un menu ouvert, le popover de lien et celui du nœud brut ne présentent aucune
+  violation, quel que soit son niveau.
 
 ## 8. Internationalisation
 

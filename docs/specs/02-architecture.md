@@ -74,6 +74,30 @@ tiptap_spip/
 - Modèles masqués dans l'interface (repris de `inserer_modeles/ignorer_modeles`).
 - Glossaires proposés (`wikipedia` par défaut + glossaires déclarés `glossaire_XXX`).
 
+Réalisation (lot L5.3) :
+- **Page :** `configurer_tiptap_spip`, entrée du menu Configuration. Le formulaire CVT
+  `formulaires/configurer_tiptap_spip.{html,php}` n'utilise pas Saisies et écrit la méta `tiptap_spip`.
+  `tiptap_spip_config()` (`inc/tiptap_spip_config.php`) la relit en remplaçant chaque valeur absente ou
+  invalide par son défaut. L'autorisation `configurer` est vérifiée par le core.
+- **Activation :**
+  - site public et crayons : `non` par défaut ;
+  - pas de réglage propre à l'espace privé, car décocher tous les champs d'un objet y désactive l'éditeur.
+- **Champs candidats :** champs éditables des objets éditables dont le traitement passe par `propre()`. Par
+  exemple `texte`, `chapo`, `ps` et `descriptif` d'un article, ou `bio` d'un auteur ; jamais `titre` ni
+  `nom_site`, qui passent par `typo()`.
+  - Tous sont équipés tant qu'aucun choix n'a été fait pour l'objet.
+  - Un formulaire d'objet reçoit un formulaire de services par champ équipé, et `data-tts-champs` sur son
+    `<form>` : le lancement JS n'équipe que ces champs.
+  - Pour un crayon, `spipConfig.tiptap_spip.champs` (objet → champs) fait le même tri.
+  - Un formulaire `editer_*` d'un objet non éditable n'est pas pris en charge.
+- **Mode et niveaux :** mode à l'ouverture (`visual` par défaut) ; niveaux d'intertitres parmi 2 à 6, au
+  moins un, `[2, 3, 4]` par défaut. Le menu Titre prend ceux de la configuration quand sa barre n'en
+  indique pas.
+- **Glossaires :** glossaires nommés proposés dans le popover du glossaire, tous par défaut. L'opération
+  `glossaire` accepte toujours tous les glossaires du site, car un raccourci existant reste valide.
+- **Modèles masqués :** reportés avec le catalogue des modèles (`inserer_modeles`, Q3). L'interface n'en
+  liste encore aucun, donc rien à masquer.
+
 ## 3. Le code JavaScript
 
 Sources dans `prive/javascript/tiptap_spip/` (package npm privé), bundle construit avec **esbuild**
@@ -334,13 +358,14 @@ Tiptap n'utilise pas d'iframe : la zone d'édition fait partie du DOM de la page
 
 ### Réalisation (lot L2b)
 
-- **Options** (métas jusqu'à la page de configuration du lot L5, `non` par défaut) : `tiptap_spip/public`
+- **Options** (`non` par défaut ; page de configuration au lot L5.3) : `tiptap_spip/public`
   charge l'éditeur dans le site public (pipeline `insert_head`) ; `tiptap_spip/crayons` équipe les crayons
   (`.formulaire_crayon textarea.crayon-active`) — Q9 tranchée : sur option. Avec l'option publique, le
   formulaire de forum d'un article (`textarea[name=texte]`) est équipé lui aussi.
 - **Configuration JS** (`09_tiptap_spip_config.js.html`, sans cache, calculée avec `prive` dans son
-  contexte pour ne pas partager le cache entre privé et public) : `prive`, `crayons`, `services` (URL de la
-  page de services à la demande).
+  contexte pour ne pas partager le cache entre privé et public) : `prive`, `services` (URL de la page de
+  services à la demande), et depuis le lot L5.3 `crayons`, `mode`, `niveaux`, `champs`
+  (`tiptap_spip_config_js`).
 - **Contextes déclarés** : `tiptap_spip_contextes` associe un nom de formulaire à une fonction
   `($args, $contexte) → ['objet', 'id_objet', 'champs']` (objet vide : sans objet ; `null` : rien) ;
   `formulaire_fond` pose `data-tts-toolbar="minimale"` sur leurs textareas (sauf barre déjà indiquée) et

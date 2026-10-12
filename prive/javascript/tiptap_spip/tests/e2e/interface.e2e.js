@@ -4,7 +4,7 @@
 // Usage et serveur : cf. article.e2e.js.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { activer, configure, creerDocument, crlf, ecrireTexte, editer, enregistrer, selectionStable, texte } from './site.js';
+import { activer, configure, creerDocument, crlf, ecrireTexte, editer, enregistrer, module, selectionStable, texte } from './site.js';
 
 configure(test);
 // tts_test définit le glossaire nommé glossaire_tts()
@@ -69,8 +69,12 @@ test('bouton Modèle : raccourci inséré en bloc, prévisualisé, enregistré',
 test('notes : appels numérotés comme SPIP, renumérotés après suppression, enregistrés', async ({ page }) => {
 	const id = await editer(page, 'Un[[première]] deux[[<A>nommée]] trois[[seconde]] quatre[[<>cachée]].');
 	const appels = page.locator('.ProseMirror .tts-note');
-	const affiche = () => appels.evaluateAll((els) => els.map((el) => getComputedStyle(el, '::before').content));
-	expect(await affiche()).toEqual(['"[1]"', '"[A]"', '"[2]"', '"•"']);
+	// texte affiché par ::before ; la valeur calculée diffère selon le navigateur : attr() résolu ou
+	// non (Firefox), chaînes jointes ou non (WebKit)
+	const affiche = () => appels.evaluateAll((els) => els.map((el) => getComputedStyle(el, '::before').content
+		.replace(/attr\(([\w-]+)\)/g, (_, attribut) => JSON.stringify(el.getAttribute(attribut) ?? ''))
+		.match(/"(?:[^"\\]|\\.)*"/g).map((chaine) => JSON.parse(chaine)).join('')));
+	expect(await affiche()).toEqual(['[1]', '[A]', '[2]', '•']);
 	// un clic ouvre le popover de la note ; Échap le ferme, la note reste sélectionnée
 	await appels.first().click();
 	await expect(page.locator('.tts-popover--note')).toBeVisible();
@@ -78,7 +82,7 @@ test('notes : appels numérotés comme SPIP, renumérotés après suppression, e
 	await expect(page.locator('.tts-popover--note')).toHaveCount(0);
 	await page.keyboard.press('Delete');
 	await expect(appels).toHaveCount(3);
-	expect(await affiche()).toEqual(['"[A]"', '"[1]"', '"•"']);
+	expect(await affiche()).toEqual(['[A]', '[1]', '•']);
 	await enregistrer(page);
 	expect(texte(id)).toBe('Un deux[[<A>nommée]] trois[[seconde]] quatre[[<>cachée]].');
 });
@@ -132,16 +136,25 @@ test('glossaire et abréviation : posés depuis l\'interface, définition ouvert
 	await page.context().route('https://glossaire.test/**', (route) => route.fulfill({ body: 'définition' }));
 	const id = await editer(page, 'Le SPIP et le CMS');
 	const popover = page.locator('.tts-popover');
-	// double-clic sur SPIP, Ctrl+Alt+G : glossaire nommé du site, proposé par la liste
-	await page.locator('.ProseMirror p').first().dblclick({ position: { x: 30, y: 5 } });
-	await selectionStable(page);
+	// SPIP sélectionné par l'éditeur (double-clic à une position fixe ou touches juste après un clic :
+	// peu fiables sous Firefox et WebKit), Ctrl+Alt+G : glossaire nommé du site, proposé par la liste
+	await module(page);
+	await page.evaluate(() => {
+		const { editor } = [...window.__tts.instances][0];
+		editor.commands.setTextSelection({ from: 4, to: 8 });
+		editor.view.focus();
+	});
+	await expect.poll(() => page.evaluate(() => String(getSelection()))).toBe('SPIP');
 	await page.keyboard.press('ControlOrMeta+Alt+g');
 	await expect(popover.locator('datalist option[value=tts]')).toHaveCount(1);
 	await popover.locator('input[name=glossaire]').fill('tts');
 	await popover.locator('input[name=numero]').fill('12');
 	const [definition] = await Promise.all([page.waitForEvent('popup'), popover.locator('button[name=definition]').click()]);
-	await expect.poll(() => definition.url()).toBe('https://glossaire.test/SPIP/12');
+	// fenêtre ouverte vide au clic, envoyée à l'URL au retour du serveur
+	await definition.waitForURL('https://glossaire.test/SPIP/12');
 	await definition.close();
+	// fenêtre de la définition fermée : la page reprend le clavier
+	await page.bringToFront();
 	await popover.locator('button[name=appliquer]').click();
 	await expect(page.locator('.ProseMirror .tts-glossary')).toHaveText('SPIP');
 	// sélection de CMS, bouton Abréviation
@@ -218,8 +231,12 @@ test('barre au clavier seul (critère 7) : Maj+Tab depuis le texte, flèches jus
 	await page.keyboard.press('Enter');
 	await expect(page.locator('.ProseMirror strong')).toHaveText('mot');
 	await expect(page.locator('.tts-outil--gras')).toHaveAttribute('aria-pressed', 'true');
-	// menu Titre : ↓ ouvre, Entrée choisit l'intertitre (pour le paragraphe du dessus)
+	// menu Titre : ↓ ouvre, Entrée choisit l'intertitre (pour le paragraphe du dessus) ; touches
+	// envoyées une fois le focus rendu au texte (Firefox perd sinon la flèche)
+	await expect(page.locator('.ProseMirror')).toBeFocused();
+	await selectionStable(page);
 	await page.keyboard.press('ArrowUp');
+	await expect.poll(() => page.evaluate(() => getSelection().anchorNode?.textContent)).toBe('Titre');
 	await selectionStable(page);
 	await page.keyboard.press('Shift+Tab');
 	// Annuler est maintenant actif : Début y mène
