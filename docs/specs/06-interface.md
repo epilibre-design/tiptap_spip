@@ -218,6 +218,13 @@ Lot L5.1 :
   `menuitemcheckbox` (types de liste), avec `aria-checked`. `↓` ou `Entrée` ouvre, `↑` `↓` `Début` `Fin`
   parcourent, `Échap` ferme et rend le focus au bouton, `Tab` ou un clic ailleurs ferme. Un choix coché
   reste atteignable même sans effet. Un seul menu ouvert à la fois.
+  Placement (signalé par l'utilisateur, 2026-10-13) : un ancêtre peut couper la liste
+  (`.cadre-formulaire-editer .formulaire_spip` est en `overflow: hidden` dans l'espace privé). À
+  l'ouverture, et au redimensionnement tant qu'elle est ouverte, la liste est placée dans les bornes
+  visibles (`src/ui/placement.js`) : alignée sur le bord droit du bouton si elle dépasse à droite, décalée
+  si elle dépasse alors à gauche, hauteur limitée avec défilement si un ancêtre la coupe en bas. La fenêtre
+  ne compte qu'en largeur (la page défile). Le CSS du cœur n'est pas modifié. e2e : `menus.e2e.js` (à 640
+  et 1440 px, le menu Modèle dépassait à droite du formulaire).
 
 Lot L5.2 :
 - **Zone éditable :** `aria-label` = libellé du champ (son `<label>`, sinon son `aria-label` ou sa bulle, sinon

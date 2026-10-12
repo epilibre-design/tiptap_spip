@@ -1,5 +1,6 @@
 import { ICONES } from './icones.js';
 import { idUnique } from './popover.js';
+import { placerMenu } from './placement.js';
 
 const MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? '');
 
@@ -67,6 +68,9 @@ export function menuOutil({ nom, icone = nom, libelle, elements }) {
 	const dehors = (event) => {
 		if (!element.contains(event.target)) fermer();
 	};
+	// un ancêtre peut couper la liste (formulaire de l'espace privé en overflow: hidden) : placée dans
+	// les bornes visibles à l'ouverture, et tant qu'elle est ouverte si la fenêtre change
+	const replacer = () => placerMenu(liste);
 
 	function construire(el) {
 		if (el.separateur) {
@@ -98,9 +102,11 @@ export function menuOutil({ nom, icone = nom, libelle, elements }) {
 		if (ouvert && ouvert !== menu) ouvert.fermer();
 		liste.replaceChildren(...elements().map(construire));
 		liste.hidden = false;
+		placerMenu(liste);
 		bouton.setAttribute('aria-expanded', 'true');
 		ouvert = menu;
 		document.addEventListener('pointerdown', dehors, true);
+		window.addEventListener('resize', replacer);
 		const premiers = items();
 		(dernier ? premiers.at(-1) : premiers[0])?.focus();
 	}
@@ -111,6 +117,7 @@ export function menuOutil({ nom, icone = nom, libelle, elements }) {
 		bouton.setAttribute('aria-expanded', 'false');
 		if (ouvert === menu) ouvert = null;
 		document.removeEventListener('pointerdown', dehors, true);
+		window.removeEventListener('resize', replacer);
 		if (focus) bouton.focus();
 	}
 

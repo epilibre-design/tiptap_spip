@@ -26147,6 +26147,40 @@ function lireSelection(editor) {
 }
 var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
 
+// src/ui/placement.js
+var MARGE = 8;
+var HAUTEUR_MIN = 120;
+function bornes(element2) {
+  let b = { left: 0, top: -Infinity, right: document.documentElement.clientWidth, bottom: Infinity };
+  for (let p = element2.parentElement; p && p !== document.body; p = p.parentElement) {
+    const style2 = getComputedStyle(p);
+    if (style2.overflowX === "visible" && style2.overflowY === "visible") continue;
+    const r = p.getBoundingClientRect();
+    b = { left: Math.max(b.left, r.left), top: Math.max(b.top, r.top), right: Math.min(b.right, r.right), bottom: Math.min(b.bottom, r.bottom) };
+  }
+  return b;
+}
+function placerMenu(liste) {
+  liste.style.left = "";
+  liste.style.right = "";
+  liste.style.maxHeight = "";
+  liste.style.overflowY = "";
+  if (liste.hidden) return;
+  const b = bornes(liste);
+  let r = liste.getBoundingClientRect();
+  if (r.right > b.right - MARGE) {
+    liste.style.left = "auto";
+    liste.style.right = "0px";
+    r = liste.getBoundingClientRect();
+    if (r.left < b.left + MARGE) liste.style.right = `${r.left - (b.left + MARGE)}px`;
+  }
+  r = liste.getBoundingClientRect();
+  if (r.bottom > b.bottom - MARGE) {
+    liste.style.maxHeight = `${Math.max(HAUTEUR_MIN, b.bottom - MARGE - r.top)}px`;
+    liste.style.overflowY = "auto";
+  }
+}
+
 // src/ui/boutons.js
 var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
 function raccourciLisible(raccourci) {
@@ -26188,6 +26222,7 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
   const dehors = (event) => {
     if (!element2.contains(event.target)) fermer();
   };
+  const replacer = () => placerMenu(liste);
   function construire(el) {
     if (el.separateur) {
       const s = document.createElement("div");
@@ -26216,9 +26251,11 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
     if (ouvert && ouvert !== menu) ouvert.fermer();
     liste.replaceChildren(...elements().map(construire));
     liste.hidden = false;
+    placerMenu(liste);
     bouton.setAttribute("aria-expanded", "true");
     ouvert = menu;
     document.addEventListener("pointerdown", dehors, true);
+    window.addEventListener("resize", replacer);
     const premiers = items();
     (dernier ? premiers.at(-1) : premiers[0])?.focus();
   }
@@ -26228,6 +26265,7 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
     bouton.setAttribute("aria-expanded", "false");
     if (ouvert === menu) ouvert = null;
     document.removeEventListener("pointerdown", dehors, true);
+    window.removeEventListener("resize", replacer);
     if (focus2) bouton.focus();
   }
   bouton.addEventListener("keydown", (event) => {
