@@ -99,6 +99,19 @@ describe('conteneurs', () => {
 		expect(parseContent('<div class="text-justify">\n\na\n\n</div>')).toEqual([node('spipAlign', { align: 'justify' }, [p(text('a'))])]);
 	});
 
+	it('conteneur dont le contenu porte sa balise fermante : bloc brut', () => {
+		for (const source of ['<div class="text-center"></div></div>', '<quote>a</quote></quote>', '<poesie>a</poesie></poesie>']) {
+			expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		}
+	});
+
+	it('paragraphe avec une ligne vide (segment recollé autour d\'un conteneur mal fermé) : bloc brut', () => {
+		const source = '<quote>\n\n\n</quote>{';
+		expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		// ligne vide dans un lien : masquée, le paragraphe reste
+		expect(parseContent('[a\n\nb->art1]')[0].type).toBe('paragraph');
+	});
+
 	it('autre <div> : bloc brut', () => {
 		expect(parseContent('<div class="x">\n\na\n\n</div>')).toEqual([
 			p(raw('<div class="x">')), p(text('a')), p(raw('</div>')),

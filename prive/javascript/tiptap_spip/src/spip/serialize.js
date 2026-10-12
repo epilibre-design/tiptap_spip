@@ -213,7 +213,10 @@ function serializeTable(table) {
 		const cells = row.map((x) => {
 			if (typeof x === 'string') return x;
 			// en-tête écrit {{…}} : son italique en HTML, comme dans un intertitre ({{{ serait ambigu)
-			const inline = serializeInline(x.content?.[0]?.content, { cellule: true, uneLigne: true, html: x.type === 'tableHeader' });
+			let inline = serializeInline(x.content?.[0]?.content, { cellule: true, uneLigne: true, html: x.type === 'tableHeader' });
+			// < ou ^ seul : marqueur de fusion
+			if (inline === '<') inline = '&lt;';
+			else if (inline === '^') inline = '&#94;';
 			return x.type === 'tableHeader' && inline !== '' ? `{{${inline}}}` : inline;
 		});
 		lines.push(`|${cells.join('|')}|`);
@@ -315,16 +318,19 @@ const accoladeContre = (nodes, i, run) => /[{}]$/.test(brut(nodes[i - 1])) || /^
  * HTML (<strong>, <i>, même rendu) pour ne jamais produire {{{ ou }}}.
  *
  * @param {object[]} nodes
- * @param {{ lineStart?: boolean, html?: boolean, cellule?: boolean, uneLigne?: boolean }} options  cellule : texte
- *        d'une cellule de tableau ; uneLigne : contenu d'une seule ligne (cellule, intertitre)
+ * @param {{ lineStart?: boolean, html?: boolean, cellule?: boolean, uneLigne?: boolean, bords?: boolean }} options
+ *        cellule : texte d'une cellule de tableau ; uneLigne : contenu d'une seule ligne (cellule,
+ *        intertitre) ; bords : false garde les sauts de ligne de bord (partie de multi)
  */
-export function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false, uneLigne = false } = {}) {
-	// saut de ligne au bord : SPIP n'affiche pas un _ de tête et affiche un _ final ; un <br> final ne
-	// se voit pas. Non écrit.
+export function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false, uneLigne = false, bords = true } = {}) {
+	// saut de ligne au bord d'un bloc : SPIP n'affiche pas un _ de tête et affiche un _ final ; un <br>
+	// final ne se voit pas. Non écrit (sauf dans une partie de multi, bords: false).
 	let debut = 0;
 	let fin = nodes.length;
-	while (debut < fin && nodes[debut].type === 'hardBreak') debut++;
-	while (fin > debut && nodes[fin - 1].type === 'hardBreak') fin--;
+	// sans mark : ceux de l'éditeur ; le parseur n'en produit au bord que dans une mark ({\n})
+	const sautNu = (n) => n.type === 'hardBreak' && !n.marks?.length;
+	while (bords && debut < fin && sautNu(nodes[debut])) debut++;
+	while (bords && fin > debut && sautNu(nodes[fin - 1])) fin--;
 	nodes = marksAtomiques(nodes.slice(debut, fin));
 	let out = '';
 	const stack = [];
@@ -339,6 +345,13 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 		while (stack.length > k) out += stack.pop().close;
 	};
 	const marksOf = (n) => (n.marks ?? []).filter((m) => m.type !== 'code');
+	// italique qui finit le texte d'un lien : son } ferait un {…} final, lu comme une langue ({} : celle
+	// de l'objet)
+	const finitLeLien = (m, i) => {
+		if (m.type !== 'italic') return false;
+		const lien = marksOf(nodes[i]).find((x) => x.type === 'spipLink');
+		return lien !== undefined && runLength(i, m) >= runLength(i, lien);
+	};
 	// longueur de la suite de nœuds portant la mark à partir du nœud i
 	const runLength = (i, mark) => {
 		let j = i;
@@ -359,7 +372,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 		for (const { m } of toOpen) {
 			// écriture HTML de secours des accolades du cœur, pas d'une mark écrite par une règle tierce
 			const useHtml = HTML[m.type] && !regleEcrite(m.type, 'mark')
-				&& (html || stack.some((s) => delimiters(s.mark)[0].startsWith('{')) || accoladeContre(nodes, i, runLength(i, m)));
+				&& (html || stack.some((s) => delimiters(s.mark)[0].startsWith('{')) || accoladeContre(nodes, i, runLength(i, m))
+					|| finitLeLien(m, i));
 			const [open, close] = useHtml ? HTML[m.type] : delimiters(m);
 			out += open;
 			stack.push({ mark: m, close });
@@ -381,6 +395,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			crochets = crochetsOuverts(out.slice(lu), crochets);
 			let ecrit = chevron && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
 			if (crochets > 0 && !code && !inLink && !atomique) ecrit = ecrit.replace(/->/g, '-&gt;');
+			// dans une note, un ] de tête derrière un ] ferait ]] et la fermerait
+			if (contexte.note && !code && out.endsWith(']')) ecrit = ecrit.replace(/^\]/, '&#93;');
 			// > juste après un modèle : ses paramètres admettent des balises (<doc|<sup>>)
 			if (nodes[i - 1]?.type === 'spipModel') ecrit = ecrit.replace(/^>/, '&gt;');
 			crochets = crochetsOuverts(ecrit, crochets);
@@ -480,7 +496,7 @@ function enMulti(f) {
 /** Multi dans une phrase : réécrit tel quel si ses parties n'ont pas changé (sérialisation conservatrice). */
 function serializeMultiInline({ parts = [], spipSrc = null, spipHash = null }) {
 	if (contexte.conservative && typeof spipSrc === 'string' && spipHash === canon(parts)) return spipSrc;
-	return enMulti(() => serializeMulti(parts.map(({ lang, content }) => ({ lang, texte: serializeInline(content ?? []) }))));
+	return enMulti(() => serializeMulti(parts.map(({ lang, content }) => ({ lang, texte: serializeInline(content ?? [], { bords: false }) }))));
 }
 
 /**

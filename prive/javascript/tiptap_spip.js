@@ -18256,7 +18256,9 @@ function serializeTable(table) {
   for (const row of occ) {
     const cells = row.map((x) => {
       if (typeof x === "string") return x;
-      const inline = serializeInline(x.content?.[0]?.content, { cellule: true, uneLigne: true, html: x.type === "tableHeader" });
+      let inline = serializeInline(x.content?.[0]?.content, { cellule: true, uneLigne: true, html: x.type === "tableHeader" });
+      if (inline === "<") inline = "&lt;";
+      else if (inline === "^") inline = "&#94;";
       return x.type === "tableHeader" && inline !== "" ? `{{${inline}}}` : inline;
     });
     lines.push(`|${cells.join("|")}|`);
@@ -18321,11 +18323,12 @@ var MARKS_CROCHET = ["spipLink", "spipGlossary", "spipAbbr"];
 var ecritAvecCrochet = (suivant, n) => ["spipNote", "spipRawInline", "spipLinkAuto", "spipAnchor"].includes(suivant?.type) || (suivant?.marks ?? []).some((m) => MARKS_CROCHET.includes(m.type) && !(n.marks ?? []).some((x) => sameMark(x, m)));
 var brut = (n) => n?.type === "spipRawInline" ? n.attrs.source : "";
 var accoladeContre = (nodes, i2, run2) => /[{}]$/.test(brut(nodes[i2 - 1])) || /^[{}]/.test(brut(nodes[i2])) || /[{}]$/.test(brut(nodes[i2 + run2 - 1])) || /^[{}]/.test(brut(nodes[i2 + run2]));
-function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false, uneLigne = false } = {}) {
+function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false, uneLigne = false, bords = true } = {}) {
   let debut = 0;
   let fin = nodes.length;
-  while (debut < fin && nodes[debut].type === "hardBreak") debut++;
-  while (fin > debut && nodes[fin - 1].type === "hardBreak") fin--;
+  const sautNu = (n) => n.type === "hardBreak" && !n.marks?.length;
+  while (bords && debut < fin && sautNu(nodes[debut])) debut++;
+  while (bords && fin > debut && sautNu(nodes[fin - 1])) fin--;
   nodes = marksAtomiques(nodes.slice(debut, fin));
   let out = "";
   const stack = [];
@@ -18337,6 +18340,11 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
     while (stack.length > k) out += stack.pop().close;
   };
   const marksOf = (n) => (n.marks ?? []).filter((m) => m.type !== "code");
+  const finitLeLien = (m, i2) => {
+    if (m.type !== "italic") return false;
+    const lien = marksOf(nodes[i2]).find((x) => x.type === "spipLink");
+    return lien !== void 0 && runLength(i2, m) >= runLength(i2, lien);
+  };
   const runLength = (i2, mark2) => {
     let j = i2;
     while (j < nodes.length && marksOf(nodes[j]).some((m) => sameMark(m, mark2))) j++;
@@ -18349,7 +18357,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
     closeTo(k);
     const toOpen = marks.filter((m) => !stack.some((s) => sameMark(s.mark, m))).map((m) => ({ m, run: runLength(i2, m) })).sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
     for (const { m } of toOpen) {
-      const useHtml = HTML[m.type] && !regleEcrite(m.type, "mark") && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")) || accoladeContre(nodes, i2, runLength(i2, m)));
+      const useHtml = HTML[m.type] && !regleEcrite(m.type, "mark") && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")) || accoladeContre(nodes, i2, runLength(i2, m)) || finitLeLien(m, i2));
       const [open, close2] = useHtml ? HTML[m.type] : delimiters(m);
       out += open;
       stack.push({ mark: m, close: close2 });
@@ -18369,6 +18377,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       crochets = crochetsOuverts(out.slice(lu), crochets);
       let ecrit = chevron && !code2 ? texte2.replace(/>/g, "&gt;").replace(/(?<!\\)\|/g, "\\|") : texte2;
       if (crochets > 0 && !code2 && !inLink && !atomique) ecrit = ecrit.replace(/->/g, "-&gt;");
+      if (contexte.note && !code2 && out.endsWith("]")) ecrit = ecrit.replace(/^\]/, "&#93;");
       if (nodes[i2 - 1]?.type === "spipModel") ecrit = ecrit.replace(/^>/, "&gt;");
       crochets = crochetsOuverts(ecrit, crochets);
       out += ecrit;
@@ -18442,7 +18451,7 @@ function enMulti(f) {
 }
 function serializeMultiInline({ parts = [], spipSrc = null, spipHash = null }) {
   if (contexte.conservative && typeof spipSrc === "string" && spipHash === canon(parts)) return spipSrc;
-  return enMulti(() => serializeMulti(parts.map(({ lang, content }) => ({ lang, texte: serializeInline(content ?? []) }))));
+  return enMulti(() => serializeMulti(parts.map(({ lang, content }) => ({ lang, texte: serializeInline(content ?? [], { bords: false }) }))));
 }
 function serializeCode(code2) {
   const backtick = code2 === code2.trim() && canBacktick(code2) && !/^`|`$|``/.test(code2);
@@ -18465,7 +18474,7 @@ function escapeText(value, atLineStart, { link = false, avantCrochets = false, c
 
 // src/spip/inline.js
 var MARK_TAGS = { strong: "bold", i: "italic", del: "strike", sup: "superscript", sub: "subscript" };
-var ENTITIES = { lt: "<", gt: ">", amp: "&", "#91": "[", "#93": "]", "#63": "?" };
+var ENTITIES = { lt: "<", gt: ">", amp: "&", "#91": "[", "#93": "]", "#63": "?", "#94": "^" };
 var LINK_ENTITIES = { ...ENTITIES, "#124": "|", "#93": "]" };
 var entityRegex = (entities) => new RegExp(`^&(${Object.keys(entities).join("|")});`);
 var RE_ENTITY = entityRegex(ENTITIES);
@@ -18877,16 +18886,22 @@ function multiBlock(src, masked) {
 }
 function containerBlock(src, msk) {
   let m;
+  const ferme = (inner, tag) => {
+    if (new RegExp(`</${tag}>`, "i").test(inner)) throw new Fallback();
+  };
   if (m = msk.match(/^<quote>([\s\S]*)<\/quote>$/i)) {
+    ferme(m[1], "quote");
     return [node("blockquote", null, parseContent(src.slice(7, 7 + m[1].length)))];
   }
   if (m = msk.match(/^<(poe(?:sie|try))>([\s\S]*)<\/\1>$/i)) {
+    ferme(m[2], m[1]);
     const start = m[1].length + 2;
     const content = parseContent(src.slice(start, start + m[2].length));
     if (content.some((b) => b.type !== "paragraph")) throw new Fallback();
     return [node("spipPoesie", { tag: m[1] }, content)];
   }
   if (m = msk.match(/^<div class="text-(left|center|right|justify)">([\s\S]*)<\/div>$/)) {
+    ferme(m[2], "div");
     const start = m[0].indexOf(">") + 1;
     const content = parseContent(src.slice(start, start + m[2].length));
     if (content.some((b) => b.type === "spipAlign")) throw new Fallback();
@@ -18944,6 +18959,7 @@ function runBlocks(src, msk, regions) {
     } else {
       let j = k + 1;
       while (j < lines.length && !special(L(j))) j++;
+      if (LIGNE_VIDE.test(msk.slice(lines[k].start, lines[j - 1].end))) throw new Fallback();
       const content = inlineOf(src, msk, regions, lines[k].start, lines[j - 1].end, { lineStart: true });
       out.push(node("paragraph", null, content.length ? content : void 0));
       k = j;

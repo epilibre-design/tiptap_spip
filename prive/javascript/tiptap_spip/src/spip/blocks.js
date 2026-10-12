@@ -102,16 +102,23 @@ function multiBlock(src, masked) {
 
 function containerBlock(src, msk) {
 	let m;
+	// contenu qui porte la balise fermante du conteneur : réécrit, il le fermerait plus tôt
+	const ferme = (inner, tag) => {
+		if (new RegExp(`</${tag}>`, 'i').test(inner)) throw new Fallback();
+	};
 	if ((m = msk.match(/^<quote>([\s\S]*)<\/quote>$/i))) {
+		ferme(m[1], 'quote');
 		return [node('blockquote', null, parseContent(src.slice(7, 7 + m[1].length)))];
 	}
 	if ((m = msk.match(/^<(poe(?:sie|try))>([\s\S]*)<\/\1>$/i))) {
+		ferme(m[2], m[1]);
 		const start = m[1].length + 2;
 		const content = parseContent(src.slice(start, start + m[2].length));
 		if (content.some((b) => b.type !== 'paragraph')) throw new Fallback();
 		return [node('spipPoesie', { tag: m[1] }, content)];
 	}
 	if ((m = msk.match(/^<div class="text-(left|center|right|justify)">([\s\S]*)<\/div>$/))) {
+		ferme(m[2], 'div');
 		const start = m[0].indexOf('>') + 1;
 		const content = parseContent(src.slice(start, start + m[2].length));
 		if (content.some((b) => b.type === 'spipAlign')) throw new Fallback();
@@ -182,6 +189,9 @@ function runBlocks(src, msk, regions) {
 		} else {
 			let j = k + 1;
 			while (j < lines.length && !special(L(j))) j++;
+			// ligne vide dans un paragraphe (segment recollé autour d'un conteneur mal fermé) : pas dans le
+			// schéma (deux sauts de ligne de suite ne se relisent pas)
+			if (LIGNE_VIDE.test(msk.slice(lines[k].start, lines[j - 1].end))) throw new Fallback();
 			const content = inlineOf(src, msk, regions, lines[k].start, lines[j - 1].end, { lineStart: true });
 			out.push(node('paragraph', null, content.length ? content : undefined));
 			k = j;

@@ -103,6 +103,8 @@ describe('serializeInline', () => {
 		const br = { type: 'hardBreak', attrs: { syntax: 'manual' } };
 		expect(serializeInline([br, text('a'), br, text('b'), br, br])).toBe('a\n_ b');
 		expect(serializeInline([br])).toBe('');
+		// saut dans une mark ({\n}, produit par le parseur) : gardé
+		expect(serializeInline([{ ...br, attrs: { syntax: 'autobr' }, marks: [I] }])).toBe('{\n}');
 	});
 
 	it('saut autobr suivi d\'un autre saut : écrit forcé (\\n\\n ferait une ligne vide)', () => {
@@ -279,6 +281,14 @@ describe('serializeBlock', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 		// hors cellule, <br /> reste un fragment brut
 		expect(stripTech(parse('a<br />b').content[0].content)).toEqual([text('a'), raw('<br />'), text('b')]);
+	});
+
+	it('cellule dont le texte est < ou ^ : entité (marqueur de fusion sinon)', () => {
+		for (const [t, attendu] of [['<', '|&lt;|'], ['^', '|&#94;|'], [' ^ ', '|&#94;|']]) {
+			const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text(t.trim()))])])])]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
 	});
 
 	it('| dans le texte d\'une cellule : \\| (il couperait la cellule)', () => {

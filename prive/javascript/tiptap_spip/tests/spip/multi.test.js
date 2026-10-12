@@ -51,6 +51,10 @@ describe('multi en ligne', () => {
 		}
 	});
 
+	it('partie faite d\'un saut de ligne : gardée (forme canonique stable)', () => {
+		expect(canonical('<multi>\n</multi>')).toBe('<multi>\n</multi>');
+	});
+
 	it('paragraphe modifié : multi inchangé réécrit tel quel', () => {
 		const doc = parse('Avant <multi> [fr]a  b[en]c</multi>');
 		doc.content[0].content[0].text = 'Après ';

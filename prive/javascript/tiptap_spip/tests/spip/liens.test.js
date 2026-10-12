@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { node, text } from '../../src/spip/json.js';
+import { node, stripTech, text } from '../../src/spip/json.js';
 import { parseLinkAtts } from '../../src/spip/links.js';
 import { parseModel, serializeModel } from '../../src/spip/models.js';
 import { parse } from '../../src/spip/parse.js';
@@ -80,6 +80,19 @@ describe('liens', () => {
 		expect(inline('[`a|b`|bulle{en}->art1]')).toEqual([text('a|b', [link('art1', { bulle: 'bulle', hreflang: 'en' }), C])]);
 		// découpage sur le texte masqué (région de code entière masquée), morceaux repris dans la source
 		expect(parseLinkAtts('`a|b`|c', `${'\uE000'.repeat(5)}|c`)).toEqual({ text: '`a|b`', bulle: 'c', hreflang: null });
+	});
+
+	it('italique qui finit le texte d\'un lien : en HTML ({…} final serait une langue, {} celle de l\'objet)', () => {
+		const L = { type: 'spipLink', attrs: { href: 'art1', newWindow: false } };
+		for (const [content, attendu] of [
+			[[text('{', [L, { type: 'italic' }])], '[<i>\\{</i>->art1]'],
+			[[text('a', [L]), text('fr', [L, { type: 'italic' }])], '[a<i>fr</i>->art1]'],
+			[[text('fr', [L, { type: 'italic' }]), text('a', [L])], '[{fr}a->art1]'],
+		]) {
+			const doc = node('doc', null, [node('paragraph', null, content)]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
 	});
 
 	it('deux liens voisins restent deux liens', () => {

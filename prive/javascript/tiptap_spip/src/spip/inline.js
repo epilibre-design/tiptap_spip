@@ -13,7 +13,7 @@ import { escapeText } from './serialize.js';
 
 /** Balises HTML sans attribut équivalentes à une mark (même rendu que le raccourci SPIP). */
 const MARK_TAGS = { strong: 'bold', i: 'italic', del: 'strike', sup: 'superscript', sub: 'subscript' };
-const ENTITIES = { lt: '<', gt: '>', amp: '&', '#91': '[', '#93': ']', '#63': '?' };
+const ENTITIES = { lt: '<', gt: '>', amp: '&', '#91': '[', '#93': ']', '#63': '?', '#94': '^' };
 /** Dans le texte d'un lien, | et ] s'écrivent en entités (le collecteur de liens passe avant les échappements). */
 const LINK_ENTITIES = { ...ENTITIES, '#124': '|', '#93': ']' };
 const entityRegex = (entities) => new RegExp(`^&(${Object.keys(entities).join('|')});`);

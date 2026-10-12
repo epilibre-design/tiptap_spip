@@ -156,6 +156,13 @@ describe('sérialisation des notes', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
+	it('] en tête d\'un texte qui suit un ] (abréviation) dans une note : &#93; (]] la fermerait)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication' } };
+		const doc = node('doc', null, [p(note([p(text('a', [abbr]), text(']aa'))]))]);
+		expect(serialize(doc)).toBe('[[[a|explication]&#93;aa]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('note saisie sans contenu', () => {
 		expect(serialize(node('doc', null, [p(text('x'), node('spipNote', { name: null, content: null }))]))).toBe('x[[]]');
 	});

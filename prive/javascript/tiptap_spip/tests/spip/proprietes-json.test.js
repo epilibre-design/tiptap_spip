@@ -74,14 +74,22 @@ const atome = fc.oneof(
  * - aucune autre mark à l'intérieur d'un glossaire ou d'une abréviation (spec 03 §3) : des textes
  *   voisins sous la même de ces marks ne gardent que leurs marks communes, puis fusionnent ;
  * - pas de saut de ligne au bord (SPIP ne l'affiche pas en tête, affiche _ en fin : non écrit) ;
- * - un saut autobr suivi d'un autre saut est forcé (\n\n ferait une ligne vide).
+ * - un saut autobr suivi d'un autre saut est forcé (\n\n ferait une ligne vide) ;
+ * - pas de blanc en tête de ligne après un saut (SPIP le retire, le navigateur ne l'affiche pas).
  */
 function formeNormale(nodes) {
+	const une = formeNormaleUneFois(nodes);
+	// retirer un blanc peut vider un texte et rapprocher deux sauts : jusqu'au point fixe
+	return JSON.stringify(une) === JSON.stringify(nodes) ? une : formeNormale(une);
+}
+
+function formeNormaleUneFois(nodes) {
 	const out = [...nodes];
 	while (out[0]?.type === 'hardBreak') out.shift();
 	while (out.at(-1)?.type === 'hardBreak') out.pop();
 	for (let k = 0; k + 1 < out.length; k++) {
 		if (out[k].type === 'hardBreak' && out[k + 1].type === 'hardBreak') out[k] = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		if (out[k].type === 'hardBreak' && out[k + 1].type === 'text') out[k + 1] = { ...out[k + 1], text: out[k + 1].text.replace(/^\s+/, '') };
 	}
 	for (let i = 0; i < out.length;) {
 		const terme = out[i].marks?.find((m) => ['spipGlossary', 'spipAbbr'].includes(m.type));
@@ -149,9 +157,29 @@ const liste = (profondeur) => fc.tuple(
 /** Contenu d'une seule ligne (cellule, intertitre) : un saut de ligne y est forcé (écrit <br />). */
 const sautsForces = (nodes) => nodes.map((n) => (n.type === 'hardBreak' ? { type: 'hardBreak', attrs: { syntax: 'manual' } } : n));
 
-/** Cellule ; un en-tête n'a pas de gras (écrit {{…}}). */
-const cellule = (type) => enLigne(false).map((inline) => node(type, { colspan: 1, rowspan: 1 }, [node('paragraph', null,
-	sautsForces(type === 'tableHeader' ? sansGras(inline) : inline))]));
+/** Rogne les blancs du premier et du dernier texte (SPIP rogne le contenu d'une cellule). */
+function rogner(nodes) {
+	const out = nodes.map((n, k) => {
+		if (n.type !== 'text') return n;
+		let t = n.text;
+		if (k === 0) t = t.replace(/^\s+/, '');
+		if (k === nodes.length - 1) t = t.replace(/\s+$/, '');
+		return { ...n, text: t };
+	});
+	return out.filter((n) => n.type !== 'text' || n.text !== '');
+}
+
+/** Cellule ; un en-tête n'a pas de gras (écrit {{…}}) ; contenu rogné, comme SPIP. */
+const cellule = (type) => enLigne(false).map((inline) => {
+	const contenu = rogner(sautsForces(type === 'tableHeader' ? sansGras(inline) : inline));
+	return node(type, { colspan: 1, rowspan: 1 }, [node('paragraph', null, contenu.length ? formeNormale(contenu) : undefined)]);
+});
+
+/** Cellule entièrement en gras : en première ligne, c'est la syntaxe d'un en-tête (|{{a}}|). */
+const toutEnGras = (c) => {
+	const contenu = c.content[0].content ?? [];
+	return contenu.length > 0 && contenu.every((n) => n.marks?.some((m) => m.type === 'bold'));
+};
 const tableau = fc.integer({ min: 1, max: 3 }).chain((colonnes) => fc.record({
 	entete: fc.boolean(),
 	lignes: fc.array(fc.array(cellule('tableCell'), { minLength: colonnes, maxLength: colonnes }), { minLength: 1, maxLength: 3 }),
@@ -159,11 +187,16 @@ const tableau = fc.integer({ min: 1, max: 3 }).chain((colonnes) => fc.record({
 	caption: option(fc.constantFrom('Légende', 'L')),
 	summary: option(fc.constantFrom('Résumé')),
 	// un résumé sans légende s'écrit ||légende vide|résumé|| : légende '' (forme normale)
-})).map(({ entete, lignes, titres, caption, summary }) => node('table', { caption: summary !== null && caption === null ? '' : caption, summary },
+	// première ligne de cellules toutes en gras : relue en-tête, exclue (forme ambiguë)
+})).filter(({ entete, lignes }) => entete || !lignes[0].every(toutEnGras))
+	.map(({ entete, lignes, titres, caption, summary }) => node('table', { caption: summary !== null && caption === null ? '' : caption, summary },
 	[...(entete ? [titres] : []), ...lignes].map((cells) => node('tableRow', null, cells))));
 
 const multiEnLigne = fc.array(fc.tuple(fc.constantFrom('fr', 'en', 'de'), enLigne(false)), { minLength: 1, maxLength: 3 })
 	.map((parts) => ({ type: 'spipMultiInline', attrs: { parts: parts.map(([lang, content]) => ({ lang, content })) } }));
+
+/** Poésie et partie de multi en bloc : paragraphes seulement (paragraph+), pas de modèle de bloc. */
+const seulementParagraphe = (arb) => arb.filter((b) => b.type === 'paragraph');
 
 /** Blocs, imbrication bornée par la profondeur (citation, alignement). */
 const bloc = (profondeur) => fc.oneof(
@@ -178,9 +211,9 @@ const bloc = (profondeur) => fc.oneof(
 	{ weight: 1, arbitrary: fc.constantFrom(['spipCadre', 'cadre'], ['spipHtml', 'html'], ['spipMath', 'math'])
 		.chain(([type, tag]) => code.filter((t) => !t.toLowerCase().includes(`</${tag}`))
 			.map((t) => node(type, { openTag: `<${tag}>`, closeTag: `</${tag}>` }, contenuCode(t)))) },
-	{ weight: 1, arbitrary: fc.array(paragraphe(), { minLength: 1, maxLength: 2 }).map((content) => node('spipPoesie', { tag: 'poesie' }, content)) },
+	{ weight: 1, arbitrary: fc.array(seulementParagraphe(paragraphe()), { minLength: 1, maxLength: 2 }).map((content) => node('spipPoesie', { tag: 'poesie' }, content)) },
 	{ weight: 1, arbitrary: tableau },
-	{ weight: 1, arbitrary: fc.array(fc.tuple(fc.constantFrom('fr', 'en'), fc.array(paragraphe(false), { minLength: 1, maxLength: 2 })), { minLength: 1, maxLength: 2 })
+	{ weight: 1, arbitrary: fc.array(fc.tuple(fc.constantFrom('fr', 'en'), fc.array(seulementParagraphe(paragraphe(false)), { minLength: 1, maxLength: 2 })), { minLength: 1, maxLength: 2 })
 		.map((parts) => node('spipMultiBlock', null, parts.map(([lang, content]) => node('spipLangBlock', { lang }, content)))) },
 	...(profondeur > 0 ? [
 		{ weight: 1, arbitrary: fc.array(bloc(profondeur - 1), { minLength: 1, maxLength: 2 }).map((content) => node('blockquote', null, content)) },
