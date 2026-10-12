@@ -17867,16 +17867,50 @@ var FILL = "\uE000";
 function protect(source) {
   let masked = source;
   let regions = [];
+  let nouvelles = [];
   const add = (start, end, kind, data) => {
-    const absorbed = regions.filter((r) => r.start >= start && r.end <= end).map((r) => r.kind);
-    regions = regions.filter((r) => r.start < start || r.end > end);
-    regions.push({ start, end, kind, data: { ...data, absorbed } });
-    masked = masked.slice(0, start) + FILL.repeat(end - start) + masked.slice(end);
+    nouvelles.push({ start, end, kind, data });
+  };
+  const appliquer = () => {
+    if (!nouvelles.length) return;
+    nouvelles.sort((a, b) => a.start - b.start);
+    const absorbed = nouvelles.map(() => []);
+    const englobante = (r) => {
+      let bas = 0;
+      let haut = nouvelles.length - 1;
+      let i2 = -1;
+      while (bas <= haut) {
+        const milieu = bas + haut >> 1;
+        if (nouvelles[milieu].start <= r.start) {
+          i2 = milieu;
+          bas = milieu + 1;
+        } else {
+          haut = milieu - 1;
+        }
+      }
+      return i2 >= 0 && r.end <= nouvelles[i2].end ? i2 : -1;
+    };
+    regions = regions.filter((r) => {
+      const i2 = englobante(r);
+      if (i2 >= 0) absorbed[i2].push(r);
+      return i2 < 0;
+    });
+    nouvelles.forEach((n, i2) => regions.push({ ...n, data: { ...n.data, absorbed: absorbed[i2].map((r) => r.kind) } }));
+    const morceaux = [];
+    let pos = 0;
+    for (const { start, end } of nouvelles) {
+      morceaux.push(masked.slice(pos, start), FILL.repeat(end - start));
+      pos = end;
+    }
+    morceaux.push(masked.slice(pos));
+    masked = morceaux.join("");
+    nouvelles = [];
   };
   const scan = (regex, onMatch) => {
     for (const m of [...masked.matchAll(regex)]) {
       onMatch(m, m.index, m.index + m[0].length);
     }
+    appliquer();
   };
   scan(RE_ECHAPPEMENT_CODE, (m, start, end) => add(start, end, "escape", { char: m[1] }));
   RE_BACKTICKS.forEach((regex) => scan(regex, (m, start, end) => {
@@ -17906,17 +17940,20 @@ function protect(source) {
   scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, "escape", { char: m[1], raccourci: true }));
   const echappements = () => regions.filter((r) => r.kind === "escape" && r.data.raccourci);
   const scanSansEchappements = (regex, onMatch) => {
+    const restes = echappements();
     let texte2 = masked;
-    for (const r of echappements()) texte2 = texte2.slice(0, r.start) + source.slice(r.start, r.end) + texte2.slice(r.end);
+    for (const r of restes) texte2 = texte2.slice(0, r.start) + source.slice(r.start, r.end) + texte2.slice(r.end);
     for (const m of [...texte2.matchAll(regex)]) {
       const start = m.index;
-      const chevauche = echappements().find((r) => r.start < start && r.end > start);
-      if (chevauche) {
+      const i2 = restes.findIndex((r) => r.start < start && r.end > start);
+      if (i2 >= 0) {
+        const [chevauche] = restes.splice(i2, 1);
         regions = regions.filter((r) => r !== chevauche);
         regions.push({ start: chevauche.start, end: start, kind: "raw", data: { absorbed: [] } });
       }
       onMatch(m, start, start + m[0].length);
     }
+    appliquer();
   };
   scan(RE_MODELE, (m, start, end) => {
     if (m[2] || m[3]) add(start, end, "model", { source: m[0] });
@@ -17946,7 +17983,19 @@ var dropCodeEscapes = (s) => s.replace(/\\[\\`]/g, "");
 var canBacktick = (s) => !/\\(?=[\\`]|$)/.test(s);
 var encodeCode = (s) => s.replace(/\\(?=[\\`]|$)/g, "\\\\").replace(/`/g, "\\`");
 function regionsIn(regions, start, end) {
-  return regions.filter((r) => r.start >= start && r.end <= end).map((r) => ({ ...r, start: r.start - start, end: r.end - start }));
+  let bas = 0;
+  let haut = regions.length;
+  while (bas < haut) {
+    const milieu = bas + haut >> 1;
+    if (regions[milieu].start < start) bas = milieu + 1;
+    else haut = milieu;
+  }
+  const dedans = [];
+  for (let i2 = bas; i2 < regions.length && regions[i2].start < end; i2++) {
+    const r = regions[i2];
+    if (r.end <= end) dedans.push({ ...r, start: r.start - start, end: r.end - start });
+  }
+  return dedans;
 }
 
 // src/spip/serialize.js
@@ -18761,14 +18810,14 @@ function tableBlock(src, msk, regions) {
 }
 
 // src/spip/parse.js
-function parse(source) {
+function parse(source, { empreintes = true } = {}) {
   const { masked, regions } = protect(source);
   const { lead, trail, segments } = segment(source, masked);
   const content = [];
   for (const seg of segments) {
     const src = source.slice(seg.start, seg.end);
     const blocks2 = blocksOf(src, masked.slice(seg.start, seg.end), regionsIn(regions, seg.start, seg.end));
-    blocks2[0] = withTech(blocks2[0], { spipSep: seg.sep, spipSrc: src, spipGroup: blocks2.length, spipHash: canon(blocks2) });
+    blocks2[0] = withTech(blocks2[0], { spipSep: seg.sep, spipSrc: src, spipGroup: blocks2.length, spipHash: empreintes ? canon(blocks2) : null });
     content.push(...blocks2);
   }
   if (!content.length) {
@@ -18790,7 +18839,7 @@ function schemaJSON(json, schema) {
   });
   return out;
 }
-var toEditorJSON = (source, schema) => schemaJSON(parse(source), schema);
+var toEditorJSON = (source, schema) => schemaJSON(parse(source, { empreintes: false }), schema);
 
 // node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
 var jsxElements = /* @__PURE__ */ new WeakSet();

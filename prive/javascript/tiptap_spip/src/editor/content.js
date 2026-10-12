@@ -33,4 +33,4 @@ export function schemaJSON(json, schema) {
  * @param {import('@tiptap/pm/model').Schema} schema
  * @returns {object} document JSON
  */
-export const toEditorJSON = (source, schema) => schemaJSON(parse(source), schema);
+export const toEditorJSON = (source, schema) => schemaJSON(parse(source, { empreintes: false }), schema);

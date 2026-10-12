@@ -20,18 +20,57 @@ export function protect(source) {
 	let masked = source;
 	let regions = [];
 
+	// Zones trouvées par la recherche en cours : les correspondances d'une même regex sont disjointes
+	// et cherchées dans le texte masqué d'avant la recherche ; elles sont donc appliquées ensemble à
+	// la fin (absorption, masquage), en un passage plutôt qu'une copie du texte par zone.
+	let nouvelles = [];
 	const add = (start, end, kind, data) => {
-		// une zone englobe celles qu'elle recouvre (ex. un modèle dans le texte d'un lien)
-		const absorbed = regions.filter((r) => r.start >= start && r.end <= end).map((r) => r.kind);
-		regions = regions.filter((r) => r.start < start || r.end > end);
-		regions.push({ start, end, kind, data: { ...data, absorbed } });
-		masked = masked.slice(0, start) + FILL.repeat(end - start) + masked.slice(end);
+		nouvelles.push({ start, end, kind, data });
+	};
+	const appliquer = () => {
+		if (!nouvelles.length) return;
+		nouvelles.sort((a, b) => a.start - b.start);
+		// une zone englobe celles qu'elle recouvre (ex. un modèle dans le texte d'un lien) : chaque zone
+		// existante est cherchée dans la nouvelle zone qui commence au plus près avant elle
+		const absorbed = nouvelles.map(() => []);
+		const englobante = (r) => {
+			let bas = 0;
+			let haut = nouvelles.length - 1;
+			let i = -1;
+			while (bas <= haut) {
+				const milieu = (bas + haut) >> 1;
+				if (nouvelles[milieu].start <= r.start) {
+					i = milieu;
+					bas = milieu + 1;
+				} else {
+					haut = milieu - 1;
+				}
+			}
+			return i >= 0 && r.end <= nouvelles[i].end ? i : -1;
+		};
+		regions = regions.filter((r) => {
+			const i = englobante(r);
+			if (i >= 0) absorbed[i].push(r);
+			return i < 0;
+		});
+		// ordre d'origine des zones absorbées : celui de la liste des zones
+		nouvelles.forEach((n, i) => regions.push({ ...n, data: { ...n.data, absorbed: absorbed[i].map((r) => r.kind) } }));
+		const morceaux = [];
+		let pos = 0;
+		for (const { start, end } of nouvelles) {
+			morceaux.push(masked.slice(pos, start), FILL.repeat(end - start));
+			pos = end;
+		}
+		morceaux.push(masked.slice(pos));
+		masked = morceaux.join('');
+		nouvelles = [];
 	};
 
 	const scan = (regex, onMatch) => {
 		for (const m of [...masked.matchAll(regex)]) {
 			onMatch(m, m.index, m.index + m[0].length);
 		}
+		appliquer();
 	};
 
 	// 1. wheel backticks (pre_echappe_html_propre, avant tout le reste) :
@@ -73,17 +112,20 @@ export function protect(source) {
 	// rendu, il précède une balise et disparaît).
 	const echappements = () => regions.filter((r) => r.kind === 'escape' && r.data.raccourci);
 	const scanSansEchappements = (regex, onMatch) => {
+		const restes = echappements();
 		let texte = masked;
-		for (const r of echappements()) texte = texte.slice(0, r.start) + source.slice(r.start, r.end) + texte.slice(r.end);
+		for (const r of restes) texte = texte.slice(0, r.start) + source.slice(r.start, r.end) + texte.slice(r.end);
 		for (const m of [...texte.matchAll(regex)]) {
 			const start = m.index;
-			const chevauche = echappements().find((r) => r.start < start && r.end > start);
-			if (chevauche) {
+			const i = restes.findIndex((r) => r.start < start && r.end > start);
+			if (i >= 0) {
+				const [chevauche] = restes.splice(i, 1);
 				regions = regions.filter((r) => r !== chevauche);
 				regions.push({ start: chevauche.start, end: start, kind: 'raw', data: { absorbed: [] } });
 			}
 			onMatch(m, start, start + m[0].length);
 		}
+		appliquer();
 	};
 
 	// 4. raccourcis, dans l'ordre de propre() : modèles ; glossaire et ancres (pre_liens) ; liens ;
@@ -131,11 +173,23 @@ export const canBacktick = (s) => !/\\(?=[\\`]|$)/.test(s);
 export const encodeCode = (s) => s.replace(/\\(?=[\\`]|$)/g, '\\\\').replace(/`/g, '\\`');
 
 /**
- * Régions contenues dans [start, end[, avec des positions relatives à start.
+ * Régions contenues dans [start, end[, avec des positions relatives à start. Les régions sont triées
+ * par début (protect(), et regionsIn() elle-même, les rendent ainsi) : la première est trouvée par
+ * dichotomie, sans parcourir toute la liste à chaque segment.
  * @param {Region[]} regions
  */
 export function regionsIn(regions, start, end) {
-	return regions
-		.filter((r) => r.start >= start && r.end <= end)
-		.map((r) => ({ ...r, start: r.start - start, end: r.end - start }));
+	let bas = 0;
+	let haut = regions.length;
+	while (bas < haut) {
+		const milieu = (bas + haut) >> 1;
+		if (regions[milieu].start < start) bas = milieu + 1;
+		else haut = milieu;
+	}
+	const dedans = [];
+	for (let i = bas; i < regions.length && regions[i].start < end; i++) {
+		const r = regions[i];
+		if (r.end <= end) dedans.push({ ...r, start: r.start - start, end: r.end - start });
+	}
+	return dedans;
 }

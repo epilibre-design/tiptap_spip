@@ -78,4 +78,16 @@ describe('protect', () => {
 		expect(regionsIn(regions, 3, 8)).toMatchObject([{ kind: 'note', start: 0, end: 5 }]);
 		expect(regionsIn(regions, 0, 5)).toEqual([]);
 	});
+
+	it('regionsIn (dichotomie) : mêmes régions qu\'un parcours complet, pour toute borne', () => {
+		const source = 'a [[n1]] [x->art1] <doc1> \\[ `c` [?g] <multi>[fr]a[en]b</multi> [[n2 <doc2>]] fin';
+		const { regions } = protect(source);
+		expect(regions.length).toBeGreaterThan(6);
+		for (let start = 0; start <= source.length; start++) {
+			for (let end = start; end <= source.length; end++) {
+				const attendu = regions.filter((r) => r.start >= start && r.end <= end).map((r) => ({ ...r, start: r.start - start, end: r.end - start }));
+				expect(regionsIn(regions, start, end)).toEqual(attendu);
+			}
+		}
+	});
 });
