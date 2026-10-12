@@ -63,10 +63,14 @@ if (!function_exists('lire_config')) {
 }
 
 if (!function_exists('pipeline')) {
-	/** Simulation : fonction de $GLOBALS['_test_pipelines'][$nom] appliquée au flux, sinon flux inchangé. */
+	/**
+	 * Simulation : fonction de $GLOBALS['_test_pipelines'][$nom] appliquée au flux, sinon flux
+	 * inchangé. Comme pipeline() de SPIP, un flux ['args' => …, 'data' => …] ne rend que data.
+	 */
 	function pipeline(string $nom, $flux = null) {
 		$f = $GLOBALS['_test_pipelines'][$nom] ?? null;
-		return $f ? $f($flux) : $flux;
+		$flux = $f ? $f($flux) : $flux;
+		return is_array($flux) && count($flux) === 2 && array_key_exists('data', $flux) ? $flux['data'] : $flux;
 	}
 }
 

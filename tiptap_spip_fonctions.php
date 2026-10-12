@@ -31,8 +31,9 @@ function tiptap_spip_barres(): array {
 	$fichier = find_in_path('prive/javascript/tiptap_spip/src/ui/barres.json');
 	$barres = $fichier ? json_decode((string) file_get_contents($fichier), true) : null;
 	$barres = is_array($barres) ? $barres : [];
-	$flux = pipeline('tiptap_spip_toolbars', ['args' => [], 'data' => $barres]);
-	return is_array($flux['data'] ?? null) ? $flux['data'] : $barres;
+	// pipeline() ne rend que data d'un flux ['args' => …, 'data' => …]
+	$modifiees = pipeline('tiptap_spip_toolbars', ['args' => [], 'data' => $barres]);
+	return is_array($modifiees) ? $modifiees : $barres;
 }
 
 /**
@@ -52,8 +53,8 @@ function tiptap_spip_barres_json($valeur = null): string {
  * @return string[] URL dans l'ordre de chargement
  */
 function tiptap_spip_extensions(): array {
-	$flux = pipeline('tiptap_spip_extensions', ['args' => [], 'data' => []]);
-	$declarees = is_array($flux['data'] ?? null) ? $flux['data'] : [];
+	$declarees = pipeline('tiptap_spip_extensions', ['args' => [], 'data' => []]);
+	$declarees = is_array($declarees) ? $declarees : [];
 	$ordre = [];
 	$vues = [];
 	$visiter = static function (string $nom) use (&$visiter, &$ordre, &$vues, $declarees): void {
@@ -69,6 +70,7 @@ function tiptap_spip_extensions(): array {
 	foreach (array_keys($declarees) as $nom) {
 		$visiter((string) $nom);
 	}
+	include_spip('inc/filtres');
 	$urls = [];
 	foreach ($ordre as $nom) {
 		$src = (string) ($declarees[$nom]['src'] ?? '');
@@ -91,9 +93,8 @@ function tiptap_spip_extensions_json($valeur = null): string {
  * @return array<string, string>
  */
 function tiptap_spip_i18n(): array {
-	$flux = pipeline('tiptap_spip_i18n', ['args' => [], 'data' => []]);
 	$chaines = [];
-	foreach ((array) ($flux['data'] ?? []) as $cle => $texte) {
+	foreach ((array) pipeline('tiptap_spip_i18n', ['args' => [], 'data' => []]) as $cle => $texte) {
 		if (is_string($cle) && preg_match('/^\w+$/', $cle) && is_string($texte)) {
 			$chaines[$cle] = $texte;
 		}
