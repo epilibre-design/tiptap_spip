@@ -19,13 +19,8 @@ if (!is_dir($out) && !mkdir($out, 0777, true)) {
 }
 $out = realpath($out);
 
-chdir($root);
-if (is_file($root . '/vendor/autoload.php')) {
-	require_once $root . '/vendor/autoload.php';
-	include_once $root . '/' . \SpipLeague\Component\Kernel\param('spip.dirs.core') . 'inc_version.php';
-} else {
-	include_once $root . '/ecrire/inc_version.php';
-}
+require_once __DIR__ . '/../charger_spip.php';
+tiptap_spip_charger_spip($root);
 include_spip('base/abstract_sql');
 
 $n = 0;

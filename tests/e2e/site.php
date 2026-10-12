@@ -39,13 +39,8 @@ if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['prepare
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 $_SERVER['HTTP_USER_AGENT'] = $commande === 'preparer' ? (string) ($argv[2] ?? '') : '';
 
-chdir($root);
-if (is_file($root . '/vendor/autoload.php')) {
-	require_once $root . '/vendor/autoload.php';
-	include_once $root . '/' . \SpipLeague\Component\Kernel\param('spip.dirs.core') . 'inc_version.php';
-} else {
-	include_once $root . '/ecrire/inc_version.php';
-}
+require_once __DIR__ . '/../charger_spip.php';
+tiptap_spip_charger_spip($root);
 include_spip('base/abstract_sql');
 
 if ($commande === 'texte') {

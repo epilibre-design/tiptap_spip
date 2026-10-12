@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
 export const repo = fileURLToPath(new URL('../../../../../', import.meta.url));
 const driver = `${repo}tests/e2e/site.php`;
 const env = { ...process.env, SPIP_ROOT: process.env.TTS_SITE };
+// binaire PHP du site (php8.3 pour SPIP 4.2, par exemple)
+const binaire = process.env.TTS_PHP || 'php';
 
-export const php = (args, input) => execFileSync('php', [driver, ...args], { env, input, encoding: 'utf8' });
+export const php = (args, input) => execFileSync(binaire, [driver, ...args], { env, input, encoding: 'utf8' });
 export const texte = (id) => php(['texte', String(id)]);
 export const ecrireTexte = (id, source, champ = 'texte') => php(['modifier', String(id), champ], source);
 export const creerDocument = (id) => Number(php(['document', String(id)]));

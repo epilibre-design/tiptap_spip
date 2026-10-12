@@ -2,9 +2,11 @@
 // puis enregistré, et le texte en base est comparé octet pour octet à ce que SPIP enregistre pour
 // le même formulaire soumis SANS l'éditeur (le navigateur convertit les fins de ligne d'un
 // textarea en CRLF à la soumission : c'est la référence, pas la source brute).
-// Usage : TTS_SITE=<racine du site jetable> TTS_URL=http://127.0.0.1:<port> npm run e2e
-// (Chromium, Firefox et WebKit, installés par `npx playwright install` ; un seul : -- --project=chromium)
-// Serveur : php -d opcache.revalidate_freq=0 -S 127.0.0.1:<port> -t <racine du site jetable>
+// Usage : TTS_SITE=<racine du site jetable> TTS_URL=http://127.0.0.1:<port> [TTS_PHP=php8.3] npm run e2e
+// (Chromium, Firefox et WebKit, installés par `npx playwright install` ; un seul : -- --project=chromium ;
+// TTS_PHP : PHP du pilote site.php, celui du site, php par défaut)
+// Serveur : PHP_CLI_SERVER_WORKERS=4 php -d opcache.revalidate_freq=0 -S 127.0.0.1:<port> -t <racine du site jetable>
+// (plusieurs processus : SPIP 4.2 s'appelle lui-même au premier rendu public)
 // (site.php active le plugin en ligne de commande, ce qui réécrit les caches de plugins de SPIP ;
 // sans cette option, OPcache du serveur PHP sert encore l'ancien charger_pipelines.php pendant
 // 2 secondes et la première page s'affiche sans l'éditeur)
