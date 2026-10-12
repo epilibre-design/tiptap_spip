@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diffHtml, hunks, judge, loadEcarts, normalize, plafond } from '../../scripts/ecarts.mjs';
+import { diffFige, diffHtml, hunks, judge, loadEcarts, normalize, plafond } from '../../scripts/ecarts.mjs';
 
 const CODE = "<code class='spip_code'>";
 
@@ -49,6 +49,29 @@ describe('loadEcarts', () => {
 	it('refuse deux entrées pour le même fichier', () => {
 		const e = `- ${ok.replace(/\n/g, '\n  ')}\n`;
 		expect(() => loadEcarts(e + e)).toThrow(/a\.spip/);
+	});
+
+	const branche = (contenu) => `- ${ok.replace(/\n/g, '\n  ')}\n  branches:\n    "5":\n${contenu}`;
+
+	it('lit le diff figé et la justification propres à une branche de SPIP', () => {
+		const [e] = loadEcarts(branche('      diff: ecarts/a.spip5.diff\n      justification: "rendu de SPIP 5"\n'));
+		expect(e.branches).toEqual({ 5: { diff: 'ecarts/a.spip5.diff', justification: 'rendu de SPIP 5' } });
+	});
+
+	it('refuse une branche sans diff ou sans justification, ou dont le nom n\'est pas un numéro', () => {
+		expect(() => loadEcarts(branche('      diff: ecarts/a.spip5.diff\n'))).toThrow(/justification.*branche 5/);
+		expect(() => loadEcarts(branche('      justification: "x"\n'))).toThrow(/diff.*branche 5/);
+		expect(() => loadEcarts(branche('      diff: d\n      justification: "x"\n').replace('"5"', 'cinq'))).toThrow(/branche « cinq »/);
+	});
+});
+
+describe('diffFige', () => {
+	const entree = { fichier: 'a.spip', diff: 'ecarts/a.diff', branches: { 5: { diff: 'ecarts/a.spip5.diff', justification: 'x' } } };
+
+	it('donne le diff figé de la branche de l\'oracle, sinon le diff commun', () => {
+		expect(diffFige(entree, '5')).toBe('ecarts/a.spip5.diff');
+		expect(diffFige(entree, '4')).toBe('ecarts/a.diff');
+		expect(diffFige({ fichier: 'a.spip', diff: 'ecarts/a.diff' }, '5')).toBe('ecarts/a.diff');
 	});
 });
 

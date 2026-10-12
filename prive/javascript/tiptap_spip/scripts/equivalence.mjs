@@ -1,12 +1,13 @@
 // Équivalence de rendu (spec 04 §5, invariant 3) : propre(source) ≡ propre(forme canonique).
 // Usage : SPIP_ROOT=/chemin/vers/spip node scripts/equivalence.mjs [--figer] [dossier de corpus…]
-// --figer : (ré)écrit le diff figé de chaque écart enregistré dans tests/corpus/ecarts.yaml.
+// --figer : (ré)écrit le diff figé de chaque écart enregistré dans tests/corpus/ecarts.yaml (celui de
+// la branche de SPIP de l'oracle si l'entrée en déclare un).
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse, serialize } from '../src/spip/index.js';
-import { diffHtml, judge, loadEcarts, normalize, plafond } from './ecarts.mjs';
+import { diffFige, diffHtml, judge, loadEcarts, normalize, plafond } from './ecarts.mjs';
 
 const root = fileURLToPath(new URL('../../../../', import.meta.url));
 const oracle = join(root, 'tests/equivalence/propre.php');
@@ -22,12 +23,14 @@ if (!process.env.SPIP_ROOT) {
 }
 
 const propre = (text) => execFileSync('php', [oracle], { input: text, encoding: 'utf8' });
+// branche majeure de SPIP de l'oracle : choisit le diff figé d'un écart rendu autrement selon la branche
+const branche = execFileSync('php', [oracle, '--branche'], { encoding: 'utf8' }).trim();
 
 const registre = join(corpus, 'ecarts.yaml');
 const entries = existsSync(registre) ? loadEcarts(readFileSync(registre, 'utf8')) : [];
 const frozen = new Map();
 for (const e of entries) {
-	const chemin = join(corpus, e.diff);
+	const chemin = join(corpus, diffFige(e, branche));
 	if (existsSync(chemin)) frozen.set(e.fichier, readFileSync(chemin, 'utf8'));
 }
 
@@ -55,7 +58,7 @@ for (const dir of dirs) {
 		const diff = diffHtml(a, b);
 		const entree = entries.find((e) => e.fichier === fichier);
 		if (figer && entree && diff !== '') {
-			const cible = join(corpus, entree.diff);
+			const cible = join(corpus, diffFige(entree, branche));
 			mkdirSync(dirname(cible), { recursive: true });
 			writeFileSync(cible, diff);
 			frozen.set(fichier, diff);
@@ -77,7 +80,7 @@ for (const dir of dirs) {
 				break;
 			case 'diff-change':
 				failures++;
-				console.log(`DIFF CHANGÉ ${chemin}\n--- diff figé (${verdict.entree.diff}) ---\n${frozen.get(fichier) ?? '(absent)'}--- diff obtenu ---\n${diff}`);
+				console.log(`DIFF CHANGÉ ${chemin}\n--- diff figé (${diffFige(verdict.entree, branche)}) ---\n${frozen.get(fichier) ?? '(absent)'}--- diff obtenu ---\n${diff}`);
 				break;
 			case 'ecart':
 				failures++;
@@ -100,5 +103,5 @@ if (acceptes > max) {
 	failures++;
 	console.log(`PLAFOND DÉPASSÉ : ${acceptes} écarts acceptés pour ${total} fichiers (au plus ${max})`);
 }
-console.log(`${equivalents}/${total} fichiers équivalents, ${acceptes} écart(s) accepté(s) (plafond ${max})`);
+console.log(`SPIP ${branche} : ${equivalents}/${total} fichiers équivalents, ${acceptes} écart(s) accepté(s) (plafond ${max})`);
 process.exit(failures ? 1 : 0);

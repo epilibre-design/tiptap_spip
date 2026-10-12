@@ -7,3 +7,7 @@
   diff: ecarts/code-accoles.diff
   justification: "deux codes inline accolés (<code>a</code><code>b</code>) deviennent un seul <code> : le JSON, comme Tiptap, fusionne les textes voisins de mêmes marks ; même texte, même structure (vu sur demo.spip.org, article 12)"
   accepte_par: "gilles"
+  branches:
+    "5":
+      diff: ecarts/code-accoles.spip5.diff
+      justification: "même écart ; SPIP 5 perd en plus le texte </code dans <code></code</code> (src/Texte/Collecteur/HtmlTag.php : la balise fermante [^>]* absorbe </code, régression signalée sur spip/ecrire), d'où un diff figé propre"

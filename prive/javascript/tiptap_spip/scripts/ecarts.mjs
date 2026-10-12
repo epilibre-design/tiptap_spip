@@ -5,11 +5,17 @@ import { parse as parseYaml } from 'yaml';
 export const TYPES = ['espacement', 'balisage-equivalent'];
 
 const CHAMPS = ['fichier', 'type', 'diff', 'justification', 'accepte_par'];
+const CHAMPS_BRANCHE = ['diff', 'justification'];
 
 /**
  * Lit et valide le registre des écarts.
+ *
+ * `branches` (facultatif) : diff figé et justification propres à une branche majeure de SPIP, quand
+ * l'oracle de cette branche rend autrement le même écart (SPIP 5 : régression du cœur signalée,
+ * pas encore corrigée).
  * @param {string} text  contenu de ecarts.yaml
- * @returns {{ fichier: string, type: string, diff: string, justification: string, accepte_par: string }[]}
+ * @returns {{ fichier: string, type: string, diff: string, justification: string, accepte_par: string,
+ *            branches?: Record<string, { diff: string, justification: string }> }[]}
  */
 export function loadEcarts(text) {
 	const entries = parseYaml(text) ?? [];
@@ -22,11 +28,22 @@ export function loadEcarts(text) {
 			}
 		}
 		if (!TYPES.includes(e.type)) throw new Error(`ecarts.yaml : type « ${e.type} » hors liste (${TYPES.join(', ')})`);
+		for (const [nom, branche] of Object.entries(e.branches ?? {})) {
+			if (!/^\d+$/.test(nom)) throw new Error(`ecarts.yaml : branche « ${nom} » : numéro de version majeure attendu (${e.fichier})`);
+			for (const champ of CHAMPS_BRANCHE) {
+				if (typeof branche?.[champ] !== 'string' || branche[champ].trim() === '') {
+					throw new Error(`ecarts.yaml : champ « ${champ} » manquant pour la branche ${nom} (${e.fichier})`);
+				}
+			}
+		}
 		if (vus.has(e.fichier)) throw new Error(`ecarts.yaml : deux entrées pour ${e.fichier}`);
 		vus.add(e.fichier);
 	}
 	return entries;
 }
+
+/** Diff figé d'une entrée pour la branche majeure de SPIP de l'oracle : le sien, sinon le diff commun. */
+export const diffFige = (entree, branche) => entree.branches?.[branche]?.diff ?? entree.diff;
 
 /** Une ligne par balise : le texte qui suit une balise reste sur sa ligne. */
 const lignes = (html) => html.split(/(?=<)/).filter((l) => l !== '');
