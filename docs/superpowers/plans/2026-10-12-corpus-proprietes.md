@@ -68,7 +68,9 @@
 - **Tri de la revue** (critère choisi par l'utilisateur : 20 graines consécutives propres) : chaque
   contre-exemple réduit, qualifié avec l'oracle SPIP 4.4 (JSON relu et rendu), puis corrigé avec un test
   unitaire ou borné par une limite écrite (spec 04 §5). Critère atteint sur les graines 20261089 à
-  20261108 (10 000 tirages sur la source, 3 000 sur le JSON par graine).
+  20261108, puis, après les dernières corrections, sur les graines 20261111 à 20261130 (10 000 tirages sur
+  la source, 3 000 sur le JSON par graine). L'équivalence de rendu du corpus a rattrapé une régression
+  qu'aucune propriété ne voyait (compte des crochets dans la cible d'un lien).
 - **Changement de comportement à signaler** : une première ligne de tableau entièrement vide est un
   en-tête pour SPIP (`<thead>`) ; un tableau inséré vide se relit donc avec un en-tête vide, jusqu'à ce
   qu'une cellule de sa première ligne reçoive du texte.

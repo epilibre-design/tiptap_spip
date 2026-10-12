@@ -217,6 +217,12 @@ describe('sérialisation des notes', () => {
 		}
 	});
 
+	it('<-> dans une note : &lt;-&gt; (les deux flèches partagent leur -)', () => {
+		const doc = node('doc', null, [p(note([p(text(']]<->a'))]), text('x'))]);
+		expect(serialize(doc)).toContain('&lt;-&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('note saisie sans contenu', () => {
 		expect(serialize(node('doc', null, [p(text('x'), node('spipNote', { name: null, content: null }))]))).toBe('x[[]]');
 	});

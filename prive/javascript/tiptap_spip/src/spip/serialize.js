@@ -91,7 +91,7 @@ function serializeDoc(doc, conservative) {
 		const a = b.attrs ?? {};
 		const sep = separator(i, conservative ? a.spipSep : null);
 		if (conservative && a.spipGroup && typeof a.spipSrc === 'string' && canon(blocks.slice(i, i + a.spipGroup)) === a.spipHash) {
-			crochets = crochetsOuverts(sep + a.spipSrc, crochets);
+			crochets = crochetsOuverts(protect(a.spipSrc).masked, crochets);
 			ouvert = chevronsOuverts(a.spipSrc, ouvert);
 			out += sep + a.spipSrc;
 			i += a.spipGroup;
@@ -102,7 +102,8 @@ function serializeDoc(doc, conservative) {
 		contexte = { ...contexte, ouvert, crochets };
 		try {
 			const ecrit = sep + serializeBlock(b);
-			crochets = crochetsOuverts(ecrit, crochets);
+			// liens, notes, glossaire, ancres : masqués par le core, ils s'équilibrent et ne comptent pas
+			crochets = crochetsOuverts(protect(ecrit).masked, crochets);
 			ouvert = chevronsOuverts(ecrit, ouvert);
 			out += ecrit;
 		} finally {
@@ -403,16 +404,18 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			// texte d'un glossaire ou d'une abréviation : validé par marksAtomiques, écrit tel quel
 			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, cellule });
 			chevron = chevronsOuverts(out.slice(lu), chevron);
-			crochets = crochetsOuverts(out.slice(lu), crochets);
+
 			let ecrit = chevron > 0 && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
 			if (!code && !inLink && !atomique) {
 				// [ ouverts à chaque position, ceux du texte compris ([&#91;[]-> : le motif des liens admet
 				// des groupes [xx] dans le texte) : un -> ou un <- y ferait un lien ou une ancre
 				let ouverts = crochets;
-				ecrit = ecrit.replace(/->|<-|[[\]]/g, (x) => {
+				// <-> : les deux flèches partagent leur -
+				const entites = { '<->': '&lt;-&gt;', '->': '-&gt;', '<-': '&lt;-' };
+				ecrit = ecrit.replace(/<->|->|<-|[[\]]/g, (x) => {
 					if (x === '[') ouverts++;
 					else if (x === ']') ouverts = Math.max(0, ouverts - 1);
-					else if (ouverts > 0) return x === '->' ? '-&gt;' : '&lt;-';
+					else if (ouverts > 0) return entites[x];
 					return x;
 				});
 			}
@@ -455,6 +458,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			atLineStart = autobr;
 		} else if (n.type === 'spipRawInline') {
 			out += n.attrs.source;
+			// délimiteurs des marks et nœuds atomiques s'équilibrent : seuls texte et fragments bruts comptent
+			crochets = crochetsOuverts(n.attrs.source, crochets);
 			atLineStart = false;
 		} else if (n.type === 'spipLinkAuto') {
 			out += `[${linkEnd(n.attrs)}`;

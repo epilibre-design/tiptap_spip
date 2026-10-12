@@ -18136,7 +18136,7 @@ function serializeDoc(doc4, conservative) {
     const a = b.attrs ?? {};
     const sep = separator(i2, conservative ? a.spipSep : null);
     if (conservative && a.spipGroup && typeof a.spipSrc === "string" && canon(blocks2.slice(i2, i2 + a.spipGroup)) === a.spipHash) {
-      crochets = crochetsOuverts(sep + a.spipSrc, crochets);
+      crochets = crochetsOuverts(protect(a.spipSrc).masked, crochets);
       ouvert2 = chevronsOuverts(a.spipSrc, ouvert2);
       out += sep + a.spipSrc;
       i2 += a.spipGroup;
@@ -18146,7 +18146,7 @@ function serializeDoc(doc4, conservative) {
     contexte = { ...contexte, ouvert: ouvert2, crochets };
     try {
       const ecrit = sep + serializeBlock(b);
-      crochets = crochetsOuverts(ecrit, crochets);
+      crochets = crochetsOuverts(protect(ecrit).masked, crochets);
       ouvert2 = chevronsOuverts(ecrit, ouvert2);
       out += ecrit;
     } finally {
@@ -18384,14 +18384,14 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
       const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, cellule });
       chevron = chevronsOuverts(out.slice(lu), chevron);
-      crochets = crochetsOuverts(out.slice(lu), crochets);
       let ecrit = chevron > 0 && !code2 ? texte2.replace(/>/g, "&gt;").replace(/(?<!\\)\|/g, "\\|") : texte2;
       if (!code2 && !inLink && !atomique) {
         let ouverts = crochets;
-        ecrit = ecrit.replace(/->|<-|[[\]]/g, (x) => {
+        const entites = { "<->": "&lt;-&gt;", "->": "-&gt;", "<-": "&lt;-" };
+        ecrit = ecrit.replace(/<->|->|<-|[[\]]/g, (x) => {
           if (x === "[") ouverts++;
           else if (x === "]") ouverts = Math.max(0, ouverts - 1);
-          else if (ouverts > 0) return x === "->" ? "-&gt;" : "&lt;-";
+          else if (ouverts > 0) return entites[x];
           return x;
         });
       }
@@ -18424,6 +18424,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       atLineStart = autobr;
     } else if (n.type === "spipRawInline") {
       out += n.attrs.source;
+      crochets = crochetsOuverts(n.attrs.source, crochets);
       atLineStart = false;
     } else if (n.type === "spipLinkAuto") {
       out += `[${linkEnd(n.attrs)}`;
