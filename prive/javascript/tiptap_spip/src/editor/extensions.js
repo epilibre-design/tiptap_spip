@@ -21,6 +21,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { idiomeView, linkAutoView, modelView, multiView } from '../nodeviews/views.js';
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
 import { serializeIdiome } from '../spip/multi.js';
+import { SpipEdition } from './edition.js';
 import { apercu, partieAffichee } from './texte.js';
 import { label as libelle } from '../ui/labels.js';
 
@@ -608,6 +609,7 @@ const SpipUi = Extension.create({
 			'Mod-k': ouvrir('openLink'),
 			'Mod-Alt-n': ouvrir('editNote'),
 			'Mod-Alt-g': ouvrir('openGlossary'),
+			'Mod-Alt-m': ouvrir('editModel'),
 			// Entrée sur un atome sélectionné (note, multi, idiome) : son popover (spec 05 §1, §5)
 			Enter: ({ editor }) => {
 				const { selection } = editor.state;
@@ -702,6 +704,7 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		Dropcursor,
 		Gapcursor,
 		UndoRedo,
+		SpipEdition,
 		SpipUi.configure({ ui }),
 	];
 }
