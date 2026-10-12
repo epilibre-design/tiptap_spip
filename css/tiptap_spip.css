@@ -135,10 +135,18 @@ html.tts-plein-ecran {
 	overflow: hidden;
 }
 
+/* un ancêtre positionné avec un z-index (.formulaire_spip : 2) enfermerait l'éditeur plein écran sous
+   le bandeau : il passe au même niveau */
+html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
+	z-index: 9000;
+}
+
+/* au-dessus du bandeau de l'espace privé (.bando-haut : 1001), sous la modalbox de mediabox (lity :
+   9990), qui doit couvrir l'éditeur plein écran (catalogue des modèles) */
 .tts-editor.tts-editor--plein-ecran {
 	position: fixed;
 	inset: 0;
-	z-index: 1000;
+	z-index: 9000;
 	display: flex;
 	flex-direction: column;
 	border-radius: 0;
