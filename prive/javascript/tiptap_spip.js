@@ -27498,7 +27498,11 @@ var SELECTOR = [
   "textarea[data-tts-toolbar]"
 ].join(", ");
 var CRAYONS = ".formulaire_crayon textarea.crayon-active";
-var selecteur = () => config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR;
+var selecteur = () => {
+  const { prive, public: formulairesPublics, crayons } = config();
+  const formulaires = prive !== false || formulairesPublics !== false;
+  return [formulaires && SELECTOR, crayons && CRAYONS].filter(Boolean).join(", ");
+};
 var PREFERENCE = "tiptap_spip.mode";
 var lirePreference = () => {
   try {
@@ -27656,6 +27660,7 @@ var Instance = class {
 };
 function tiptap_spip_init(racine = document, { createEditor: createEditor2 = createEditor } = {}) {
   const sel = selecteur();
+  if (!sel) return;
   const textareas = /* @__PURE__ */ new Set();
   for (const root of racines(racine)) {
     if (root.matches?.(sel)) textareas.add(root);

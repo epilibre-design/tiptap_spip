@@ -80,7 +80,9 @@ Réalisation (lot L5.3) :
   `tiptap_spip_config()` (`inc/tiptap_spip_config.php`) la relit en remplaçant chaque valeur absente ou
   invalide par son défaut. L'autorisation `configurer` est vérifiée par le core.
 - **Activation :**
-  - site public et crayons : `non` par défaut ;
+  - site public et crayons : `non` par défaut, indépendants. Le bundle est chargé dans le site public dès
+    que l'un des deux est actif ; le lancement JS n'y équipe les formulaires qu'avec l'option publique
+    (`public` de la config JS), et les crayons qu'avec la leur ;
   - pas de réglage propre à l'espace privé, car décocher tous les champs d'un objet y désactive l'éditeur.
 - **Champs candidats :** champs éditables des objets éditables dont le traitement passe par `propre()`. Par
   exemple `texte`, `chapo`, `ps` et `descriptif` d'un article, ou `bio` d'un auteur ; jamais `titre` ni

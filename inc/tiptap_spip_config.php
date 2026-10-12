@@ -110,6 +110,7 @@ function tiptap_spip_champs_par_objet(): array {
 function tiptap_spip_config_js($valeur = null): string {
 	$config = tiptap_spip_config();
 	return (string) json_encode([
+		'public' => $config['public'] === 'oui',
 		'crayons' => $config['crayons'] === 'oui',
 		'mode' => $config['mode'],
 		'niveaux' => $config['niveaux'],

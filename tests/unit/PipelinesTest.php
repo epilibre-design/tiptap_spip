@@ -72,6 +72,11 @@ final class PipelinesTest extends TestCase
 		$this->assertStringContainsString('tiptap_spip_init();', tiptap_spip_insert_head('<head>'));
 	}
 
+	public function testSitePublicChargeAussiPourLesSeulsCrayons(): void {
+		$GLOBALS['_test_config']['tiptap_spip'] = ['public' => 'non', 'crayons' => 'oui'];
+		$this->assertStringContainsString('tiptap_spip_init();', tiptap_spip_insert_head('<head>'));
+	}
+
 	public function testImportmapDeclareLeBundle(): void {
 		$flux = tiptap_spip_importmap(['args' => [], 'data' => ['autre.js']]);
 

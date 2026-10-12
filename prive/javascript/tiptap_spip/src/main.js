@@ -27,7 +27,15 @@ const SELECTOR = [
 /** Textareas des crayons (plugin Crayons), équipés si la configuration l'active (tiptap_spip/crayons). */
 const CRAYONS = '.formulaire_crayon textarea.crayon-active';
 
-const selecteur = () => (config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR);
+/**
+ * Textareas à équiper selon la configuration : formulaires (sauf dans le site public sans l'option
+ * publique : le bundle y est chargé pour les seuls crayons), crayons si l'option les active.
+ */
+const selecteur = () => {
+	const { prive, public: formulairesPublics, crayons } = config();
+	const formulaires = prive !== false || formulairesPublics !== false;
+	return [formulaires && SELECTOR, crayons && CRAYONS].filter(Boolean).join(', ');
+};
 
 /** Mode choisi par l'auteur (spec 06 §3), gardé par le navigateur ; stockage indisponible : ignoré. */
 const PREFERENCE = 'tiptap_spip.mode';
@@ -248,6 +256,8 @@ class Instance {
  */
 export function tiptap_spip_init(racine = document, { createEditor = defaultCreateEditor } = {}) {
 	const sel = selecteur();
+	// rien d'activé (site public sans formulaires ni crayons)
+	if (!sel) return;
 	const textareas = new Set();
 	for (const root of racines(racine)) {
 		if (root.matches?.(sel)) textareas.add(root);

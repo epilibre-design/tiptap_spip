@@ -332,6 +332,24 @@ describe('tiptap_spip_init', () => {
 		}
 	});
 
+	it('site public avec les seuls crayons : formulaires publics laissés, crayons équipés', () => {
+		const crayon = '<form class="formulaire_crayon"><textarea class="crayon-active" name="content_wid1_texte">a</textarea></form>';
+		const forum = '<div class="formulaire_spip formulaire_forum"><form><textarea name="texte">b</textarea></form></div>';
+		page(crayon + forum);
+		globalThis.spipConfig = { tiptap_spip: { prive: false, public: false, crayons: true } };
+		tiptap_spip_init();
+		expect([...instances].map((i) => i.textarea.name)).toEqual(['content_wid1_texte']);
+		// espace privé : formulaires toujours équipés, quel que soit le réglage public
+		for (const instance of [...instances]) instance.destroy();
+		page(forum);
+		globalThis.spipConfig = { tiptap_spip: { prive: false, public: false, crayons: false } };
+		tiptap_spip_init();
+		expect(instances.size).toBe(0);
+		globalThis.spipConfig = { tiptap_spip: { prive: true, public: false } };
+		tiptap_spip_init();
+		expect(instances.size).toBe(1);
+	});
+
 	it('formulaire d\'objet : seuls les champs de data-tts-champs sont équipés', () => {
 		page(`<form class="formulaire_spip" data-tts-champs="texte ps">
 			<textarea class="inserer_barre_edition" name="texte">a</textarea>

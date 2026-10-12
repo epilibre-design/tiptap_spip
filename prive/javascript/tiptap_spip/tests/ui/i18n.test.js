@@ -11,8 +11,8 @@ const lire = (chemin) => readFileSync(new URL(chemin, racine), 'utf8');
 const langue = Object.fromEntries([...lire('lang/tiptap_spip_fr.php').matchAll(/^\t'(\w+)' => '((?:[^'\\]|\\.)*)',$/gm)]
 	.map(([, cle, valeur]) => [cle, valeur.replace(/\\(.)/g, '$1')]));
 
-/** Clés de la configuration JS : `cle: "<:tiptap_spip:cle|texte_script:>"`. */
-const config = [...lire('prive/javascript/_inits/09_tiptap_spip_config.js.html').matchAll(/^\t+(\w+): "<:tiptap_spip:(\w+)\|texte_script:>",$/gm)];
+/** Clés de la configuration JS : `cle: "<:tiptap_spip:cle|texte_script:>"`, virgule finale ou non (dernière). */
+const config = [...lire('prive/javascript/_inits/09_tiptap_spip_config.js.html').matchAll(/^\t+(\w+): "<:tiptap_spip:(\w+)\|texte_script:>",?$/gm)];
 
 /** Fichiers sources du bundle. */
 const sources = (dossier) => readdirSync(new URL(dossier, import.meta.url), { withFileTypes: true }).flatMap((f) => (
@@ -30,6 +30,7 @@ describe('libellés de l\'interface', () => {
 	it('la configuration JS transmet chaque libellé, sous sa propre clé, et rien d\'autre', () => {
 		expect(config.filter(([, cle, idiome]) => cle !== idiome).map(([, cle]) => cle)).toEqual([]);
 		const transmis = config.map(([, cle]) => cle);
+		expect(transmis.filter((cle, i) => transmis.indexOf(cle) !== i)).toEqual([]);
 		expect(transmis.filter((cle) => !(cle in DEFAUTS))).toEqual([]);
 		expect(Object.keys(DEFAUTS).filter((cle) => !transmis.includes(cle))).toEqual([]);
 	});

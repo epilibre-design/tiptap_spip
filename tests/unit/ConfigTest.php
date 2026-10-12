@@ -55,7 +55,7 @@ final class ConfigTest extends TestCase
 		$GLOBALS['_test_config']['tiptap_spip'] = ['crayons' => 'oui', 'mode' => 'source', 'niveaux' => [2, 5], 'champs' => ['auteur' => []]];
 
 		$this->assertSame(
-			'{"crayons":true,"mode":"source","niveaux":[2,5],"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]}}',
+			'{"public":false,"crayons":true,"mode":"source","niveaux":[2,5],"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]}}',
 			tiptap_spip_config_js()
 		);
 	}

@@ -4,7 +4,7 @@ Object.assign(window.spipConfig, {
 	tiptap_spip: {
 		css: "@import url('[(#CHEMIN{css/tiptap_spip.css}|timestamp|url_absolue)]')",
 		prive: [(#ENV{prive,oui}|=={oui}|?{true,false})],
-		[(#REM) crayons, mode, niveaux, champs (page configurer_tiptap_spip) ]
+		[(#REM) public, crayons, mode, niveaux, champs (page configurer_tiptap_spip) ]
 		...[(#VAL|tiptap_spip_config_js)],
 		services: "[(#URL_PAGE{tiptap_spip_services}|url_absolue|texte_script)]",
 		toolbars: [(#VAL|tiptap_spip_barres_json)],
@@ -123,7 +123,6 @@ Object.assign(window.spipConfig, {
 			modele_aria: "<:tiptap_spip:modele_aria|texte_script:>",
 			zone_texte: "<:tiptap_spip:zone_texte|texte_script:>",
 			appliquer: "<:tiptap_spip:appliquer|texte_script:>",
-			annuler: "<:tiptap_spip:annuler|texte_script:>",
 			annuler: "<:tiptap_spip:annuler|texte_script:>"
 		}
 	}

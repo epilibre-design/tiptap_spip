@@ -62,6 +62,24 @@ test('crayon public : éditeur et services à la demande, enregistrement, fermet
 	expect(await servicesCharges(page)).toBe(servicesAvant);
 });
 
+test('crayons sans l\'option publique : bundle chargé, crayon équipé, formulaire de forum laissé', async ({ page }) => {
+	configurer('tiptap_spip/public', 'non');
+	try {
+		const id = await articlePublic(page, 'Texte du crayon.');
+		const forum = page.locator('.formulaire_forum textarea[name=texte]');
+		await expect(forum).toBeVisible();
+		await expect(forum).not.toHaveAttribute('data-tts-mounted');
+		expect(await instances(page)).toBe(0);
+		await page.locator(`.crayon.article-texte-${id}`).dblclick();
+		await expect(page.locator('.crayon-html .tts-editor .ProseMirror')).toBeVisible();
+		expect(await instances(page)).toBe(1);
+		await page.locator('.crayon-html .crayon-cancel').click();
+		await expect(page.locator('.crayon-html')).toHaveCount(0);
+	} finally {
+		configurer('tiptap_spip/public', 'oui');
+	}
+});
+
 test('deux crayons ouverts ensemble : deux éditeurs, chacun ses services', async ({ page }) => {
 	const id = await articlePublic(page, 'Le texte [->art1].', { chapo: 'Le chapo [->art1].' });
 	const base = await instances(page);

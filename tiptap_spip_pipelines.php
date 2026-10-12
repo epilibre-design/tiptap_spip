@@ -48,11 +48,12 @@ function tiptap_spip_header_prive($flux) {
 }
 
 /**
- * Site public : seulement si la configuration l'active (`tiptap_spip/public`), pour les
- * formulaires publics et Crayons (spec 02 §6).
+ * Site public : si la configuration active les formulaires publics ou les crayons (spec 02 §6),
+ * réglages indépendants ; le lancement JS n'équipe que ce qui est activé (config JS public, crayons).
  */
 function tiptap_spip_insert_head($flux) {
-	if (tiptap_spip_config()['public'] !== 'oui') {
+	$config = tiptap_spip_config();
+	if ($config['public'] !== 'oui' && $config['crayons'] !== 'oui') {
 		return $flux;
 	}
 	return $flux . tiptap_spip_head(false);
