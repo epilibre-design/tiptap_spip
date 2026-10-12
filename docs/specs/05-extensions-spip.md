@@ -149,6 +149,30 @@ avec les évolutions suivantes.
 - Insertion : bouton « Modèles » de la barre → liste des modèles disponibles par catégorie
   (`inserer_modeles_lister_formulaires_modeles`), puis formulaire. Raccourcis spécifiques
   « Image / Document » (`doc`, `img`, `emb`) avec sélecteur de document de l'objet.
+- **Catalogue, réalisé (Q3 tranchée : plugin Insérer modèles facultatif, `<utilise>`) :**
+  - **Contrat avec le plugin,** sans le modifier :
+    - l'`input[name=url_inserer_modeles]` qu'il pose dans le formulaire d'un textarea (après le formulaire
+      pour un crayon) donne l'URL de sa modalbox pour l'objet édité, si l'auteur a le droit d'insérer des
+      modèles ;
+    - après « Insérer », son formulaire rechargé dans la modalbox affiche le raccourci dans
+      `#code_modele_modalbox` : l'éditeur le lit, le pose et ferme la modalbox ;
+    - le plugin insère lui-même par le porte-plume dans la zone markItUp qui a le focus :
+      `$.markItUp.focused` est remis à `null` à l'ouverture, pour qu'aucune autre zone ne le reçoive ;
+    - préremplissage par l'URL : `formulaire_modele` et un paramètre par champ.
+  - **Catalogue** (`tiptap_spip_catalogue_modeles()`, config JS `modeles`) : nom du modèle → formulaire
+    YAML (saisie `modele`), champ de l'identifiant (`id_modele`), autres champs, valeurs seules
+    d'`align`, `variante` et `classe` (`|left`), cases à cocher (`masquer=legende,titre`). Modèles ignorés
+    exclus ; `null` sans le plugin.
+  - **Barre :** avec catalogue, « Modèle » est un menu : « Catalogue des modèles… » ou « Saisir le
+    raccourci… ». `Mod-Alt-M` ouvre la saisie brute. Sans catalogue (pas de plugin, pas de droit, aucun
+    modèle proposé, SPIP 5), c'est le bouton de la saisie brute.
+  - **« Modifier » :** il ouvre le formulaire prérempli si le modèle est au catalogue et que chacun de ses
+    paramètres y a un champ ; sinon la saisie brute, pour ne jamais perdre un paramètre.
+  - **Limites :**
+    - le formulaire réécrit le raccourci dans son ordre (identifiant, `variante`, `classe`, `align`, puis
+      les champs) ;
+    - un modèle dans une note s'édite en brut ;
+    - le plugin ne déclare pas SPIP 5.
 - Input rule : taper un raccourci de modèle complet (`<doc12|left>`) le transforme en nœud.
 
 ### Sérialisation

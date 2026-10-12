@@ -13,6 +13,7 @@
 | **L5 — Interface** | découpé en trois plans : **L5.1** (fait) barres `edition`/`forum`/`minimale` déclarées (`barres.json`, pipeline `tiptap_spip_toolbars`), registre de composants, menus accessibles, commandes d'édition (alignement, poésie, tableaux, guillemets, casse), plein écran, mode mémorisé, raccourcis ; **L5.2** (fait) anomalies signalées, barre d'état (mots, anomalies), popover du nœud brut (source du segment relue), piège de focus, zone éditable et atomes nommés, audit axe ; **L5.3** (fait) page de configuration CFG (activation, champs équipés, mode, niveaux, glossaires ; modèles masqués reportés avec leur catalogue), contrôle i18n, popovers `div role="dialog"` (axe sans violation), critère 6 mesuré et tenu, e2e sous Chromium, Firefox et WebKit | Critères 6, 7, 8 |
 | **L6 — Extensibilité** | (fait) API `registerExtension`, pipelines `tiptap_spip_extensions` et `tiptap_spip_i18n`, ré-export du core (`window.tiptapSpip`), harnais `allerRetour`, exemple de plugin tiers `exemples/tiptap_spip_faq` | Plugin d'exemple fonctionnel sans modifier le cœur |
 | **Compatibilité SPIP 4.2 et 5** (fait) | sites jetables SPIP 4.2.16 et 5.0-dev, lancement commun SPIP 4/5 hors de `_inits/` (configuration et module par `header_prive`/`insert_head`, bundle par l'importmap en SPIP 5), glossaire par `pre_liens` en SPIP 5, chargement du noyau commun aux scripts de test, diff figé propre à une branche de SPIP | Critère 8 |
+| **Catalogue des modèles** (fait) | Q3 tranchée : formulaires YAML du plugin Insérer modèles en modalbox (insertion, « Modifier » prérempli), saisie brute sinon, modèles masqués par sa configuration ; plein écran au-dessus du bandeau de l'espace privé | Insertion et modification d'un modèle par son formulaire |
 | L7 — Ultérieur | glisser-déposer de documents (upload → `<docN>`), aperçu `<math>`, collaboration | — |
 
 État de L0 : chargement SPIP 4 vérifié de bout en bout (site 4.4.21 jetable) ; chargement SPIP 5 repris de
@@ -41,7 +42,7 @@ TDD avec le corpus.
 |---|----------|-------------|
 | Q1 | Nom et préfixe du plugin | `tiptap_spip`, nom « Éditeur visuel pour SPIP » |
 | Q2 | Intertitres de niveau > 2 et alignements | **Tranché** : HTML simple (`<h3>`…`<h6>`, `<div class="text-…">`), pas de raccourcis de plugins tiers |
-| Q3 | Mutualiser avec markdown_editor (modèles, multi, html, formulaire `inserer_modeles`, Toolbar) ? | Extraire un paquet commun (plugin `tiptap_commun` ou lib npm partagée) après L2 ; d'ici là, copie assumée et tracée |
+| Q3 | Mutualiser avec markdown_editor (modèles, multi, html, formulaire `inserer_modeles`, Toolbar) ? | **Tranché (2026-10-12)** pour le catalogue des modèles : plugin contrib Insérer modèles facultatif (`<utilise>`), sans copie ni paquet commun ; saisie brute sans lui ([05](05-extensions-spip.md) §3). Multi, html et Toolbar restent propres à tiptap_spip |
 | Q4 | En mode source, réactiver le porte-plume sur le textarea ? | Oui si le plugin porte-plume est actif |
 | Q5 | Autolien : sérialiser les URL tapées en `[->url]` ou les laisser en texte ? | Texte par défaut (SPIP fait l'autolien), lien explicite seulement si créé via le popover |
 | Q6 | Champs autres que `texte` (`chapo`, `ps`, `descriptif`, champs extras) | Configurable, barre `minimale` par défaut |

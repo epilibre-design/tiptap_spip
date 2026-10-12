@@ -99,7 +99,11 @@ Barre contextuelle (bubble menu, optionnelle) sur sélection de texte : gras, it
 - **Plein écran** : les modalbox (modèles) et popovers s'affichent au-dessus. Lot L5.1 : par CSS
   (`.tts-editor--plein-ecran`, position fixe, `html.tts-plein-ecran` sans défilement), et non par l'API
   Fullscreen de markdown_editor : celle-ci n'affiche que l'élément en plein écran, une modalbox posée dans
-  `body` serait cachée.
+  `body` serait cachée. Lot catalogue des modèles :
+  - l'éditeur plein écran est à `z-index: 9000`, au-dessus du bandeau de l'espace privé (`.bando-haut`,
+    1001) et sous la modalbox de mediabox (lity, 9990) ;
+  - ses ancêtres (`:has()`) passent au même niveau, car `.formulaire_spip` (`position: relative`,
+    `z-index: 2`) l'enfermait sous le bandeau, qui recouvrait la barre d'outils.
 - Le mode choisi est mémorisé (préférence `localStorage` `tiptap_spip.mode`, lue et écrite sous try/catch,
   sinon option `spipConfig.tiptap_spip.mode`, sinon WYSIWYG). La préférence est celle du navigateur, pas de
   l'auteur.
@@ -111,7 +115,7 @@ Barre contextuelle (bubble menu, optionnelle) sur sélection de texte : gras, it
 | Lien | popover : cible avec autocomplétion d'objets SPIP, bulle, langue, nouvelle fenêtre, ouvrir, retirer |
 | Note | popover avec sous-éditeur, nom optionnel, « sans appel » |
 | Glossaire | popover : glossaire, numéro, bulle, langue, voir la définition |
-| Modèle | modalbox `#FORMULAIRE_INSERER_MODELES` (YAML) ou champ brut |
+| Modèle | modalbox `#FORMULAIRE_INSERER_MODELES` (YAML, plugin Insérer modèles) ou champ brut ; avec le plugin, menu « Catalogue des modèles… » / « Saisir le raccourci… » ([05](05-extensions-spip.md) §3) |
 | Abréviation | popover : explication, langue |
 | Nœud brut | popover : source éditable + validation par re-parse (« convertir » si devenu reconnaissable) |
 

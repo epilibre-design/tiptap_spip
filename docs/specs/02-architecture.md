@@ -111,8 +111,9 @@ Réalisation (lot L5.3) :
   indique pas.
 - **Glossaires :** glossaires nommés proposés dans le popover du glossaire, tous par défaut. L'opération
   `glossaire` accepte toujours tous les glossaires du site, car un raccourci existant reste valide.
-- **Modèles masqués :** reportés avec le catalogue des modèles (`inserer_modeles`, Q3). L'interface n'en
-  liste encore aucun, donc rien à masquer.
+- **Modèles proposés :** le catalogue est celui du plugin Insérer modèles (Q3, [05](05-extensions-spip.md)
+  §3). Les modèles masqués se règlent dans sa configuration (`inserer_modeles/ignorer_modeles`), vers
+  laquelle la page renvoie ; pas d'option propre. Sans le plugin, la page dit ce qu'il apporte.
 
 ## 3. Le code JavaScript
 
