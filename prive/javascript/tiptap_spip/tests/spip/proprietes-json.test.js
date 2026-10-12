@@ -76,8 +76,8 @@ const atome = fc.oneof(
  * - pas de saut de ligne au bord (SPIP ne l'affiche pas en tête, affiche _ en fin : non écrit) ;
  * - un saut autobr suivi d'un autre saut est forcé (\n\n ferait une ligne vide) ;
  * - pas de blanc en tête de ligne après un saut (SPIP le retire, le navigateur ne l'affiche pas) ;
- * - un contenu fait seulement d'espaces est vide (le parseur et SPIP n'en gardent rien : [[ ]] est une
- *   note vide) ; l'espace insécable (~) compte.
+ * - un contenu fait seulement d'espaces sans mark est vide (le parseur et SPIP n'en gardent rien : [[ ]]
+ *   est une note vide) ; l'espace insécable (~) et les espaces marqués ({{ }}) se relisent.
  */
 function formeNormale(nodes) {
 	const une = formeNormaleUneFois(nodes);
@@ -86,7 +86,7 @@ function formeNormale(nodes) {
 }
 
 function formeNormaleUneFois(nodes) {
-	if (nodes.every((n) => n.type === 'text' && /^[ \t]*$/.test(n.text))) return [];
+	if (nodes.every((n) => n.type === 'text' && !n.marks?.length && /^[ \t]*$/.test(n.text))) return [];
 	const out = [...nodes];
 	while (out[0]?.type === 'hardBreak') out.shift();
 	while (out.at(-1)?.type === 'hardBreak') out.pop();

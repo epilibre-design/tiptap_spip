@@ -172,10 +172,14 @@ describe('sérialisation des notes', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
-	it('contenu fait seulement d\'espaces : relu vide (forme normale, SPIP n\'en affiche rien)', () => {
+	it('contenu fait seulement d\'espaces sans mark : relu vide (forme normale, SPIP n\'en affiche rien)', () => {
 		const doc = node('doc', null, [p(text('x'), note([p(text(' '))]))]);
 		expect(serialize(doc)).toBe('x[[ ]]');
 		expect(stripTech(parse(serialize(doc)).content)).toEqual([p(text('x'), note([p()]))]);
+		// espaces marqués : relus à l'identique
+		const gras = node('doc', null, [p(text('x'), note([p(text(' ', [{ type: 'bold' }]))]))]);
+		expect(serialize(gras)).toBe('x[[{{ }}]]');
+		expect(stripTech(parse(serialize(gras)).content)).toEqual(gras.content);
 	});
 
 	it('note saisie sans contenu', () => {
