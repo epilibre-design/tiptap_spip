@@ -1,4 +1,5 @@
 import { serializeAbbr } from './abbr.js';
+import { delimiteursRegle, ecrireRegle } from './aides.js';
 import { serializeGlossary } from './glossary.js';
 import { canon, MARK_ORDER, node, sameMark, text } from './json.js';
 import { linkEnd } from './links.js';
@@ -7,6 +8,7 @@ import { serializeIdiome, serializeMulti } from './multi.js';
 import { parse } from './parse.js';
 import { canBacktick, encodeCode } from './protect.js';
 import { RE_AVANT_LANGUE } from './regex.js';
+import { avecRegles, regleDe } from './regles.js';
 
 /**
  * Document JSON → source SPIP.
@@ -14,14 +16,15 @@ import { RE_AVANT_LANGUE } from './regex.js';
  * restitué à l'identique (spipSep + spipSrc), les autres blocs sont sérialisés.
  *
  * @param {object} doc
- * @param {{ conservative?: boolean }} options  conservative:false donne la forme canonique
+ * @param {{ conservative?: boolean, regles?: object[] }} options  conservative:false donne la forme
+ *        canonique ; regles : règles tierces (regles.js), sinon celles de l'appel englobant
  * @returns {string}
  */
-export function serialize(doc, { conservative = true } = {}) {
+export function serialize(doc, { conservative = true, regles } = {}) {
 	const avant = contexte;
 	contexte = { ...contexte, conservative };
 	try {
-		return serializeDoc(doc, conservative);
+		return avecRegles(regles, () => serializeDoc(doc, conservative));
 	} finally {
 		contexte = avant;
 	}
@@ -66,6 +69,9 @@ function separator(i, spipSep) {
 const textOf = (n) => (n.content ?? []).map((c) => c.text ?? '').join('');
 const blocks = (content = []) => content.map(serializeBlock).join('\n\n');
 
+/** Blocs → source, séparés par une ligne vide (aides des règles tierces). */
+export const serializeBlocks = blocks;
+
 export function serializeBlock(b) {
 	const a = b.attrs ?? {};
 	switch (b.type) {
@@ -103,8 +109,11 @@ export function serializeBlock(b) {
 			}))));
 		case 'table':
 			return serializeTable(b);
-		default:
+		default: {
+			const regle = regleDe(b.type);
+			if (regle?.type === 'block' && regle.renderSpip) return ecrireRegle(regle, b);
 			throw new Error(`serialize: type de bloc inconnu « ${b.type} »`);
+		}
 	}
 }
 
@@ -166,7 +175,10 @@ const delimiters = (mark) => {
 	if (mark.type === 'spipLink') return ['[', linkEnd(mark.attrs)];
 	if (mark.type === 'spipGlossary') return ['[?', serializeGlossary('', mark.attrs).slice(2)];
 	if (mark.type === 'spipAbbr') return ['[', serializeAbbr('', mark.attrs).slice(1)];
-	return OPEN[mark.type];
+	if (OPEN[mark.type]) return OPEN[mark.type];
+	const regle = regleDe(mark.type);
+	if (regle?.type === 'mark' && regle.renderSpip) return delimiteursRegle(regle, mark);
+	throw new Error(`serialize: mark inconnue « ${mark.type} »`);
 };
 
 /** Marks dont le texte s'écrit tel quel dans le raccourci, sans autre mark à l'intérieur. */
@@ -298,6 +310,9 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			atLineStart = false;
 		} else if (n.type === 'spipIdiome') {
 			out += serializeIdiome(n.attrs);
+			atLineStart = false;
+		} else if (regleDe(n.type)?.type === 'inline' && regleDe(n.type).renderSpip) {
+			out += ecrireRegle(regleDe(n.type), n);
 			atLineStart = false;
 		} else {
 			throw new Error(`serialize: type inline inconnu « ${n.type} »`);

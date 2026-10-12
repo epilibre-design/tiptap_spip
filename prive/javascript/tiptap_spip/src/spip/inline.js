@@ -1,4 +1,5 @@
 import { parseAbbr, serializeAbbr } from './abbr.js';
+import { lireRegle } from './aides.js';
 import { parseGlossary, serializeGlossary } from './glossary.js';
 import { canon, mergeText, node, raw, sortMarks, text } from './json.js';
 import { parseLinkAtts } from './links.js';
@@ -7,6 +8,7 @@ import { BARRE_FINALE, parseIdiome, parseMulti } from './multi.js';
 import { LIGNE_VIDE } from './regex.js';
 import { parseNote } from './notes.js';
 import { FILL, protect } from './protect.js';
+import { regleDe } from './regles.js';
 import { escapeText } from './serialize.js';
 
 /** Balises HTML sans attribut équivalentes à une mark (même rendu que le raccourci SPIP). */
@@ -53,6 +55,20 @@ function linkToken(region, src) {
 	if (atts.text.trim() === '') return { t: 'node', node: node('spipLinkAuto', attrs) };
 	const { masked, regions } = protect(atts.text);
 	return { t: 'link', mark: { type: 'spipLink', attrs }, children: parseInline(atts.text, masked, regions, { link: true }) };
+}
+
+/**
+ * Région d'une règle tierce en ligne → jeton : nœud en ligne, ou mark posée sur le contenu lu. Une
+ * règle de bloc hors de son segment, ou une lecture impossible, laissent la source brute (null).
+ */
+function jetonTiers(region, src) {
+	const regle = regleDe(region.data.regle);
+	if (!regle || regle.type === 'block') return null;
+	const lu = lireRegle(regle, src);
+	if (!lu) return null;
+	if (regle.type === 'inline') return { t: 'node', node: lu };
+	const mark = lu.attrs && Object.keys(lu.attrs).length ? { type: regle.name, attrs: lu.attrs } : { type: regle.name };
+	return { t: 'link', mark, children: lu.content };
 }
 
 /** Glossaire et abréviation : analyse, puis forme écrite par le sérialiseur à partir des attributs. */
@@ -129,6 +145,7 @@ function tokenize(source, masked, regions, lineStart, link) {
 			let marque;
 			let multi;
 			let idiome;
+			let tierce;
 			if (region.kind === 'escape') {
 				buf += region.data.char;
 			} else if (region.kind === 'backtick' && region.data.ticks.length < 3 && region.data.code.trim() !== '') {
@@ -145,6 +162,8 @@ function tokenize(source, masked, regions, lineStart, link) {
 			} else if (region.kind === 'multi' && !link && (multi = multiNode(src, region.data.masked))) {
 				// pas de multi dans le texte d'un lien
 				push({ t: 'node', node: multi });
+			} else if (region.kind === 'extension' && (tierce = jetonTiers(region, src))) {
+				push(tierce);
 			} else if (region.kind === 'idiome' && (idiome = parseIdiome(src))) {
 				push({ t: 'node', node: node('spipIdiome', idiome) });
 			} else if (region.kind === 'model' && parseModel(src)) {

@@ -1,9 +1,11 @@
+import { lireRegle } from './aides.js';
 import { parseInline } from './inline.js';
 import { node, text } from './json.js';
 import { parseModel } from './models.js';
 import { BARRE_FINALE, parseMulti } from './multi.js';
 import { LIGNE_VIDE } from './regex.js';
 import { FILL, protect, regionsIn } from './protect.js';
+import { regleDe } from './regles.js';
 import { segment } from './segment.js';
 
 /** Signale une construction que l'éditeur ne sait pas représenter : le segment reste brut. */
@@ -45,6 +47,7 @@ function verbatimBlock(src, regions) {
 	if (r.kind === 'backtick' && r.data.ticks.length >= 3) {
 		return [node('codeBlock', { language: r.data.language || null }, textContent(r.data.code))];
 	}
+	if (r.kind === 'extension') return blocExtension(src, r);
 	if (r.kind !== 'block') return null;
 	const { tag, openTag, closeTag, inner, absorbed } = r.data;
 	// un bloc qui contenait du code en backticks est rendu autrement par SPIP : on le garde brut
@@ -58,6 +61,17 @@ function verbatimBlock(src, regions) {
 	}
 	const type = { cadre: 'spipCadre', frame: 'spipCadre', html: 'spipHtml', math: 'spipMath' }[tag];
 	return [type ? node(type, { openTag, closeTag }, textContent(inner)) : node('spipRaw', { source: src })];
+}
+
+/**
+ * Raccourci d'une règle tierce de bloc occupant tout son segment : le bloc qu'elle lit, sinon la
+ * source brute. Une règle en ligne laisse le segment devenir un paragraphe (inline.js).
+ */
+function blocExtension(src, r) {
+	const regle = regleDe(r.data.regle);
+	if (regle?.type !== 'block') return null;
+	const bloc = lireRegle(regle, src);
+	return [bloc ?? node('spipRaw', { source: src })];
 }
 
 /**

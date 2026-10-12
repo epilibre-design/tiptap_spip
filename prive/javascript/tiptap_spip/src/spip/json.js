@@ -24,8 +24,13 @@ export const raw = (source, marks = []) => {
 	return n;
 };
 
-export const sortMarks = (marks) =>
-	[...marks].sort((a, b) => MARK_ORDER.indexOf(a.type) - MARK_ORDER.indexOf(b.type));
+/** Rang d'une mark : celles des règles tierces après celles du cœur, comme dans le schéma de l'éditeur. */
+const rang = (type) => {
+	const i = MARK_ORDER.indexOf(type);
+	return i < 0 ? MARK_ORDER.length : i;
+};
+
+export const sortMarks = (marks) => [...marks].sort((a, b) => rang(a.type) - rang(b.type));
 
 export const sameMark = (a, b) => a.type === b.type && JSON.stringify(a.attrs ?? {}) === JSON.stringify(b.attrs ?? {});
 

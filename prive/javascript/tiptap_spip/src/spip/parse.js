@@ -1,6 +1,7 @@
 import { blocksOf } from './blocks.js';
 import { canon, node } from './json.js';
 import { protect, regionsIn } from './protect.js';
+import { avecRegles } from './regles.js';
 import { segment } from './segment.js';
 
 /**
@@ -13,11 +14,16 @@ import { segment } from './segment.js';
  * Ne lève jamais d'exception.
  *
  * @param {string} source
- * @param {{ empreintes?: boolean }} options  empreintes false : spipHash non calculées (l'éditeur
- *        les recalcule sur la forme que donne le schéma, cf. schemaJSON)
+ * @param {{ empreintes?: boolean, regles?: object[] }} options  empreintes false : spipHash non
+ *        calculées (l'éditeur les recalcule sur la forme que donne le schéma, cf. schemaJSON) ;
+ *        regles : règles tierces (regles.js), sinon celles de l'appel englobant
  * @returns {object} nœud doc
  */
-export function parse(source, { empreintes = true } = {}) {
+export function parse(source, { empreintes = true, regles } = {}) {
+	return avecRegles(regles, () => analyser(source, empreintes));
+}
+
+function analyser(source, empreintes) {
 	const { masked, regions } = protect(source);
 	const { lead, trail, segments } = segment(source, masked);
 	const content = [];

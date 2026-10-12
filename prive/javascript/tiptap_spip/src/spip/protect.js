@@ -2,6 +2,7 @@ import {
 	RE_ABBR, RE_ANCRE, RE_BACKTICKS, RE_ECHAPPEMENT, RE_ECHAPPEMENT_CODE, RE_GLOSSAIRE, RE_IDIOME,
 	RE_LIEN, RE_MODELE, RE_MULTI, RE_NOTE, RE_PROTEGE_BLOCS,
 } from './regex.js';
+import { reglesDuNiveau } from './regles.js';
 
 /** Caractère de masquage : zone privée Unicode, jamais produit par une regex de raccourci. */
 export const FILL = '\uE000';
@@ -92,6 +93,16 @@ export function protect(source) {
 	}));
 
 	// 2. blocs protégés <code>, <cadre>, <html>…
+	// règles tierces (regles.js) : région extension, lue par sa règle (blocks.js, inline.js)
+	const scanRegles = (niveau) => {
+		for (const regle of reglesDuNiveau(niveau)) {
+			if (regle.debut && !source.includes(regle.debut)) continue;
+			scan(regle.regex, (m, start, end) => {
+				if (end > start) add(start, end, 'extension', { regle: regle.name });
+			});
+		}
+	};
+	scanRegles('protect');
 	scan(RE_PROTEGE_BLOCS, (m, start, end) => {
 		const openTag = source.slice(start, start + m[0].indexOf('>') + 1);
 		const closeLength = m[1].length + 3;
@@ -105,6 +116,7 @@ export function protect(source) {
 
 	// 3. autres échappements \{ \[ … (wheel echappe-raccourcis)
 	scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, 'escape', { char: m[1], raccourci: true }));
+	scanRegles('block');
 
 	// Glossaire, ancres (pipeline pre_liens) et notes passent avant la wheel, donc avant ces
 	// échappements : \[ ne les protège pas. On les cherche dans le texte masqué où les échappements
@@ -144,6 +156,7 @@ export function protect(source) {
 	}));
 	// texte de la note tel que le voit le core : liens, modèles, glossaire déjà remplacés (masqués)
 	scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, 'note', { masked: m[0] }));
+	scanRegles('inline');
 	scan(RE_ABBR, (m, start, end) => add(start, end, 'abbr', {}));
 	// marqueurs de langue cherchés dans le texte que voit typo() : raccourcis précédents masqués, mais
 	// échappements \[ rétablis (ils ne protègent pas un marqueur : vérifié avec l'oracle)
