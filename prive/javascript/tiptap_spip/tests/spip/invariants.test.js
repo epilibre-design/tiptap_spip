@@ -26,3 +26,19 @@ describe.each(files)('%s', (file) => {
 		expect(canon(parse(serialize(doc, { conservative: false })).content)).toBe(canon(doc.content));
 	});
 });
+
+// gros texte (spec 08 §1, cas pathologiques) : le corpus versionné concaténé jusqu'à 200 Ko, produit ici
+// plutôt que versionné
+describe('texte de 200 Ko', () => {
+	const morceaux = files.filter((f) => !process.env.TTS_CORPUS || !f.startsWith(process.env.TTS_CORPUS)).map((f) => readFileSync(f, 'utf8'));
+	let source = '';
+	for (let k = 0; source.length < 200_000; k++) source += `${morceaux[k % morceaux.length]}\n\n`;
+
+	it('totalité, identité et idempotence canonique', () => {
+		expect(source.length).toBeGreaterThanOrEqual(200_000);
+		const doc = parse(source);
+		expect(serialize(doc)).toBe(source);
+		const once = serialize(doc, { conservative: false });
+		expect(serialize(parse(once), { conservative: false })).toBe(once);
+	});
+});

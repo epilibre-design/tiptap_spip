@@ -18560,6 +18560,9 @@ function tokenize(source, masked, regions, lineStart, link) {
     } else if (c === "&" && (m = rest.match(/^&#?[a-z0-9]+;/i))) {
       push({ t: "raw", v: m[0] });
       i2 += m[0].length;
+    } else if (c === "<" && /^<[a-z/!]/i.test(rest)) {
+      push({ t: "raw", v: "<" });
+      i2++;
     } else if (c === "~") {
       buf += "\xA0";
       i2++;
@@ -18837,6 +18840,7 @@ function heading(line) {
 function runBlocks(src, msk, regions) {
   const lines = linesOf(msk);
   const L = (k2) => msk.slice(lines[k2].start, lines[k2].end);
+  if (lines.some((_, k2) => L(k2).startsWith("|"))) throw new Fallback();
   const out = [];
   let k = 0;
   while (k < lines.length) {
