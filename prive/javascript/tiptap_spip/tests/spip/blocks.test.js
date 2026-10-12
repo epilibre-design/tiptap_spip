@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseContent } from '../../src/spip/blocks.js';
+import { parse } from '../../src/spip/parse.js';
 import { node, raw, text } from '../../src/spip/json.js';
 
 const p = (...content) => node('paragraph', null, content);
@@ -20,6 +21,11 @@ describe('blocs simples', () => {
 		expect(parseContent('{{{T}}}\ntexte\n----\nfin')).toEqual([
 			node('heading', { level: 2 }, [text('T')]), p(text('texte')), node('horizontalRule'), p(text('fin')),
 		]);
+	});
+
+	it('paragraphe fait d\'un seul modèle, dans un segment de plusieurs blocs : modèle de bloc (même rendu)', () => {
+		const blocs = parseContent('<doc3|center>\n-* a');
+		expect(blocs.map((b) => b.type)).toEqual(['spipModelBlock', 'bulletList']);
 	});
 
 	it('un intertitre contenant du gras n\'est pas un intertitre éditable', () => {
@@ -48,9 +54,49 @@ describe('listes', () => {
 		]);
 	});
 
+	it('élément dont la première ligne est vide, suivie d\'une continuation : bloc brut (rendu SPIP irrégulier)', () => {
+		// SPIP : -# \n-> donne <li>&nbsp;<br />– ></li>, -* \n{ donne <li> <i></li>
+		for (const source of ['-# \n->', '-* \n{', '-* a\n-*\nb']) expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+	});
+
 	it('saut de profondeur ou deux sous-listes dans un élément : bloc brut', () => {
 		expect(parseContent('-* a\n-*** b')).toEqual([node('spipRaw', { source: '-* a\n-*** b' })]);
 		expect(parseContent('-* a\n-** b\n-## c')).toEqual([node('spipRaw', { source: '-* a\n-** b\n-## c' })]);
+	});
+
+	it('filet ou intertitre sans ligne vide après un élément : il en fait partie pour SPIP, bloc brut', () => {
+		// SPIP : <li>a<hr class="spip" /></li><li>b</li> (textwheel base/sparse_list)
+		for (const source of ['-* a\n----\n-* b', '-* a\n----', '-* a\n{{{T}}}\n-* b', '-* a\n<h3>T</h3>']) {
+			expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		}
+		// avant la liste, le filet reste un bloc
+		expect(parseContent('----\n-* a')).toEqual([node('horizontalRule'), node('bulletList', null, [item('a')])]);
+	});
+});
+
+describe('lignes commençant par |', () => {
+	it('tableau mal formé pour le parseur, mais tableau pour SPIP : bloc brut', () => {
+		// textwheel (spip-tableaux.json) fait un tableau de toute ligne qui commence et finit par |
+		for (const source of ['|a|b\n|c|d|', 'texte\n|a|\nsuite', '|a|\ntexte', '-* a\n|b|']) {
+			expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		}
+	});
+});
+
+describe('retour chariot seul', () => {
+	it('\\r non suivi de \\n : saut de ligne pour SPIP (a\\r\\r\\nb : deux paragraphes), segment brut', () => {
+		for (const source of ['a\r\r\nb', 'a\rb', '{\r\r\n{', '{\r\r']) expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		// \r\n : fin de ligne ordinaire, y compris avant une ligne vide (fins de ligne CRLF des navigateurs) ;
+		// \r dans du code : sans effet
+		expect(parseContent('a\r\nb')[0].type).toBe('paragraph');
+		expect(parseContent('a\r\n\r\nb')).toEqual([p(text('a')), p(text('b'))]);
+		expect(parseContent('-* a\r\n-* b\r\n\r\n{{{T}}}\r\n\r\nx').map((b) => b.type)).toEqual(['bulletList', 'heading', 'paragraph']);
+		// blocs qui occupent tout leur segment : le \r final appartient au séparateur
+		expect(parse('<doc12|left>\r\n').content.map((b) => b.type)).toEqual(['spipModelBlock']);
+		expect(parse('<cadre>x</cadre>\r\n\r\nb').content.map((b) => b.type)).toEqual(['spipCadre', 'paragraph']);
+		// le \r d'une fin de ligne n'est pas du texte
+		expect(parseContent('{{a}}\r\n-# b')).toEqual([p(text('a', [{ type: 'bold' }])), node('orderedList', null, [item('b')])]);
+		expect(parseContent('`a\rb`')[0].type).toBe('paragraph');
 	});
 });
 
@@ -61,6 +107,19 @@ describe('conteneurs', () => {
 			node('spipPoesie', { tag: 'poesie' }, [p(text('v1'), { type: 'hardBreak', attrs: { syntax: 'autobr' } }, text('v2'))]),
 		]);
 		expect(parseContent('<div class="text-justify">\n\na\n\n</div>')).toEqual([node('spipAlign', { align: 'justify' }, [p(text('a'))])]);
+	});
+
+	it('conteneur dont le contenu porte sa balise, ouvrante ou fermante : bloc brut', () => {
+		for (const source of ['<div class="text-center"></div></div>', '<quote>a</quote></quote>', '<poesie>a</poesie></poesie>', '<div class="text-center"><div class="text-center"></div>', '<quote><quote>a</quote>']) {
+			expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		}
+	});
+
+	it('paragraphe avec une ligne vide (segment recollé autour d\'un conteneur mal fermé) : bloc brut', () => {
+		const source = '<quote>\n\n\n</quote>{';
+		expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		// ligne vide dans un lien : masquée, le paragraphe reste
+		expect(parseContent('[a\n\nb->art1]')[0].type).toBe('paragraph');
 	});
 
 	it('autre <div> : bloc brut', () => {
@@ -106,6 +165,14 @@ describe('tableaux', () => {
 		expect(legende('|||x||\n|a|b|')).toEqual({ caption: '', summary: 'x' });
 		expect(legende('||cap|sum|more||\n|a|b|')).toEqual({ caption: 'cap', summary: 'sum|more' });
 		expect(parseContent('||||\n|a|b|c|')[0].content).toHaveLength(2);
+	});
+
+	it('première ligne de cellules toutes vides : ligne d\'en-tête, comme SPIP (_RACCOURCI_TH_SPAN, gras facultatif)', () => {
+		const [t] = parseContent('||\n|a|');
+		expect(t.content[0].content[0].type).toBe('tableHeader');
+		expect(t.content[1].content[0].type).toBe('tableCell');
+		const [u] = parseContent('||||\n|a|b|c|');
+		expect(u.content[0].content.map((c) => c.type)).toEqual(['tableHeader', 'tableHeader', 'tableHeader']);
 	});
 
 	it('lignes de longueurs différentes ou fusion incohérente : bloc brut', () => {

@@ -1,0 +1,11 @@
+<multi>[fr]non fermé [en]open
+
+[fr] hors multi
+
+<multi></multi>
+
+<multi>[fr]a</multi></multi>
+
+<multi>[xx]langue inconnue[fr]b</multi>
+
+<multi>[fr]<multi>[en]imbriqué</multi></multi>

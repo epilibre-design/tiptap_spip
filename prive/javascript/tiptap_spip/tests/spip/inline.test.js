@@ -36,6 +36,28 @@ describe('parseInline : marks', () => {
 	});
 });
 
+describe('parseInline : sauts de ligne au bord', () => {
+	it('\\n_ final : saut simple et _ brut (SPIP rend a<br />_)', () => {
+		expect(inl('a\n_ ', { lineStart: true })).toEqual([text('a'), br('autobr'), raw('_ ')]);
+		expect(inl('a\n_ b')).toEqual([text('a'), br('manual'), text('b')]);
+	});
+
+	it('saut en tout début de contenu : pas produit (SPIP ne l\'affiche pas)', () => {
+		expect(inl('\n{')).toEqual([raw('{')]);
+		// dans une mark, le saut reste ({\n})
+		expect(inl('{\n}')).toEqual([br('autobr', [I])]);
+	});
+});
+
+describe('parseInline : marks vides', () => {
+	it('délimiteurs d\'une mark vide gardés bruts (SPIP rend <strong></strong>)', () => {
+		expect(inl('{{</strong>')).toEqual([raw('{{'), raw('</strong>')]);
+		expect(inl('{</i>')).toEqual([raw('{'), raw('</i>')]);
+		// mark autour d'une mark vide : non vide
+		expect(inl('{{x{</i>}}')).toEqual([text('x', [B]), raw('{', [B]), raw('</i>', [B])]);
+	});
+});
+
 describe('parseInline : lignes', () => {
 	it('retour à la ligne simple = saut autobr ; \\n_ = saut manuel', () => {
 		expect(inl('a\nb\n_ c')).toEqual([text('a'), br('autobr'), text('b'), br('manual'), text('c')]);
@@ -61,6 +83,15 @@ describe('parseInline : caractères', () => {
 
 	it('balises HTML inconnues et commentaires : bruts', () => {
 		expect(inl('<span class="x">a</span><!-- c -->')).toEqual([raw('<span class="x">'), text('a'), raw('</span>'), raw('<!-- c -->')]);
+	});
+
+	it('< devant une lettre, / ou ! sans balise complète : brut, SPIP le restitue tel quel', () => {
+		// <img alt="<b>"> : le > de <b> coupe la balise ; <p class='a non fermé ; commentaire non fermé
+		expect(inl('<img alt="<b>">')).toEqual([raw('<'), text('img alt="'), raw('<b>'), text('">')]);
+		expect(inl("x <p class='a")).toEqual([text('x '), raw('<'), text("p class='a")]);
+		expect(inl('<!-- non fermé')).toEqual([raw('<'), text('!-- non fermé')]);
+		// < suivi d'autre chose : texte
+		expect(inl('a < b <3')).toEqual([text('a < b <3')]);
 	});
 
 	it('code : backticks et <code> sur une ligne', () => {

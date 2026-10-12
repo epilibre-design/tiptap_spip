@@ -127,11 +127,22 @@ describe('tableaux', () => {
 		editor.view.dispatch(tr.setSelection(CellSelection.create(doc, positions[l1][c1], positions[l2][c2])));
 	};
 
-	it('inséré : trois lignes de trois cellules, sans en-tête', () => {
+	it('inséré : trois lignes de trois cellules, sans en-tête ; relu, une première ligne restée vide est un en-tête', () => {
 		monter('Avant');
 		editor.commands.setTextSelection(apres('Avant'));
 		editor.commands.insererTableau();
 		expect(source()).toBe('Avant\n\n||||\n||||\n||||');
+		// SPIP lit une première ligne de cellules vides comme des en-têtes (<thead>, vérifié avec l'oracle)
+		const relu = parse(serialize(editor.getJSON(), { conservative: false }));
+		expect(relu.content[1].content[0].content.map((c) => c.type)).toEqual(['tableHeader', 'tableHeader', 'tableHeader']);
+		// du texte dans la première ligne : ce n'est plus un en-tête, le tableau est stable
+		let cellule = null;
+		editor.state.doc.descendants((n, pos) => {
+			if (cellule === null && n.type.name === 'tableCell') cellule = pos + 2;
+		});
+		editor.commands.setTextSelection(cellule);
+		editor.commands.insertContent('x');
+		expect(source()).toBe('Avant\n\n|x|||\n||||\n||||');
 		stable();
 	});
 

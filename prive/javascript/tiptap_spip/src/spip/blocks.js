@@ -22,7 +22,11 @@ class Fallback extends Error {}
  */
 export function blocksOf(src, msk, regions) {
 	try {
-		return verbatimBlock(src, regions) ?? containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
+		const verbatim = verbatimBlock(src, regions);
+		if (verbatim) return verbatim;
+		// \r seul (fins de ligne Mac OS 9, non gérées) : saut de ligne pour SPIP, pas pour le découpage
+		if (/\r(?!\n)/.test(msk)) throw new Fallback();
+		return containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
 	} catch {
 		return [node('spipRaw', { source: src })];
 	}
@@ -98,16 +102,29 @@ function multiBlock(src, masked) {
 
 function containerBlock(src, msk) {
 	let m;
+	// contenu où les balises du conteneur ne s'équilibrent pas (</div> en trop, <div> non refermé) :
+	// réécrit, il fermerait le conteneur plus tôt ou plus tard
+	const ferme = (inner, tag) => {
+		let profondeur = 0;
+		for (const [balise] of inner.matchAll(new RegExp(`</?${tag}\\b[^>]*>`, 'gi'))) {
+			profondeur += balise[1] === '/' ? -1 : 1;
+			if (profondeur < 0) throw new Fallback();
+		}
+		if (profondeur !== 0) throw new Fallback();
+	};
 	if ((m = msk.match(/^<quote>([\s\S]*)<\/quote>$/i))) {
+		ferme(m[1], 'quote');
 		return [node('blockquote', null, parseContent(src.slice(7, 7 + m[1].length)))];
 	}
 	if ((m = msk.match(/^<(poe(?:sie|try))>([\s\S]*)<\/\1>$/i))) {
+		ferme(m[2], m[1]);
 		const start = m[1].length + 2;
 		const content = parseContent(src.slice(start, start + m[2].length));
 		if (content.some((b) => b.type !== 'paragraph')) throw new Fallback();
 		return [node('spipPoesie', { tag: m[1] }, content)];
 	}
 	if ((m = msk.match(/^<div class="text-(left|center|right|justify)">([\s\S]*)<\/div>$/))) {
+		ferme(m[2], 'div');
 		const start = m[0].indexOf('>') + 1;
 		const content = parseContent(src.slice(start, start + m[2].length));
 		if (content.some((b) => b.type === 'spipAlign')) throw new Fallback();
@@ -129,6 +146,8 @@ function linesOf(msk) {
 
 /** Contenu inline de src[s, e[ ; refuse une région à cheval sur la limite. */
 function inlineOf(src, msk, regions, s, e, options) {
+	// le \r d'une fin de ligne CRLF n'est pas du texte (SPIP le retire)
+	if (msk[e - 1] === '\r') e--;
 	if (regions.some((r) => r.start < e && r.end > s && (r.start < s || r.end > e))) throw new Fallback();
 	return parseInline(src.slice(s, e), msk.slice(s, e), regionsIn(regions, s, e), options);
 }
@@ -154,6 +173,9 @@ function heading(line) {
 function runBlocks(src, msk, regions) {
 	const lines = linesOf(msk);
 	const L = (k) => msk.slice(lines[k].start, lines[k].end);
+	// textwheel (spip-tableaux.json) fait un tableau de toute ligne qui commence et finit par |, même
+	// dans un paragraphe : un segment que tableBlock() n'a pas lu reste brut
+	if (lines.some((_, k) => L(k).startsWith('|'))) throw new Fallback();
 	const out = [];
 	let k = 0;
 	while (k < lines.length) {
@@ -164,18 +186,25 @@ function runBlocks(src, msk, regions) {
 			k++;
 		} else if (h) {
 			const s = lines[k].start + h.offset;
-			out.push(node('heading', { level: h.level }, inlineOf(src, msk, regions, s, s + h.length)));
+			out.push(node('heading', { level: h.level }, inlineOf(src, msk, regions, s, s + h.length, { uneLigne: true })));
 			k++;
 		} else if (RE_ITEM.test(line)) {
-			let j = k + 1;
-			while (j < lines.length && !RE_HR.test(L(j)) && heading(L(j)) === null) j++;
-			out.push(...listBlocks(src, msk, regions, lines.slice(k, j), L, k));
-			k = j;
+			// comme SPIP, la liste va jusqu'à la fin du segment (ligne vide)
+			out.push(...listBlocks(src, msk, regions, lines.slice(k), L, k));
+			k = lines.length;
 		} else {
 			let j = k + 1;
 			while (j < lines.length && !special(L(j))) j++;
+			// ligne vide dans un paragraphe (segment recollé autour d'un conteneur mal fermé) : pas dans le
+			// schéma (deux sauts de ligne de suite ne se relisent pas)
+			if (LIGNE_VIDE.test(msk.slice(lines[k].start, lines[j - 1].end))) throw new Fallback();
 			const content = inlineOf(src, msk, regions, lines[k].start, lines[j - 1].end, { lineStart: true });
-			out.push(node('paragraph', null, content.length ? content : undefined));
+			// modèle seul (sans mark) : modèle de bloc, comme seul dans son segment (même rendu)
+			if (content.length === 1 && content[0].type === 'spipModel' && !content[0].marks) {
+				out.push(node('spipModelBlock', { model: content[0].attrs.model }));
+			} else {
+				out.push(node('paragraph', null, content.length ? content : undefined));
+			}
 			k = j;
 		}
 	}
@@ -187,8 +216,19 @@ function listBlocks(src, msk, regions, lines, L, first) {
 	const items = [];
 	lines.forEach((line, n) => {
 		const m = L(first + n).match(RE_ITEM);
-		if (m) items.push({ depth: m[1].length, type: m[1][0] === '*' ? 'bulletList' : 'orderedList', start: line.start + m[0].length, end: line.end });
-		else items[items.length - 1].end = line.end; // ligne de continuation
+		if (m) {
+			const vide = L(first + n).slice(m[0].length).trim() === '';
+			items.push({ depth: m[1].length, type: m[1][0] === '*' ? 'bulletList' : 'orderedList', start: line.start + m[0].length, end: line.end, vide });
+		} else if (RE_HR.test(L(first + n)) || heading(L(first + n)) !== null) {
+			// filet ou intertitre dans un élément (<li>a<hr /></li>) : pas dans le schéma
+			throw new Fallback();
+		} else if (items[items.length - 1].vide) {
+			// première ligne vide puis continuation : rendu SPIP irrégulier (<br /> devant un marqueur de
+			// ligne, rien sinon), pas dans le schéma
+			throw new Fallback();
+		} else {
+			items[items.length - 1].end = line.end; // ligne de continuation
+		}
 	});
 
 	const tops = [];
@@ -264,8 +304,9 @@ function tableBlock(src, msk, regions) {
 		return { s, e, t: msk.slice(s, e) };
 	};
 	const RE_TH = /^\{\{[^{}]+\}\}$/;
-	const headerRow = rows[0].every((c) => ['', '<'].includes(trimmed(c).t) || RE_TH.test(trimmed(c).t))
-		&& rows[0].some((c) => RE_TH.test(trimmed(c).t));
+	// comme traiter_tableau() (_RACCOURCI_TH_SPAN, gras facultatif) : cellules vides, < ou {{…}}, même
+	// toutes vides (|||| : ligne d'en-têtes vides)
+	const headerRow = rows[0].every((c) => ['', '<'].includes(trimmed(c).t) || RE_TH.test(trimmed(c).t));
 
 	const grid = [];
 	const tableRows = rows.map((cells, r) => {
@@ -288,7 +329,7 @@ function tableBlock(src, msk, regions) {
 				row[col] = above;
 			} else {
 				const [is, ie] = isHeader && t !== '' ? [s + 2, e - 2] : [s, e];
-				const content = inlineOf(src, msk, regions, is, ie);
+				const content = inlineOf(src, msk, regions, is, ie, { uneLigne: true });
 				const cell = node(isHeader ? 'tableHeader' : 'tableCell', { colspan: 1, rowspan: 1 },
 					[node('paragraph', null, content.length ? content : undefined)]);
 				row[col] = cell;

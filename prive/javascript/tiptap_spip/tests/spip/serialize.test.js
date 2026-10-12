@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { node, text } from '../../src/spip/json.js';
+import { node, raw, stripTech, text } from '../../src/spip/json.js';
 import { parse } from '../../src/spip/parse.js';
 import { escapeText, serialize, serializeBlock, serializeInline } from '../../src/spip/serialize.js';
 
@@ -99,11 +99,134 @@ describe('serializeInline', () => {
 			.toBe('a\n_ b\nc');
 	});
 
+	it('saut de ligne au bord du contenu : non écrit (SPIP ne l\'affiche pas en tête, affiche _ en fin)', () => {
+		const br = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		expect(serializeInline([br, text('a'), br, text('b'), br, br])).toBe('a\n_ b');
+		expect(serializeInline([br])).toBe('');
+		// saut dans une mark ({\n}, produit par le parseur) : gardé
+		expect(serializeInline([{ ...br, attrs: { syntax: 'autobr' }, marks: [I] }])).toBe('{\n}');
+	});
+
+	it('saut autobr suivi d\'un autre saut : écrit forcé (\\n\\n ferait une ligne vide)', () => {
+		const auto = { type: 'hardBreak', attrs: { syntax: 'autobr' } };
+		expect(serializeInline([text('a'), auto, auto, text('b')])).toBe('a\n_ \nb');
+		expect(serializeInline([text('a'), auto, { type: 'hardBreak', attrs: { syntax: 'manual' } }, text('b')])).toBe('a\n_ \n_ b');
+		// une mark se ferme entre les deux : pas de ligne vide, les deux restent simples
+		expect(serializeInline([text('a'), { ...auto, marks: [I] }, auto, text('b')])).toBe('a{\n}\nb');
+	});
+
 	it('code : backticks, doubles backticks ou <code>', () => {
 		expect(serializeInline([text('a {b}', [C])])).toBe('`a {b}`');
 		expect(serializeInline([text('a`b', [C])])).toBe('``a`b``');
 		expect(serializeInline([text(' a ', [C])])).toBe('<code> a </code>');
 		expect(serializeInline([text('a\\`b', [C])])).toBe('<code>a\\\\\\`b</code>');
+	});
+});
+
+describe('< brut d\'une balise incomplète', () => {
+	it('un > du texte qui suit s\'écrit &gt; : il fermerait la balise', () => {
+		const doc = node('doc', null, [p(raw('<'), text('https://x.org> a'), raw('<b>'), text('c>'))]);
+		// chevrons comptés : le < incomplet reste ouvert après <b>, le > final aussi en entité
+		expect(serialize(doc)).toBe('<https://x.org&gt; a<b>c&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('chevrons comptés : le -> d\'un lien ne referme pas le < (liens masqués avant les balises)', () => {
+		const doc = node('doc', null, [p(raw('<'), text('https://x.org'), node('spipLinkAuto', { href: 'art12', newWindow: false }), text('>'))]);
+		expect(serialize(doc)).toBe('<https://x.org[->art12]&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('> après un modèle, même séparé par un fragment brut : &gt; (il prolongerait ses paramètres)', () => {
+		const model = { name: 'doc', id: '', params: [{ key: null, value: '<-' }], source: '<doc|<->' };
+		const doc = node('doc', null, [p(node('spipModel', { model }), raw('{'), text('>'))]);
+		expect(serialize(doc)).toBe('<doc|<->{&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('chevrons comptés : le contenu d\'un bloc verbatim (<math>) ne compte pas', () => {
+		expect(serialize(parse('<doc<math>-></math>&gt;'), { conservative: false })).toBe('<doc<math>-></math>&gt;');
+	});
+
+	it('chevrons comptés : un idiome (<:m:c:>) ne referme pas le < ouvert avant lui', () => {
+		const doc = node('doc', null, [p(raw('<'), text('doc'), node('spipIdiome', { module: 'mod', cle: 'cle' }), text('>'))]);
+		expect(serialize(doc)).toBe('<doc<:mod:cle:>&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('chevron resté ouvert dans un bloc précédent, ou modèle juste avant : > en &gt;', () => {
+		const model = { name: 'doc', id: '', params: [{ key: null, value: '' }, { key: null, value: '<sup' }], source: '<doc||<sup>' };
+		const cas = [
+			[[node('spipRaw', { source: '|<art12' }), p(text('>'))], '|<art12\n\n&gt;'],
+			[[p(node('spipModel', { model }), text('>'))], '<doc||<sup>&gt;'],
+		];
+		for (const [content, attendu] of cas) {
+			const doc = node('doc', null, content);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('un | du texte qui suit s\'écrit \\| : il formerait un modèle (<doc|x>)', () => {
+		const doc = node('doc', null, [p(raw('<'), text('doc|'), raw('{{'), text('t'), raw('}}'), text('|'), raw('</del>'))]);
+		expect(serialize(doc)).toBe('<doc\\|{{t}}\\|</del>');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+});
+
+describe('-> après un [ resté ouvert', () => {
+	it('-> après un [ ouvert dans le même texte, même avec un [] entre : -&gt; (lien [&#91;[]->…])', () => {
+		const doc = node('doc', null, [p(text('[[[]->')), p(text('[[a]]a'))]);
+		expect(serialize(doc)).toBe('[&#91;[]-&gt;\n\n[&#91;a]&#93;a');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('] qui fermerait un [ resté ouvert plus haut : &#93; ; une paire [x] du même texte reste', () => {
+		const doc = node('doc', null, [node('spipRaw', { source: '-** [?' }), p(text('] et [x]'))]);
+		expect(serialize(doc)).toBe('-** [?\n\n&#93; et [x]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('-> du texte en entité quand un [ reste ouvert avant lui (il fermerait un lien) ; sinon tel quel', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'x' } };
+		const note = (content) => node('spipNote', { content });
+		const cas = [
+			// le [[ de la note reste ouvert
+			[p(note([p(text('a', [abbr]), text('->b'))])), '[[[a|x]-&gt;b]]'],
+			[p(text('a -> b')), 'a -> b'],
+		];
+		for (const [para, attendu] of cas) {
+			const doc = node('doc', null, [para]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+});
+
+describe('accolades contre un fragment brut', () => {
+	it('gras ou italique contre un fragment brut à accolade, dedans ou à côté : en HTML', () => {
+		const cas = [
+			[p(raw('{{{', [I])), '<i>{{{</i>'],
+			[p(text('x', [B]), raw('}}}', [B])), '<strong>x}}}</strong>'],
+			// fragment brut juste avant : {{{ orphelin devant un italique
+			[p(raw('{{{'), text('SPIP', [I])), '{{{<i>SPIP</i>'],
+			[p(text('x', [B]), text('y')), '{{x}}y'],
+		];
+		for (const [para, attendu] of cas) {
+			const doc = node('doc', null, [para]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+});
+
+describe('marqueur de début de ligne brut', () => {
+	it('* # - ou _ en tête du texte qui suit un marqueur brut (-, ----, ____) : échappé (-* serait une liste, ---- un filet)', () => {
+		for (const [marqueur, t, attendu] of [['-', '*', '-\\*'], ['-', '#', '-\\#'], ['-', '--', '-\\--'], ['----', '----', '----\\----'], ['____', '_', '____\\_']]) {
+			const doc = node('doc', null, [p(raw(marqueur), text(t))]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
 	});
 });
 
@@ -114,6 +237,8 @@ describe('escapeText', () => {
 		['~ et  ', '\\~ et ~'],
 		['`x`', '\\`x\\`'],
 		['<b> <doc1> <:a:b:> a < b', '&lt;b> &lt;doc1> &lt;:a:b:> a < b'],
+		// nom de modèle : lettres, - et _ ([a-z_-]{3,})
+		['<-----|> <_xy|> <_x|>', '&lt;-----|> &lt;_xy|> <_x|>'],
 		['&eacute; & co', '&amp;eacute; & co'],
 		// \[ protège un lien et une abréviation (comme dans SPIP), pas une ancre : entité
 		['[?g] [[n]] [x->y] [a|b] [#a<-] [b<-] [sic]', '[&#63;g] [&#91;n]] \\[x->y] \\[a|b] &#91;#a<-] &#91;b<-] [sic]'],
@@ -121,9 +246,31 @@ describe('escapeText', () => {
 		expect(escapeText(input, false)).toBe(expected);
 	});
 
-	it('[ final : \\[, ou entité devant une note ou un fragment brut', () => {
-		expect(escapeText('a [', false)).toBe('a \\[');
-		expect(escapeText('a [', false, { avantCrochets: true })).toBe('a &#91;');
+	it('[ sans ] dans le même texte : entité (le ], le ->, le | ou le <- peuvent suivre dans d\'autres nœuds)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication', lang: 'fr' } };
+		const cas = [
+			[p(text('[ABBR|explication'), text('fr', [I]), text(']')), '&#91;ABBR|explication{fr}]'],
+			[p(text('[?'), raw('{'), text('->]')), '&#91;&#63;{->]'],
+			// ancre : \[ ne la protège pas (pre_liens)
+			[p(text('[0'), raw('{'), text('<-]')), '&#91;0{<-]'],
+			// [ final devant un raccourci écrit avec [ : \[[ serait une note
+			[p(text('['), text('ABBR', [abbr])), '&#91;[ABBR|explication{fr}]'],
+		];
+		for (const [para, attendu] of cas) {
+			const doc = node('doc', null, [para]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('[ final : entité (\\[ ne protège ni une note ni une ancre, qui peuvent suivre)', () => {
+		expect(escapeText('a [', false)).toBe('a &#91;');
+		// ancre à travers les lignes d'une liste : [ en fin d'élément, <-] dans le suivant
+		const doc = node('doc', null, [node('bulletList', null, [
+			node('listItem', null, [p(text('['))]),
+			node('listItem', null, [p(text('<-]a'))]),
+		])]);
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
 	it('début de ligne : - _ | échappés', () => {
@@ -146,6 +293,15 @@ describe('serializeBlock', () => {
 			.toBe('-* a\n-## b\n-* c');
 	});
 
+	it('code qui commence par un saut de ligne ou finit par ` : <code> (pas entre backticks)', () => {
+		// ou qui finit par un backtick : il se collerait à la clôture
+		for (const t of ['\n', '\nabc', '\n\nabc\n', '```', 'a`']) {
+			const doc = node('doc', null, [node('codeBlock', { language: 'php' }, [text(t)])]);
+			expect(serialize(doc).startsWith('<code>')).toBe(true);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual([node('codeBlock', null, [text(t)])]);
+		}
+	});
+
 	it('code : fence allongé si besoin, <code> si \\\\ ou \\`', () => {
 		expect(serializeBlock(node('codeBlock', { language: 'php' }, [text('a```b\n')]))).toBe('````php\na```b\n````');
 		expect(serializeBlock(node('codeBlock', null, [text('a\\\\b')]))).toBe('<code>\na\\\\\\b\n</code>');
@@ -161,6 +317,55 @@ describe('serializeBlock', () => {
 			node('tableRow', null, []),
 		]);
 		expect(serializeBlock(table)).toBe('||L||\n|{{A}}|{{B}}|\n|1|<|\n|^|^|');
+	});
+
+	it('saut de ligne dans un intertitre : <br /> (il tient sur une ligne)', () => {
+		const br = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		for (const [level, attendu] of [[2, '{{{a<br />b}}}'], [3, '<h3>a<br />b</h3>']]) {
+			const doc = node('doc', null, [node('heading', { level }, [text('a'), br, text('b')])]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('saut de ligne dans une cellule : <br /> (\\n_ y ferait un paragraphe, et couperait la ligne)', () => {
+		const br = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text('a'), br, text('b'))])])])]);
+		expect(serialize(doc)).toBe('|a<br />b|');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		// au bord du contenu, <br /> reste brut (un saut de bord ne s'écrit pas, SPIP le rend)
+		const bord = stripTech(parse('|a|<br />|a|').content[0].content[0].content[1].content[0].content);
+		expect(bord).toEqual([raw('<br />')]);
+		expect(serialize(parse('|a|<br />|a|'), { conservative: false })).toBe('|a|<br />|a|');
+		// hors cellule, <br /> reste un fragment brut
+		expect(stripTech(parse('a<br />b').content[0].content)).toEqual([text('a'), raw('<br />'), text('b')]);
+	});
+
+	it('cellule dont le texte est < ou ^ : entité (marqueur de fusion sinon)', () => {
+		for (const [t, attendu] of [['<', '|&lt;|'], ['^', '|&#94;|'], [' ^ ', '|&#94;|']]) {
+			const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text(t.trim()))])])])]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('première cellule vide : une espace (|| en tête de première ligne serait une légende)', () => {
+		const vide = (type) => node(type, { colspan: 1, rowspan: 1 }, [node('paragraph')]);
+		const cell = (type, v) => node(type, { colspan: 1, rowspan: 1 }, [p(text(v))]);
+		for (const [lignes, attendu] of [
+			[[[vide('tableHeader'), cell('tableHeader', 't')]], '| |{{t}}|'],
+			[[[vide('tableCell'), cell('tableCell', 't')]], '| |t|'],
+		]) {
+			const doc = node('doc', null, [node('table', null, lignes.map((c) => node('tableRow', null, c)))]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('| dans le texte d\'une cellule : \\| (il couperait la cellule)', () => {
+		const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text('<|a|'))])])])]);
+		expect(serialize(doc)).toBe('|<\\|a\\||');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
 	it('conteneurs', () => {

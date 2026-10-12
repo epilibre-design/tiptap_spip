@@ -1,0 +1,9 @@
+Une ligne avant
+```
+<?php
+
+$message = 'Hello World';
+echo $message;
+
+```
+Et ensuite une ligne

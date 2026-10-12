@@ -35,8 +35,8 @@ Le parseur suit l'ordre de TextWheel. Chaque étape est une **règle enregistré
 (`src/spip/registry.js`) avec une priorité, ce qui permet aux extensions tierces d'en insérer
 ([07](07-extensibilite.md)).
 
-1. **Normalisation** : `\r\n?` → `\n` ; lignes ne contenant que des blancs → vides. Ces normalisations ne
-   servent qu'à l'analyse : la carte de segments (§4) garde la source exacte.
+1. **Normalisation** : `\r\n` → `\n` (un `\r` seul n'est pas une fin de ligne, voir §5) ;
+   lignes ne contenant que des blancs → vides. Ces normalisations ne servent qu'à l'analyse : la carte de segments (§4) garde la source exacte.
 2. **Protection** (priorité la plus basse) — remplacer par des jetons opaques `\u0001N\u0001` :
    - wheel backticks, **avant tout** (`pre_echappe_html_propre`), sur tout le texte, y compris dans `<code>`
      ou `<html>` : d'abord les échappements `\\` et `` \` ``, puis ```` ``` ```` (bloc, 1re ligne = langage
@@ -134,11 +134,50 @@ Le sérialiseur échappe dans le **texte** ce qui serait interprété comme racc
 - `[?` → `[&#63;`, `[[` → `[&#91;` : notes et glossaire sont traités **avant** les échappements `\[`, qui ne les
   protègent pas. `[&#63;` plutôt que `&#91;?` évite l'espace insécable que la typographie française ajoute
   avant `?` ;
-- `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `<-` avant le `]` → `&#91;` (`\[` ne protège pas une ancre, traitée dans `pre_liens`) ; `[` suivi d'une séquence contenant `->` ou `|` → `\[` (protège un lien et une abréviation, comme dans SPIP) ; un `[` final → `\[`, ou `&#91;` devant une note ou un fragment brut (`\[[[n]]` serait une note de texte `[n`). **Décision (lot L3.1)** : `\[` remplace `&#91;` dans ces cas, ce qui change la forme canonique des lots précédents ; c'est l'échappement adapté aux liens et abréviations dans l'ordre de traitement vérifié avec SPIP. L'identité caractère pour caractère d'un texte non modifié reste la règle ; la forme canonique d'un texte réécrit peut évoluer. Tests de régression : `tests/spip/serialize.test.js` (`escapeText`), `tests/spip/notes.test.js` ;
+- `[` suivi de `#`, en fin de texte, ou d'une séquence contenant `<-` avant le `]` → `&#91;` (`\[` ne protège pas une ancre, traitée dans `pre_liens`) ; `[` suivi d'une séquence contenant `->` ou `|` → `\[` (protège un lien et une abréviation, comme dans SPIP) ; un `[` final → `&#91;` (ce qui suit peut former une note `[[` ou une ancre `[…<-]`, même sur la ligne suivante d'une liste, que `\[` ne protège pas ; lot corpus et propriétés, auparavant `\[` sauf devant une note ou un fragment brut). **Décision (lot L3.1)** : `\[` remplace `&#91;` dans ces cas, ce qui change la forme canonique des lots précédents ; c'est l'échappement adapté aux liens et abréviations dans l'ordre de traitement vérifié avec SPIP. L'identité caractère pour caractère d'un texte non modifié reste la règle ; la forme canonique d'un texte réécrit peut évoluer. Tests de régression : `tests/spip/serialize.test.js` (`escapeText`), `tests/spip/notes.test.js` ;
 - en début de ligne : `-`, `|`, `_` suivi d'un espace ou d'un `_` → `\-`, `\|`, `\_` ;
 - dans le **texte d'un lien**, le collecteur de liens passe avant les échappements (`\|` n'y protège rien) :
   `[` → `&#91;`, `]` → `&#93;`, `|` → `&#124;`, `->` → `-&gt;` ; `\{` y fonctionne. Le parseur décode
   `&#124;` et `&#93;` dans le texte d'un lien seulement.
+
+**Ajouts du lot corpus et propriétés** (contre-exemples de `fast-check` et du corpus, chacun repris dans un
+test unitaire) :
+
+- lecture :
+  - un filet ou un intertitre collé à une liste en fait partie pour SPIP (`<li>a<hr /></li>`) : segment brut ;
+  - une ligne qui commence par `|` hors d'un tableau lu (TextWheel en fait un tableau) : segment brut ;
+  - le `<` d'une balise incomplète (`<img alt="<b>">`, commentaire non fermé) : fragment brut, que SPIP
+    restitue tel quel ;
+  - mark vide (`{{</strong>`) : délimiteurs bruts, SPIP rendant une balise vide ;
+  - `\r` d'une fin de ligne CRLF : rattaché au séparateur, hors du texte ;
+  - `<br />` dans une cellule ou un intertitre : saut de ligne ;
+- écriture :
+  - `[` dont le `]` n'est pas dans le même nœud : `&#91;` ; `[` final devant un raccourci écrit avec `[` :
+    `&#91;` ;
+  - tant qu'un `<` reste ouvert (balise incomplète, modèle, même dans un bloc précédent) : `>` → `&gt;`,
+    `|` → `\|` ; `>` juste après un modèle : `&gt;` ; `<` devant un nom de modèle (`[a-z_-]{3,}`) : `&lt;` ;
+  - tant qu'un `[` reste ouvert (dans le bloc, plus haut, ou le `[[` d'une note) : `->` → `-&gt;` ;
+  - texte d'une note : `&lt;` pour un `<…>` de tête que le core lirait comme un nom, `&#63;` pour un `?` de
+    tête (`[[?` serait un glossaire), `-&gt;` pour un `->` qui ferait un lien, saut de ligne avant `]]`
+    après une abréviation finale (`]]]`) ;
+  - `|` dans une cellule : `\|` ; saut de ligne dans une cellule ou un intertitre : `<br />` ;
+  - saut de ligne au bord d'un contenu : non écrit ; saut autobr suivi d'un autre, hors lien : forcé ;
+  - gras ou italique contre un fragment brut à accolade : en HTML ; italique d'un en-tête de tableau : en
+    HTML ;
+  - parties d'un multi en bloc d'un seul paragraphe : séparées par une ligne vide ;
+  - code qui commence par un saut de ligne ou finit par `` ` `` : `<code>` ;
+  - après le tri de la revue (graines 20261012 à 20261108) :
+    - lecture : `\n_ ` final = saut simple et `_` brut ; pas de saut en tout début de contenu (sauf partie
+      de multi) ; élément de liste à première ligne vide suivie d'une continuation : brut ; conteneur aux
+      balises déséquilibrées : brut ; première ligne de tableau toute vide : en-tête (comme SPIP) ;
+      `<br />` au bord d'une cellule ou d'un intertitre : brut ; paragraphe fait d'un seul modèle : modèle
+      de bloc ;
+    - écriture : `[` final toujours en `&#91;` ; chevrons et crochets ouverts comptés à travers les blocs
+      et dans le texte, code et blocs verbatim exclus ; `->`, `<-` et `]` en entité tant qu'un `[` reste
+      ouvert ; `>` en entité après un modèle du même contenu ; texte de note qui commence par un `<` sans
+      `>`, `'` ni `"` : `&lt;` (sauf `<` brut lu dans la source) ; `*`, `#`, `-`, `_` après un marqueur de
+      ligne brut : échappés ; première cellule vide d'une ligne qui se lirait légende : une espace ; saut
+      suivi d'un autre saut sans mark entre eux : forcé ; `[` final d'une partie de multi : `&#91;`.
 
 ### Texte d'un lien
 
@@ -228,6 +267,31 @@ même la sérialisation), y compris sources vides, blancs seuls, lignes vides in
 3. **Équivalence de rendu** : `propre(s) ≡ propre(serializeCanonique(parse(s)))` (HTML normalisé).
 4. **Totalité** : `parse` ne lève jamais d'exception ; au pire il produit des nœuds bruts.
 5. **Sûreté du schéma** : tout JSON valide pour le schéma est sérialisable, et son re-parse redonne le même JSON.
+
+**Écart toléré avec TextWheel (décision utilisateur, 2026-10-12)** : un `\r` seul n'est pas une fin de
+ligne. Seul Mac OS 9 l'utilisait, et son support est abandonné. TextWheel le convertit en `\n`
+(`traiter_retours_chariots_1`, `\r\n?`) ; le parseur ne découpe que sur `\n` (`\r\n` compris). Un
+segment qui contient un `\r` non suivi de `\n` reste un bloc brut : restitué tel quel, modifiable seulement en
+mode source. Repris dans les [notes de version](../notes-de-version.md), avec les autres limites ci-dessous.
+
+**Limite (lot corpus et propriétés)** : une note automatique dont le texte commence par un idiome
+(`<:cle:>`, traité après les notes) ou par une mark écrite en balise HTML quand la même balise revient plus
+loin sur la ligne se lit nommée. Barré, exposant et indice s'écrivent toujours en balise (`<del>`, `<sup>`,
+`<sub>`) ; gras et italique seulement contre un fragment brut à accolade (un italique autour d'un lien
+s'écrit `{…}`, en HTML seulement quand il finit le texte du lien). Exemple : `[[<sup>1</sup> voir <sup>2</sup>]]`
+est la note `sup` pour `traiter_raccourci_notes()`. Aucune écriture ne garde à la fois la note automatique et ce début :
+le sérialiseur écrit le premier `<` en `&lt;`, qui s'affiche.
+
+**Limite (lot corpus et propriétés)** : la balise fermante d'un bloc verbatim (`</cadre>` dans un cadre,
+`</html>`, `</math>`, `</code>` dans un `<code>`) n'a pas d'échappement : SPIP y afficherait une entité telle
+quelle. Un tel contenu ferme le bloc plus tôt à la relecture. Un bloc de code qui s'écrit entre backticks
+n'est pas concerné. Un bloc de code qui ne s'écrit pas entre backticks (`\\`, `` \` ``, `\` final, saut de
+ligne en tête, `` ` `` final) passe par `<code>` et perd sa langue, que seuls les backticks portent (```` ```php ````).
+
+**Limite (lot corpus et propriétés)** : dans un multi, du code qui contient un marqueur de langue
+(`` `[mot]` ``) est lu comme un marqueur par SPIP (vérifié avec l'oracle : `<!-- langue mot -->`), et le code
+n'a pas d'échappement. À la relecture, ce multi devient un bloc brut, modifiable seulement en mode source
+(mentionné dans les [notes de version](../notes-de-version.md)).
 
 ## 6. Copier-coller
 

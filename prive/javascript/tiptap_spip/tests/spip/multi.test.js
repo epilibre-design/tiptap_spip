@@ -51,6 +51,10 @@ describe('multi en ligne', () => {
 		}
 	});
 
+	it('partie faite d\'un saut de ligne : gardée (forme canonique stable)', () => {
+		expect(canonical('<multi>\n</multi>')).toBe('<multi>\n</multi>');
+	});
+
 	it('paragraphe modifié : multi inchangé réécrit tel quel', () => {
 		const doc = parse('Avant <multi> [fr]a  b[en]c</multi>');
 		doc.content[0].content[0].text = 'Après ';
@@ -92,6 +96,27 @@ describe('multi bloc', () => {
 		)]);
 		expect(serialize(parse(source))).toBe(source);
 		expect(canonical(source)).toBe(source);
+	});
+
+	it('parties d\'un seul paragraphe : séparées par une ligne vide, sans quoi le multi se relit en ligne', () => {
+		for (const [doc, attendu] of [
+			[bloc(['fr', [p(text('a'))]], ['en', [p(text('b'))]]), '<multi>[fr]a\n\n[en]b</multi>'],
+			[bloc(['fr', [p(text('a'))]]), '<multi>[fr]a\n\n</multi>'],
+		]) {
+			const d = node('doc', null, [doc]);
+			expect(serialize(d)).toBe(attendu);
+			expect(stripTech(parse(serialize(d)).content)).toEqual([doc]);
+		}
+	});
+
+	it('code contenant un marqueur de langue : brut (SPIP y lit un marqueur, le code ne s\'échappe pas)', () => {
+		expect(parse('<multi>[fr]`[mot]`\n\nb</multi>').content[0].type).toBe('spipRaw');
+	});
+
+	it('partie qui finit par [ : &#91; (devant le marqueur suivant, \\[[fr] ferait une note)', () => {
+		const doc = node('doc', null, [bloc(['fr', [p(text('['))]], ['en', [p(text('b')), p(text('c'))]]), p(text(']]a'))]);
+		expect(serialize(doc)).toBe('<multi>[fr]&#91;[en]b\n\nc</multi>\n\n]]a');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
 	it('partie qui n\'est pas faite de paragraphes : brut', () => {

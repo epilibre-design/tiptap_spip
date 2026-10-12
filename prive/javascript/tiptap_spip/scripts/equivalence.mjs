@@ -4,10 +4,11 @@
 // --figer : (ré)écrit le diff figé de chaque écart enregistré dans tests/corpus/ecarts.yaml (celui de
 // la branche de SPIP de l'oracle si l'entrée en déclare un).
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse, serialize } from '../src/spip/index.js';
+import { fichiersCorpus } from './corpus.mjs';
 import { diffFige, diffHtml, judge, loadEcarts, normalize, plafond } from './ecarts.mjs';
 
 const root = fileURLToPath(new URL('../../../../', import.meta.url));
@@ -48,7 +49,7 @@ let acceptes = 0;
 let equivalents = 0;
 const vus = new Set();
 for (const dir of dirs) {
-	for (const file of readdirSync(dir).filter((f) => f.endsWith('.spip')).sort()) {
+	for (const file of fichiersCorpus(dir)) {
 		total++;
 		const chemin = join(dir, file);
 		const fichier = versionne(chemin);

@@ -118,6 +118,111 @@ describe('sérialisation des notes', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
+	it('note automatique dont le texte commence par <…> : &lt; (SPIP y lirait un nom)', () => {
+		for (const debut of ['<>x', '<1> y', '< a >']) {
+			const doc = node('doc', null, [p(text('x'), note([p(text(debut))]))]);
+			expect(serialize(doc)).toBe(`x[[${debut.replace('<', '&lt;')}]]`);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+		// fermante présente : pas un nom, la balise reste
+		const balise = node('doc', null, [p(text('x'), note([p(raw('<span>'), text('a'), raw('</span>'))]))]);
+		expect(serialize(balise)).toBe('x[[<span>a</span>]]');
+		// note nommée : le nom passe avant
+		expect(serialize(node('doc', null, [p(text('x'), note([p(text('<>a'))], 'n'))]))).toBe('x[[<n><>a]]');
+	});
+
+	it('-> avant tout crochet ou ? en tête du texte d\'une note : entité (lien ou glossaire entre crochets)', () => {
+		const cas = [
+			[note([p(text('a -> b'))]), 'x[[a -&gt; b]]'],
+			[note([p(text('a -> b'))], 'n'), 'x[[<n>a -&gt; b]]'],
+			[note([p(text('<-> z'))]), 'x[[&lt;-&gt; z]]'],
+			[note([p(text('a -> b -> c'))]), 'x[[a -&gt; b -&gt; c]]'],
+			// <-] : le [ du [[ ferait une ancre [<-] (ancres avant notes)
+			[note([p(text('a<-] b'))], 'n'), 'x[[<n>a&lt;-] b]]'],
+			// ? en tête : [[? serait un glossaire [?…] (glossaire avant notes)
+			[note([p(text('?[[note'))]), 'x[[&#63;&#91;&#91;note]]'],
+			// lien de la note : pas touché
+			[note([p(text('voir', [link('art1')]))]), 'x[[[voir->art1]]]'],
+		];
+		for (const [n, attendu] of cas) {
+			const doc = node('doc', null, [p(text('x'), n)]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('contenu qui finit par une abréviation : saut de ligne avant ]] (]]] fermerait la note trop tôt)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication' } };
+		const doc = node('doc', null, [p(note([p(text('a', [abbr]))]), text('x'))]);
+		expect(serialize(doc)).toBe('[[[a|explication]\n]]x');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('] en tête d\'un texte qui suit un ] (abréviation) dans une note : &#93; (]] la fermerait)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication' } };
+		const doc = node('doc', null, [p(note([p(text('a', [abbr]), text(']aa'))]))]);
+		expect(serialize(doc)).toBe('[[[a|explication]&#93;aa]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('-> dans du code d\'une note : intact (le code est protégé avant les liens)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication' } };
+		const doc = node('doc', null, [p(note([p(text('->', [{ type: 'code' }]), text('a', [abbr]))]))]);
+		expect(serialize(doc)).toBe('[[`->`[a|explication]\n]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('contenu fait seulement d\'espaces sans mark : relu vide (forme normale, SPIP n\'en affiche rien)', () => {
+		const doc = node('doc', null, [p(text('x'), note([p(text(' '))]))]);
+		expect(serialize(doc)).toBe('x[[ ]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual([p(text('x'), note([p()]))]);
+		// espaces marqués : relus à l'identique
+		const gras = node('doc', null, [p(text('x'), note([p(text(' ', [{ type: 'bold' }]))]))]);
+		expect(serialize(gras)).toBe('x[[{{ }}]]');
+		expect(stripTech(parse(serialize(gras)).content)).toEqual(gras.content);
+	});
+
+	it('texte de note qui commence par un < sans > : &lt; (le nom chercherait son > au-delà de la note)', () => {
+		const L = { type: 'spipLink', attrs: { href: 'art12', newWindow: false } };
+		const doc = node('doc', null, [
+			p(note([p(text('<#'), text('a', [L]))]), text(' <b>')),
+			p(text(']] fin')),
+		]);
+		expect(serialize(doc).startsWith('[[&lt;#[a->art12]]]')).toBe(true);
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('note qui commence par un < brut (lu dans la source) : restitué tel quel', () => {
+		const doc = parse('[[<doc]]');
+		expect(serialize(doc, { conservative: false })).toBe('[[<doc]]');
+	});
+
+	it('texte de note qui commence par une balise à attributs : intacte (le nom s\'arrête au premier " ou \')', () => {
+		const doc = node('doc', null, [p(text('x'), note([p(raw('<div class="text-center">'))]))]);
+		expect(serialize(doc)).toBe('x[[<div class="text-center">]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('crochets du code ignorés dans le compte ; <- après un [ ouvert : &lt;- (ancre)', () => {
+		const C = { type: 'code' };
+		const L = { type: 'spipLink', attrs: { href: 'art12', newWindow: false } };
+		for (const n of [
+			// le ]] du code ne referme pas le [[ de la note : le -> du second paragraphe reste échappé
+			note([p(text(']]', [C])), p(text('[[]->')), p(text('a', [L]))], 'n'),
+			// [ ouvert dans le texte, <- plus loin : ancre [ … <-]
+			note([p(text('[[]', [{ type: 'superscript' }]), text('<-]a', [{ type: 'italic' }])), p(text('a', [L]))], 'n'),
+		]) {
+			const doc = node('doc', null, [p(n), p(text('[?a] et [a->art12]'))]);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(stripTech(doc.content));
+		}
+	});
+
+	it('<-> dans une note : &lt;-&gt; (les deux flèches partagent leur -)', () => {
+		const doc = node('doc', null, [p(note([p(text(']]<->a'))]), text('x'))]);
+		expect(serialize(doc)).toContain('&lt;-&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('note saisie sans contenu', () => {
 		expect(serialize(node('doc', null, [p(text('x'), node('spipNote', { name: null, content: null }))]))).toBe('x[[]]');
 	});
