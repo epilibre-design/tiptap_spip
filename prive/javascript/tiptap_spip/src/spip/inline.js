@@ -214,6 +214,11 @@ function tokenize(source, masked, regions, lineStart, link) {
 			// autre entité HTML : conservée telle quelle
 			push({ t: 'raw', v: m[0] });
 			i += m[0].length;
+		} else if (c === '<' && /^<[a-z/!]/i.test(rest)) {
+			// début de balise incomplète (<img alt="<b>">, commentaire non fermé) : SPIP restitue le <
+			// tel quel et le navigateur l'interprète ; en texte, il s'écrirait &lt;
+			push({ t: 'raw', v: '<' });
+			i++;
 		} else if (c === '~') {
 			buf += ' ';
 			i++;

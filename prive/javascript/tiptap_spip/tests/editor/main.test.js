@@ -92,7 +92,8 @@ describe('tiptap_spip_init', () => {
 	});
 
 	it('bouton Glossaire désactivé sur une sélection contenant [ ] < >', () => {
-		page('<textarea class="inserer_barre_edition">un a&lt;b mot</textarea>');
+		// a<3 : < devant une lettre serait une balise pour SPIP (fragment brut), devant un chiffre c'est du texte
+		page('<textarea class="inserer_barre_edition">un a&lt;3 mot</textarea>');
 		tiptap_spip_init();
 		const { editor } = [...instances][0];
 		const bouton = document.querySelector('.tts-outil--glossaire');

@@ -63,6 +63,15 @@ describe('parseInline : caractères', () => {
 		expect(inl('<span class="x">a</span><!-- c -->')).toEqual([raw('<span class="x">'), text('a'), raw('</span>'), raw('<!-- c -->')]);
 	});
 
+	it('< devant une lettre, / ou ! sans balise complète : brut, SPIP le restitue tel quel', () => {
+		// <img alt="<b>"> : le > de <b> coupe la balise ; <p class='a non fermé ; commentaire non fermé
+		expect(inl('<img alt="<b>">')).toEqual([raw('<'), text('img alt="'), raw('<b>'), text('">')]);
+		expect(inl("x <p class='a")).toEqual([text('x '), raw('<'), text("p class='a")]);
+		expect(inl('<!-- non fermé')).toEqual([raw('<'), text('!-- non fermé')]);
+		// < suivi d'autre chose : texte
+		expect(inl('a < b <3')).toEqual([text('a < b <3')]);
+	});
+
 	it('code : backticks et <code> sur une ligne', () => {
 		const C = { type: 'code' };
 		expect(inl('`a {b}` et <code>c</code>')).toEqual([text('a {b}', [C]), text(' et '), text('c', [C])]);
