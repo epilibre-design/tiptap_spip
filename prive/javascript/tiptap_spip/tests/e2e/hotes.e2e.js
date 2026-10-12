@@ -3,12 +3,17 @@
 // objet, services à la demande et leur sécurité, styles. Usage et serveur : cf. article.e2e.js ;
 // le site doit contenir les plugins crayons et tts_test (tests/e2e/plugin/tts_test) dans plugins/.
 import { expect, test } from '@playwright/test';
+import { existsSync } from 'node:fs';
 import { activer, configurer, creerAuteur, ecrireTexte, editer, module, php, publier, selectionStable, texte } from './site.js';
 
 test.skip(!process.env.TTS_SITE || !process.env.TTS_URL, 'TTS_SITE et TTS_URL requis');
 
+// Crayons n'existe pas pour SPIP 5 : ses tests sont sautés sur un site qui ne l'a pas
+const crayons = existsSync(`${process.env.TTS_SITE}/plugins/crayons`);
+const sansCrayons = () => test.skip(!crayons, 'plugin crayons absent du site');
+
 test.beforeAll(() => {
-	activer('crayons', 'tts_test');
+	activer(...(crayons ? ['crayons'] : []), 'tts_test');
 	configurer('tiptap_spip/public', 'oui');
 	configurer('tiptap_spip/crayons', 'oui');
 });
@@ -30,6 +35,7 @@ async function articlePublic(page, source, { chapo } = {}) {
 }
 
 test('crayon public : éditeur et services à la demande, enregistrement, fermeture puis réouverture sans fuite', async ({ page }) => {
+	sansCrayons();
 	const id = await articlePublic(page, 'Voir [->art1] et du {{gras}}.');
 	const base = await instances(page);
 	const servicesAvant = await servicesCharges(page);
@@ -63,6 +69,7 @@ test('crayon public : éditeur et services à la demande, enregistrement, fermet
 });
 
 test('crayons sans l\'option publique : bundle chargé, crayon équipé, formulaire de forum laissé', async ({ page }) => {
+	sansCrayons();
 	configurer('tiptap_spip/public', 'non');
 	try {
 		const id = await articlePublic(page, 'Texte du crayon.');
@@ -81,6 +88,7 @@ test('crayons sans l\'option publique : bundle chargé, crayon équipé, formula
 });
 
 test('deux crayons ouverts ensemble : deux éditeurs, chacun ses services', async ({ page }) => {
+	sansCrayons();
 	const id = await articlePublic(page, 'Le texte [->art1].', { chapo: 'Le chapo [->art1].' });
 	const base = await instances(page);
 	const servicesAvant = await servicesCharges(page);
@@ -109,11 +117,14 @@ test('formulaire public déclaré par tiptap_spip_contextes : services reliés a
 	const id = await editer(page, 'x');
 	await page.goto(`/spip.php?page=tts_test&id_article=${id}`);
 	await module(page);
-	const lien = await page.evaluate(() => {
+	// le lancement importe les extensions tierces avant de créer les éditeurs : l'instance peut
+	// manquer encore quand le module est chargé
+	const formulaire = () => page.evaluate(() => {
 		const instance = [...window.__tts.instances].find((i) => i.textarea.closest('.formulaire_tts_test'));
 		return { form: instance?.textarea.form.dataset.ttsInstance, services: instance?.services?.container.dataset.ttsInstance, objet: instance?.services?.container.dataset.ttsObjet };
 	});
-	expect(lien.form).toMatch(/^tts-[0-9a-f]{12}$/);
+	await expect.poll(async () => (await formulaire()).form).toMatch(/^tts-[0-9a-f]{12}$/);
+	const lien = await formulaire();
 	expect(lien.services).toBe(lien.form);
 	expect(lien.objet).toBe('article');
 });
