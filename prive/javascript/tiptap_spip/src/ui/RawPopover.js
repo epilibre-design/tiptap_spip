@@ -1,6 +1,6 @@
 import { schemaJSON } from '../editor/content.js';
 import { anomalie } from '../spip/anomalies.js';
-import { parse, serialize } from '../spip/index.js';
+import { canon, parse, serialize } from '../spip/index.js';
 import { explication } from '../editor/anomalies.js';
 import { raccourciLisible } from './boutons.js';
 import { label } from './labels.js';
@@ -8,18 +8,21 @@ import { idUnique, Popover, suivrePosition } from './popover.js';
 
 /**
  * Blocs de premier niveau du segment de source (carte de segments, spec 04 §4) qui contient `pos` :
- * { debut, fin, premier, dernier, blocs }. Un bloc hors carte (créé dans l'éditeur) est seul.
+ * { debut, fin, premier, dernier, blocs }. Comme pour la sérialisation conservatrice, un groupe ne vaut
+ * que si ses blocs sont restés ceux du segment (forme canonique égale à spipHash) : après une
+ * suppression ou une modification, spipGroup ne compte plus les bons blocs et le bloc est pris seul.
  */
 export function segmentDe(doc, pos) {
 	const enfants = [];
 	doc.forEach((node, p) => enfants.push({ node, p }));
 	const index = doc.resolve(pos).index(0);
 	let [premier, dernier] = [index, index];
-	// premier bloc d'un segment au plus près avant : le segment couvre-t-il `index` ?
+	// premier bloc d'un segment au plus près avant : son groupe, intact, couvre-t-il `index` ?
 	for (let k = index; k >= 0; k--) {
-		const groupe = enfants[k].node.attrs.spipGroup;
+		const { spipGroup: groupe, spipHash: hash } = enfants[k].node.attrs;
 		if (!groupe) continue;
-		if (k + groupe > index) [premier, dernier] = [k, Math.min(k + groupe, enfants.length) - 1];
+		const blocs = enfants.slice(k, k + groupe).map((e) => e.node.toJSON());
+		if (k + groupe > index && blocs.length === groupe && canon(blocs) === hash) [premier, dernier] = [k, k + groupe - 1];
 		break;
 	}
 	return {

@@ -120,7 +120,10 @@ Lot L5.2, nœud brut :
   d'état.
 - **Contenu du popover :**
   - la source exacte du **segment** qui contient le nœud, c'est-à-dire la sérialisation conservatrice de son
-    groupe de blocs (carte de segments) ;
+    groupe de blocs (carte de segments). Comme pour la sérialisation conservatrice, le groupe ne vaut que si
+    ses blocs sont restés ceux du segment (forme canonique égale à `spipHash`). Après une suppression ou une
+    modification, `spipGroup` ne compte plus les bons blocs : le bloc est alors pris seul, sans jamais
+    englober un bloc voisin ;
   - l'explication de l'anomalie s'il en est une.
 - **« Appliquer »** (ou `Mod-Entrée`) relit la source (`parse`) et remplace le segment : un raccourci réparé
   devient éditable (« convertir »). Le séparateur qui précédait le segment est gardé. Une source qui ne peut

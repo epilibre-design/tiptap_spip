@@ -26458,9 +26458,10 @@ function segmentDe(doc4, pos) {
   const index = doc4.resolve(pos).index(0);
   let [premier, dernier] = [index, index];
   for (let k = index; k >= 0; k--) {
-    const groupe = enfants[k].node.attrs.spipGroup;
+    const { spipGroup: groupe, spipHash: hash } = enfants[k].node.attrs;
     if (!groupe) continue;
-    if (k + groupe > index) [premier, dernier] = [k, Math.min(k + groupe, enfants.length) - 1];
+    const blocs = enfants.slice(k, k + groupe).map((e) => e.node.toJSON());
+    if (k + groupe > index && blocs.length === groupe && canon(blocs) === hash) [premier, dernier] = [k, k + groupe - 1];
     break;
   }
   return {

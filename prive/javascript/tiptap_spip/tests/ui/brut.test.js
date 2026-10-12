@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { anomaliesDuDocument } from '../../src/editor/anomalies.js';
 import { Popover } from '../../src/ui/popover.js';
 import { StatusBar } from '../../src/ui/StatusBar.js';
-import { champ, demonter, editor, erreur, monter, notePos, popovers, source, valider, wrapper } from './outils.js';
+import { apres, champ, demonter, editor, erreur, monter, notePos, popovers, source, valider, wrapper } from './outils.js';
 
 afterEach(demonter);
 
@@ -68,6 +68,30 @@ describe('popover du nœud brut', () => {
 		editor.commands.setNodeSelection(brutPos('{'));
 		editor.commands.keyboardShortcut('Enter');
 		expect(Popover.current?.form.classList.contains('tts-popover--brut')).toBe(true);
+	});
+
+	it('segment raccourci après une suppression : le bloc suivant n\'est jamais englobé', () => {
+		const { ui } = monter('a {\n{{{T}}}\n\nY');
+		expect(editor.state.doc.child(0).attrs.spipGroup).toBe(2);
+		// le titre T supprimé : le premier bloc garde spipGroup 2
+		const titre = editor.state.doc.child(0).nodeSize;
+		editor.commands.deleteRange({ from: titre, to: titre + editor.state.doc.child(1).nodeSize });
+		expect(editor.state.doc.child(1).textContent).toBe('Y');
+		ui.editRaw(brutPos('{'));
+		expect(champ('source').value).toBe('a {');
+		champ('source').value = 'a {b}';
+		valider();
+		expect(source()).toBe('a {b}\n\nY');
+	});
+
+	it('segment modifié dans l\'éditeur : le bloc seul, sans déborder', () => {
+		const { ui } = monter('a {\n{{{T}}}\n\nY');
+		editor.commands.insertContentAt(apres('T'), 'itre');
+		ui.editRaw(brutPos('{'));
+		expect(champ('source').value).toBe('a {');
+		champ('source').value = 'a {b}';
+		valider();
+		expect(source()).toBe('a {b}\n\n{{{Titre}}}\n\nY');
 	});
 
 	it('segment disparu pendant que le popover est ouvert : fermé sans rien faire', () => {
