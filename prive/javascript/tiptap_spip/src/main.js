@@ -1,3 +1,4 @@
+import { allerRetour, core, extensionsTierces, registerExtension, registerToolbarComponent, ui } from './api.js';
 import { config } from './config.js';
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
@@ -131,11 +132,14 @@ class Instance {
 		// (recherche de liens, glossaire) fonctionnent dès qu'ils sont là
 		this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets });
 
+		// barre du textarea : elle décide aussi des extensions tierces (registerExtension, toolbars)
+		const nomBarre = barreDuTextarea(textarea);
 		// l'éditeur est créé avant de toucher au DOM : en cas d'échec, rien n'a changé
 		this.editor = createEditor({
 			element: this.content,
 			source: textarea.value,
 			ui: this.ui,
+			tierces: extensionsTierces(nomBarre),
 			// zone éditable nommée comme le champ SPIP (spec 06 §7)
 			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em`, 'aria-label': nomDuChamp(textarea), 'aria-multiline': 'true' } },
 		});
@@ -146,7 +150,7 @@ class Instance {
 		const barres = config().toolbars ?? BARRES;
 		this.toolbar = new Toolbar({
 			ctx: { editor: this.editor, ui: this.ui, instance: this },
-			barre: barres[barreDuTextarea(textarea)] ?? barres.minimale ?? BARRES.minimale,
+			barre: barres[nomBarre] ?? barres.minimale ?? BARRES.minimale,
 			element: this.toolbarElement,
 		});
 		this.majBarre = () => this.toolbar.maj();
@@ -286,3 +290,10 @@ function racines(racine) {
 	const noeuds = liste.filter((n) => n?.querySelectorAll);
 	return noeuds.length ? noeuds : [document];
 }
+
+/**
+ * API des plugins tiers (spec 07 §2) : exports du module (SPIP 5, importmap) et window.tiptapSpip
+ * (SPIP 4, scripts chargés après le bundle).
+ */
+export { allerRetour, core, label, registerExtension, registerToolbarComponent, ui };
+globalThis.tiptapSpip = Object.freeze({ registerExtension, registerToolbarComponent, core, ui, label, allerRetour });

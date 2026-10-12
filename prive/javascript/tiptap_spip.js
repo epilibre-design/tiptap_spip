@@ -1,10 +1,11 @@
 /*! tiptap_spip, GPL-3.0-or-later. Licences des composants tiers : tiptap_spip.LICENSES.txt */
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-
-// src/config.js
-var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
 
 // node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
 var __defProp2 = Object.defineProperty;
@@ -17671,7 +17672,11 @@ var raw = (source, marks = []) => {
   if (marks.length) n.marks = marks;
   return n;
 };
-var sortMarks = (marks) => [...marks].sort((a, b) => MARK_ORDER.indexOf(a.type) - MARK_ORDER.indexOf(b.type));
+var rang = (type) => {
+  const i2 = MARK_ORDER.indexOf(type);
+  return i2 < 0 ? MARK_ORDER.length : i2;
+};
+var sortMarks = (marks) => [...marks].sort((a, b) => rang(a.type) - rang(b.type));
 var sameMark = (a, b) => a.type === b.type && JSON.stringify(a.attrs ?? {}) === JSON.stringify(b.attrs ?? {});
 var sameMarks = (a = [], b = []) => a.length === b.length && a.every((m, i2) => sameMark(m, b[i2]));
 function mergeText(nodes) {
@@ -17710,6 +17715,33 @@ function stripTech(value) {
 var canon = (value) => JSON.stringify(stripTech(value));
 
 // src/spip/regex.js
+var regex_exports = {};
+__export(regex_exports, {
+  LANGUES: () => LANGUES,
+  LIGNE_VIDE: () => LIGNE_VIDE,
+  RE_ABBR: () => RE_ABBR,
+  RE_ABBR_SEUL: () => RE_ABBR_SEUL,
+  RE_ANCRE: () => RE_ANCRE,
+  RE_ATTRIBUTS_LIEN: () => RE_ATTRIBUTS_LIEN,
+  RE_AVANT_LANGUE: () => RE_AVANT_LANGUE,
+  RE_BACKTICKS: () => RE_BACKTICKS,
+  RE_CODE_LANGUE: () => RE_CODE_LANGUE,
+  RE_ECHAPPEMENT: () => RE_ECHAPPEMENT,
+  RE_ECHAPPEMENT_CODE: () => RE_ECHAPPEMENT_CODE,
+  RE_GLOSES: () => RE_GLOSES,
+  RE_GLOSSAIRE: () => RE_GLOSSAIRE,
+  RE_GLOSSAIRE_SEUL: () => RE_GLOSSAIRE_SEUL,
+  RE_IDIOME: () => RE_IDIOME,
+  RE_IDIOME_SEUL: () => RE_IDIOME_SEUL,
+  RE_LANGUE_MULTI: () => RE_LANGUE_MULTI,
+  RE_LIEN: () => RE_LIEN,
+  RE_MODELE: () => RE_MODELE,
+  RE_MODELE_SEUL: () => RE_MODELE_SEUL,
+  RE_MULTI: () => RE_MULTI,
+  RE_NOTE: () => RE_NOTE,
+  RE_NOTE_SEULE: () => RE_NOTE_SEULE,
+  RE_PROTEGE_BLOCS: () => RE_PROTEGE_BLOCS
+});
 var RE_MODELE = /<([a-z_-]{3,})\s*([0-9]*)\s*([|](?:<[^<>]*>|[^>])*?)?\s*\/?>/gi;
 var RE_LIEN = /\[([^\][]*?([[][^\]>-]*[\]][^\][]*)*)->(>?)([^\]]*)\]/gs;
 var RE_NOTE = /\[\[([ \t\n\v\f\r]*(<([^>'"]*)>)?(.*?))\]\]/gs;
@@ -17862,6 +17894,55 @@ function parseNote(src, masked = src) {
   return { name, content: doc4.content, lead: doc4.attrs.spipLead, trail: doc4.attrs.spipTrail + invisible };
 }
 
+// src/spip/regles.js
+var NIVEAUX = ["protect", "block", "inline"];
+var TYPES = ["block", "inline", "mark"];
+var actives = [];
+var regleDe = (nom) => actives.findLast((r) => r.name === nom) ?? null;
+function avecRegles(regles, f) {
+  if (!regles) return f();
+  const avant = actives;
+  actives = regles;
+  try {
+    return f();
+  } finally {
+    actives = avant;
+  }
+}
+var drapeaux = (regex, ajout) => [...new Set(regex.flags.replace(/[gy]/g, "") + ajout)].join("");
+function creerRegle(definition) {
+  const { name, type, tokenizer = null, parseSpip = null, renderSpip = null } = definition;
+  const refus = (raison) => {
+    console.warn(`tiptap_spip : r\xE8gle \xAB ${name} \xBB ignor\xE9e (${raison})`);
+    return null;
+  };
+  if (!name || !TYPES.includes(type)) return refus("type de n\u0153ud ou de mark inconnu");
+  if (tokenizer) {
+    if (!NIVEAUX.includes(tokenizer.level)) return refus(`niveau \xAB ${tokenizer.level} \xBB inconnu`);
+    if (!(tokenizer.match instanceof RegExp)) return refus("motif match absent");
+    if (typeof parseSpip !== "function") return refus("parseSpip absent");
+  }
+  const { match } = tokenizer ?? {};
+  return {
+    name,
+    type,
+    definition,
+    niveau: tokenizer?.level ?? null,
+    priorite: tokenizer?.priority ?? 0,
+    debut: tokenizer?.start ?? "",
+    // recherche dans tout le texte : ^ et $ désignent un début et une fin de ligne
+    regex: match ? new RegExp(match.source, drapeaux(match, "gm")) : null,
+    // relecture d'une région sur la source : le motif doit la couvrir exactement
+    relire: match ? (source) => {
+      const m = new RegExp(match.source, drapeaux(match, "my")).exec(source);
+      return m && m[0].length === source.length ? m : null;
+    } : () => null,
+    parseSpip,
+    renderSpip
+  };
+}
+var reglesDuNiveau = (niveau) => actives.filter((r) => r.niveau === niveau).map((r, i2) => ({ r, i: i2 })).sort((a, b) => a.r.priorite - b.r.priorite || a.i - b.i).map(({ r }) => r);
+
 // src/spip/protect.js
 var FILL = "\uE000";
 function protect(source) {
@@ -17927,6 +18008,15 @@ function protect(source) {
     }
     add(start, end, "backtick", { ticks, code: code2, language });
   }));
+  const scanRegles = (niveau) => {
+    for (const regle of reglesDuNiveau(niveau)) {
+      if (regle.debut && !source.includes(regle.debut)) continue;
+      scan(regle.regex, (m, start, end) => {
+        if (end > start) add(start, end, "extension", { regle: regle.name });
+      });
+    }
+  };
+  scanRegles("protect");
   scan(RE_PROTEGE_BLOCS, (m, start, end) => {
     const openTag = source.slice(start, start + m[0].indexOf(">") + 1);
     const closeLength = m[1].length + 3;
@@ -17938,6 +18028,7 @@ function protect(source) {
     });
   });
   scan(RE_ECHAPPEMENT, (m, start, end) => add(start, end, "escape", { char: m[1], raccourci: true }));
+  scanRegles("block");
   const echappements = () => regions.filter((r) => r.kind === "escape" && r.data.raccourci);
   const scanSansEchappements = (regex, onMatch) => {
     const restes = echappements();
@@ -17966,6 +18057,7 @@ function protect(source) {
     href: source.slice(end - 1 - m[4].length, end - 1)
   }));
   scanSansEchappements(RE_NOTE, (m, start, end) => add(start, end, "note", { masked: m[0] }));
+  scanRegles("inline");
   scan(RE_ABBR, (m, start, end) => add(start, end, "abbr", {}));
   scan(RE_MULTI, (m, start, end) => {
     let vu = m[0];
@@ -17999,11 +18091,11 @@ function regionsIn(regions, start, end) {
 }
 
 // src/spip/serialize.js
-function serialize(doc4, { conservative = true } = {}) {
+function serialize(doc4, { conservative = true, regles } = {}) {
   const avant = contexte;
   contexte = { ...contexte, conservative };
   try {
-    return serializeDoc(doc4, conservative);
+    return avecRegles(regles, () => serializeDoc(doc4, conservative));
   } finally {
     contexte = avant;
   }
@@ -18033,6 +18125,7 @@ function separator(i2, spipSep) {
 }
 var textOf = (n) => (n.content ?? []).map((c) => c.text ?? "").join("");
 var blocks = (content = []) => content.map(serializeBlock).join("\n\n");
+var serializeBlocks = blocks;
 function serializeBlock(b) {
   const a = b.attrs ?? {};
   switch (b.type) {
@@ -18076,8 +18169,11 @@ ${blocks(b.content)}
       }))));
     case "table":
       return serializeTable(b);
-    default:
+    default: {
+      const regle = regleDe(b.type);
+      if (regle?.type === "block" && regle.renderSpip) return ecrireRegle(regle, b);
       throw new Error(`serialize: type de bloc inconnu \xAB ${b.type} \xBB`);
+    }
   }
 }
 function serializeCodeBlock(b) {
@@ -18138,7 +18234,10 @@ var delimiters = (mark2) => {
   if (mark2.type === "spipLink") return ["[", linkEnd(mark2.attrs)];
   if (mark2.type === "spipGlossary") return ["[?", serializeGlossary("", mark2.attrs).slice(2)];
   if (mark2.type === "spipAbbr") return ["[", serializeAbbr("", mark2.attrs).slice(1)];
-  return OPEN[mark2.type];
+  if (OPEN[mark2.type]) return OPEN[mark2.type];
+  const regle = regleDe(mark2.type);
+  if (regle?.type === "mark" && regle.renderSpip) return delimiteursRegle(regle, mark2);
+  throw new Error(`serialize: mark inconnue \xAB ${mark2.type} \xBB`);
 };
 var ATOMIQUES = ["spipGlossary", "spipAbbr"];
 var avecMarks = (n, marks) => {
@@ -18243,6 +18342,9 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
     } else if (n.type === "spipIdiome") {
       out += serializeIdiome(n.attrs);
       atLineStart = false;
+    } else if (regleDe(n.type)?.type === "inline" && regleDe(n.type).renderSpip) {
+      out += ecrireRegle(regleDe(n.type), n);
+      atLineStart = false;
     } else {
       throw new Error(`serialize: type inline inconnu \xAB ${n.type} \xBB`);
     }
@@ -18318,6 +18420,15 @@ function linkToken(region, src) {
   const { masked, regions } = protect(atts.text);
   return { t: "link", mark: { type: "spipLink", attrs }, children: parseInline(atts.text, masked, regions, { link: true }) };
 }
+function jetonTiers(region, src) {
+  const regle = regleDe(region.data.regle);
+  if (!regle || regle.type === "block") return null;
+  const lu = lireRegle(regle, src);
+  if (!lu) return null;
+  if (regle.type === "inline") return { t: "node", node: lu };
+  const mark2 = lu.attrs && Object.keys(lu.attrs).length ? { type: regle.name, attrs: lu.attrs } : { type: regle.name };
+  return { t: "link", mark: mark2, children: lu.content };
+}
 var MARKED = {
   glossary: { type: "spipGlossary", parse: (src) => {
     const r = parseGlossary(src);
@@ -18380,6 +18491,7 @@ function tokenize(source, masked, regions, lineStart, link) {
       let marque;
       let multi;
       let idiome;
+      let tierce;
       if (region.kind === "escape") {
         buf += region.data.char;
       } else if (region.kind === "backtick" && region.data.ticks.length < 3 && region.data.code.trim() !== "") {
@@ -18394,6 +18506,8 @@ function tokenize(source, masked, regions, lineStart, link) {
         push({ t: "node", node: node("spipAnchor", { name: region.data.name }) });
       } else if (region.kind === "multi" && !link && (multi = multiNode(src, region.data.masked))) {
         push({ t: "node", node: multi });
+      } else if (region.kind === "extension" && (tierce = jetonTiers(region, src))) {
+        push(tierce);
       } else if (region.kind === "idiome" && (idiome = parseIdiome(src))) {
         push({ t: "node", node: node("spipIdiome", idiome) });
       } else if (region.kind === "model" && parseModel(src)) {
@@ -18510,6 +18624,49 @@ function buildNodes(tokens) {
   return mergeText(nodes);
 }
 
+// src/spip/aides.js
+var aides = {
+  /** Source → blocs JSON (paragraphes, listes, conteneurs…), sans carte de segments. */
+  parseBlocks: (source) => parseContent(source),
+  /** Source → nœuds en ligne JSON. */
+  parseInline: (source) => {
+    const { masked, regions } = protect(source);
+    return parseInline(source, masked, regions);
+  },
+  /** Blocs JSON → source, séparés par une ligne vide. */
+  renderBlocks: (content) => serializeBlocks(content),
+  /** Nœuds en ligne JSON → source. */
+  renderInline: (nodes) => serializeInline(nodes),
+  /** Texte → source, raccourcis SPIP échappés. */
+  escape: (texte2) => escapeText(texte2, false),
+  /** Expressions régulières du core (regex.js). */
+  regex: regex_exports
+};
+function lireRegle(regle, source) {
+  const m = regle.relire(source);
+  if (!m) return null;
+  let lu;
+  try {
+    lu = regle.parseSpip(m, aides);
+  } catch (erreur) {
+    console.warn(`tiptap_spip : parseSpip de \xAB ${regle.name} \xBB a \xE9chou\xE9`, erreur);
+    return null;
+  }
+  if (!lu || typeof lu !== "object") return null;
+  if (regle.type === "mark") return Array.isArray(lu.content) ? lu : null;
+  return typeof lu.type === "string" ? lu : null;
+}
+function ecrireRegle(regle, n) {
+  const source = regle.renderSpip(n, aides);
+  if (typeof source !== "string") throw new Error(`serialize: renderSpip de \xAB ${regle.name} \xBB doit renvoyer une cha\xEEne`);
+  return source;
+}
+function delimiteursRegle(regle, mark2) {
+  const d = typeof regle.renderSpip === "function" ? regle.renderSpip(mark2, aides) : regle.renderSpip;
+  if (typeof d?.open !== "string" || typeof d?.close !== "string") throw new Error(`serialize: renderSpip de la mark \xAB ${regle.name} \xBB doit donner open et close`);
+  return [d.open, d.close];
+}
+
 // src/spip/segment.js
 function segment(source, masked) {
   if (masked.trim() === "") {
@@ -18596,6 +18753,7 @@ function verbatimBlock(src, regions) {
   if (r.kind === "backtick" && r.data.ticks.length >= 3) {
     return [node("codeBlock", { language: r.data.language || null }, textContent(r.data.code))];
   }
+  if (r.kind === "extension") return blocExtension(src, r);
   if (r.kind !== "block") return null;
   const { tag, openTag, closeTag, inner, absorbed } = r.data;
   if (absorbed.includes("backtick")) return [node("spipRaw", { source: src })];
@@ -18606,6 +18764,12 @@ function verbatimBlock(src, regions) {
   }
   const type = { cadre: "spipCadre", frame: "spipCadre", html: "spipHtml", math: "spipMath" }[tag];
   return [type ? node(type, { openTag, closeTag }, textContent(inner)) : node("spipRaw", { source: src })];
+}
+function blocExtension(src, r) {
+  const regle = regleDe(r.data.regle);
+  if (regle?.type !== "block") return null;
+  const bloc = lireRegle(regle, src);
+  return [bloc ?? node("spipRaw", { source: src })];
 }
 function multiBlock(src, masked) {
   if (!LIGNE_VIDE.test(src)) return null;
@@ -18810,7 +18974,10 @@ function tableBlock(src, msk, regions) {
 }
 
 // src/spip/parse.js
-function parse(source, { empreintes = true } = {}) {
+function parse(source, { empreintes = true, regles } = {}) {
+  return avecRegles(regles, () => analyser(source, empreintes));
+}
+function analyser(source, empreintes) {
   const { masked, regions } = protect(source);
   const { lead, trail, segments } = segment(source, masked);
   const content = [];
@@ -18839,7 +19006,7 @@ function schemaJSON(json, schema) {
   });
   return out;
 }
-var toEditorJSON = (source, schema) => schemaJSON(parse(source, { empreintes: false }), schema);
+var toEditorJSON = (source, schema, regles = []) => schemaJSON(parse(source, { empreintes: false, regles }), schema);
 
 // node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
 var jsxElements = /* @__PURE__ */ new WeakSet();
@@ -24628,7 +24795,7 @@ var ariaModele = (model) => ({
   role: "group",
   "aria-label": label("modele_aria").replace("@modele@", [model?.name, model?.id].filter(Boolean).join(" "))
 });
-var modelView = (ui) => ({ node: node2, getPos }) => {
+var modelView = (ui2) => ({ node: node2, getPos }) => {
   const block = node2.type.name === "spipModelBlock";
   const dom = document.createElement(block ? "div" : "span");
   dom.className = `tts-model${block ? " tts-model-block" : ""}`;
@@ -24639,7 +24806,7 @@ var modelView = (ui) => ({ node: node2, getPos }) => {
   bouton.type = "button";
   bouton.className = "tts-model__modifier";
   bouton.textContent = label("modele_modifier");
-  bouton.addEventListener("click", () => ui.editModel(getPos()));
+  bouton.addEventListener("click", () => ui2.editModel(getPos()));
   dom.append(preview, bouton);
   let source = null;
   const render2 = (model) => {
@@ -24652,7 +24819,7 @@ var modelView = (ui) => ({ node: node2, getPos }) => {
     dom.classList.add("tts-model--chargement");
     dom.classList.remove("tts-model--erreur", "tts-model--vide");
     const demande = source;
-    ui.previews.get(demande).then(
+    ui2.previews.get(demande).then(
       (html) => {
         if (demande !== source) return;
         dom.classList.remove("tts-model--chargement");
@@ -24683,7 +24850,7 @@ var modelView = (ui) => ({ node: node2, getPos }) => {
     ignoreMutation: () => true
   };
 };
-var linkAutoView = (ui) => ({ node: node2 }) => {
+var linkAutoView = (ui2) => ({ node: node2 }) => {
   const dom = document.createElement("a");
   dom.className = "tts-link tts-link-auto";
   dom.contentEditable = "false";
@@ -24695,7 +24862,7 @@ var linkAutoView = (ui) => ({ node: node2 }) => {
     dom.textContent = `\u2192 ${cible}`;
     dom.title = cible;
     const demande = cible;
-    ui.titles.get(demande).then(
+    ui2.titles.get(demande).then(
       (r) => {
         if (demande === cible && r?.titre) dom.textContent = r.titre;
       },
@@ -24768,7 +24935,7 @@ var multiView = () => ({ node: node2, decorations: decorations2 }) => {
     ignoreMutation: () => true
   };
 };
-var idiomeView = (ui) => ({ node: node2 }) => {
+var idiomeView = (ui2) => ({ node: node2 }) => {
   const dom = document.createElement("code");
   dom.className = "tts-idiome";
   dom.contentEditable = "false";
@@ -24783,7 +24950,7 @@ var idiomeView = (ui) => ({ node: node2 }) => {
     dom.textContent = r;
     dom.title = r;
     dom.classList.remove("tts-idiome--traduit");
-    ui.idiomes.get(attrs.module ? `${attrs.module}:${attrs.cle}` : attrs.cle).then(
+    ui2.idiomes.get(attrs.module ? `${attrs.module}:${attrs.cle}` : attrs.cle).then(
       (t) => {
         if (raccourci !== r || !t?.texte) return;
         dom.textContent = t.texte;
@@ -25501,13 +25668,13 @@ var SpipUi = Extension.create({
   },
   // clic sur un atome (note, multi, idiome) : son popover
   addProseMirrorPlugins() {
-    const ui = () => this.options.ui;
+    const ui2 = () => this.options.ui;
     return [new Plugin({
       key: new PluginKey("spipUiClic"),
       props: {
         handleClickOn: (view, pos, node2, nodePos, event, direct) => {
           const action = direct && POPOVERS[node2.type.name];
-          return Boolean(action && ui()?.[action]?.(nodePos));
+          return Boolean(action && ui2()?.[action]?.(nodePos));
         }
       }
     })];
@@ -25524,8 +25691,25 @@ var SpipUi = Extension.create({
     })];
   }
 });
-function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
-  const withView = (node2, view, enabled) => enabled ? node2.extend({ addNodeView: () => view(ui) }) : node2;
+function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui: ui2 = null, tierces = [] } = {}) {
+  return avecTierces(extensionsDuCoeur({ headingLevels, ui: ui2 }), tierces);
+}
+function avecTierces(extensions, tierces) {
+  const ajoutees = [];
+  const resultat = [...extensions];
+  for (const tierce of tierces) {
+    const i2 = resultat.findIndex((e) => e.name === tierce.name);
+    if (i2 >= 0) {
+      console.warn(`tiptap_spip : l'extension \xAB ${tierce.name} \xBB du c\u0153ur est remplac\xE9e par une extension tierce`);
+      resultat[i2] = tierce;
+    } else {
+      ajoutees.push(tierce);
+    }
+  }
+  return [...resultat, ...ajoutees];
+}
+function extensionsDuCoeur({ headingLevels, ui: ui2 }) {
+  const withView = (node2, view, enabled) => enabled ? node2.extend({ addNodeView: () => view(ui2) }) : node2;
   return [
     SpipDocument,
     src_default10,
@@ -25550,17 +25734,17 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
     SpipMath,
     SpipRaw,
     SpipRawInline,
-    withView(SpipLinkAuto, linkAutoView, Boolean(ui?.titles)),
+    withView(SpipLinkAuto, linkAutoView, Boolean(ui2?.titles)),
     SpipAnchor,
-    SpipNote.configure({ ui }),
+    SpipNote.configure({ ui: ui2 }),
     SpipNoteNumbers,
     SpipMultiInline,
     SpipMultiBlock,
     SpipLangBlock,
-    withView(SpipIdiome, idiomeView, Boolean(ui?.idiomes)),
+    withView(SpipIdiome, idiomeView, Boolean(ui2?.idiomes)),
     SpipLangues,
-    withView(SpipModel, modelView, Boolean(ui?.previews)),
-    withView(SpipModelBlock, modelView, Boolean(ui?.previews)),
+    withView(SpipModel, modelView, Boolean(ui2?.previews)),
+    withView(SpipModelBlock, modelView, Boolean(ui2?.previews)),
     // marks : ordre canonique de MARK_ORDER
     SpipLink,
     src_default2,
@@ -25577,22 +25761,456 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
     UndoRedo,
     SpipEdition,
     SpipAnomalies,
-    SpipUi.configure({ ui })
+    SpipUi.configure({ ui: ui2 })
   ];
 }
 var NoteDocument = SpipDocument.extend({ content: "(paragraph | bulletList | orderedList | spipModelBlock)+" });
-function noteExtensions({ ui = null } = {}) {
-  return coreExtensions({ ui }).filter((e) => !["spipNote", "spipNoteNumbers"].includes(e.name)).map((e) => e.name === "doc" ? NoteDocument : e);
+function noteExtensions({ ui: ui2 = null, tierces = [] } = {}) {
+  return coreExtensions({ ui: ui2, tierces }).filter((e) => !["spipNote", "spipNoteNumbers"].includes(e.name)).map((e) => e.name === "doc" ? NoteDocument : e);
 }
 var PartieDocument = SpipDocument.extend({ content: "paragraph" });
-function partieExtensions({ ui = null } = {}) {
-  return coreExtensions({ ui }).filter((e) => e.name !== "spipMultiInline").map((e) => e.name === "doc" ? PartieDocument : e);
+function partieExtensions({ ui: ui2 = null, tierces = [] } = {}) {
+  return coreExtensions({ ui: ui2, tierces }).filter((e) => e.name !== "spipMultiInline").map((e) => e.name === "doc" ? PartieDocument : e);
 }
 
+// src/editor/regles.js
+function reglesSpip(extensions) {
+  return extensions.flatMap((extension) => {
+    if (extension.type !== "node" && extension.type !== "mark") return [];
+    const contexte3 = { name: extension.name, options: extension.options, storage: extension.storage };
+    const champ = (nom) => getExtensionField(extension, nom, contexte3);
+    const tokenizer = champ("spipTokenizer") ?? null;
+    const renderSpip = champ("renderSpip") ?? null;
+    if (!tokenizer && !renderSpip) return [];
+    const inline = champ("inline");
+    const type = extension.type === "mark" ? "mark" : (typeof inline === "function" ? inline() : inline) ? "inline" : "block";
+    const regle = creerRegle({ name: extension.name, type, tokenizer, parseSpip: champ("parseSpip") ?? null, renderSpip });
+    return regle ? [regle] : [];
+  });
+}
+
+// src/ui/icones.js
+var ICONES = {
+  annuler: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.82843 6.99955L8.36396 9.53509L6.94975 10.9493L2 5.99955L6.94975 1.0498L8.36396 2.46402L5.82843 4.99955H13C17.4183 4.99955 21 8.58127 21 12.9996C21 17.4178 17.4183 20.9996 13 20.9996H4V18.9996H13C16.3137 18.9996 19 16.3133 19 12.9996C19 9.68584 16.3137 6.99955 13 6.99955H5.82843Z"/></svg>',
+  retablir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.1716 6.99955H11C7.68629 6.99955 5 9.68584 5 12.9996C5 16.3133 7.68629 18.9996 11 18.9996H20V20.9996H11C6.58172 20.9996 3 17.4178 3 12.9996C3 8.58127 6.58172 4.99955 11 4.99955H18.1716L15.636 2.46402L17.0503 1.0498L22 5.99955L17.0503 10.9493L15.636 9.53509L18.1716 6.99955Z"/></svg>',
+  titre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17 11V4H19V21H17V13H7V21H5V4H7V11H17Z"/></svg>',
+  paragraphe: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6V21H10V16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4H20V6H17V21H15V6H12ZM10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14V6Z"/></svg>',
+  liste: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 4H21V6H8V4ZM4.5 6.5C3.67157 6.5 3 5.82843 3 5C3 4.17157 3.67157 3.5 4.5 3.5C5.32843 3.5 6 4.17157 6 5C6 5.82843 5.32843 6.5 4.5 6.5ZM4.5 13.5C3.67157 13.5 3 12.8284 3 12C3 11.1716 3.67157 10.5 4.5 10.5C5.32843 10.5 6 11.1716 6 12C6 12.8284 5.32843 13.5 4.5 13.5ZM4.5 20.4C3.67157 20.4 3 19.7284 3 18.9C3 18.0716 3.67157 17.4 4.5 17.4C5.32843 17.4 6 18.0716 6 18.9C6 19.7284 5.32843 20.4 4.5 20.4ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"/></svg>',
+  listeNumerotee: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.75024 3.5H4.71733L3.25 3.89317V5.44582L4.25002 5.17782L4.25018 8.5H3V10H7V8.5H5.75024V3.5ZM10 4H21V6H10V4ZM10 11H21V13H10V11ZM10 18H21V20H10V18ZM2.875 15.625C2.875 14.4514 3.82639 13.5 5 13.5C6.17361 13.5 7.125 14.4514 7.125 15.625C7.125 16.1106 6.96183 16.5587 6.68747 16.9167L6.68271 16.9229L5.31587 18.5H7V20H3.00012L2.99959 18.8786L5.4717 16.035C5.5673 15.9252 5.625 15.7821 5.625 15.625C5.625 15.2798 5.34518 15 5 15C4.67378 15 4.40573 15.2501 4.37747 15.5688L4.3651 15.875H2.875V15.625Z"/></svg>',
+  indenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM7 12.5L3 16V9L7 12.5Z"/></svg>',
+  desindenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM3 12.5L7 9V16L3 12.5Z"/></svg>',
+  citation: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M4.58341 17.3211C3.55316 16.2274 3 15 3 13.0103C3 9.51086 5.45651 6.37366 9.03059 4.82318L9.92328 6.20079C6.58804 8.00539 5.93618 10.346 5.67564 11.822C6.21263 11.5443 6.91558 11.4466 7.60471 11.5105C9.40908 11.6778 10.8312 13.159 10.8312 15C10.8312 16.933 9.26416 18.5 7.33116 18.5C6.2581 18.5 5.23196 18.0095 4.58341 17.3211ZM14.5834 17.3211C13.5532 16.2274 13 15 13 13.0103C13 9.51086 15.4565 6.37366 19.0306 4.82318L19.9233 6.20079C16.588 8.00539 15.9362 10.346 15.6756 11.822C16.2126 11.5443 16.9156 11.4466 17.6047 11.5105C19.4091 11.6778 20.8312 13.159 20.8312 15C20.8312 16.933 19.2642 18.5 17.3312 18.5C16.2581 18.5 15.232 18.0095 14.5834 17.3211Z"/></svg>',
+  poesie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M6.93912 14.0328C6.7072 14.6563 6.51032 15.2331 6.33421 15.8155C7.29345 15.1189 8.43544 14.6767 9.75193 14.5121C12.2652 14.198 14.4976 12.5385 15.6279 10.4537L14.1721 8.99888L15.5848 7.58417C15.9185 7.25004 16.2521 6.91614 16.5858 6.58248C17.0151 6.15312 17.5 5.35849 18.0129 4.2149C12.4197 5.08182 8.99484 8.50647 6.93912 14.0328ZM17 8.99739L18 9.99669C17 12.9967 14 15.9967 10 16.4967C7.33146 16.8303 5.66421 18.6636 4.99824 21.9967H3C4 15.9967 6 1.99669 21 1.99669C20.0009 4.99402 19.0018 6.99313 18.0027 7.99402C17.6662 8.33049 17.3331 8.66382 17 8.99739Z"/></svg>',
+  cadre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3.41436 5.99995L5.70726 3.70706L4.29304 2.29285L0.585938 5.99995L4.29304 9.70706L5.70726 8.29285L3.41436 5.99995ZM9.58594 5.99995L7.29304 3.70706L8.70726 2.29285L12.4144 5.99995L8.70726 9.70706L7.29304 8.29285L9.58594 5.99995ZM14.0002 2.99995H21.0002C21.5524 2.99995 22.0002 3.44767 22.0002 3.99995V20C22.0002 20.5522 21.5524 21 21.0002 21H3.00015C2.44787 21 2.00015 20.5522 2.00015 20V12H4.00015V19H20.0002V4.99995H14.0002V2.99995Z"/></svg>',
+  gras: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 11H12.5C13.8807 11 15 9.88071 15 8.5C15 7.11929 13.8807 6 12.5 6H8V11ZM18 15.5C18 17.9853 15.9853 20 13.5 20H6V4H12.5C14.9853 4 17 6.01472 17 8.5C17 9.70431 16.5269 10.7981 15.7564 11.6058C17.0979 12.3847 18 13.837 18 15.5ZM8 13V18H13.5C14.8807 18 16 16.8807 16 15.5C16 14.1193 14.8807 13 13.5 13H8Z"/></svg>',
+  italique: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M15 20H7V18H9.92661L12.0425 6H9V4H17V6H14.0734L11.9575 18H15V20Z"/></svg>',
+  barre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17.1538 14C17.3846 14.5161 17.5 15.0893 17.5 15.7196C17.5 17.0625 16.9762 18.1116 15.9286 18.867C14.8809 19.6223 13.4335 20 11.5862 20C9.94674 20 8.32335 19.6185 6.71592 18.8555V16.6009C8.23538 17.4783 9.7908 17.917 11.3822 17.917C13.9333 17.917 15.2128 17.1846 15.2208 15.7196C15.2208 15.0939 15.0049 14.5598 14.5731 14.1173C14.5339 14.0772 14.4939 14.0381 14.4531 14H3V12H21V14H17.1538ZM13.076 11H7.62908C7.4566 10.8433 7.29616 10.6692 7.14776 10.4778C6.71592 9.92084 6.5 9.24559 6.5 8.45207C6.5 7.21602 6.96583 6.165 7.89749 5.299C8.82916 4.43299 10.2706 4 12.2219 4C13.6934 4 15.1009 4.32808 16.4444 4.98426V7.13591C15.2448 6.44921 13.9293 6.10587 12.4978 6.10587C10.0187 6.10587 8.77917 6.88793 8.77917 8.45207C8.77917 8.87172 8.99709 9.23796 9.43293 9.55079C9.86878 9.86362 10.4066 10.1135 11.0463 10.3004C11.6665 10.4816 12.3431 10.7148 13.076 11H13.076Z"/></svg>',
+  exposant: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 5L10.5 10.9283L15.4043 5H18L11.7978 12.4971L18 19.9943V20H15.4091L10.5 14.0659L5.59092 20H3V19.9943L9.20216 12.4971L3 5H5.59567ZM21.5507 6.5803C21.7042 6.43453 21.8 6.22845 21.8 6C21.8 5.55817 21.4418 5.2 21 5.2C20.5582 5.2 20.2 5.55817 20.2 6C20.2 6.07624 20.2107 6.14999 20.2306 6.21983L19.0765 6.54958C19.0267 6.37497 19 6.1906 19 6C19 4.89543 19.8954 4 21 4C22.1046 4 23 4.89543 23 6C23 6.57273 22.7593 7.08923 22.3735 7.45384L20.7441 9H23V10H19V9L21.5507 6.5803V6.5803Z"/></svg>',
+  indice: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 4L10.5 9.92831L15.4043 4H18L11.7978 11.4971L18 18.9943V19H15.4091L10.5 13.0659L5.59092 19H3V18.9943L9.20216 11.4971L3 4H5.59567ZM21.8 16C21.8 15.5582 21.4418 15.2 21 15.2C20.5582 15.2 20.2 15.5582 20.2 16C20.2 16.0762 20.2107 16.15 20.2306 16.2198L19.0765 16.5496C19.0267 16.375 19 16.1906 19 16C19 14.8954 19.8954 14 21 14C22.1046 14 23 14.8954 23 16C23 16.5727 22.7593 17.0892 22.3735 17.4538L20.7441 19H23V20H19V19L21.5507 16.5803C21.7042 16.4345 21.8 16.2284 21.8 16Z"/></svg>',
+  code: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12L15.9289 19.0711L14.5147 17.6569L20.1716 12L14.5147 6.34317L15.9289 4.92896L23 12ZM3.82843 12L9.48528 17.6569L8.07107 19.0711L1 12L8.07107 4.92896L9.48528 6.34317L3.82843 12Z"/></svg>',
+  lien: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3638 15.5355L16.9496 14.1213L18.3638 12.7071C20.3164 10.7545 20.3164 7.58866 18.3638 5.63604C16.4112 3.68341 13.2453 3.68341 11.2927 5.63604L9.87849 7.05025L8.46428 5.63604L9.87849 4.22182C12.6122 1.48815 17.0443 1.48815 19.778 4.22182C22.5117 6.95549 22.5117 11.3876 19.778 14.1213L18.3638 15.5355ZM15.5353 18.364L14.1211 19.7782C11.3875 22.5118 6.95531 22.5118 4.22164 19.7782C1.48797 17.0445 1.48797 12.6123 4.22164 9.87868L5.63585 8.46446L7.05007 9.87868L5.63585 11.2929C3.68323 13.2455 3.68323 16.4113 5.63585 18.364C7.58847 20.3166 10.7543 20.3166 12.7069 18.364L14.1211 16.9497L15.5353 18.364ZM14.8282 7.75736L16.2425 9.17157L9.17139 16.2426L7.75717 14.8284L14.8282 7.75736Z"/></svg>',
+  note: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12.9998 3L12.9996 10.267L19.294 6.63397L20.294 8.36602L14.0006 11.999L20.294 15.634L19.294 17.366L12.9996 13.732L12.9998 21H10.9998L10.9996 13.732L4.70557 17.366L3.70557 15.634L9.99857 12L3.70557 8.36602L4.70557 6.63397L10.9996 10.267L10.9998 3H12.9998Z"/></svg>',
+  glossaire: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18H6C5.44772 18 5 18.4477 5 19C5 19.5523 5.44772 20 6 20H21V22H6C4.34315 22 3 20.6569 3 19V4C3 2.89543 3.89543 2 5 2H21V18ZM5 16.05C5.16156 16.0172 5.32877 16 5.5 16H19V4H5V16.05ZM16 9H8V7H16V9Z"/></svg>',
+  abbr: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM7 8H17V11H15V10H13V14H14.5V16H9.5V14H11V10H9V11H7V8Z"/></svg>',
+  modele: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5C7 2.79086 8.79086 1 11 1C13.2091 1 15 2.79086 15 5H18C18.5523 5 19 5.44772 19 6V9C21.2091 9 23 10.7909 23 13C23 15.2091 21.2091 17 19 17V20C19 20.5523 18.5523 21 18 21H4C3.44772 21 3 20.5523 3 20V6C3 5.44772 3.44772 5 4 5H7ZM11 3C9.89543 3 9 3.89543 9 5C9 5.23554 9.0403 5.45952 9.11355 5.66675C9.22172 5.97282 9.17461 6.31235 8.98718 6.57739C8.79974 6.84243 8.49532 7 8.17071 7H5V19H17V15.8293C17 15.5047 17.1576 15.2003 17.4226 15.0128C17.6877 14.8254 18.0272 14.7783 18.3332 14.8865C18.5405 14.9597 18.7645 15 19 15C20.1046 15 21 14.1046 21 13C21 11.8954 20.1046 11 19 11C18.7645 11 18.5405 11.0403 18.3332 11.1135C18.0272 11.2217 17.6877 11.1746 17.4226 10.9872C17.1576 10.7997 17 10.4953 17 10.1707V7H13.8293C13.5047 7 13.2003 6.84243 13.0128 6.57739C12.8254 6.31235 12.7783 5.97282 12.8865 5.66675C12.9597 5.45952 13 5.23555 13 5C13 3.89543 12.1046 3 11 3Z"/></svg>',
+  multi: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 10L22.9 21H20.745L19.544 18H15.454L14.255 21H12.101L16.5 10H18.5ZM10 2V4H16V6L14.0322 6.0006C13.2425 8.36616 11.9988 10.5057 10.4115 12.301C11.1344 12.9457 11.917 13.5176 12.7475 14.0079L11.9969 15.8855C10.9237 15.2781 9.91944 14.5524 8.99961 13.7249C7.21403 15.332 5.10914 16.5553 2.79891 17.2734L2.26257 15.3442C4.2385 14.7203 6.04543 13.6737 7.59042 12.3021C6.46277 11.0281 5.50873 9.57985 4.76742 8.00028L7.00684 8.00037C7.57018 9.03885 8.23979 10.0033 8.99967 10.877C10.2283 9.46508 11.2205 7.81616 11.9095 6.00101L2 6V4H8V2H10ZM17.5 12.8852L16.253 16H18.745L17.5 12.8852Z"/></svg>',
+  alignement: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
+  alignGauche: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
+  alignCentre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM5 19H19V21H5V19ZM3 14H21V16H3V14ZM5 9H19V11H5V9Z"/></svg>',
+  alignDroite: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM7 19H21V21H7V19ZM3 14H21V16H3V14ZM7 9H21V11H7V9Z"/></svg>',
+  alignJustifie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM3 14H21V16H3V14ZM3 9H21V11H3V9Z"/></svg>',
+  tableau: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V14H19V10H13ZM11 10H5V14H11V10ZM13 19H19V16H13V19ZM11 19V16H5V19H11ZM13 5V8H19V5H13ZM11 5H5V8H11V5ZM4 3H20C20.5523 3 21 3.44772 21 4V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3Z"/></svg>',
+  guillemets: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4167 6.67891C20.4469 7.77257 21.0001 9 21.0001 10.9897C21.0001 14.4891 18.5436 17.6263 14.9695 19.1768L14.0768 17.7992C17.4121 15.9946 18.0639 13.6539 18.3245 12.178C17.7875 12.4557 17.0845 12.5533 16.3954 12.4895C14.591 12.3222 13.1689 10.8409 13.1689 9C13.1689 7.067 14.7359 5.5 16.6689 5.5C17.742 5.5 18.7681 5.99045 19.4167 6.67891ZM9.41669 6.67891C10.4469 7.77257 11.0001 9 11.0001 10.9897C11.0001 14.4891 8.54359 17.6263 4.96951 19.1768L4.07682 17.7992C7.41206 15.9946 8.06392 13.6539 8.32447 12.178C7.78747 12.4557 7.08452 12.5533 6.39539 12.4895C4.59102 12.3222 3.16895 10.8409 3.16895 9C3.16895 7.067 4.73595 5.5 6.66895 5.5C7.742 5.5 8.76814 5.99045 9.41669 6.67891Z"/></svg>',
+  caracteres: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M14 20V17.8432C15.8631 16.6512 17.5 13.9677 17.5 10.8844C17.5 7.8107 15.5 4.85516 12 4.85516C8.5 4.85516 6.5 7.8107 6.5 10.8844C6.5 13.9677 8.13687 16.6512 10 17.8432V20H3V18H7.7597C5.66635 16.5054 4 13.9889 4 10.8844C4 6.24653 7.5 3 12 3C16.5 3 20 6.24653 20 10.8844C20 13.9889 18.3336 16.5054 16.2403 18H21V20H14Z"/></svg>',
+  source: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M16.95 8.46451L18.3642 7.05029L23.3139 12L18.3642 16.9498L16.95 15.5356L20.4855 12L16.95 8.46451ZM7.05048 8.46451L3.51495 12L7.05048 15.5356L5.63627 16.9498L0.686523 12L5.63627 7.05029L7.05048 8.46451Z"/></svg>',
+  pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
+  pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
+};
+
+// src/ui/popover.js
+var Popover = class _Popover {
+  /**
+   * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
+   *           onSubmit: () => boolean|void, parent?: Popover, onClose?: () => void }} options
+   *        onSubmit renvoie false pour garder le popover ouvert ; editor : celui qui reprend le focus
+   */
+  constructor({ editor, wrapper, titre, className, onSubmit, parent = null, onClose = null }) {
+    this.editor = editor;
+    this.wrapper = wrapper;
+    this.parent = parent;
+    this.enfant = null;
+    this.onClose = onClose;
+    this.ouvert = false;
+    this.element = document.createElement("div");
+    this.element.className = "tts-popover-dialogue";
+    this.element.setAttribute("role", "dialog");
+    this.element.setAttribute("aria-label", titre);
+    this.form = document.createElement("form");
+    this.form.className = `tts-popover ${className ?? ""}`.trim();
+    this.element.append(this.form);
+    this.erreur = document.createElement("p");
+    this.erreur.className = "tts-popover__erreur";
+    this.erreur.setAttribute("role", "alert");
+    this.erreur.hidden = true;
+    this.actions = document.createElement("div");
+    this.actions.className = "tts-popover__actions";
+    this.form.append(this.erreur, this.actions);
+    this.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (onSubmit() !== false) this.close();
+    });
+    this.form.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        this.close();
+      } else if (event.key === "Tab" && !event.defaultPrevented) {
+        this.pieger(event);
+      }
+    });
+  }
+  /** Champ libellé ; renvoie l'élément de saisie. */
+  field(texte2, input) {
+    const etiquette = document.createElement("label");
+    etiquette.className = "tts-popover__champ";
+    const span = document.createElement("span");
+    span.textContent = texte2;
+    etiquette.append(span, input);
+    this.actions.before(etiquette);
+    return input;
+  }
+  input(texte2, { value = "", type = "text", name } = {}) {
+    const input = document.createElement("input");
+    input.type = type;
+    input.name = name ?? "";
+    if (type === "checkbox") input.checked = Boolean(value);
+    else input.value = value ?? "";
+    return this.field(texte2, input);
+  }
+  /** Bouton d'action ; type submit pour l'action principale. */
+  button(texte2, onClick, { submit = false, name } = {}) {
+    const bouton = document.createElement("button");
+    bouton.type = submit ? "submit" : "button";
+    bouton.textContent = texte2;
+    if (name) bouton.name = name;
+    if (!submit) {
+      bouton.addEventListener("click", () => {
+        if (onClick() !== false) this.close();
+      });
+    }
+    this.actions.append(bouton);
+    return bouton;
+  }
+  /** Éléments du popover atteignables à la tabulation, dans l'ordre. */
+  focusables() {
+    return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')].filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest("[hidden]"));
+  }
+  /**
+   * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
+   * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
+   */
+  pieger(event) {
+    const cibles = this.focusables();
+    if (!cibles.length) return;
+    const actif = this.form.ownerDocument.activeElement;
+    const dedans = cibles.includes(actif);
+    const cible = event.shiftKey ? (!dedans || actif === cibles[0]) && cibles.at(-1) : (!dedans || actif === cibles.at(-1)) && cibles[0];
+    if (!cible) return;
+    event.preventDefault();
+    cible.focus();
+  }
+  error(message) {
+    this.erreur.textContent = message;
+    this.erreur.hidden = !message;
+  }
+  open(focus2) {
+    while (_Popover.current && _Popover.current !== this.parent) _Popover.current.close({ refocus: false });
+    if (this.parent) this.parent.enfant = this;
+    _Popover.current = this;
+    this.ouvert = true;
+    this.wrapper.append(this.element);
+    this.place();
+    (focus2 ?? this.form.querySelector("input, button"))?.focus();
+  }
+  /** Sous la sélection, dans le repère de .tts-editor (sans effet sans moteur de mise en page). */
+  place() {
+    try {
+      const { from: from2 } = this.editor.state.selection;
+      const coords = this.editor.view.coordsAtPos(from2);
+      const box = this.wrapper.getBoundingClientRect();
+      this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
+      this.form.style.top = `${coords.bottom - box.top + 4}px`;
+    } catch {
+    }
+  }
+  close({ refocus = true } = {}) {
+    if (!this.ouvert) return;
+    this.ouvert = false;
+    this.enfant?.close({ refocus: false });
+    if (_Popover.current === this) _Popover.current = this.parent;
+    if (this.parent?.enfant === this) this.parent.enfant = null;
+    this.element.remove();
+    if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
+    this.onClose?.();
+  }
+};
+Popover.current = null;
+function suivrePosition(editor, pos) {
+  let courante = pos;
+  const onTransaction = ({ transaction }) => {
+    if (courante === null) return;
+    const r = transaction.mapping.mapResult(courante, 1);
+    courante = r.deletedAfter ? null : r.pos;
+  };
+  editor.on("transaction", onTransaction);
+  return {
+    pos: () => courante,
+    fin() {
+      editor.off("transaction", onTransaction);
+      return courante;
+    }
+  };
+}
+function lireSelection(editor) {
+  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+}
+var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
+
+// src/ui/boutons.js
+var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
+function raccourciLisible(raccourci) {
+  const touches = raccourci.split("-").map((t) => t.length === 1 ? t.toUpperCase() : t);
+  if (MAC) return touches.map((t) => ({ Mod: "\u2318", Alt: "\u2325", Shift: "\u21E7" })[t] ?? t).join("");
+  return touches.map((t) => t === "Mod" ? "Ctrl" : t).join("+");
+}
+function habiller(bouton, { icone, libelle, raccourci }) {
+  bouton.setAttribute("aria-label", libelle);
+  bouton.title = raccourci ? `${libelle} (${raccourciLisible(raccourci)})` : libelle;
+  if (ICONES[icone]) bouton.innerHTML = ICONES[icone];
+  else bouton.textContent = libelle;
+}
+function boutonOutil({ nom, icone = nom, libelle, raccourci, bascule: bascule2 = false, action }) {
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  bouton.className = `tts-outil tts-outil--${nom}`;
+  habiller(bouton, { icone, libelle, raccourci });
+  if (bascule2) bouton.setAttribute("aria-pressed", "false");
+  bouton.addEventListener("click", () => action());
+  return bouton;
+}
+var ouvert = null;
+function menuOutil({ nom, icone = nom, libelle, elements }) {
+  const element2 = document.createElement("div");
+  element2.className = `tts-menu tts-menu--${nom}`;
+  const liste = document.createElement("div");
+  liste.className = "tts-menu__liste";
+  liste.setAttribute("role", "menu");
+  liste.setAttribute("aria-label", libelle);
+  liste.id = idUnique("tts-menu");
+  liste.hidden = true;
+  const bouton = boutonOutil({ nom, icone, libelle, action: () => liste.hidden ? ouvrir() : fermer() });
+  bouton.setAttribute("aria-haspopup", "menu");
+  bouton.setAttribute("aria-expanded", "false");
+  bouton.setAttribute("aria-controls", liste.id);
+  element2.append(bouton, liste);
+  const items = () => [...liste.querySelectorAll("[role^=menuitem]:not(:disabled)")];
+  const dehors = (event) => {
+    if (!element2.contains(event.target)) fermer();
+  };
+  function construire(el) {
+    if (el.separateur) {
+      const s = document.createElement("div");
+      s.setAttribute("role", "separator");
+      return s;
+    }
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tts-menu__element";
+    b.tabIndex = -1;
+    b.setAttribute("role", { radio: "menuitemradio", case: "menuitemcheckbox" }[el.coche] ?? "menuitem");
+    if (el.coche) b.setAttribute("aria-checked", String(Boolean(el.actif?.())));
+    if (el.ariaLabel) b.setAttribute("aria-label", el.ariaLabel);
+    if (ICONES[el.icone]) b.insertAdjacentHTML("afterbegin", ICONES[el.icone]);
+    const texte2 = document.createElement("span");
+    texte2.textContent = el.libelle;
+    b.append(texte2);
+    b.disabled = el.possible ? !(el.possible() || el.coche && el.actif?.()) : false;
+    b.addEventListener("click", () => {
+      fermer();
+      el.action();
+    });
+    return b;
+  }
+  function ouvrir(dernier = false) {
+    if (ouvert && ouvert !== menu) ouvert.fermer();
+    liste.replaceChildren(...elements().map(construire));
+    liste.hidden = false;
+    bouton.setAttribute("aria-expanded", "true");
+    ouvert = menu;
+    document.addEventListener("pointerdown", dehors, true);
+    const premiers = items();
+    (dernier ? premiers.at(-1) : premiers[0])?.focus();
+  }
+  function fermer({ focus: focus2 = false } = {}) {
+    if (liste.hidden) return;
+    liste.hidden = true;
+    bouton.setAttribute("aria-expanded", "false");
+    if (ouvert === menu) ouvert = null;
+    document.removeEventListener("pointerdown", dehors, true);
+    if (focus2) bouton.focus();
+  }
+  bouton.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    ouvrir(event.key === "ArrowUp");
+  });
+  liste.addEventListener("keydown", (event) => {
+    const tous = items();
+    const i2 = tous.indexOf(event.target);
+    const suivant = {
+      ArrowDown: tous[(i2 + 1) % tous.length],
+      ArrowUp: tous[(i2 - 1 + tous.length) % tous.length],
+      Home: tous[0],
+      End: tous.at(-1)
+    }[event.key];
+    if (suivant) {
+      event.preventDefault();
+      suivant.focus();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      fermer({ focus: true });
+    } else if (event.key === "Tab") {
+      fermer();
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") event.stopPropagation();
+  });
+  const menu = { element: element2, cible: bouton, fermer };
+  return menu;
+}
+
+// src/ui/Toolbar.js
+var _Toolbar = class _Toolbar {
+  /** Ajoute (ou remplace) un composant au registre. */
+  static registerComponent(nom, fabrique) {
+    _Toolbar.registre.set(nom, fabrique);
+  }
+  /**
+   * @param {{ ctx: { editor: import('@tiptap/core').Editor, ui: object, instance: object },
+   *           barre: (string|object)[], element: HTMLElement }} options
+   */
+  constructor({ ctx, barre, element: element2 }) {
+    this.ctx = ctx;
+    this.element = element2;
+    this.element.setAttribute("role", "toolbar");
+    this.element.setAttribute("aria-label", label("barre_outils"));
+    this.composants = [];
+    for (const item of barre) {
+      if (item === "|") {
+        const separateur = document.createElement("span");
+        separateur.className = "tts-separateur";
+        separateur.setAttribute("role", "separator");
+        this.element.append(separateur);
+        continue;
+      }
+      const { composant: nom, ...options } = typeof item === "string" ? { composant: item } : item;
+      const fabrique = _Toolbar.registre.get(nom);
+      if (!fabrique) {
+        console.warn(`tiptap_spip : composant de barre inconnu \xAB ${nom} \xBB`);
+        continue;
+      }
+      const composant = fabrique(ctx, options);
+      composant.cible ?? (composant.cible = composant.element);
+      this.composants.push(composant);
+      this.element.append(composant.element);
+    }
+    this.courant = null;
+    this.element.addEventListener("keydown", (event) => this.naviguer(event));
+    this.element.addEventListener("focusin", (event) => {
+      const cible = this.cibles().find((c) => c === event.target);
+      if (cible) this.activer(cible);
+    });
+    this.maj();
+  }
+  /** État des composants ; en mode source, seuls ceux marqués `source` restent actifs. */
+  maj() {
+    const source = this.ctx.instance?.mode?.() === "source";
+    for (const c of this.composants) {
+      c.cible.disabled = false;
+      c.maj?.();
+      if (source && !c.source) c.cible.disabled = true;
+    }
+    this.activer(this.cibles().includes(this.courant) ? this.courant : this.cibles()[0] ?? null);
+  }
+  /** Éléments atteignables aux flèches : ni désactivés, ni masqués. */
+  cibles() {
+    return this.composants.filter((c) => !c.element.hidden && !c.cible.hidden && !c.cible.disabled).map((c) => c.cible);
+  }
+  /** Seul `cible` est tabulable. */
+  activer(cible) {
+    this.courant = cible;
+    for (const c of this.composants) c.cible.tabIndex = c.cible === cible ? 0 : -1;
+  }
+  naviguer(event) {
+    const cibles = this.cibles();
+    const i2 = cibles.indexOf(event.target);
+    if (i2 < 0) return;
+    const suivant = {
+      ArrowRight: cibles[(i2 + 1) % cibles.length],
+      ArrowLeft: cibles[(i2 - 1 + cibles.length) % cibles.length],
+      Home: cibles[0],
+      End: cibles.at(-1)
+    }[event.key];
+    if (!suivant) return;
+    event.preventDefault();
+    this.activer(suivant);
+    suivant.focus();
+  }
+};
+/** @type {Map<string, (ctx: object, options: object) => object>} */
+__publicField(_Toolbar, "registre", /* @__PURE__ */ new Map());
+var Toolbar = _Toolbar;
+
+// src/api.js
+var enregistrees = /* @__PURE__ */ new Map();
+function registerExtension(extension, { toolbars = null } = {}) {
+  if (!extension?.name || !["node", "mark", "extension"].includes(extension.type)) {
+    throw new TypeError("tiptap_spip : registerExtension attend une extension Tiptap (Node, Mark ou Extension de window.tiptapSpip.core)");
+  }
+  if (enregistrees.has(extension.name)) console.warn(`tiptap_spip : l'extension \xAB ${extension.name} \xBB d\xE9j\xE0 enregistr\xE9e est remplac\xE9e`);
+  enregistrees.set(extension.name, { extension, toolbars: toolbars ? [...toolbars] : null });
+}
+var extensionsTierces = (barre) => [...enregistrees.values()].filter((e) => !e.toolbars || e.toolbars.includes(barre)).map((e) => e.extension);
+var registerToolbarComponent = (nom, fabrique) => Toolbar.registerComponent(nom, fabrique);
+var core = Object.freeze({ Node: Node3, Mark: Mark2, Extension, mergeAttributes, nodeInputRule, markInputRule, Plugin, PluginKey });
+var ui = Object.freeze({ boutonOutil, menuOutil, Popover });
+function allerRetour(source, extensions = []) {
+  const toutes = coreExtensions({ tierces: extensions });
+  const regles = reglesSpip(toutes);
+  const json = parse(source, { regles });
+  const canonique = serialize(json, { conservative: false, regles });
+  let valide = true;
+  try {
+    schemaJSON(json, getSchema(toutes));
+  } catch {
+    valide = false;
+  }
+  return {
+    json,
+    canonique,
+    identique: serialize(json, { regles }) === source,
+    stable: canon(parse(canonique, { regles }).content) === canon(json.content),
+    valide
+  };
+}
+
+// src/config.js
+var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
+
 // src/editor/createEditor.js
-function createEditor({ element: element2, source, ui = null, extensions = coreExtensions({ ui }), editorProps = {} }) {
-  const content = toEditorJSON(source, getSchema(extensions));
-  return new Editor({
+function createEditor({ element: element2, source, ui: ui2 = null, tierces = [], extensions = coreExtensions({ ui: ui2, tierces }), editorProps = {} }) {
+  const regles = reglesSpip(extensions);
+  const content = toEditorJSON(source, getSchema(extensions), regles);
+  const editor = new Editor({
     element: element2,
     extensions,
     content,
@@ -25602,6 +26220,8 @@ function createEditor({ element: element2, source, ui = null, extensions = coreE
       throw error;
     }
   });
+  editor.tiptapSpip = { regles, tierces };
+  return editor;
 }
 
 // src/editor/TextareaBridge.js
@@ -25640,7 +26260,7 @@ var TextareaBridge = class {
     clearTimeout(this.timer);
     this.timer = null;
     if (this.mode !== "visual" || this.editor.isDestroyed) return;
-    const value = serialize(this.editor.getJSON());
+    const value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
     if (value === this.textarea.value) return;
     this.textarea.value = value;
     this.dispatching = true;
@@ -25653,7 +26273,7 @@ var TextareaBridge = class {
   }
   /** Recharge l'éditeur depuis le textarea, sans émettre de mise à jour (pas de réécriture). */
   load() {
-    const json = toEditorJSON(this.textarea.value, this.editor.schema);
+    const json = toEditorJSON(this.textarea.value, this.editor.schema, this.editor.tiptapSpip?.regles);
     this.editor.commands.setContent(json, { emitUpdate: false });
   }
   /**
@@ -25916,18 +26536,21 @@ var IdiomTranslations = class extends CacheParLots {
 // src/spip/valider.js
 var doc3 = (content) => node("doc", null, content);
 var ecrire = (content) => serialize(doc3(content), { conservative: false });
-function seRelitInline(content) {
+var seRelitInline = (content, regles) => avecRegles(regles, () => inlineSeRelit(content));
+function inlineSeRelit(content) {
   const relu = parse(ecrire([node("paragraph", null, content)])).content;
   return canon(relu) === canon([node("paragraph", null, mergeText(content))]);
 }
-function noteSeRelit({ name = null, content }) {
+var noteSeRelit = (note, regles) => avecRegles(regles, () => noteRelue(note));
+function noteRelue({ name = null, content }) {
   const note = node("spipNote", { name, content });
   const relu = parse(ecrire([node("paragraph", null, [text("x"), note])])).content;
   const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];
   if (appel?.type !== "spipNote" || reste.length) return false;
   return (appel.attrs.name ?? null) === (name ?? null) && canon(appel.attrs.content) === canon(parse(ecrire(content)).content);
 }
-function multiSeRelit(parts) {
+var multiSeRelit = (parts, regles) => avecRegles(regles, () => multiRelu(parts));
+function multiRelu(parts) {
   const multi = node("spipMultiInline", { parts });
   const relu = parse(ecrire([node("paragraph", null, [text("x"), multi])])).content;
   const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];
@@ -25939,154 +26562,6 @@ function multiSeRelit(parts) {
     return (r.lang ?? null) === (part.lang || null) && canon(r.content) === canon(seul(part.content ?? []));
   });
 }
-
-// src/ui/popover.js
-var Popover = class _Popover {
-  /**
-   * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
-   *           onSubmit: () => boolean|void, parent?: Popover, onClose?: () => void }} options
-   *        onSubmit renvoie false pour garder le popover ouvert ; editor : celui qui reprend le focus
-   */
-  constructor({ editor, wrapper, titre, className, onSubmit, parent = null, onClose = null }) {
-    this.editor = editor;
-    this.wrapper = wrapper;
-    this.parent = parent;
-    this.enfant = null;
-    this.onClose = onClose;
-    this.ouvert = false;
-    this.element = document.createElement("div");
-    this.element.className = "tts-popover-dialogue";
-    this.element.setAttribute("role", "dialog");
-    this.element.setAttribute("aria-label", titre);
-    this.form = document.createElement("form");
-    this.form.className = `tts-popover ${className ?? ""}`.trim();
-    this.element.append(this.form);
-    this.erreur = document.createElement("p");
-    this.erreur.className = "tts-popover__erreur";
-    this.erreur.setAttribute("role", "alert");
-    this.erreur.hidden = true;
-    this.actions = document.createElement("div");
-    this.actions.className = "tts-popover__actions";
-    this.form.append(this.erreur, this.actions);
-    this.form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (onSubmit() !== false) this.close();
-    });
-    this.form.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        this.close();
-      } else if (event.key === "Tab" && !event.defaultPrevented) {
-        this.pieger(event);
-      }
-    });
-  }
-  /** Champ libellé ; renvoie l'élément de saisie. */
-  field(texte2, input) {
-    const etiquette = document.createElement("label");
-    etiquette.className = "tts-popover__champ";
-    const span = document.createElement("span");
-    span.textContent = texte2;
-    etiquette.append(span, input);
-    this.actions.before(etiquette);
-    return input;
-  }
-  input(texte2, { value = "", type = "text", name } = {}) {
-    const input = document.createElement("input");
-    input.type = type;
-    input.name = name ?? "";
-    if (type === "checkbox") input.checked = Boolean(value);
-    else input.value = value ?? "";
-    return this.field(texte2, input);
-  }
-  /** Bouton d'action ; type submit pour l'action principale. */
-  button(texte2, onClick, { submit = false, name } = {}) {
-    const bouton = document.createElement("button");
-    bouton.type = submit ? "submit" : "button";
-    bouton.textContent = texte2;
-    if (name) bouton.name = name;
-    if (!submit) {
-      bouton.addEventListener("click", () => {
-        if (onClick() !== false) this.close();
-      });
-    }
-    this.actions.append(bouton);
-    return bouton;
-  }
-  /** Éléments du popover atteignables à la tabulation, dans l'ordre. */
-  focusables() {
-    return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')].filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest("[hidden]"));
-  }
-  /**
-   * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
-   * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
-   */
-  pieger(event) {
-    const cibles = this.focusables();
-    if (!cibles.length) return;
-    const actif = this.form.ownerDocument.activeElement;
-    const dedans = cibles.includes(actif);
-    const cible = event.shiftKey ? (!dedans || actif === cibles[0]) && cibles.at(-1) : (!dedans || actif === cibles.at(-1)) && cibles[0];
-    if (!cible) return;
-    event.preventDefault();
-    cible.focus();
-  }
-  error(message) {
-    this.erreur.textContent = message;
-    this.erreur.hidden = !message;
-  }
-  open(focus2) {
-    while (_Popover.current && _Popover.current !== this.parent) _Popover.current.close({ refocus: false });
-    if (this.parent) this.parent.enfant = this;
-    _Popover.current = this;
-    this.ouvert = true;
-    this.wrapper.append(this.element);
-    this.place();
-    (focus2 ?? this.form.querySelector("input, button"))?.focus();
-  }
-  /** Sous la sélection, dans le repère de .tts-editor (sans effet sans moteur de mise en page). */
-  place() {
-    try {
-      const { from: from2 } = this.editor.state.selection;
-      const coords = this.editor.view.coordsAtPos(from2);
-      const box = this.wrapper.getBoundingClientRect();
-      this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
-      this.form.style.top = `${coords.bottom - box.top + 4}px`;
-    } catch {
-    }
-  }
-  close({ refocus = true } = {}) {
-    if (!this.ouvert) return;
-    this.ouvert = false;
-    this.enfant?.close({ refocus: false });
-    if (_Popover.current === this) _Popover.current = this.parent;
-    if (this.parent?.enfant === this) this.parent.enfant = null;
-    this.element.remove();
-    if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
-    this.onClose?.();
-  }
-};
-Popover.current = null;
-function suivrePosition(editor, pos) {
-  let courante = pos;
-  const onTransaction = ({ transaction }) => {
-    if (courante === null) return;
-    const r = transaction.mapping.mapResult(courante, 1);
-    courante = r.deletedAfter ? null : r.pos;
-  };
-  editor.on("transaction", onTransaction);
-  return {
-    pos: () => courante,
-    fin() {
-      editor.off("transaction", onTransaction);
-      return courante;
-    }
-  };
-}
-function lireSelection(editor) {
-  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
-}
-var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
 
 // src/ui/LinkPopover.js
 var VIDE = { href: "", bulle: null, hreflang: null, newWindow: false };
@@ -26120,7 +26595,7 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
       popover2.error(label("lien_cible_obligatoire"));
       return false;
     }
-    if (!seRelitInline([text("x", [{ type: "spipLink", attrs: nouveaux }])])) {
+    if (!seRelitInline([text("x", [{ type: "spipLink", attrs: nouveaux }])], editor.tiptapSpip?.regles)) {
       popover2.error(label("lien_invalide"));
       return false;
     }
@@ -26244,7 +26719,7 @@ function openMarkPopover({ editor, wrapper, parent }, desc) {
       return false;
     }
     const v = valeurs();
-    if (!v.terme || !seRelitInline([text(v.terme, [{ type: desc.type, attrs: v.attrs }])])) {
+    if (!v.terme || !seRelitInline([text(v.terme, [{ type: desc.type, attrs: v.attrs }])], editor.tiptapSpip?.regles)) {
       popover2.error(desc.invalide);
       return false;
     }
@@ -26361,157 +26836,6 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
   return popover2;
 }
 
-// src/ui/icones.js
-var ICONES = {
-  annuler: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.82843 6.99955L8.36396 9.53509L6.94975 10.9493L2 5.99955L6.94975 1.0498L8.36396 2.46402L5.82843 4.99955H13C17.4183 4.99955 21 8.58127 21 12.9996C21 17.4178 17.4183 20.9996 13 20.9996H4V18.9996H13C16.3137 18.9996 19 16.3133 19 12.9996C19 9.68584 16.3137 6.99955 13 6.99955H5.82843Z"/></svg>',
-  retablir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.1716 6.99955H11C7.68629 6.99955 5 9.68584 5 12.9996C5 16.3133 7.68629 18.9996 11 18.9996H20V20.9996H11C6.58172 20.9996 3 17.4178 3 12.9996C3 8.58127 6.58172 4.99955 11 4.99955H18.1716L15.636 2.46402L17.0503 1.0498L22 5.99955L17.0503 10.9493L15.636 9.53509L18.1716 6.99955Z"/></svg>',
-  titre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17 11V4H19V21H17V13H7V21H5V4H7V11H17Z"/></svg>',
-  paragraphe: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6V21H10V16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4H20V6H17V21H15V6H12ZM10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14V6Z"/></svg>',
-  liste: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 4H21V6H8V4ZM4.5 6.5C3.67157 6.5 3 5.82843 3 5C3 4.17157 3.67157 3.5 4.5 3.5C5.32843 3.5 6 4.17157 6 5C6 5.82843 5.32843 6.5 4.5 6.5ZM4.5 13.5C3.67157 13.5 3 12.8284 3 12C3 11.1716 3.67157 10.5 4.5 10.5C5.32843 10.5 6 11.1716 6 12C6 12.8284 5.32843 13.5 4.5 13.5ZM4.5 20.4C3.67157 20.4 3 19.7284 3 18.9C3 18.0716 3.67157 17.4 4.5 17.4C5.32843 17.4 6 18.0716 6 18.9C6 19.7284 5.32843 20.4 4.5 20.4ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"/></svg>',
-  listeNumerotee: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.75024 3.5H4.71733L3.25 3.89317V5.44582L4.25002 5.17782L4.25018 8.5H3V10H7V8.5H5.75024V3.5ZM10 4H21V6H10V4ZM10 11H21V13H10V11ZM10 18H21V20H10V18ZM2.875 15.625C2.875 14.4514 3.82639 13.5 5 13.5C6.17361 13.5 7.125 14.4514 7.125 15.625C7.125 16.1106 6.96183 16.5587 6.68747 16.9167L6.68271 16.9229L5.31587 18.5H7V20H3.00012L2.99959 18.8786L5.4717 16.035C5.5673 15.9252 5.625 15.7821 5.625 15.625C5.625 15.2798 5.34518 15 5 15C4.67378 15 4.40573 15.2501 4.37747 15.5688L4.3651 15.875H2.875V15.625Z"/></svg>',
-  indenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM7 12.5L3 16V9L7 12.5Z"/></svg>',
-  desindenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM3 12.5L7 9V16L3 12.5Z"/></svg>',
-  citation: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M4.58341 17.3211C3.55316 16.2274 3 15 3 13.0103C3 9.51086 5.45651 6.37366 9.03059 4.82318L9.92328 6.20079C6.58804 8.00539 5.93618 10.346 5.67564 11.822C6.21263 11.5443 6.91558 11.4466 7.60471 11.5105C9.40908 11.6778 10.8312 13.159 10.8312 15C10.8312 16.933 9.26416 18.5 7.33116 18.5C6.2581 18.5 5.23196 18.0095 4.58341 17.3211ZM14.5834 17.3211C13.5532 16.2274 13 15 13 13.0103C13 9.51086 15.4565 6.37366 19.0306 4.82318L19.9233 6.20079C16.588 8.00539 15.9362 10.346 15.6756 11.822C16.2126 11.5443 16.9156 11.4466 17.6047 11.5105C19.4091 11.6778 20.8312 13.159 20.8312 15C20.8312 16.933 19.2642 18.5 17.3312 18.5C16.2581 18.5 15.232 18.0095 14.5834 17.3211Z"/></svg>',
-  poesie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M6.93912 14.0328C6.7072 14.6563 6.51032 15.2331 6.33421 15.8155C7.29345 15.1189 8.43544 14.6767 9.75193 14.5121C12.2652 14.198 14.4976 12.5385 15.6279 10.4537L14.1721 8.99888L15.5848 7.58417C15.9185 7.25004 16.2521 6.91614 16.5858 6.58248C17.0151 6.15312 17.5 5.35849 18.0129 4.2149C12.4197 5.08182 8.99484 8.50647 6.93912 14.0328ZM17 8.99739L18 9.99669C17 12.9967 14 15.9967 10 16.4967C7.33146 16.8303 5.66421 18.6636 4.99824 21.9967H3C4 15.9967 6 1.99669 21 1.99669C20.0009 4.99402 19.0018 6.99313 18.0027 7.99402C17.6662 8.33049 17.3331 8.66382 17 8.99739Z"/></svg>',
-  cadre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3.41436 5.99995L5.70726 3.70706L4.29304 2.29285L0.585938 5.99995L4.29304 9.70706L5.70726 8.29285L3.41436 5.99995ZM9.58594 5.99995L7.29304 3.70706L8.70726 2.29285L12.4144 5.99995L8.70726 9.70706L7.29304 8.29285L9.58594 5.99995ZM14.0002 2.99995H21.0002C21.5524 2.99995 22.0002 3.44767 22.0002 3.99995V20C22.0002 20.5522 21.5524 21 21.0002 21H3.00015C2.44787 21 2.00015 20.5522 2.00015 20V12H4.00015V19H20.0002V4.99995H14.0002V2.99995Z"/></svg>',
-  gras: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 11H12.5C13.8807 11 15 9.88071 15 8.5C15 7.11929 13.8807 6 12.5 6H8V11ZM18 15.5C18 17.9853 15.9853 20 13.5 20H6V4H12.5C14.9853 4 17 6.01472 17 8.5C17 9.70431 16.5269 10.7981 15.7564 11.6058C17.0979 12.3847 18 13.837 18 15.5ZM8 13V18H13.5C14.8807 18 16 16.8807 16 15.5C16 14.1193 14.8807 13 13.5 13H8Z"/></svg>',
-  italique: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M15 20H7V18H9.92661L12.0425 6H9V4H17V6H14.0734L11.9575 18H15V20Z"/></svg>',
-  barre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17.1538 14C17.3846 14.5161 17.5 15.0893 17.5 15.7196C17.5 17.0625 16.9762 18.1116 15.9286 18.867C14.8809 19.6223 13.4335 20 11.5862 20C9.94674 20 8.32335 19.6185 6.71592 18.8555V16.6009C8.23538 17.4783 9.7908 17.917 11.3822 17.917C13.9333 17.917 15.2128 17.1846 15.2208 15.7196C15.2208 15.0939 15.0049 14.5598 14.5731 14.1173C14.5339 14.0772 14.4939 14.0381 14.4531 14H3V12H21V14H17.1538ZM13.076 11H7.62908C7.4566 10.8433 7.29616 10.6692 7.14776 10.4778C6.71592 9.92084 6.5 9.24559 6.5 8.45207C6.5 7.21602 6.96583 6.165 7.89749 5.299C8.82916 4.43299 10.2706 4 12.2219 4C13.6934 4 15.1009 4.32808 16.4444 4.98426V7.13591C15.2448 6.44921 13.9293 6.10587 12.4978 6.10587C10.0187 6.10587 8.77917 6.88793 8.77917 8.45207C8.77917 8.87172 8.99709 9.23796 9.43293 9.55079C9.86878 9.86362 10.4066 10.1135 11.0463 10.3004C11.6665 10.4816 12.3431 10.7148 13.076 11H13.076Z"/></svg>',
-  exposant: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 5L10.5 10.9283L15.4043 5H18L11.7978 12.4971L18 19.9943V20H15.4091L10.5 14.0659L5.59092 20H3V19.9943L9.20216 12.4971L3 5H5.59567ZM21.5507 6.5803C21.7042 6.43453 21.8 6.22845 21.8 6C21.8 5.55817 21.4418 5.2 21 5.2C20.5582 5.2 20.2 5.55817 20.2 6C20.2 6.07624 20.2107 6.14999 20.2306 6.21983L19.0765 6.54958C19.0267 6.37497 19 6.1906 19 6C19 4.89543 19.8954 4 21 4C22.1046 4 23 4.89543 23 6C23 6.57273 22.7593 7.08923 22.3735 7.45384L20.7441 9H23V10H19V9L21.5507 6.5803V6.5803Z"/></svg>',
-  indice: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 4L10.5 9.92831L15.4043 4H18L11.7978 11.4971L18 18.9943V19H15.4091L10.5 13.0659L5.59092 19H3V18.9943L9.20216 11.4971L3 4H5.59567ZM21.8 16C21.8 15.5582 21.4418 15.2 21 15.2C20.5582 15.2 20.2 15.5582 20.2 16C20.2 16.0762 20.2107 16.15 20.2306 16.2198L19.0765 16.5496C19.0267 16.375 19 16.1906 19 16C19 14.8954 19.8954 14 21 14C22.1046 14 23 14.8954 23 16C23 16.5727 22.7593 17.0892 22.3735 17.4538L20.7441 19H23V20H19V19L21.5507 16.5803C21.7042 16.4345 21.8 16.2284 21.8 16Z"/></svg>',
-  code: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12L15.9289 19.0711L14.5147 17.6569L20.1716 12L14.5147 6.34317L15.9289 4.92896L23 12ZM3.82843 12L9.48528 17.6569L8.07107 19.0711L1 12L8.07107 4.92896L9.48528 6.34317L3.82843 12Z"/></svg>',
-  lien: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3638 15.5355L16.9496 14.1213L18.3638 12.7071C20.3164 10.7545 20.3164 7.58866 18.3638 5.63604C16.4112 3.68341 13.2453 3.68341 11.2927 5.63604L9.87849 7.05025L8.46428 5.63604L9.87849 4.22182C12.6122 1.48815 17.0443 1.48815 19.778 4.22182C22.5117 6.95549 22.5117 11.3876 19.778 14.1213L18.3638 15.5355ZM15.5353 18.364L14.1211 19.7782C11.3875 22.5118 6.95531 22.5118 4.22164 19.7782C1.48797 17.0445 1.48797 12.6123 4.22164 9.87868L5.63585 8.46446L7.05007 9.87868L5.63585 11.2929C3.68323 13.2455 3.68323 16.4113 5.63585 18.364C7.58847 20.3166 10.7543 20.3166 12.7069 18.364L14.1211 16.9497L15.5353 18.364ZM14.8282 7.75736L16.2425 9.17157L9.17139 16.2426L7.75717 14.8284L14.8282 7.75736Z"/></svg>',
-  note: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12.9998 3L12.9996 10.267L19.294 6.63397L20.294 8.36602L14.0006 11.999L20.294 15.634L19.294 17.366L12.9996 13.732L12.9998 21H10.9998L10.9996 13.732L4.70557 17.366L3.70557 15.634L9.99857 12L3.70557 8.36602L4.70557 6.63397L10.9996 10.267L10.9998 3H12.9998Z"/></svg>',
-  glossaire: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18H6C5.44772 18 5 18.4477 5 19C5 19.5523 5.44772 20 6 20H21V22H6C4.34315 22 3 20.6569 3 19V4C3 2.89543 3.89543 2 5 2H21V18ZM5 16.05C5.16156 16.0172 5.32877 16 5.5 16H19V4H5V16.05ZM16 9H8V7H16V9Z"/></svg>',
-  abbr: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM7 8H17V11H15V10H13V14H14.5V16H9.5V14H11V10H9V11H7V8Z"/></svg>',
-  modele: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5C7 2.79086 8.79086 1 11 1C13.2091 1 15 2.79086 15 5H18C18.5523 5 19 5.44772 19 6V9C21.2091 9 23 10.7909 23 13C23 15.2091 21.2091 17 19 17V20C19 20.5523 18.5523 21 18 21H4C3.44772 21 3 20.5523 3 20V6C3 5.44772 3.44772 5 4 5H7ZM11 3C9.89543 3 9 3.89543 9 5C9 5.23554 9.0403 5.45952 9.11355 5.66675C9.22172 5.97282 9.17461 6.31235 8.98718 6.57739C8.79974 6.84243 8.49532 7 8.17071 7H5V19H17V15.8293C17 15.5047 17.1576 15.2003 17.4226 15.0128C17.6877 14.8254 18.0272 14.7783 18.3332 14.8865C18.5405 14.9597 18.7645 15 19 15C20.1046 15 21 14.1046 21 13C21 11.8954 20.1046 11 19 11C18.7645 11 18.5405 11.0403 18.3332 11.1135C18.0272 11.2217 17.6877 11.1746 17.4226 10.9872C17.1576 10.7997 17 10.4953 17 10.1707V7H13.8293C13.5047 7 13.2003 6.84243 13.0128 6.57739C12.8254 6.31235 12.7783 5.97282 12.8865 5.66675C12.9597 5.45952 13 5.23555 13 5C13 3.89543 12.1046 3 11 3Z"/></svg>',
-  multi: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 10L22.9 21H20.745L19.544 18H15.454L14.255 21H12.101L16.5 10H18.5ZM10 2V4H16V6L14.0322 6.0006C13.2425 8.36616 11.9988 10.5057 10.4115 12.301C11.1344 12.9457 11.917 13.5176 12.7475 14.0079L11.9969 15.8855C10.9237 15.2781 9.91944 14.5524 8.99961 13.7249C7.21403 15.332 5.10914 16.5553 2.79891 17.2734L2.26257 15.3442C4.2385 14.7203 6.04543 13.6737 7.59042 12.3021C6.46277 11.0281 5.50873 9.57985 4.76742 8.00028L7.00684 8.00037C7.57018 9.03885 8.23979 10.0033 8.99967 10.877C10.2283 9.46508 11.2205 7.81616 11.9095 6.00101L2 6V4H8V2H10ZM17.5 12.8852L16.253 16H18.745L17.5 12.8852Z"/></svg>',
-  alignement: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
-  alignGauche: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
-  alignCentre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM5 19H19V21H5V19ZM3 14H21V16H3V14ZM5 9H19V11H5V9Z"/></svg>',
-  alignDroite: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM7 19H21V21H7V19ZM3 14H21V16H3V14ZM7 9H21V11H7V9Z"/></svg>',
-  alignJustifie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM3 14H21V16H3V14ZM3 9H21V11H3V9Z"/></svg>',
-  tableau: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V14H19V10H13ZM11 10H5V14H11V10ZM13 19H19V16H13V19ZM11 19V16H5V19H11ZM13 5V8H19V5H13ZM11 5H5V8H11V5ZM4 3H20C20.5523 3 21 3.44772 21 4V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3Z"/></svg>',
-  guillemets: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4167 6.67891C20.4469 7.77257 21.0001 9 21.0001 10.9897C21.0001 14.4891 18.5436 17.6263 14.9695 19.1768L14.0768 17.7992C17.4121 15.9946 18.0639 13.6539 18.3245 12.178C17.7875 12.4557 17.0845 12.5533 16.3954 12.4895C14.591 12.3222 13.1689 10.8409 13.1689 9C13.1689 7.067 14.7359 5.5 16.6689 5.5C17.742 5.5 18.7681 5.99045 19.4167 6.67891ZM9.41669 6.67891C10.4469 7.77257 11.0001 9 11.0001 10.9897C11.0001 14.4891 8.54359 17.6263 4.96951 19.1768L4.07682 17.7992C7.41206 15.9946 8.06392 13.6539 8.32447 12.178C7.78747 12.4557 7.08452 12.5533 6.39539 12.4895C4.59102 12.3222 3.16895 10.8409 3.16895 9C3.16895 7.067 4.73595 5.5 6.66895 5.5C7.742 5.5 8.76814 5.99045 9.41669 6.67891Z"/></svg>',
-  caracteres: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M14 20V17.8432C15.8631 16.6512 17.5 13.9677 17.5 10.8844C17.5 7.8107 15.5 4.85516 12 4.85516C8.5 4.85516 6.5 7.8107 6.5 10.8844C6.5 13.9677 8.13687 16.6512 10 17.8432V20H3V18H7.7597C5.66635 16.5054 4 13.9889 4 10.8844C4 6.24653 7.5 3 12 3C16.5 3 20 6.24653 20 10.8844C20 13.9889 18.3336 16.5054 16.2403 18H21V20H14Z"/></svg>',
-  source: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M16.95 8.46451L18.3642 7.05029L23.3139 12L18.3642 16.9498L16.95 15.5356L20.4855 12L16.95 8.46451ZM7.05048 8.46451L3.51495 12L7.05048 15.5356L5.63627 16.9498L0.686523 12L5.63627 7.05029L7.05048 8.46451Z"/></svg>',
-  pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
-  pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
-};
-
-// src/ui/boutons.js
-var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
-function raccourciLisible(raccourci) {
-  const touches = raccourci.split("-").map((t) => t.length === 1 ? t.toUpperCase() : t);
-  if (MAC) return touches.map((t) => ({ Mod: "\u2318", Alt: "\u2325", Shift: "\u21E7" })[t] ?? t).join("");
-  return touches.map((t) => t === "Mod" ? "Ctrl" : t).join("+");
-}
-function habiller(bouton, { icone, libelle, raccourci }) {
-  bouton.setAttribute("aria-label", libelle);
-  bouton.title = raccourci ? `${libelle} (${raccourciLisible(raccourci)})` : libelle;
-  if (ICONES[icone]) bouton.innerHTML = ICONES[icone];
-  else bouton.textContent = libelle;
-}
-function boutonOutil({ nom, icone = nom, libelle, raccourci, bascule: bascule2 = false, action }) {
-  const bouton = document.createElement("button");
-  bouton.type = "button";
-  bouton.className = `tts-outil tts-outil--${nom}`;
-  habiller(bouton, { icone, libelle, raccourci });
-  if (bascule2) bouton.setAttribute("aria-pressed", "false");
-  bouton.addEventListener("click", () => action());
-  return bouton;
-}
-var ouvert = null;
-function menuOutil({ nom, icone = nom, libelle, elements }) {
-  const element2 = document.createElement("div");
-  element2.className = `tts-menu tts-menu--${nom}`;
-  const liste = document.createElement("div");
-  liste.className = "tts-menu__liste";
-  liste.setAttribute("role", "menu");
-  liste.setAttribute("aria-label", libelle);
-  liste.id = idUnique("tts-menu");
-  liste.hidden = true;
-  const bouton = boutonOutil({ nom, icone, libelle, action: () => liste.hidden ? ouvrir() : fermer() });
-  bouton.setAttribute("aria-haspopup", "menu");
-  bouton.setAttribute("aria-expanded", "false");
-  bouton.setAttribute("aria-controls", liste.id);
-  element2.append(bouton, liste);
-  const items = () => [...liste.querySelectorAll("[role^=menuitem]:not(:disabled)")];
-  const dehors = (event) => {
-    if (!element2.contains(event.target)) fermer();
-  };
-  function construire(el) {
-    if (el.separateur) {
-      const s = document.createElement("div");
-      s.setAttribute("role", "separator");
-      return s;
-    }
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "tts-menu__element";
-    b.tabIndex = -1;
-    b.setAttribute("role", { radio: "menuitemradio", case: "menuitemcheckbox" }[el.coche] ?? "menuitem");
-    if (el.coche) b.setAttribute("aria-checked", String(Boolean(el.actif?.())));
-    if (el.ariaLabel) b.setAttribute("aria-label", el.ariaLabel);
-    if (ICONES[el.icone]) b.insertAdjacentHTML("afterbegin", ICONES[el.icone]);
-    const texte2 = document.createElement("span");
-    texte2.textContent = el.libelle;
-    b.append(texte2);
-    b.disabled = el.possible ? !(el.possible() || el.coche && el.actif?.()) : false;
-    b.addEventListener("click", () => {
-      fermer();
-      el.action();
-    });
-    return b;
-  }
-  function ouvrir(dernier = false) {
-    if (ouvert && ouvert !== menu) ouvert.fermer();
-    liste.replaceChildren(...elements().map(construire));
-    liste.hidden = false;
-    bouton.setAttribute("aria-expanded", "true");
-    ouvert = menu;
-    document.addEventListener("pointerdown", dehors, true);
-    const premiers = items();
-    (dernier ? premiers.at(-1) : premiers[0])?.focus();
-  }
-  function fermer({ focus: focus2 = false } = {}) {
-    if (liste.hidden) return;
-    liste.hidden = true;
-    bouton.setAttribute("aria-expanded", "false");
-    if (ouvert === menu) ouvert = null;
-    document.removeEventListener("pointerdown", dehors, true);
-    if (focus2) bouton.focus();
-  }
-  bouton.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    event.preventDefault();
-    ouvrir(event.key === "ArrowUp");
-  });
-  liste.addEventListener("keydown", (event) => {
-    const tous = items();
-    const i2 = tous.indexOf(event.target);
-    const suivant = {
-      ArrowDown: tous[(i2 + 1) % tous.length],
-      ArrowUp: tous[(i2 - 1 + tous.length) % tous.length],
-      Home: tous[0],
-      End: tous.at(-1)
-    }[event.key];
-    if (suivant) {
-      event.preventDefault();
-      suivant.focus();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      fermer({ focus: true });
-    } else if (event.key === "Tab") {
-      fermer();
-    }
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") event.stopPropagation();
-  });
-  const menu = { element: element2, cible: bouton, fermer };
-  return menu;
-}
-
 // src/ui/RawPopover.js
 function segmentDe(doc4, pos) {
   const enfants = [];
@@ -26540,7 +26864,8 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
   editor.commands.setNodeSelection(pos);
   const segment2 = segmentDe(doc4, pos);
   const suivi = suivrePosition(editor, pos);
-  const source = serialize({ type: "doc", content: segment2.blocs.map((b) => b.toJSON()) });
+  const regles = editor.tiptapSpip?.regles ?? [];
+  const source = serialize({ type: "doc", content: segment2.blocs.map((b) => b.toJSON()) }, { regles });
   const popover2 = new Popover({ editor, wrapper, parent, titre: label("brut"), className: "tts-popover--brut", onSubmit: () => appliquer(), onClose: () => suivi.fin() });
   const cle = brut.type.name === "spipRawInline" ? anomalie(brut.attrs.source) : null;
   if (cle) {
@@ -26570,7 +26895,7 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
     const cible = segmentDe(actuel, position);
     let blocs;
     try {
-      blocs = editor.schema.nodeFromJSON(schemaJSON(parse(zone.value), editor.schema)).content;
+      blocs = editor.schema.nodeFromJSON(schemaJSON(parse(zone.value, { regles }), editor.schema)).content;
     } catch {
       blocs = null;
     }
@@ -26635,7 +26960,8 @@ function multiEnLigne(contexte3, existant) {
   const liste = document.createElement("div");
   liste.className = "tts-multi__parties";
   popover2.actions.before(liste);
-  const schema = getSchema(partieExtensions());
+  const tierces = editor.tiptapSpip?.tierces ?? [];
+  const schema = getSchema(partieExtensions({ tierces }));
   const ajouter = (lang, origine) => {
     const ligne = document.createElement("div");
     ligne.className = "tts-multi__partie";
@@ -26663,10 +26989,11 @@ function multiEnLigne(contexte3, existant) {
     };
     const sous = new Editor({
       element: zone,
-      extensions: partieExtensions({ ui: sousUi }),
+      extensions: partieExtensions({ ui: sousUi, tierces }),
       content,
       editorProps: { attributes: { class: "tts-prosemirror", "aria-label": label("multi_texte") } }
     });
+    sous.tiptapSpip = editor.tiptapSpip;
     l.sous = sous;
     sous.on("update", () => {
       l.modifie = true;
@@ -26694,7 +27021,7 @@ function multiEnLigne(contexte3, existant) {
       popover2.error(label("multi_vide"));
       return false;
     }
-    if (!languesValides(parts.map((p2) => p2.lang)) || !multiSeRelit(parts)) {
+    if (!languesValides(parts.map((p2) => p2.lang)) || !multiSeRelit(parts, editor.tiptapSpip?.regles)) {
       popover2.error(label("multi_invalide"));
       return false;
     }
@@ -26934,7 +27261,7 @@ function openNotePopover(contexte3, pos = null) {
     editModel: (p) => openModelPopover(enfant(), p),
     editRaw: (p) => openRawPopover(enfant(), p)
   };
-  const extensions = noteExtensions({ ui: sousUi });
+  const extensions = noteExtensions({ ui: sousUi, tierces: editor.tiptapSpip?.tierces ?? [] });
   let content;
   try {
     content = schemaJSON({ type: "doc", content: origine?.length ? origine : initial ?? [{ type: "paragraph" }] }, getSchema(extensions));
@@ -26951,6 +27278,7 @@ function openNotePopover(contexte3, pos = null) {
     content,
     editorProps: { attributes: { class: "tts-prosemirror", "aria-labelledby": titre.id, "aria-multiline": "true" } }
   });
+  sous.tiptapSpip = editor.tiptapSpip;
   popover2.sous = sous;
   let modifie = false;
   sous.on("update", () => {
@@ -26977,7 +27305,7 @@ function openNotePopover(contexte3, pos = null) {
       popover2.error(label("note_vide"));
       return false;
     }
-    if (!noteSeRelit({ name: nouveau, content: texte2 })) {
+    if (!noteSeRelit({ name: nouveau, content: texte2 }, editor.tiptapSpip?.regles)) {
       popover2.error(label("note_invalide"));
       return false;
     }
@@ -27007,8 +27335,8 @@ function openNotePopover(contexte3, pos = null) {
 
 // src/ui/interface.js
 function creerInterface({ editor, wrapper, services }) {
-  const contexte3 = () => ({ editor: editor(), wrapper, services, titles: ui.titles, previews: ui.previews });
-  const ui = {
+  const contexte3 = () => ({ editor: editor(), wrapper, services, titles: ui2.titles, previews: ui2.previews });
+  const ui2 = {
     previews: services ? new ModelPreviews(services) : null,
     titles: services ? new LinkTitles(services) : null,
     idiomes: services ? new IdiomTranslations(services) : null,
@@ -27021,7 +27349,7 @@ function creerInterface({ editor, wrapper, services }) {
     editIdiome: (pos) => openIdiomePopover(contexte3(), pos),
     editRaw: (pos) => openRawPopover(contexte3(), pos)
   };
-  return ui;
+  return ui2;
 }
 
 // src/ui/barres.json
@@ -27064,88 +27392,6 @@ var barres_default = {
   minimale: ["gras", "italique", "lien", "|", "source"]
 };
 
-// src/ui/Toolbar.js
-var _Toolbar = class _Toolbar {
-  /** Ajoute (ou remplace) un composant au registre. */
-  static registerComponent(nom, fabrique) {
-    _Toolbar.registre.set(nom, fabrique);
-  }
-  /**
-   * @param {{ ctx: { editor: import('@tiptap/core').Editor, ui: object, instance: object },
-   *           barre: (string|object)[], element: HTMLElement }} options
-   */
-  constructor({ ctx, barre, element: element2 }) {
-    this.ctx = ctx;
-    this.element = element2;
-    this.element.setAttribute("role", "toolbar");
-    this.element.setAttribute("aria-label", label("barre_outils"));
-    this.composants = [];
-    for (const item of barre) {
-      if (item === "|") {
-        const separateur = document.createElement("span");
-        separateur.className = "tts-separateur";
-        separateur.setAttribute("role", "separator");
-        this.element.append(separateur);
-        continue;
-      }
-      const { composant: nom, ...options } = typeof item === "string" ? { composant: item } : item;
-      const fabrique = _Toolbar.registre.get(nom);
-      if (!fabrique) {
-        console.warn(`tiptap_spip : composant de barre inconnu \xAB ${nom} \xBB`);
-        continue;
-      }
-      const composant = fabrique(ctx, options);
-      composant.cible ?? (composant.cible = composant.element);
-      this.composants.push(composant);
-      this.element.append(composant.element);
-    }
-    this.courant = null;
-    this.element.addEventListener("keydown", (event) => this.naviguer(event));
-    this.element.addEventListener("focusin", (event) => {
-      const cible = this.cibles().find((c) => c === event.target);
-      if (cible) this.activer(cible);
-    });
-    this.maj();
-  }
-  /** État des composants ; en mode source, seuls ceux marqués `source` restent actifs. */
-  maj() {
-    const source = this.ctx.instance?.mode?.() === "source";
-    for (const c of this.composants) {
-      c.cible.disabled = false;
-      c.maj?.();
-      if (source && !c.source) c.cible.disabled = true;
-    }
-    this.activer(this.cibles().includes(this.courant) ? this.courant : this.cibles()[0] ?? null);
-  }
-  /** Éléments atteignables aux flèches : ni désactivés, ni masqués. */
-  cibles() {
-    return this.composants.filter((c) => !c.element.hidden && !c.cible.hidden && !c.cible.disabled).map((c) => c.cible);
-  }
-  /** Seul `cible` est tabulable. */
-  activer(cible) {
-    this.courant = cible;
-    for (const c of this.composants) c.cible.tabIndex = c.cible === cible ? 0 : -1;
-  }
-  naviguer(event) {
-    const cibles = this.cibles();
-    const i2 = cibles.indexOf(event.target);
-    if (i2 < 0) return;
-    const suivant = {
-      ArrowRight: cibles[(i2 + 1) % cibles.length],
-      ArrowLeft: cibles[(i2 - 1 + cibles.length) % cibles.length],
-      Home: cibles[0],
-      End: cibles.at(-1)
-    }[event.key];
-    if (!suivant) return;
-    event.preventDefault();
-    this.activer(suivant);
-    suivant.focus();
-  }
-};
-/** @type {Map<string, (ctx: object, options: object) => object>} */
-__publicField(_Toolbar, "registre", /* @__PURE__ */ new Map());
-var Toolbar = _Toolbar;
-
 // src/ui/composants.js
 var lancer = (editor, commande2) => {
   const fait = commande2(editor.chain().focus()).run();
@@ -27170,8 +27416,8 @@ var mark = (nom, type, raccourci, cle) => bascule({
   actif: (editor) => editor.isActive(type),
   possible: (editor) => editor.can().toggleMark(type)
 });
-var popover = (nom, action, { cle = nom, raccourci, possible } = {}) => ({ editor, ui }) => {
-  const element2 = boutonOutil({ nom, libelle: label(cle), raccourci, action: () => ui[action](null) });
+var popover = (nom, action, { cle = nom, raccourci, possible } = {}) => ({ editor, ui: ui2 }) => {
+  const element2 = boutonOutil({ nom, libelle: label(cle), raccourci, action: () => ui2[action](null) });
   return { element: element2, maj: possible ? () => {
     element2.disabled = !possible(editor);
   } : void 0 };
@@ -27563,10 +27809,12 @@ var Instance = class {
       this.services = s;
     });
     this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets });
+    const nomBarre = barreDuTextarea(textarea);
     this.editor = createEditor2({
       element: this.content,
       source: textarea.value,
       ui: this.ui,
+      tierces: extensionsTierces(nomBarre),
       // zone éditable nommée comme le champ SPIP (spec 06 §7)
       editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em`, "aria-label": nomDuChamp(textarea), "aria-multiline": "true" } }
     });
@@ -27575,7 +27823,7 @@ var Instance = class {
     const barres = config().toolbars ?? barres_default;
     this.toolbar = new Toolbar({
       ctx: { editor: this.editor, ui: this.ui, instance: this },
-      barre: barres[barreDuTextarea(textarea)] ?? barres.minimale ?? barres_default.minimale,
+      barre: barres[nomBarre] ?? barres.minimale ?? barres_default.minimale,
       element: this.toolbarElement
     });
     this.majBarre = () => this.toolbar.maj();
@@ -27684,7 +27932,14 @@ function racines(racine) {
   const noeuds = liste.filter((n) => n?.querySelectorAll);
   return noeuds.length ? noeuds : [document];
 }
+globalThis.tiptapSpip = Object.freeze({ registerExtension, registerToolbarComponent, core, ui, label, allerRetour });
 export {
+  allerRetour,
+  core,
   instances,
-  tiptap_spip_init
+  label,
+  registerExtension,
+  registerToolbarComponent,
+  tiptap_spip_init,
+  ui
 };

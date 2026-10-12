@@ -1,17 +1,22 @@
 import { canon, mergeText, node, text } from './json.js';
 import { parse } from './parse.js';
+import { avecRegles } from './regles.js';
 import { serialize } from './serialize.js';
 
 /**
  * Validation des saisies de l'interface : une saisie n'est acceptée que si ce qu'elle écrit se relit
  * à l'identique. Le sérialiseur abandonne sinon la mark (texte gardé) ; l'interface préfère refuser.
+ * Chaque fonction reçoit les règles tierces de l'éditeur (editor.tiptapSpip.regles) : le contenu
+ * peut contenir leurs nœuds et leurs marks.
  */
 
 const doc = (content) => node('doc', null, content);
 const ecrire = (content) => serialize(doc(content), { conservative: false });
 
 /** Contenu inline (texte marqué d'un lien, glossaire, abréviation…) qui se relit à l'identique. */
-export function seRelitInline(content) {
+export const seRelitInline = (content, regles) => avecRegles(regles, () => inlineSeRelit(content));
+
+function inlineSeRelit(content) {
 	const relu = parse(ecrire([node('paragraph', null, content)])).content;
 	return canon(relu) === canon([node('paragraph', null, mergeText(content))]);
 }
@@ -21,8 +26,11 @@ export function seRelitInline(content) {
  * (les crochets et le nom de la note ne le changent pas).
  *
  * @param {{ name: ?string, content: object[] }} note  name : null automatique, '' sans appel
+ * @param {object[]} [regles]
  */
-export function noteSeRelit({ name = null, content }) {
+export const noteSeRelit = (note, regles) => avecRegles(regles, () => noteRelue(note));
+
+function noteRelue({ name = null, content }) {
 	const note = node('spipNote', { name, content });
 	const relu = parse(ecrire([node('paragraph', null, [text('x'), note])])).content;
 	const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];
@@ -35,8 +43,11 @@ export function noteSeRelit({ name = null, content }) {
  * (partie sans langue en tête), chacune identique à ce que son contenu devient écrit seul.
  *
  * @param {{ lang: ?string, content: object[] }[]} parts
+ * @param {object[]} [regles]
  */
-export function multiSeRelit(parts) {
+export const multiSeRelit = (parts, regles) => avecRegles(regles, () => multiRelu(parts));
+
+function multiRelu(parts) {
 	const multi = node('spipMultiInline', { parts });
 	const relu = parse(ecrire([node('paragraph', null, [text('x'), multi])])).content;
 	const [, appel, ...reste] = relu.length === 1 ? relu[0].content ?? [] : [];

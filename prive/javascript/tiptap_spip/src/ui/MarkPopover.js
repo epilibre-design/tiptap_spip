@@ -57,7 +57,7 @@ function openMarkPopover({ editor, wrapper, parent }, desc) {
 			return false;
 		}
 		const v = valeurs();
-		if (!v.terme || !seRelitInline([text(v.terme, [{ type: desc.type, attrs: v.attrs }])])) {
+		if (!v.terme || !seRelitInline([text(v.terme, [{ type: desc.type, attrs: v.attrs }])], editor.tiptapSpip?.regles)) {
 			popover.error(desc.invalide);
 			return false;
 		}

@@ -56,7 +56,7 @@ export function openLinkPopover({ editor, wrapper, parent, services, titles }) {
 			return false;
 		}
 		// cible ou bulle qui couperait le raccourci ([x->a]b], bulle avec ->…)
-		if (!seRelitInline([text('x', [{ type: 'spipLink', attrs: nouveaux }])])) {
+		if (!seRelitInline([text('x', [{ type: 'spipLink', attrs: nouveaux }])], editor.tiptapSpip?.regles)) {
 			popover.error(label('lien_invalide'));
 			return false;
 		}

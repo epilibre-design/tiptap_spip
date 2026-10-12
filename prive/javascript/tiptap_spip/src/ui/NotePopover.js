@@ -147,7 +147,7 @@ export function openNotePopover(contexte, pos = null) {
 			popover.error(label('note_vide'));
 			return false;
 		}
-		if (!noteSeRelit({ name: nouveau, content: texte })) {
+		if (!noteSeRelit({ name: nouveau, content: texte }, editor.tiptapSpip?.regles)) {
 			popover.error(label('note_invalide'));
 			return false;
 		}

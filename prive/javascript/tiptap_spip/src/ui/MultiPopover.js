@@ -136,7 +136,7 @@ function multiEnLigne(contexte, existant) {
 			popover.error(label('multi_vide'));
 			return false;
 		}
-		if (!languesValides(parts.map((p) => p.lang)) || !multiSeRelit(parts)) {
+		if (!languesValides(parts.map((p) => p.lang)) || !multiSeRelit(parts, editor.tiptapSpip?.regles)) {
 			popover.error(label('multi_invalide'));
 			return false;
 		}
