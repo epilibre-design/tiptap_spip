@@ -60,6 +60,7 @@ function chevronOuvert(texte, avant = false) {
 
 /** Crochets [ restés ouverts à la fin de ce texte, en partant de ceux d'avant (un lien les ferme par ->). */
 function crochetsOuverts(texte, avant = 0) {
+	if (!texte.includes('[') && !texte.includes(']')) return avant;
 	let n = avant;
 	for (const c of texte) {
 		if (c === '[') n++;
@@ -72,6 +73,7 @@ function serializeDoc(doc, conservative) {
 	const blocks = doc.content ?? [];
 	let out = conservative ? (doc.attrs?.spipLead ?? '') : '';
 	let crochets = contexte.crochets;
+	let ouvert = contexte.ouvert;
 	let i = 0;
 	while (i < blocks.length) {
 		const b = blocks[i];
@@ -79,16 +81,18 @@ function serializeDoc(doc, conservative) {
 		const sep = separator(i, conservative ? a.spipSep : null);
 		if (conservative && a.spipGroup && typeof a.spipSrc === 'string' && canon(blocks.slice(i, i + a.spipGroup)) === a.spipHash) {
 			crochets = crochetsOuverts(sep + a.spipSrc, crochets);
+			ouvert = chevronOuvert(a.spipSrc, ouvert);
 			out += sep + a.spipSrc;
 			i += a.spipGroup;
 			continue;
 		}
 		// un < resté ouvert plus haut (modèle, balise) peut se fermer dans ce bloc : serializeInline le sait
 		const avant = contexte;
-		contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert), crochets };
+		contexte = { ...contexte, ouvert, crochets };
 		try {
 			const ecrit = sep + serializeBlock(b);
 			crochets = crochetsOuverts(ecrit, crochets);
+			ouvert = chevronOuvert(ecrit, ouvert);
 			out += ecrit;
 		} finally {
 			contexte = avant;

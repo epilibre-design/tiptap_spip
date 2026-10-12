@@ -18111,6 +18111,7 @@ function chevronOuvert(texte2, avant = false) {
   return a < 0 && b < 0 ? avant : a > b;
 }
 function crochetsOuverts(texte2, avant = 0) {
+  if (!texte2.includes("[") && !texte2.includes("]")) return avant;
   let n = avant;
   for (const c of texte2) {
     if (c === "[") n++;
@@ -18122,6 +18123,7 @@ function serializeDoc(doc4, conservative) {
   const blocks2 = doc4.content ?? [];
   let out = conservative ? doc4.attrs?.spipLead ?? "" : "";
   let crochets = contexte.crochets;
+  let ouvert2 = contexte.ouvert;
   let i2 = 0;
   while (i2 < blocks2.length) {
     const b = blocks2[i2];
@@ -18129,15 +18131,17 @@ function serializeDoc(doc4, conservative) {
     const sep = separator(i2, conservative ? a.spipSep : null);
     if (conservative && a.spipGroup && typeof a.spipSrc === "string" && canon(blocks2.slice(i2, i2 + a.spipGroup)) === a.spipHash) {
       crochets = crochetsOuverts(sep + a.spipSrc, crochets);
+      ouvert2 = chevronOuvert(a.spipSrc, ouvert2);
       out += sep + a.spipSrc;
       i2 += a.spipGroup;
       continue;
     }
     const avant = contexte;
-    contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert), crochets };
+    contexte = { ...contexte, ouvert: ouvert2, crochets };
     try {
       const ecrit = sep + serializeBlock(b);
       crochets = crochetsOuverts(ecrit, crochets);
+      ouvert2 = chevronOuvert(ecrit, ouvert2);
       out += ecrit;
     } finally {
       contexte = avant;
