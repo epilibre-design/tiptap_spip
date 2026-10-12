@@ -1,0 +1,23 @@
+<paquet
+	prefix="tiptap_spip_faq"
+	categorie="edition"
+	version="1.0.0"
+	etat="test"
+	compatibilite="[4.2.0;5.*]"
+>
+	<nom>FAQ pour l'éditeur visuel (exemple)</nom>
+	<!-- Exemple d'extension tierce de tiptap_spip (spec 07) : raccourci <faq|q=…> … </faq> -->
+
+	<licence lien="https://spdx.org/licenses/GPL-3.0-or-later.html">GPL-3.0-or-later</licence>
+
+	<necessite nom="tiptap_spip" />
+
+	<!-- édition : script de l'extension, bouton dans la barre, libellés -->
+	<pipeline nom="tiptap_spip_extensions" inclure="tiptap_spip_faq_pipelines.php" />
+	<pipeline nom="tiptap_spip_toolbars" inclure="tiptap_spip_faq_pipelines.php" />
+	<pipeline nom="tiptap_spip_i18n" inclure="tiptap_spip_faq_pipelines.php" />
+	<pipeline nom="header_prive_css" inclure="tiptap_spip_faq_pipelines.php" />
+	<pipeline nom="insert_head_css" inclure="tiptap_spip_faq_pipelines.php" />
+	<!-- rendu : le raccourci est transformé avant les modèles, dont il a la forme (tiptap_spip ne gère que l'édition) -->
+	<pipeline nom="pre_echappe_html_propre" inclure="tiptap_spip_faq_pipelines.php" />
+</paquet>

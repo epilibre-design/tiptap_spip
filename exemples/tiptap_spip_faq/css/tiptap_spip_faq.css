@@ -1,0 +1,19 @@
+/* Bloc FAQ dans l'éditeur visuel : la question au-dessus de la réponse. */
+.tts-editor .faq-tiptap {
+	margin: 0.5em 0;
+	padding: 0.25em 0.75em;
+	border-left: 3px solid #2d5aa0;
+}
+
+.tts-editor .faq-tiptap::before {
+	content: attr(data-question);
+	display: block;
+	font-weight: bold;
+}
+
+/* Rendu public */
+.faq {
+	margin: 1em 0;
+	padding-left: 0.75em;
+	border-left: 3px solid #2d5aa0;
+}
