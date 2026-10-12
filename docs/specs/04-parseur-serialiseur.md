@@ -272,7 +272,7 @@ même la sérialisation), y compris sources vides, blancs seuls, lignes vides in
 ligne. Seul Mac OS 9 l'utilisait, et son support est abandonné. TextWheel le convertit en `\n`
 (`traiter_retours_chariots_1`, `\r\n?`) ; le parseur ne découpe que sur `\n` (`\r\n` compris). Un
 segment qui contient un `\r` non suivi de `\n` reste un bloc brut : restitué tel quel, modifiable seulement en
-mode source. À reprendre dans les notes de version.
+mode source. Repris dans les [notes de version](../notes-de-version.md), avec les autres limites ci-dessous.
 
 **Limite (lot corpus et propriétés)** : une note automatique dont le texte commence par un idiome
 (`<:cle:>`, traité après les notes) ou par une mark écrite en balise HTML quand la même balise revient plus
@@ -290,7 +290,8 @@ ligne en tête, `` ` `` final) passe par `<code>` et perd sa langue, que seuls l
 
 **Limite (lot corpus et propriétés)** : dans un multi, du code qui contient un marqueur de langue
 (`` `[mot]` ``) est lu comme un marqueur par SPIP (vérifié avec l'oracle : `<!-- langue mot -->`), et le code
-n'a pas d'échappement. Le multi reste brut à la relecture.
+n'a pas d'échappement. À la relecture, ce multi devient un bloc brut, modifiable seulement en mode source
+(mentionné dans les [notes de version](../notes-de-version.md)).
 
 ## 6. Copier-coller
 

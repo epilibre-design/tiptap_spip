@@ -49,3 +49,4 @@ TDD avec le corpus.
 | Q7 | Public (forums, formulaires d'édition publics, Crayons) en v1 ? | Oui : lot L2b ; forums avec barre `forum`, sans modèles ni prévisualisation serveur |
 | Q8 | Noms des classes d'alignement | **Tranché** : `text-left` / `text-center` / `text-right` / `text-justify`, déjà définies par la dist et Bootstrap ; surchargeables par constante |
 | Q9 | Crayons : le crayon d'un champ texte doit-il ouvrir l'éditeur par défaut, ou seulement sur option (comme `porte_plume_partout`) ? | **Tranché** : sur option (`tiptap_spip/crayons`, `non` par défaut), comme `tiptap_spip/public` pour le site public |
+| Q10 | Tableau inséré : une première ligne laissée vide devient un en-tête à la relecture (SPIP la rend en `<thead>`). Faut-il l'éviter ? | Ouvert (lot corpus et propriétés). Pour l'instant, l'insertion reste sans en-tête (un en-tête par défaut mettrait la première ligne en gras pendant la saisie) ; choix d'interface à traiter à part |
