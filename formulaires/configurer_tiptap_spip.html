@@ -79,6 +79,11 @@
 					</BOUCLE_glossaires>
 				</div>
 				</B_glossaires>
+				[(#REM) catalogue des modèles : celui du plugin Insérer modèles, réglé par sa configuration (Q3) ]
+				<div class="editer editer_modeles">
+					<div class="label"><:tiptap_spip:cfg_modeles:></div>
+					<p class="explication">[(#VAL{inserer_modeles}|test_plugin_actif|oui)<:tiptap_spip:cfg_modeles_explication{url=#URL_ECRIRE{configurer_inserer_modeles}}:>][(#VAL{inserer_modeles}|test_plugin_actif|non)<:tiptap_spip:cfg_modeles_sans_plugin:>]</p>
+				</div>
 			</div>
 		</fieldset>
 		<p class="boutons"><input type="submit" class="btn submit" value="<:bouton_enregistrer:>" /></p>

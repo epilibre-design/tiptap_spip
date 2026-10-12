@@ -24656,6 +24656,8 @@ var DEFAUTS = {
   modele_raccourci: "Raccourci du mod\xE8le",
   modele_modifier: "Modifier",
   modele_invalide: "Ce n\u2019est pas un raccourci de mod\xE8le.",
+  modele_catalogue: "Catalogue des mod\xE8les\u2026",
+  modele_saisir: "Saisir le raccourci\u2026",
   terme: "Terme",
   selection_invalide: "S\xE9lectionnez du texte d\u2019un m\xEAme paragraphe.",
   bulle: "Bulle d\u2019aide",
@@ -26464,6 +26466,107 @@ function barreDuTextarea(textarea) {
   return ["texte", "chapo"].includes(contexte2(textarea).champ) ? "edition" : "minimale";
 }
 
+// src/ui/ModelPopover.js
+function poserModele(editor, model, pos = null) {
+  if (pos !== null) {
+    editor.chain().focus().command(({ tr }) => {
+      tr.setNodeMarkup(pos, void 0, { model });
+      return true;
+    }).run();
+    return;
+  }
+  const { $from } = editor.state.selection;
+  const paragrapheVide2 = $from.parent.type.name === "paragraph" && $from.parent.content.size === 0 && $from.depth === 1;
+  if (paragrapheVide2) {
+    editor.chain().focus().command(({ tr }) => {
+      tr.replaceWith($from.before(), $from.after(), editor.schema.nodes.spipModelBlock.create({ model }));
+      return true;
+    }).run();
+  } else {
+    editor.chain().focus().insertContent({ type: "spipModel", attrs: { model } }).run();
+  }
+}
+function openModelPopover({ editor, wrapper, parent }, pos = null) {
+  if (pos !== null) editor.commands.setNodeSelection(pos);
+  const { selection } = editor.state;
+  const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
+  const popover2 = new Popover({ editor, wrapper, parent, titre: label("modele"), className: "tts-popover--modele", onSubmit: () => appliquer() });
+  const raccourci = popover2.input(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci" });
+  const appliquer = () => {
+    const model = parseModel(raccourci.value.trim());
+    if (!model) {
+      popover2.error(label("modele_invalide"));
+      return false;
+    }
+    poserModele(editor, model, courant?.from ?? null);
+    return true;
+  };
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("annuler"), () => {
+  }, { name: "annuler" });
+  popover2.open(raccourci);
+  return popover2;
+}
+
+// src/ui/catalogue.js
+var CHAMP_URL = "input[name=url_inserer_modeles]";
+function urlCatalogue(textarea) {
+  const form = textarea.form;
+  if (!form) return null;
+  const input = form.querySelector(CHAMP_URL) ?? form.parentElement?.querySelector(`:scope > ${CHAMP_URL}`);
+  return input?.value || null;
+}
+function catalogueDe(textarea) {
+  const { modeles } = config();
+  const url = urlCatalogue(textarea);
+  return url && modeles && Object.keys(modeles).length ? { url, modeles } : null;
+}
+function parametresFormulaire(model, description) {
+  const { formulaire, id, champs, valeurs, multiples } = description;
+  const params = new URLSearchParams({ formulaire_modele: formulaire });
+  if (model.id) {
+    if (!id) return null;
+    params.set(id, model.id);
+  }
+  const poser = (champ, valeur) => {
+    if (!champs.includes(champ) || params.has(champ) || params.has(`${champ}[]`)) return false;
+    if (multiples.includes(champ)) {
+      for (const v of valeur.split(",")) params.append(`${champ}[]`, v);
+    } else {
+      params.set(champ, valeur);
+    }
+    return true;
+  };
+  for (const { key, value } of model.params) {
+    const champ = key ?? valeurs[value] ?? value;
+    if (!poser(champ, value)) return null;
+  }
+  return params;
+}
+function ouvrirCatalogue({ editor, url, pos = null, parametres = null }) {
+  const $ = globalThis.jQuery;
+  if (typeof $?.modalbox !== "function") return false;
+  if ($.markItUp) $.markItUp.focused = null;
+  let observateur = null;
+  const arreter = () => {
+    observateur?.disconnect();
+    observateur = null;
+  };
+  const lire = () => {
+    const code2 = document.getElementById("code_modele_modalbox")?.value.trim();
+    if (!code2) return;
+    arreter();
+    const model = parseModel(code2);
+    if (model) poserModele(editor, model, pos);
+    $.modalboxclose?.();
+  };
+  observateur = new MutationObserver(lire);
+  observateur.observe(document.body, { childList: true, subtree: true });
+  const cible = parametres ? `${url}${url.includes("?") ? "&" : "?"}${parametres}` : url;
+  $.modalbox(cible, { type: "ajax", minHeight: "90%", className: "tts-catalogue", onClose: arreter });
+  return true;
+}
+
 // src/services/cache.js
 var disponibles = (services) => Promise.resolve(services).then((s) => {
   if (!s) throw new ServiceUnavailable();
@@ -26799,45 +26902,6 @@ function openAbbrPopover(contexte3) {
       { name: "langue", label: label("langue"), attr: "lang" }
     ]
   });
-}
-
-// src/ui/ModelPopover.js
-function openModelPopover({ editor, wrapper, parent }, pos = null) {
-  if (pos !== null) editor.commands.setNodeSelection(pos);
-  const { selection } = editor.state;
-  const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
-  const popover2 = new Popover({ editor, wrapper, parent, titre: label("modele"), className: "tts-popover--modele", onSubmit: () => appliquer() });
-  const raccourci = popover2.input(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci" });
-  const appliquer = () => {
-    const model = parseModel(raccourci.value.trim());
-    if (!model) {
-      popover2.error(label("modele_invalide"));
-      return false;
-    }
-    if (courant) {
-      editor.chain().focus().command(({ tr }) => {
-        tr.setNodeMarkup(courant.from, void 0, { model });
-        return true;
-      }).run();
-      return true;
-    }
-    const { $from } = editor.state.selection;
-    const paragrapheVide2 = $from.parent.type.name === "paragraph" && $from.parent.content.size === 0 && $from.depth === 1;
-    if (paragrapheVide2) {
-      editor.chain().focus().command(({ tr }) => {
-        tr.replaceWith($from.before(), $from.after(), editor.schema.nodes.spipModelBlock.create({ model }));
-        return true;
-      }).run();
-    } else {
-      editor.chain().focus().insertContent({ type: "spipModel", attrs: { model } }).run();
-    }
-    return true;
-  };
-  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
-  popover2.button(label("annuler"), () => {
-  }, { name: "annuler" });
-  popover2.open(raccourci);
-  return popover2;
 }
 
 // src/ui/RawPopover.js
@@ -27338,14 +27402,24 @@ function openNotePopover(contexte3, pos = null) {
 }
 
 // src/ui/interface.js
-function creerInterface({ editor, wrapper, services }) {
+function creerInterface({ editor, wrapper, services, catalogue = null }) {
   const contexte3 = () => ({ editor: editor(), wrapper, services, titles: ui2.titles, previews: ui2.previews });
+  const modifierParCatalogue = (pos) => {
+    const model = pos === null ? null : editor().state.doc.nodeAt(pos)?.attrs.model;
+    const description = model && catalogue?.modeles[model.name];
+    const parametres = description && parametresFormulaire(model, description);
+    return Boolean(parametres) && ouvrirCatalogue({ editor: editor(), url: catalogue.url, pos, parametres });
+  };
   const ui2 = {
+    catalogue,
     previews: services ? new ModelPreviews(services) : null,
     titles: services ? new LinkTitles(services) : null,
     idiomes: services ? new IdiomTranslations(services) : null,
     openLink: () => openLinkPopover(contexte3()),
-    editModel: (pos) => openModelPopover(contexte3(), pos),
+    // Modifier (NodeView) : formulaire du catalogue s'il couvre le modèle ; bouton sans catalogue et
+    // Mod-Alt-M : saisie brute
+    editModel: (pos) => modifierParCatalogue(pos) || openModelPopover(contexte3(), pos),
+    openCatalogue: () => catalogue && ouvrirCatalogue({ editor: editor(), url: catalogue.url }) || openModelPopover(contexte3(), null),
     editNote: (pos) => openNotePopover(contexte3(), pos),
     openGlossary: () => openGlossaryPopover(contexte3()),
     openAbbr: () => openAbbrPopover(contexte3()),
@@ -27515,7 +27589,15 @@ var COMPOSANTS = {
     }
   }),
   abbr: popover("abbr", "openAbbr"),
-  modele: popover("modele", "editModel", { raccourci: "Mod-Alt-m" }),
+  // avec le catalogue du plugin Insérer modèles : menu catalogue ou saisie brute (spec 05 §3)
+  modele: (ctx) => ctx.ui.catalogue ? menuOutil({
+    nom: "modele",
+    libelle: label("modele"),
+    elements: () => [
+      { libelle: label("modele_catalogue"), action: () => ctx.ui.openCatalogue() },
+      { libelle: label("modele_saisir"), action: () => ctx.ui.editModel(null) }
+    ]
+  }) : popover("modele", "editModel", { raccourci: "Mod-Alt-m" })(ctx),
   multi: popover("multi", "editMulti"),
   // langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis
   langues: ({ editor }) => {
@@ -27812,7 +27894,7 @@ var Instance = class {
     this.servicesPrets.then((s) => {
       this.services = s;
     });
-    this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets });
+    this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets, catalogue: catalogueDe(textarea) });
     const nomBarre = barreDuTextarea(textarea);
     this.editor = createEditor2({
       element: this.content,

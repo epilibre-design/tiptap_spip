@@ -5,6 +5,7 @@ import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
 import { barreDuTextarea, contexte as contexteHote } from './hosts/contexte.js';
 import { Services } from './services/cvt.js';
+import { catalogueDe } from './ui/catalogue.js';
 import { creerInterface } from './ui/interface.js';
 import BARRES from './ui/barres.json';
 import { label } from './ui/labels.js';
@@ -130,7 +131,7 @@ class Instance {
 		});
 		// les popovers reçoivent la promesse : ouverts avant l'arrivée des services, leurs appels
 		// (recherche de liens, glossaire) fonctionnent dès qu'ils sont là
-		this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets });
+		this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets, catalogue: catalogueDe(textarea) });
 
 		// barre du textarea : elle décide aussi des extensions tierces (registerExtension, toolbars)
 		const nomBarre = barreDuTextarea(textarea);

@@ -4,6 +4,30 @@ import { label } from './labels.js';
 import { Popover } from './popover.js';
 
 /**
+ * Pose un modèle : remplace celui qui est à `pos`, sinon l'insère, en bloc si le paragraphe courant
+ * est vide, en ligne ailleurs. Partagé par la saisie brute et le catalogue des modèles.
+ */
+export function poserModele(editor, model, pos = null) {
+	if (pos !== null) {
+		editor.chain().focus().command(({ tr }) => {
+			tr.setNodeMarkup(pos, undefined, { model });
+			return true;
+		}).run();
+		return;
+	}
+	const { $from } = editor.state.selection;
+	const paragrapheVide = $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0 && $from.depth === 1;
+	if (paragrapheVide) {
+		editor.chain().focus().command(({ tr }) => {
+			tr.replaceWith($from.before(), $from.after(), editor.schema.nodes.spipModelBlock.create({ model }));
+			return true;
+		}).run();
+	} else {
+		editor.chain().focus().insertContent({ type: 'spipModel', attrs: { model } }).run();
+	}
+}
+
+/**
  * Raccourci d'un modèle, saisi ou modifié tel quel (spec 05 §3, cas sans formulaire YAML), validé
  * par le parseur. Modèle sélectionné (ou à `pos`) : modification ; sinon insertion, en bloc si le
  * paragraphe courant est vide.
@@ -22,23 +46,7 @@ export function openModelPopover({ editor, wrapper, parent }, pos = null) {
 			popover.error(label('modele_invalide'));
 			return false;
 		}
-		if (courant) {
-			editor.chain().focus().command(({ tr }) => {
-				tr.setNodeMarkup(courant.from, undefined, { model });
-				return true;
-			}).run();
-			return true;
-		}
-		const { $from } = editor.state.selection;
-		const paragrapheVide = $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0 && $from.depth === 1;
-		if (paragrapheVide) {
-			editor.chain().focus().command(({ tr }) => {
-				tr.replaceWith($from.before(), $from.after(), editor.schema.nodes.spipModelBlock.create({ model }));
-				return true;
-			}).run();
-		} else {
-			editor.chain().focus().insertContent({ type: 'spipModel', attrs: { model } }).run();
-		}
+		poserModele(editor, model, courant?.from ?? null);
 		return true;
 	};
 

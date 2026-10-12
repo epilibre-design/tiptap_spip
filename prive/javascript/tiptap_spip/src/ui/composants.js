@@ -151,7 +151,17 @@ const COMPOSANTS = {
 		},
 	}),
 	abbr: popover('abbr', 'openAbbr'),
-	modele: popover('modele', 'editModel', { raccourci: 'Mod-Alt-m' }),
+	// avec le catalogue du plugin Insérer modèles : menu catalogue ou saisie brute (spec 05 §3)
+	modele: (ctx) => (ctx.ui.catalogue
+		? menuOutil({
+			nom: 'modele',
+			libelle: label('modele'),
+			elements: () => [
+				{ libelle: label('modele_catalogue'), action: () => ctx.ui.openCatalogue() },
+				{ libelle: label('modele_saisir'), action: () => ctx.ui.editModel(null) },
+			],
+		})
+		: popover('modele', 'editModel', { raccourci: 'Mod-Alt-m' })(ctx)),
 	multi: popover('multi', 'editMulti'),
 
 	// langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis

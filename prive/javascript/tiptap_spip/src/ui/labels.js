@@ -18,6 +18,8 @@ export const DEFAUTS = {
 	modele_raccourci: 'Raccourci du modèle',
 	modele_modifier: 'Modifier',
 	modele_invalide: 'Ce n’est pas un raccourci de modèle.',
+	modele_catalogue: 'Catalogue des modèles…',
+	modele_saisir: 'Saisir le raccourci…',
 	terme: 'Terme',
 	selection_invalide: 'Sélectionnez du texte d’un même paragraphe.',
 	bulle: 'Bulle d’aide',
