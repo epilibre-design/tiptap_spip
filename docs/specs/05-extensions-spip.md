@@ -276,6 +276,9 @@ Second paragraphe centré.
 - Bloc conteneur `spipAlign` (attribut `align`), appliqué à la sélection de blocs via un menu
   « Alignement » (gauche / centre / droite / justifié) ; « aucun » retire le conteneur. Alignement gauche utile
   surtout pour les langues RTL.
+  Lot L5.1 : la commande `setAlignement` agit sur tous les blocs de premier niveau touchés par la sélection,
+  alignés ou non. Les alignements existants sont dépliés, puis l'ensemble est entouré d'un seul conteneur ;
+  « aucun » les déplie tous. Un seul bloc aligné change d'alignement sur place.
 - Classes `text-left`, `text-center`, `text-right`, `text-justify` : **déjà présentes** dans `squelettes-dist/css/typo.css`
   (SPIP 4.4) et dans Bootstrap, donc rendues correctement par la plupart des squelettes sans CSS
   supplémentaire. Le plugin ne fournit une feuille de style publique de secours (`insert_head_css`,

@@ -15,6 +15,7 @@ afterEach(() => {
 });
 
 const monter = (source, ui = {}) => {
+	editor?.destroy();
 	document.body.innerHTML = '<div></div>';
 	editor = createEditor({ element: document.body.firstChild, source, ui });
 	return editor;
@@ -50,6 +51,21 @@ describe('alignement', () => {
 		editor.commands.setAlignement(null);
 		expect(source()).toBe('A\n\nB\n\nC');
 		expect(alignementActif(editor.state)).toBe(null);
+	});
+
+	it('sélection à cheval sur un bloc aligné et un paragraphe voisin : tous les blocs touchés', () => {
+		monter('<div class="text-center">\n\nA\n\n</div>\n\nB\n\nC');
+		selectionner('A', 'B');
+		editor.commands.setAlignement('right');
+		expect(source()).toBe('<div class="text-right">\n\nA\n\nB\n\n</div>\n\nC');
+		monter('A\n\n<div class="text-center">\n\nB\n\n</div>\n\nC');
+		selectionner('A', 'B');
+		expect(editor.commands.setAlignement('right')).toBe(true);
+		expect(source()).toBe('<div class="text-right">\n\nA\n\nB\n\n</div>\n\nC');
+		monter('<div class="text-center">\n\nA\n\n</div>\n\nB\n\n<div class="text-left">\n\nC\n\n</div>');
+		selectionner('A', 'C');
+		editor.commands.setAlignement(null);
+		expect(source()).toBe('A\n\nB\n\nC');
 	});
 
 	it('sans alignement à retirer : rien', () => {

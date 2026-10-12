@@ -24735,13 +24735,19 @@ var idiomeView = (ui) => ({ node: node2 }) => {
 
 // src/editor/edition.js
 var ALIGNEMENTS = ["left", "center", "right", "justify"];
+function blocsSelectionnes(state) {
+  const { doc: doc4, selection } = state;
+  const premier = doc4.resolve(selection.from).index(0);
+  const dernier = selection.to > selection.from ? doc4.resolve(selection.to - 1).index(0) : premier;
+  const blocs = [];
+  doc4.forEach((node2, pos, i2) => {
+    if (i2 >= premier && i2 <= dernier) blocs.push({ node: node2, pos });
+  });
+  return blocs;
+}
 function alignementCourant(state) {
-  const { selection } = state;
-  if (selection.node?.type.name === "spipAlign") return { node: selection.node, pos: selection.from };
-  const { $from } = selection;
-  if ($from.depth < 1) return null;
-  const node2 = $from.node(1);
-  return node2.type.name === "spipAlign" ? { node: node2, pos: $from.before(1) } : null;
+  const [bloc] = blocsSelectionnes(state);
+  return bloc?.node.type.name === "spipAlign" ? bloc : null;
 }
 var alignementActif = (state) => alignementCourant(state)?.node.attrs.align ?? null;
 var PARENTS_POESIE = ["doc", "spipAlign"];
@@ -24758,22 +24764,33 @@ function paragrapheUnique(cellules, schema) {
 var SpipEdition = Extension.create({
   name: "spipEdition",
   addCommands: () => ({
-    /** Aligne les blocs de premier niveau de la sélection ; null retire l'alignement. */
+    /**
+     * Aligne les blocs de premier niveau touchés par la sélection, alignés ou non : les alignements
+     * existants sont dépliés, puis l'ensemble est entouré d'un seul alignement (refusé si un bloc ne
+     * peut pas être aligné) ; null les déplie.
+     */
     setAlignement: (align) => ({ state, tr, dispatch }) => {
-      const courant = alignementCourant(state);
-      if (courant) {
-        if (dispatch) {
-          if (align) tr.setNodeMarkup(courant.pos, null, { ...courant.node.attrs, align });
-          else deballer(tr, courant.pos, courant.node);
-        }
+      const blocs = blocsSelectionnes(state);
+      if (!blocs.length) return false;
+      const type = state.schema.nodes.spipAlign;
+      const alignes = blocs.filter((b) => b.node.type === type);
+      if (!align && !alignes.length) return false;
+      const contenu = Fragment.fromArray(blocs.flatMap((b) => b.node.type === type ? b.node.content.content : [b.node]));
+      if (align && !type.validContent(contenu)) return false;
+      if (!dispatch) return true;
+      if (align && blocs.length === 1 && alignes.length === 1) {
+        tr.setNodeMarkup(blocs[0].pos, null, { ...blocs[0].node.attrs, align });
         return true;
       }
-      if (!align) return false;
-      const { $from, $to } = state.selection;
-      const range = $from.blockRange($to, (n) => n.type.name === "doc");
-      const wrapping = range && findWrapping(range, state.schema.nodes.spipAlign, { align });
-      if (!wrapping) return false;
-      if (dispatch) tr.wrap(range, wrapping);
+      const debut = blocs[0].pos;
+      const fin = blocs.at(-1).pos + blocs.at(-1).node.nodeSize;
+      for (const { node: node2, pos } of [...alignes].reverse()) {
+        tr.lift(tr.doc.resolve(pos + 1).blockRange(tr.doc.resolve(pos + node2.nodeSize - 1)), 0);
+      }
+      if (align) {
+        const range = new NodeRange(tr.doc.resolve(tr.mapping.map(debut)), tr.doc.resolve(tr.mapping.map(fin)), 0);
+        tr.wrap(range, [{ type, attrs: { align } }]);
+      }
       return true;
     },
     /** Met les paragraphes de la sélection en poésie, ou retire la poésie qui la contient. */

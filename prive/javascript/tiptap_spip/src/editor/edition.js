@@ -1,20 +1,28 @@
 import { Extension } from '@tiptap/core';
-import { Fragment } from '@tiptap/pm/model';
+import { Fragment, NodeRange } from '@tiptap/pm/model';
 import { EditorState, Plugin, PluginKey, Selection, TextSelection } from '@tiptap/pm/state';
 import { CellSelection, mergeCells } from '@tiptap/pm/tables';
-import { findWrapping } from '@tiptap/pm/transform';
 
 /** Alignements d'un bloc spipAlign (spec 05 §8), dans l'ordre du menu. */
 export const ALIGNEMENTS = ['left', 'center', 'right', 'justify'];
 
-/** Bloc spipAlign de premier niveau qui contient la sélection : { node, pos }, ou null. */
+/** Blocs de premier niveau touchés par la sélection : [{ node, pos }]. */
+function blocsSelectionnes(state) {
+	const { doc, selection } = state;
+	const premier = doc.resolve(selection.from).index(0);
+	// fin de sélection juste après un bloc (sélection de nœud) : ce bloc est le dernier
+	const dernier = selection.to > selection.from ? doc.resolve(selection.to - 1).index(0) : premier;
+	const blocs = [];
+	doc.forEach((node, pos, i) => {
+		if (i >= premier && i <= dernier) blocs.push({ node, pos });
+	});
+	return blocs;
+}
+
+/** Bloc spipAlign de premier niveau qui contient le début de la sélection : { node, pos }, ou null. */
 function alignementCourant(state) {
-	const { selection } = state;
-	if (selection.node?.type.name === 'spipAlign') return { node: selection.node, pos: selection.from };
-	const { $from } = selection;
-	if ($from.depth < 1) return null;
-	const node = $from.node(1);
-	return node.type.name === 'spipAlign' ? { node, pos: $from.before(1) } : null;
+	const [bloc] = blocsSelectionnes(state);
+	return bloc?.node.type.name === 'spipAlign' ? bloc : null;
 }
 
 /** Alignement de la sélection (left, center, right, justify), null sans alignement. */
@@ -46,22 +54,35 @@ export const SpipEdition = Extension.create({
 	name: 'spipEdition',
 
 	addCommands: () => ({
-		/** Aligne les blocs de premier niveau de la sélection ; null retire l'alignement. */
+		/**
+		 * Aligne les blocs de premier niveau touchés par la sélection, alignés ou non : les alignements
+		 * existants sont dépliés, puis l'ensemble est entouré d'un seul alignement (refusé si un bloc ne
+		 * peut pas être aligné) ; null les déplie.
+		 */
 		setAlignement: (align) => ({ state, tr, dispatch }) => {
-			const courant = alignementCourant(state);
-			if (courant) {
-				if (dispatch) {
-					if (align) tr.setNodeMarkup(courant.pos, null, { ...courant.node.attrs, align });
-					else deballer(tr, courant.pos, courant.node);
-				}
+			const blocs = blocsSelectionnes(state);
+			if (!blocs.length) return false;
+			const type = state.schema.nodes.spipAlign;
+			const alignes = blocs.filter((b) => b.node.type === type);
+			if (!align && !alignes.length) return false;
+			const contenu = Fragment.fromArray(blocs.flatMap((b) => (b.node.type === type ? b.node.content.content : [b.node])));
+			if (align && !type.validContent(contenu)) return false;
+			if (!dispatch) return true;
+			// un seul bloc aligné : son alignement change, ses attributs (carte de segments) restent
+			if (align && blocs.length === 1 && alignes.length === 1) {
+				tr.setNodeMarkup(blocs[0].pos, null, { ...blocs[0].node.attrs, align });
 				return true;
 			}
-			if (!align) return false;
-			const { $from, $to } = state.selection;
-			const range = $from.blockRange($to, (n) => n.type.name === 'doc');
-			const wrapping = range && findWrapping(range, state.schema.nodes.spipAlign, { align });
-			if (!wrapping) return false;
-			if (dispatch) tr.wrap(range, wrapping);
+			// étapes structurelles (lift, wrap) : la sélection suit les blocs déplacés
+			const debut = blocs[0].pos;
+			const fin = blocs.at(-1).pos + blocs.at(-1).node.nodeSize;
+			for (const { node, pos } of [...alignes].reverse()) {
+				tr.lift(tr.doc.resolve(pos + 1).blockRange(tr.doc.resolve(pos + node.nodeSize - 1)), 0);
+			}
+			if (align) {
+				const range = new NodeRange(tr.doc.resolve(tr.mapping.map(debut)), tr.doc.resolve(tr.mapping.map(fin)), 0);
+				tr.wrap(range, [{ type, attrs: { align } }]);
+			}
 			return true;
 		},
 

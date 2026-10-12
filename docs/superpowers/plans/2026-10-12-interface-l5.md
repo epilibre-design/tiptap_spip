@@ -86,9 +86,9 @@
 - **Barres :**
   ```json
   {
-  	"edition": ["annuler", "retablir", "|", "titre", "liste", "citation", "poesie", "cadre", "|", "gras", "italique", "barre", "exposant", "indice", "code", "|", "lien", "note", "glossaire", "abbr", "modele", "|", "alignement", "tableau", "guillemets", "caracteres", "|", "multi", "langues", "|", "source", "pleinEcran"],
-  	"forum": ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
-  	"minimale": ["gras", "italique", "lien", "|", "source"]
+    "edition": ["annuler", "retablir", "|", "titre", "liste", "citation", "poesie", "cadre", "|", "gras", "italique", "barre", "exposant", "indice", "code", "|", "lien", "note", "glossaire", "abbr", "modele", "|", "alignement", "tableau", "guillemets", "caracteres", "|", "multi", "langues", "|", "source", "pleinEcran"],
+    "forum": ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
+    "minimale": ["gras", "italique", "lien", "|", "source"]
   }
   ```
   - `code` = mark code (`` ` ``) ; `cadre` = `codeBlock`, comme le porte-plume (`` ` `` et ```` ``` ````).
