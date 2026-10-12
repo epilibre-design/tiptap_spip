@@ -347,7 +347,8 @@ const SpipMultiInline = Node.create({
 		const parts = node.attrs.parts ?? [];
 		const affichee = partieAffichee(parts);
 		const title = parts.map((p) => `${p.lang ?? '*'} : ${apercu(p.content)}`).join(' · ');
-		return ['span', { ...HTMLAttributes, class: 'tts-multi', title, 'data-tts-lang': affichee?.lang ?? '' }, apercu(affichee?.content ?? [])];
+		// texte entier (copier-coller vers l'extérieur) ; la limite d'apercu vaut pour l'infobulle
+		return ['span', { ...HTMLAttributes, class: 'tts-multi', title, 'data-tts-lang': affichee?.lang ?? '' }, apercu(affichee?.content ?? [], Infinity)];
 	},
 });
 

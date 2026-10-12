@@ -24951,7 +24951,7 @@ var SpipMultiInline = Node3.create({
     const parts = node2.attrs.parts ?? [];
     const affichee = partieAffichee(parts);
     const title = parts.map((p) => `${p.lang ?? "*"} : ${apercu(p.content)}`).join(" \xB7 ");
-    return ["span", { ...HTMLAttributes, class: "tts-multi", title, "data-tts-lang": affichee?.lang ?? "" }, apercu(affichee?.content ?? [])];
+    return ["span", { ...HTMLAttributes, class: "tts-multi", title, "data-tts-lang": affichee?.lang ?? "" }, apercu(affichee?.content ?? [], Infinity)];
   }
 });
 var SpipLangBlock = Node3.create({

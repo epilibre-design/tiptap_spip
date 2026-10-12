@@ -63,6 +63,8 @@ describe('appels de note', () => {
 		const multi = document.querySelector('.tts-multi');
 		expect(multi.textContent).toBe(`${long} fin`);
 		expect(multi.title.length).toBeLessThan(long.length);
+		const span = new DOMParser().parseFromString(editor.getHTML(), 'text/html').querySelector('.tts-multi');
+		expect(span.textContent).toBe(`${long} fin`);
 	});
 
 	it('infobulle : texte de la note, sans raccourcis, coupé à 80 caractères', () => {
