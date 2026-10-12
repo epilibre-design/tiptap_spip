@@ -240,6 +240,12 @@ même balise revient plus loin sur la ligne se lit nommée (`[[<sup>1</sup> voir
 `sup` pour `traiter_raccourci_notes()`). Aucune écriture ne garde à la fois la note automatique et ce début :
 le sérialiseur écrit le premier `<` en `&lt;`, qui s'affiche.
 
+**Limite (lot corpus et propriétés)** : la balise fermante d'un bloc verbatim (`</cadre>` dans un cadre,
+`</html>`, `</math>`, `</code>` dans un `<code>`) n'a pas d'échappement : SPIP y afficherait une entité telle
+quelle. Un tel contenu ferme le bloc plus tôt à la relecture. Un bloc de code qui s'écrit entre backticks
+n'est pas concerné. Un bloc de code qui ne s'écrit pas entre backticks (`\\`, `` \` ``, `\` final, saut de
+ligne en tête, `` ` `` final) passe par `<code>` et perd sa langue, que seuls les backticks portent (```` ```php ````).
+
 ## 6. Copier-coller
 
 | Source | Traitement |

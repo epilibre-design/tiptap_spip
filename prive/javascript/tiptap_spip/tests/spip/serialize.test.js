@@ -237,6 +237,15 @@ describe('serializeBlock', () => {
 			.toBe('-* a\n-## b\n-* c');
 	});
 
+	it('code qui commence par un saut de ligne ou finit par ` : <code> (pas entre backticks)', () => {
+		// ou qui finit par un backtick : il se collerait à la clôture
+		for (const t of ['\n', '\nabc', '\n\nabc\n', '```', 'a`']) {
+			const doc = node('doc', null, [node('codeBlock', { language: 'php' }, [text(t)])]);
+			expect(serialize(doc).startsWith('<code>')).toBe(true);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual([node('codeBlock', null, [text(t)])]);
+		}
+	});
+
 	it('code : fence allongé si besoin, <code> si \\\\ ou \\`', () => {
 		expect(serializeBlock(node('codeBlock', { language: 'php' }, [text('a```b\n')]))).toBe('````php\na```b\n````');
 		expect(serializeBlock(node('codeBlock', null, [text('a\\\\b')]))).toBe('<code>\na\\\\\\b\n</code>');
@@ -252,6 +261,24 @@ describe('serializeBlock', () => {
 			node('tableRow', null, []),
 		]);
 		expect(serializeBlock(table)).toBe('||L||\n|{{A}}|{{B}}|\n|1|<|\n|^|^|');
+	});
+
+	it('saut de ligne dans un intertitre : <br /> (il tient sur une ligne)', () => {
+		const br = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		for (const [level, attendu] of [[2, '{{{a<br />b}}}'], [3, '<h3>a<br />b</h3>']]) {
+			const doc = node('doc', null, [node('heading', { level }, [text('a'), br, text('b')])]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('saut de ligne dans une cellule : <br /> (\\n_ y ferait un paragraphe, et couperait la ligne)', () => {
+		const br = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text('a'), br, text('b'))])])])]);
+		expect(serialize(doc)).toBe('|a<br />b|');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		// hors cellule, <br /> reste un fragment brut
+		expect(stripTech(parse('a<br />b').content[0].content)).toEqual([text('a'), raw('<br />'), text('b')]);
 	});
 
 	it('| dans le texte d\'une cellule : \\| (il couperait la cellule)', () => {

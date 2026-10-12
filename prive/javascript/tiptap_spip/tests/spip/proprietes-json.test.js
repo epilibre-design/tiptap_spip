@@ -9,6 +9,7 @@ import { coreExtensions } from '../../src/editor/extensions.js';
 import { canon, parse, serialize } from '../../src/spip/index.js';
 import { mergeText, node, sameMark, sortMarks } from '../../src/spip/json.js';
 import { parseModel } from '../../src/spip/models.js';
+import { canBacktick } from '../../src/spip/protect.js';
 
 const runs = Number(process.env.TTS_FC_RUNS) || 200;
 const seed = process.env.TTS_FC_SEED ? Number(process.env.TTS_FC_SEED) : process.env.TTS_FC_RUNS ? undefined : 20261012;
@@ -52,7 +53,9 @@ const marks = fc.tuple(
 	return sortMarks([...avecCode.map((type) => ({ type })), ...(special ? [special] : [])]);
 });
 
-const texteMarque = marks.chain((m) => (m.some((x) => ['spipGlossary', 'spipAbbr'].includes(x.type)) ? terme : texte)
+// texte d'un lien non vide une fois rogné (spec 03 §3 : sinon c'est un lien sans texte)
+const texteMarque = marks.chain((m) => (m.some((x) => ['spipGlossary', 'spipAbbr'].includes(x.type)) ? terme
+	: m.some((x) => x.type === 'spipLink') ? texte.filter((t) => t.trim() !== '') : texte)
 	.map((t) => (m.length ? { type: 'text', text: t, marks: m } : { type: 'text', text: t })));
 
 const MODELES = ['<doc12>', '<doc12|left>', '<img3|center|largeur=300>', '<emb4|autostart=true>', '<doc1|legende=<i>x</i>>'];
@@ -93,6 +96,14 @@ function formeNormale(nodes) {
 	return mergeText(out);
 }
 
+/** Contenu en ligne d'un intertitre : toutes les marks sauf le gras (spec 03 §3). */
+const sansGras = (nodes) => mergeText(nodes.map((n) => {
+	if (!n.marks?.some((m) => m.type === 'bold')) return n;
+	const marks = n.marks.filter((m) => m.type !== 'bold');
+	const { marks: _, ...reste } = n;
+	return marks.length ? { ...reste, marks } : reste;
+}));
+
 const enLigne = (avecNote) => fc.array(
 	avecNote ? fc.oneof({ weight: 6, arbitrary: texteMarque }, { weight: 2, arbitrary: atome }, { weight: 1, arbitrary: note }) : fc.oneof({ weight: 3, arbitrary: texteMarque }, { weight: 1, arbitrary: atome }),
 	{ minLength: 1, maxLength: 6 },
@@ -123,7 +134,62 @@ const note = fc.record({
 })
 	.map((attrs) => ({ type: 'spipNote', attrs }));
 
-const documents = fc.array(paragraphe(), { minLength: 1, maxLength: 4 }).map((content) => node('doc', null, content));
+/** Texte de code : tout passe, sauts de ligne compris. */
+const code = fc.array(fc.constantFrom('a', ' ', '\n', '{', '}', '<', '>', '&', '`', '```', '\\', '</code>', '</cadre>', '[[', 'é'), { maxLength: 8 })
+	.map((m) => m.join(''));
+const contenuCode = (t) => (t === '' ? undefined : [{ type: 'text', text: t }]);
+/** Code écrit <code>…</code> plutôt qu'entre backticks (sérialiseur). */
+const parCode = (t) => !canBacktick(t) || t.startsWith('\n') || t.endsWith('`');
+
+const liste = (profondeur) => fc.tuple(
+	fc.constantFrom('bulletList', 'orderedList'),
+	fc.array(fc.tuple(enLigne(true), profondeur > 1 ? option(liste(profondeur - 1)) : fc.constant(null)), { minLength: 1, maxLength: 3 }),
+).map(([type, items]) => node(type, null, items.map(([inline, sous]) => node('listItem', null, sous ? [node('paragraph', null, inline), sous] : [node('paragraph', null, inline)]))));
+
+/** Contenu d'une seule ligne (cellule, intertitre) : un saut de ligne y est forcé (écrit <br />). */
+const sautsForces = (nodes) => nodes.map((n) => (n.type === 'hardBreak' ? { type: 'hardBreak', attrs: { syntax: 'manual' } } : n));
+
+/** Cellule ; un en-tête n'a pas de gras (écrit {{…}}). */
+const cellule = (type) => enLigne(false).map((inline) => node(type, { colspan: 1, rowspan: 1 }, [node('paragraph', null,
+	sautsForces(type === 'tableHeader' ? sansGras(inline) : inline))]));
+const tableau = fc.integer({ min: 1, max: 3 }).chain((colonnes) => fc.record({
+	entete: fc.boolean(),
+	lignes: fc.array(fc.array(cellule('tableCell'), { minLength: colonnes, maxLength: colonnes }), { minLength: 1, maxLength: 3 }),
+	titres: fc.array(cellule('tableHeader'), { minLength: colonnes, maxLength: colonnes }),
+	caption: option(fc.constantFrom('Légende', 'L')),
+	summary: option(fc.constantFrom('Résumé')),
+	// un résumé sans légende s'écrit ||légende vide|résumé|| : légende '' (forme normale)
+})).map(({ entete, lignes, titres, caption, summary }) => node('table', { caption: summary !== null && caption === null ? '' : caption, summary },
+	[...(entete ? [titres] : []), ...lignes].map((cells) => node('tableRow', null, cells))));
+
+const multiEnLigne = fc.array(fc.tuple(fc.constantFrom('fr', 'en', 'de'), enLigne(false)), { minLength: 1, maxLength: 3 })
+	.map((parts) => ({ type: 'spipMultiInline', attrs: { parts: parts.map(([lang, content]) => ({ lang, content })) } }));
+
+/** Blocs, imbrication bornée par la profondeur (citation, alignement). */
+const bloc = (profondeur) => fc.oneof(
+	{ weight: 6, arbitrary: paragraphe() },
+	{ weight: 2, arbitrary: fc.tuple(fc.integer({ min: 2, max: 6 }), enLigne(true)).map(([level, inline]) => node('heading', { level }, sautsForces(sansGras(inline)))) },
+	{ weight: 1, arbitrary: fc.constant(node('horizontalRule')) },
+	{ weight: 2, arbitrary: liste(3) },
+	// limite (spec 04 §5) : la balise fermante n'a pas d'échappement dans un bloc verbatim ; un code qui
+	// ne s'écrit pas entre backticks passe par <code> et perd sa langue
+	{ weight: 1, arbitrary: fc.tuple(option(fc.constantFrom('php', 'js')), code.filter((t) => !parCode(t) || !/<\/code/i.test(t)))
+		.map(([language, t]) => node('codeBlock', { language: parCode(t) ? null : language }, contenuCode(t))) },
+	{ weight: 1, arbitrary: fc.constantFrom(['spipCadre', 'cadre'], ['spipHtml', 'html'], ['spipMath', 'math'])
+		.chain(([type, tag]) => code.filter((t) => !t.toLowerCase().includes(`</${tag}`))
+			.map((t) => node(type, { openTag: `<${tag}>`, closeTag: `</${tag}>` }, contenuCode(t)))) },
+	{ weight: 1, arbitrary: fc.array(paragraphe(), { minLength: 1, maxLength: 2 }).map((content) => node('spipPoesie', { tag: 'poesie' }, content)) },
+	{ weight: 1, arbitrary: tableau },
+	{ weight: 1, arbitrary: fc.array(fc.tuple(fc.constantFrom('fr', 'en'), fc.array(paragraphe(false), { minLength: 1, maxLength: 2 })), { minLength: 1, maxLength: 2 })
+		.map((parts) => node('spipMultiBlock', null, parts.map(([lang, content]) => node('spipLangBlock', { lang }, content)))) },
+	...(profondeur > 0 ? [
+		{ weight: 1, arbitrary: fc.array(bloc(profondeur - 1), { minLength: 1, maxLength: 2 }).map((content) => node('blockquote', null, content)) },
+		{ weight: 1, arbitrary: fc.tuple(fc.constantFrom('left', 'center', 'right', 'justify'), fc.array(bloc(profondeur - 1), { minLength: 1, maxLength: 2 }))
+			.map(([align, content]) => node('spipAlign', { align }, content.filter((b) => b.type !== 'spipAlign'))).filter((b) => b.content.length > 0) },
+	] : []),
+);
+
+const documents = fc.array(bloc(1), { minLength: 1, maxLength: 4 }).map((content) => node('doc', null, content));
 
 describe('sûreté du schéma (invariant 5)', () => {
 	it('un document valide pour le schéma se relit à l\'identique après sérialisation canonique', () => {

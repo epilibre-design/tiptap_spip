@@ -173,7 +173,7 @@ function runBlocks(src, msk, regions) {
 			k++;
 		} else if (h) {
 			const s = lines[k].start + h.offset;
-			out.push(node('heading', { level: h.level }, inlineOf(src, msk, regions, s, s + h.length)));
+			out.push(node('heading', { level: h.level }, inlineOf(src, msk, regions, s, s + h.length, { uneLigne: true })));
 			k++;
 		} else if (RE_ITEM.test(line)) {
 			// comme SPIP, la liste va jusqu'à la fin du segment (ligne vide)
@@ -302,7 +302,7 @@ function tableBlock(src, msk, regions) {
 				row[col] = above;
 			} else {
 				const [is, ie] = isHeader && t !== '' ? [s + 2, e - 2] : [s, e];
-				const content = inlineOf(src, msk, regions, is, ie);
+				const content = inlineOf(src, msk, regions, is, ie, { uneLigne: true });
 				const cell = node(isHeader ? 'tableHeader' : 'tableCell', { colspan: 1, rowspan: 1 },
 					[node('paragraph', null, content.length ? content : undefined)]);
 				row[col] = cell;

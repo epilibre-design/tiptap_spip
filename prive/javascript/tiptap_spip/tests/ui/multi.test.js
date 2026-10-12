@@ -113,7 +113,8 @@ describe('multi bloc', () => {
 		valider();
 		expect(editor.state.doc.child(1).type.name).toBe('spipMultiBlock');
 		editor.commands.insertContent('Bonjour');
-		expect(source()).toBe('Avant\n\n<multi>[fr]Bonjour[en]</multi>');
+		// ligne vide entre les parties : sans elle, le multi se relirait en ligne
+		expect(source()).toBe('Avant\n\n<multi>[fr]Bonjour\n\n[en]</multi>');
 	});
 
 	it('nouveau multi bloc annulé, ou fermé par Échap : document inchangé', () => {

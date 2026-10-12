@@ -18161,7 +18161,7 @@ function serializeBlock(b) {
     case "paragraph":
       return serializeInline(b.content, { lineStart: true });
     case "heading":
-      return a.level === 2 ? `{{{${serializeInline(b.content, { html: true })}}}}` : `<h${a.level}>${serializeInline(b.content)}</h${a.level}>`;
+      return a.level === 2 ? `{{{${serializeInline(b.content, { html: true, uneLigne: true })}}}}` : `<h${a.level}>${serializeInline(b.content, { uneLigne: true })}</h${a.level}>`;
     case "horizontalRule":
       return "----";
     case "bulletList":
@@ -18192,10 +18192,18 @@ ${blocks(b.content)}
     case "spipModelBlock":
       return serializeModel(a.model);
     case "spipMultiBlock":
-      return enMulti(() => serializeMulti(b.content.map((part) => ({
-        lang: part.attrs?.lang ?? null,
-        texte: serialize(node("doc", null, part.content), { conservative: false })
-      }))));
+      return enMulti(() => {
+        const parties = b.content.map((part) => ({
+          lang: part.attrs?.lang ?? null,
+          texte: serialize(node("doc", null, part.content), { conservative: false })
+        }));
+        if (!parties.some(({ texte: texte2 }) => LIGNE_VIDE.test(texte2))) {
+          parties.forEach((partie, k) => {
+            if (k < parties.length - 1 || parties.length === 1) partie.texte += "\n\n";
+          });
+        }
+        return serializeMulti(parties);
+      });
     case "table":
       return serializeTable(b);
     default:
@@ -18205,7 +18213,7 @@ ${blocks(b.content)}
 function serializeCodeBlock(b) {
   const a = b.attrs ?? {};
   const code2 = textOf(b);
-  if (a.openTag || !canBacktick(code2)) return `${a.openTag ?? "<code>"}
+  if (a.openTag || !canBacktick(code2) || code2.startsWith("\n") || code2.endsWith("`")) return `${a.openTag ?? "<code>"}
 ${encodeCode(code2)}
 </code>`;
   let fence = "```";
@@ -18248,7 +18256,7 @@ function serializeTable(table) {
   for (const row of occ) {
     const cells = row.map((x) => {
       if (typeof x === "string") return x;
-      const inline = serializeInline(x.content?.[0]?.content, { cellule: true });
+      const inline = serializeInline(x.content?.[0]?.content, { cellule: true, uneLigne: true, html: x.type === "tableHeader" });
       return x.type === "tableHeader" && inline !== "" ? `{{${inline}}}` : inline;
     });
     lines.push(`|${cells.join("|")}|`);
@@ -18313,7 +18321,7 @@ var MARKS_CROCHET = ["spipLink", "spipGlossary", "spipAbbr"];
 var ecritAvecCrochet = (suivant, n) => ["spipNote", "spipRawInline", "spipLinkAuto", "spipAnchor"].includes(suivant?.type) || (suivant?.marks ?? []).some((m) => MARKS_CROCHET.includes(m.type) && !(n.marks ?? []).some((x) => sameMark(x, m)));
 var brut = (n) => n?.type === "spipRawInline" ? n.attrs.source : "";
 var accoladeContre = (nodes, i2, run2) => /[{}]$/.test(brut(nodes[i2 - 1])) || /^[{}]/.test(brut(nodes[i2])) || /[{}]$/.test(brut(nodes[i2 + run2 - 1])) || /^[{}]/.test(brut(nodes[i2 + run2]));
-function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false } = {}) {
+function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false, uneLigne = false } = {}) {
   let debut = 0;
   let fin = nodes.length;
   while (debut < fin && nodes[debut].type === "hardBreak") debut++;
@@ -18368,7 +18376,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       atLineStart = false;
     } else if (n.type === "hardBreak") {
       const autobr = n.attrs?.syntax === "autobr" && (nodes[i2 + 1]?.type !== "hardBreak" || inLink);
-      out += autobr ? "\n" : "\n_ ";
+      out += uneLigne ? "<br />" : autobr ? "\n" : "\n_ ";
       atLineStart = autobr;
     } else if (n.type === "spipRawInline") {
       out += n.attrs.source;
@@ -18462,8 +18470,8 @@ var LINK_ENTITIES = { ...ENTITIES, "#124": "|", "#93": "]" };
 var entityRegex = (entities) => new RegExp(`^&(${Object.keys(entities).join("|")});`);
 var RE_ENTITY = entityRegex(ENTITIES);
 var RE_LINK_ENTITY = entityRegex(LINK_ENTITIES);
-function parseInline(source, masked, regions, { lineStart = false, link = false } = {}) {
-  return buildNodes(tokenize(source, masked, regions, lineStart, link));
+function parseInline(source, masked, regions, { lineStart = false, link = false, uneLigne = false } = {}) {
+  return buildNodes(tokenize(source, masked, regions, lineStart, link, uneLigne));
 }
 function maskCode(part) {
   let masked = part;
@@ -18522,7 +18530,7 @@ function multiNode(src, masked) {
 function noteNode({ name, content, lead, trail }) {
   return node("spipNote", { ...name === null ? {} : { name }, content, spipLead: lead, spipTrail: trail });
 }
-function tokenize(source, masked, regions, lineStart, link) {
+function tokenize(source, masked, regions, lineStart, link, uneLigne) {
   const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
   const entities = link ? LINK_ENTITIES : ENTITIES;
   const tokens = [];
@@ -18609,6 +18617,9 @@ function tokenize(source, masked, regions, lineStart, link) {
     } else if (c === "<" && (m = rest.match(/^<(\/?)(strong|i|del|sup|sub)>/))) {
       push({ t: m[1] ? "close" : "open", mark: MARK_TAGS[m[2]], src: m[0] });
       i2 += m[0].length;
+    } else if (uneLigne && rest.startsWith("<br />")) {
+      push({ t: "br", syntax: "manual" });
+      i2 += 6;
     } else if (c === "<" && (m = rest.match(/^(?:<!--[\s\S]*?-->|<\/?[a-z][a-z0-9]*\b[^<>]*>)/i))) {
       push({ t: "raw", v: source.slice(i2, i2 + m[0].length) });
       i2 += m[0].length;
@@ -18925,7 +18936,7 @@ function runBlocks(src, msk, regions) {
       k++;
     } else if (h2) {
       const s = lines[k].start + h2.offset;
-      out.push(node("heading", { level: h2.level }, inlineOf(src, msk, regions, s, s + h2.length)));
+      out.push(node("heading", { level: h2.level }, inlineOf(src, msk, regions, s, s + h2.length, { uneLigne: true })));
       k++;
     } else if (RE_ITEM.test(line)) {
       out.push(...listBlocks(src, msk, regions, lines.slice(k), L, k));
@@ -19038,7 +19049,7 @@ function tableBlock(src, msk, regions) {
         row[col] = above;
       } else {
         const [is, ie3] = isHeader && t !== "" ? [s + 2, e - 2] : [s, e];
-        const content = inlineOf(src, msk, regions, is, ie3);
+        const content = inlineOf(src, msk, regions, is, ie3, { uneLigne: true });
         const cell = node(
           isHeader ? "tableHeader" : "tableCell",
           { colspan: 1, rowspan: 1 },

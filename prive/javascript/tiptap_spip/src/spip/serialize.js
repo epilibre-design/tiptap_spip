@@ -8,7 +8,7 @@ import { serializeIdiome, serializeMulti } from './multi.js';
 import { parseNote } from './notes.js';
 import { parse } from './parse.js';
 import { canBacktick, encodeCode, protect } from './protect.js';
-import { RE_AVANT_LANGUE } from './regex.js';
+import { LIGNE_VIDE, RE_AVANT_LANGUE } from './regex.js';
 import { avecRegles, regleDe } from './regles.js';
 
 /**
@@ -123,8 +123,8 @@ export function serializeBlock(b) {
 			return serializeInline(b.content, { lineStart: true });
 		case 'heading':
 			return a.level === 2
-				? `{{{${serializeInline(b.content, { html: true })}}}}`
-				: `<h${a.level}>${serializeInline(b.content)}</h${a.level}>`;
+				? `{{{${serializeInline(b.content, { html: true, uneLigne: true })}}}}`
+				: `<h${a.level}>${serializeInline(b.content, { uneLigne: true })}</h${a.level}>`;
 		case 'horizontalRule':
 			return '----';
 		case 'bulletList':
@@ -147,10 +147,19 @@ export function serializeBlock(b) {
 		case 'spipModelBlock':
 			return serializeModel(a.model);
 		case 'spipMultiBlock':
-			return enMulti(() => serializeMulti(b.content.map((part) => ({
-				lang: part.attrs?.lang ?? null,
-				texte: serialize(node('doc', null, part.content), { conservative: false }),
-			}))));
+			return enMulti(() => {
+				const parties = b.content.map((part) => ({
+					lang: part.attrs?.lang ?? null,
+					texte: serialize(node('doc', null, part.content), { conservative: false }),
+				}));
+				// sans ligne vide, le multi se relirait en ligne : parties séparées (ou suivies) d'une ligne vide
+				if (!parties.some(({ texte }) => LIGNE_VIDE.test(texte))) {
+					parties.forEach((partie, k) => {
+						if (k < parties.length - 1 || parties.length === 1) partie.texte += '\n\n';
+					});
+				}
+				return serializeMulti(parties);
+			});
 		case 'table':
 			return serializeTable(b);
 		default:
@@ -161,7 +170,9 @@ export function serializeBlock(b) {
 function serializeCodeBlock(b) {
 	const a = b.attrs ?? {};
 	const code = textOf(b);
-	if (a.openTag || !canBacktick(code)) return `${a.openTag ?? '<code>'}\n${encodeCode(code)}\n</code>`;
+	// les backticks perdent les sauts de ligne de tête (<code> n'en retire qu'un), et un ` final se
+	// collerait à la clôture
+	if (a.openTag || !canBacktick(code) || code.startsWith('\n') || code.endsWith('`')) return `${a.openTag ?? '<code>'}\n${encodeCode(code)}\n</code>`;
 	let fence = '```';
 	while (code.includes(fence)) fence += '`';
 	return `${fence}${a.language ?? ''}\n${code}${fence}`;
@@ -201,7 +212,8 @@ function serializeTable(table) {
 	for (const row of occ) {
 		const cells = row.map((x) => {
 			if (typeof x === 'string') return x;
-			const inline = serializeInline(x.content?.[0]?.content, { cellule: true });
+			// en-tête écrit {{…}} : son italique en HTML, comme dans un intertitre ({{{ serait ambigu)
+			const inline = serializeInline(x.content?.[0]?.content, { cellule: true, uneLigne: true, html: x.type === 'tableHeader' });
 			return x.type === 'tableHeader' && inline !== '' ? `{{${inline}}}` : inline;
 		});
 		lines.push(`|${cells.join('|')}|`);
@@ -303,9 +315,10 @@ const accoladeContre = (nodes, i, run) => /[{}]$/.test(brut(nodes[i - 1])) || /^
  * HTML (<strong>, <i>, même rendu) pour ne jamais produire {{{ ou }}}.
  *
  * @param {object[]} nodes
- * @param {{ lineStart?: boolean, html?: boolean, cellule?: boolean }} options  cellule : texte d'une cellule de tableau
+ * @param {{ lineStart?: boolean, html?: boolean, cellule?: boolean, uneLigne?: boolean }} options  cellule : texte
+ *        d'une cellule de tableau ; uneLigne : contenu d'une seule ligne (cellule, intertitre)
  */
-export function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false } = {}) {
+export function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false, uneLigne = false } = {}) {
 	// saut de ligne au bord : SPIP n'affiche pas un _ de tête et affiche un _ final ; un <br> final ne
 	// se voit pas. Non écrit.
 	let debut = 0;
@@ -378,7 +391,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			// deux \n de suite feraient une ligne vide : un saut suivi d'un autre s'écrit forcé, sauf dans un
 			// lien (masqué avant le découpage en segments, il peut contenir une ligne vide)
 			const autobr = n.attrs?.syntax === 'autobr' && (nodes[i + 1]?.type !== 'hardBreak' || inLink);
-			out += autobr ? '\n' : '\n_ ';
+			// contenu d'une seule ligne (cellule, intertitre) : un saut de ligne le couperait
+			out += uneLigne ? '<br />' : autobr ? '\n' : '\n_ ';
 			atLineStart = autobr;
 		} else if (n.type === 'spipRawInline') {
 			out += n.attrs.source;

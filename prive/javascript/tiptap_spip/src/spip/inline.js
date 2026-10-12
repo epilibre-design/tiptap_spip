@@ -26,13 +26,14 @@ const RE_LINK_ENTITY = entityRegex(LINK_ENTITIES);
  * @param {string} source  texte source du contenu
  * @param {string} masked  même texte masqué (cf. protect.js)
  * @param {import('./protect.js').Region[]} regions  régions, positions relatives à source
- * @param {{ lineStart?: boolean, link?: boolean }} options  lineStart : le contenu commence en début
+ * @param {{ lineStart?: boolean, link?: boolean, uneLigne?: boolean }} options  lineStart : le contenu commence en début
  *        de ligne (paragraphe), donc les marqueurs de début de ligne (`- `, `_ `) s'appliquent ;
- *        link : texte d'un lien (entités &#124; et &#93; décodées)
+ *        link : texte d'un lien (entités &#124; et &#93; décodées) ; uneLigne : contenu d'une seule
+ *        ligne, cellule ou intertitre (<br /> y est un saut de ligne)
  * @returns {object[]} nœuds inline JSON
  */
-export function parseInline(source, masked, regions, { lineStart = false, link = false } = {}) {
-	return buildNodes(tokenize(source, masked, regions, lineStart, link));
+export function parseInline(source, masked, regions, { lineStart = false, link = false, uneLigne = false } = {}) {
+	return buildNodes(tokenize(source, masked, regions, lineStart, link, uneLigne));
 }
 
 /** Texte où seul le code (backticks, <code>, <cadre>…) est masqué : ce que voit le core quand il
@@ -111,7 +112,7 @@ function noteNode({ name, content, lead, trail }) {
 	return node('spipNote', { ...(name === null ? {} : { name }), content, spipLead: lead, spipTrail: trail });
 }
 
-function tokenize(source, masked, regions, lineStart, link) {
+function tokenize(source, masked, regions, lineStart, link, uneLigne) {
 	const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
 	const entities = link ? LINK_ENTITIES : ENTITIES;
 	const tokens = [];
@@ -204,6 +205,10 @@ function tokenize(source, masked, regions, lineStart, link) {
 		} else if (c === '<' && (m = rest.match(/^<(\/?)(strong|i|del|sup|sub)>/))) {
 			push({ t: m[1] ? 'close' : 'open', mark: MARK_TAGS[m[2]], src: m[0] });
 			i += m[0].length;
+		} else if (uneLigne && rest.startsWith('<br />')) {
+			// saut de ligne d'un contenu d'une seule ligne (cellule, intertitre), écrit <br /> par le sérialiseur
+			push({ t: 'br', syntax: 'manual' });
+			i += 6;
 		} else if (c === '<' && (m = rest.match(/^(?:<!--[\s\S]*?-->|<\/?[a-z][a-z0-9]*\b[^<>]*>)/i))) {
 			push({ t: 'raw', v: source.slice(i, i + m[0].length) });
 			i += m[0].length;

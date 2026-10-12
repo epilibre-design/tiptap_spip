@@ -94,6 +94,17 @@ describe('multi bloc', () => {
 		expect(canonical(source)).toBe(source);
 	});
 
+	it('parties d\'un seul paragraphe : séparées par une ligne vide, sans quoi le multi se relit en ligne', () => {
+		for (const [doc, attendu] of [
+			[bloc(['fr', [p(text('a'))]], ['en', [p(text('b'))]]), '<multi>[fr]a\n\n[en]b</multi>'],
+			[bloc(['fr', [p(text('a'))]]), '<multi>[fr]a\n\n</multi>'],
+		]) {
+			const d = node('doc', null, [doc]);
+			expect(serialize(d)).toBe(attendu);
+			expect(stripTech(parse(serialize(d)).content)).toEqual([doc]);
+		}
+	});
+
 	it('partie qui n\'est pas faite de paragraphes : brut', () => {
 		const source = '<multi>[fr]Un\n\n-* liste[en]One\n\nTwo</multi>';
 		expect(parse(source).content[0].type).toBe('spipRaw');
