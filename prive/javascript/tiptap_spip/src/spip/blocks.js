@@ -22,7 +22,11 @@ class Fallback extends Error {}
  */
 export function blocksOf(src, msk, regions) {
 	try {
-		return verbatimBlock(src, regions) ?? containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
+		const verbatim = verbatimBlock(src, regions);
+		if (verbatim) return verbatim;
+		// \r seul (fins de ligne Mac) : saut de ligne pour SPIP, pas pour le découpage en lignes
+		if (/\r(?!\n)/.test(msk)) throw new Fallback();
+		return containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
 	} catch {
 		return [node('spipRaw', { source: src })];
 	}

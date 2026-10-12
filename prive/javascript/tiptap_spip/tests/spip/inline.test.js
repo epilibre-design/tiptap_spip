@@ -36,6 +36,15 @@ describe('parseInline : marks', () => {
 	});
 });
 
+describe('parseInline : marks vides', () => {
+	it('délimiteurs d\'une mark vide gardés bruts (SPIP rend <strong></strong>)', () => {
+		expect(inl('{{</strong>')).toEqual([raw('{{'), raw('</strong>')]);
+		expect(inl('{</i>')).toEqual([raw('{'), raw('</i>')]);
+		// mark autour d'une mark vide : non vide
+		expect(inl('{{x{</i>}}')).toEqual([text('x', [B]), raw('{', [B]), raw('</i>', [B])]);
+	});
+});
+
 describe('parseInline : lignes', () => {
 	it('retour à la ligne simple = saut autobr ; \\n_ = saut manuel', () => {
 		expect(inl('a\nb\n_ c')).toEqual([text('a'), br('autobr'), text('b'), br('manual'), text('c')]);

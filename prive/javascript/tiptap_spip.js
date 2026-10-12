@@ -18286,11 +18286,14 @@ function marksAtomiques(nodes) {
   return out;
 }
 var HTML = { bold: ["<strong>", "</strong>"], italic: ["<i>", "</i>"] };
+var brut = (n) => n?.type === "spipRawInline" ? n.attrs.source : "";
+var accoladeContre = (nodes, i2, run2) => /^[{}]/.test(brut(nodes[i2])) || /[{}]$/.test(brut(nodes[i2 + run2 - 1]));
 function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
   nodes = marksAtomiques(nodes);
   let out = "";
   const stack = [];
   let atLineStart = lineStart;
+  let chevron = false;
   const closeTo = (k) => {
     while (stack.length > k) out += stack.pop().close;
   };
@@ -18307,7 +18310,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
     closeTo(k);
     const toOpen = marks.filter((m) => !stack.some((s) => sameMark(s.mark, m))).map((m) => ({ m, run: runLength(i2, m) })).sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
     for (const { m } of toOpen) {
-      const useHtml = HTML[m.type] && !regleEcrite(m.type, "mark") && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")));
+      const useHtml = HTML[m.type] && !regleEcrite(m.type, "mark") && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")) || accoladeContre(nodes, i2, runLength(i2, m)));
       const [open, close2] = useHtml ? HTML[m.type] : delimiters(m);
       out += open;
       stack.push({ mark: m, close: close2 });
@@ -18322,7 +18325,8 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
       const code2 = n.marks?.find((m) => m.type === "code");
       const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
       const avantCrochets = ["spipNote", "spipRawInline"].includes(nodes[i2 + 1]?.type);
-      out += code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
+      const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
+      out += chevron && !code2 ? texte2.replace(/>/g, "&gt;") : texte2;
       atLineStart = false;
     } else if (n.type === "hardBreak") {
       const autobr = n.attrs?.syntax === "autobr";
@@ -18330,6 +18334,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
       atLineStart = autobr;
     } else if (n.type === "spipRawInline") {
       out += n.attrs.source;
+      if (/[<>]/.test(n.attrs.source)) chevron = n.attrs.source === "<";
       atLineStart = false;
     } else if (n.type === "spipLinkAuto") {
       out += `[${linkEnd(n.attrs)}`;
@@ -18356,12 +18361,24 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
   closeTo(0);
   return out;
 }
+var RE_NOM_NOTE = /^([ \t\n\v\f\r]*)<[^>'"]*>/;
+var noteDe = (raccourci) => protect(raccourci).regions.find((r) => r.kind === "note" && r.start === 0 && r.end === raccourci.length);
 function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) {
   const avant = contexte;
   contexte = { ...contexte, note: true };
   try {
     const doc4 = { type: "doc", attrs: { spipLead, spipTrail }, content: content?.length ? content : [node("paragraph")] };
-    return `[[${name == null ? "" : `<${name}>`}${serialize(doc4, { conservative: avant.conservative })}]]`;
+    const nom = name == null ? "" : `<${name}>`;
+    let texte2 = serialize(doc4, { conservative: avant.conservative });
+    let fleche;
+    while (!noteDe(`[[${nom}${texte2}]]`) && (fleche = texte2.match(/^[^[\]]*?->/))) {
+      texte2 = `${fleche[0].slice(0, -2)}-&gt;${texte2.slice(fleche[0].length)}`;
+    }
+    const m = name == null ? texte2.match(RE_NOM_NOTE) : null;
+    if (m && parseNote(`[[${texte2}]]`, noteDe(`[[${texte2}]]`)?.data.masked)?.name != null) {
+      texte2 = `${m[1]}&lt;${texte2.slice(m[1].length + 1)}`;
+    }
+    return `[[${nom}${texte2}]]`;
   } finally {
     contexte = avant;
   }
@@ -18388,7 +18405,7 @@ function escapeText(value, atLineStart, { link = false, avantCrochets = false } 
   let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:])/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
   if (contexte.multi) s = s.replace(RE_AVANT_LANGUE, "&#91;");
   if (!link) {
-    s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
+    s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\]|(?![^\]]*\])[\s\S])/g, "\\[");
   } else {
     s = s.replace(/\[/g, "&#91;").replace(/\]/g, "&#93;").replace(/\|/g, "&#124;").replace(/->/g, "-&gt;");
   }
@@ -18587,7 +18604,19 @@ function wellNested(tokens) {
   }
   return stack.length === 0;
 }
+function marksVides(tokens) {
+  const out = tokens.filter((tk) => tk.t !== "text" || tk.v !== "");
+  for (let k = 0; k + 1 < out.length; k++) {
+    const [a, b] = [out[k], out[k + 1]];
+    if (a.t === "open" && b.t === "close" && a.mark === b.mark) {
+      out[k] = { t: "raw", v: a.src };
+      out[k + 1] = { t: "raw", v: b.src };
+    }
+  }
+  return out;
+}
 function buildNodes(tokens) {
+  tokens = marksVides(tokens);
   const ok = wellNested(tokens);
   const open = [];
   const nodes = [];
@@ -18740,7 +18769,10 @@ var Fallback = class extends Error {
 };
 function blocksOf(src, msk, regions) {
   try {
-    return verbatimBlock(src, regions) ?? containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
+    const verbatim = verbatimBlock(src, regions);
+    if (verbatim) return verbatim;
+    if (/\r(?!\n)/.test(msk)) throw new Fallback();
+    return containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
   } catch {
     return [node("spipRaw", { source: src })];
   }
@@ -26935,15 +26967,15 @@ function segmentDe(doc4, pos) {
 }
 function openRawPopover({ editor, wrapper, parent }, pos) {
   const { doc: doc4 } = editor.state;
-  const brut = doc4.nodeAt(pos);
-  if (!brut) return null;
+  const brut2 = doc4.nodeAt(pos);
+  if (!brut2) return null;
   editor.commands.setNodeSelection(pos);
   const segment2 = segmentDe(doc4, pos);
   const suivi = suivrePosition(editor, pos);
   const regles = editor.tiptapSpip?.regles ?? [];
   const source = serialize({ type: "doc", content: segment2.blocs.map((b) => b.toJSON()) }, { regles });
   const popover2 = new Popover({ editor, wrapper, parent, titre: label("brut"), className: "tts-popover--brut", onSubmit: () => appliquer(), onClose: () => suivi.fin() });
-  const cle = brut.type.name === "spipRawInline" ? anomalie(brut.attrs.source) : null;
+  const cle = brut2.type.name === "spipRawInline" ? anomalie(brut2.attrs.source) : null;
   if (cle) {
     const texte2 = document.createElement("p");
     texte2.className = "tts-popover__explication";

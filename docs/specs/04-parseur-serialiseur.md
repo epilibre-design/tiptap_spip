@@ -229,6 +229,11 @@ même la sérialisation), y compris sources vides, blancs seuls, lignes vides in
 4. **Totalité** : `parse` ne lève jamais d'exception ; au pire il produit des nœuds bruts.
 5. **Sûreté du schéma** : tout JSON valide pour le schéma est sérialisable, et son re-parse redonne le même JSON.
 
+**Limite assumée (décision utilisateur, 2026-10-12)** : les fins de ligne `\r` seules (Mac OS 9) ne sont pas
+gérées. SPIP les traite comme des sauts de ligne ; le parseur ne découpe que sur `\n` (`\r\n` compris). Un
+segment qui contient un `\r` non suivi de `\n` reste un bloc brut : restitué tel quel, modifiable seulement en
+mode source. À reprendre dans les notes de version.
+
 ## 6. Copier-coller
 
 | Source | Traitement |

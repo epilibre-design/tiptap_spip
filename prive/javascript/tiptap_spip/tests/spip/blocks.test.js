@@ -72,6 +72,15 @@ describe('lignes commençant par |', () => {
 	});
 });
 
+describe('retour chariot seul', () => {
+	it('\\r non suivi de \\n : saut de ligne pour SPIP (a\\r\\r\\nb : deux paragraphes), segment brut', () => {
+		for (const source of ['a\r\r\nb', 'a\rb', '{\r\r\n{']) expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		// \r\n : fin de ligne ordinaire ; \r dans du code : sans effet
+		expect(parseContent('a\r\nb')[0].type).toBe('paragraph');
+		expect(parseContent('`a\rb`')[0].type).toBe('paragraph');
+	});
+});
+
 describe('conteneurs', () => {
 	it('<quote>, <poesie>, <div class="text-…">', () => {
 		expect(parseContent('<quote>\na\n\nb\n</quote>')).toEqual([node('blockquote', null, [p(text('a')), p(text('b'))])]);

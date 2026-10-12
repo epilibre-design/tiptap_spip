@@ -246,7 +246,25 @@ function wellNested(tokens) {
 	return stack.length === 0;
 }
 
+/**
+ * Mark vide ({{}}, {{</strong>) : SPIP rend <strong></strong>, que le JSON ne peut pas porter
+ * (mergeText retire les textes vides) ; ses délimiteurs restent bruts. Une mark qui n'entoure que
+ * des marks vides en devient non vide.
+ */
+function marksVides(tokens) {
+	const out = tokens.filter((tk) => tk.t !== 'text' || tk.v !== '');
+	for (let k = 0; k + 1 < out.length; k++) {
+		const [a, b] = [out[k], out[k + 1]];
+		if (a.t === 'open' && b.t === 'close' && a.mark === b.mark) {
+			out[k] = { t: 'raw', v: a.src };
+			out[k + 1] = { t: 'raw', v: b.src };
+		}
+	}
+	return out;
+}
+
 function buildNodes(tokens) {
+	tokens = marksVides(tokens);
 	const ok = wellNested(tokens);
 	const open = [];
 	const nodes = [];
