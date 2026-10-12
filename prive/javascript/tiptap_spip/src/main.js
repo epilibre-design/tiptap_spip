@@ -291,6 +291,29 @@ function racines(racine) {
 	return noeuds.length ? noeuds : [document];
 }
 
+let chargement = null;
+
+/**
+ * Importe les scripts des extensions tierces (config().extensions, pipeline tiptap_spip_extensions)
+ * dans leur ordre, une seule fois : ils enregistrent leurs extensions avant le premier
+ * tiptap_spip_init(). Un script qui ne se charge pas est signalé et n'arrête pas les autres.
+ *
+ * @param {{ importer?: (src: string) => Promise<unknown> }} options  importer : pour les tests
+ * @returns {Promise<void>}
+ */
+export function chargerExtensions({ importer = (src) => import(/* @vite-ignore */ src) } = {}) {
+	chargement ??= (async () => {
+		for (const src of config().extensions ?? []) {
+			try {
+				await importer(src);
+			} catch (erreur) {
+				console.warn('tiptap_spip : extension non chargée', src, erreur);
+			}
+		}
+	})();
+	return chargement;
+}
+
 /**
  * API des plugins tiers (spec 07 §2) : exports du module (SPIP 5, importmap) et window.tiptapSpip
  * (SPIP 4, scripts chargés après le bundle).

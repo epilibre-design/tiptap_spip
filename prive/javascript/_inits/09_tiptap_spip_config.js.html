@@ -8,6 +8,8 @@ Object.assign(window.spipConfig, {
 		...[(#VAL|tiptap_spip_config_js)],
 		services: "[(#URL_PAGE{tiptap_spip_services}|url_absolue|texte_script)]",
 		toolbars: [(#VAL|tiptap_spip_barres_json)],
+		[(#REM) scripts des extensions tierces (pipeline tiptap_spip_extensions) ]
+		extensions: [(#VAL|tiptap_spip_extensions_json)],
 		i18n: {
 			mode_source: "<:tiptap_spip:mode_source|texte_script:>",
 			lien: "<:tiptap_spip:lien|texte_script:>",
@@ -123,7 +125,9 @@ Object.assign(window.spipConfig, {
 			modele_aria: "<:tiptap_spip:modele_aria|texte_script:>",
 			zone_texte: "<:tiptap_spip:zone_texte|texte_script:>",
 			appliquer: "<:tiptap_spip:appliquer|texte_script:>",
-			annuler: "<:tiptap_spip:annuler|texte_script:>"
+			annuler: "<:tiptap_spip:annuler|texte_script:>",
+			[(#REM) chaînes des plugins tiers (pipeline tiptap_spip_i18n) ]
+			...[(#VAL|tiptap_spip_i18n_json)]
 		}
 	}
 });

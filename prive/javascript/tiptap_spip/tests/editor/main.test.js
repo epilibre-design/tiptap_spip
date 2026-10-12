@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { instances, tiptap_spip_init } from '../../src/main.js';
+import { chargerExtensions, instances, tiptap_spip_init } from '../../src/main.js';
 import { Popover } from '../../src/ui/popover.js';
 
 const page = (html) => {
@@ -348,6 +348,23 @@ describe('tiptap_spip_init', () => {
 		globalThis.spipConfig = { tiptap_spip: { prive: true, public: false } };
 		tiptap_spip_init();
 		expect(instances.size).toBe(1);
+	});
+
+	it('chargerExtensions : scripts de la configuration importés dans l\'ordre, un échec n\'arrête pas les suivants', async () => {
+		globalThis.spipConfig = { tiptap_spip: { extensions: ['https://a.test/a.js', 'https://b.test/b.js', 'https://c.test/c.js'] } };
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const importes = [];
+		await chargerExtensions({
+			importer: async (src) => {
+				importes.push(src);
+				if (src.includes('b.test')) throw new Error('404');
+			},
+		});
+		expect(importes).toEqual(['https://a.test/a.js', 'https://b.test/b.js', 'https://c.test/c.js']);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining('non chargée'), 'https://b.test/b.js', expect.any(Error));
+		// une seule fois, même appelé à nouveau (onAjaxLoad)
+		await chargerExtensions({ importer: async (src) => importes.push(src) });
+		expect(importes).toHaveLength(3);
 	});
 
 	it('formulaire d\'objet : seuls les champs de data-tts-champs sont équipés', () => {

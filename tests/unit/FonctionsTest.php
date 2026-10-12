@@ -130,4 +130,42 @@ final class FonctionsTest extends TestCase
 		test_reset_globals();
 		$this->assertSame('null', tiptap_spip_barres_json());
 	}
+
+	public function testExtensionsTiercesOrdonneesSelonLeursDependances(): void {
+		test_reset_globals();
+		$GLOBALS['_test_pipelines']['tiptap_spip_extensions'] = static function (array $flux): array {
+			$flux['data']['faq'] = ['src' => 'plugins/faq/javascript/faq.js', 'dependances' => ['base']];
+			$flux['data']['base'] = ['src' => 'plugins/base/base.js'];
+			$flux['data']['cdn'] = ['src' => 'https://cdn.test/x.js', 'dependances' => ['inconnue']];
+			$flux['data']['vide'] = ['src' => ''];
+			$flux['data']['boucle'] = ['src' => 'b.js', 'dependances' => ['boucle']];
+			return $flux;
+		};
+
+		$this->assertSame([
+			'https://exemple.test/plugins/base/base.js?1700000000',
+			'https://exemple.test/plugins/faq/javascript/faq.js?1700000000',
+			'https://cdn.test/x.js',
+			'https://exemple.test/b.js?1700000000',
+		], tiptap_spip_extensions());
+		$this->assertStringNotContainsString('<', tiptap_spip_extensions_json());
+	}
+
+	public function testSansExtensionTierceListeVide(): void {
+		test_reset_globals();
+		$this->assertSame([], tiptap_spip_extensions());
+		$this->assertSame('[]', tiptap_spip_extensions_json());
+		$this->assertSame('{}', tiptap_spip_i18n_json());
+	}
+
+	public function testChainesDeLanguesDesPluginsTiers(): void {
+		test_reset_globals();
+		$GLOBALS['_test_pipelines']['tiptap_spip_i18n'] = static function (array $flux): array {
+			$flux['data'] += ['faq' => 'FAQ', 'faq_question' => 'Question <b>', 'mauvaise cle' => 'x', 'nombre' => 3];
+			return $flux;
+		};
+
+		$this->assertSame(['faq' => 'FAQ', 'faq_question' => 'Question <b>'], tiptap_spip_i18n());
+		$this->assertSame('{"faq":"FAQ","faq_question":"Question \\u003Cb\\u003E"}', tiptap_spip_i18n_json());
+	}
 }

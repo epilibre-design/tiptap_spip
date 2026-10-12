@@ -24,6 +24,9 @@
 	<pipeline nom="tiptap_spip_contextes" action="" />
 	<!-- pipeline propre : barres d'outils de l'éditeur (spec 06 §2) -->
 	<pipeline nom="tiptap_spip_toolbars" action="" />
+	<!-- pipelines propres : scripts et chaînes de langue des extensions tierces (spec 07 §3) -->
+	<pipeline nom="tiptap_spip_extensions" action="" />
+	<pipeline nom="tiptap_spip_i18n" action="" />
 
 	<menu nom="configurer_tiptap_spip" titre="tiptap_spip:cfg_titre" parent="menu_configuration" />
 

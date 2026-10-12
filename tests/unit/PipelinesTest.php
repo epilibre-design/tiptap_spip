@@ -25,7 +25,9 @@ final class PipelinesTest extends TestCase
 		$this->assertStringContainsString('<script>' . "\n" . 'window.spipConfig ??= {};', $flux);
 		$this->assertStringContainsString('href="plugins/tiptap_spip/css/tiptap_spip.css?1700000000"', $flux);
 		$this->assertStringContainsString(
-			"import { tiptap_spip_init } from '//exemple.test/plugins/tiptap_spip/prive/javascript/tiptap_spip.min.js?1700000000';",
+			"import { chargerExtensions, tiptap_spip_init } from '//exemple.test/plugins/tiptap_spip/prive/javascript/tiptap_spip.min.js?1700000000';\n"
+				. "await chargerExtensions();\n"
+				. "tiptap_spip_init();",
 			$flux
 		);
 		$this->assertStringContainsString('onAjaxLoad(function () { tiptap_spip_init(this); });', $flux);

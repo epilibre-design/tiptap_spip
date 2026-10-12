@@ -27932,9 +27932,26 @@ function racines(racine) {
   const noeuds = liste.filter((n) => n?.querySelectorAll);
   return noeuds.length ? noeuds : [document];
 }
+var chargement = null;
+function chargerExtensions({ importer = (src) => import(
+  /* @vite-ignore */
+  src
+) } = {}) {
+  chargement ?? (chargement = (async () => {
+    for (const src of config().extensions ?? []) {
+      try {
+        await importer(src);
+      } catch (erreur) {
+        console.warn("tiptap_spip : extension non charg\xE9e", src, erreur);
+      }
+    }
+  })());
+  return chargement;
+}
 globalThis.tiptapSpip = Object.freeze({ registerExtension, registerToolbarComponent, core, ui, label, allerRetour });
 export {
   allerRetour,
+  chargerExtensions,
   core,
   instances,
   label,

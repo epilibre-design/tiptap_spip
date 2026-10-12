@@ -28,8 +28,10 @@ function tiptap_spip_head(bool $prive): string {
 		}
 	}
 	$head .= "<script>\n" . $config . "\n</script>\n";
+	// extensions des plugins tiers (pipeline tiptap_spip_extensions) importées avant le lancement
 	$head .= "<script type=\"module\">\n"
-		. "import { tiptap_spip_init } from '" . protocole_implicite(url_absolue(timestamp($lib))) . "';\n"
+		. "import { chargerExtensions, tiptap_spip_init } from '" . protocole_implicite(url_absolue(timestamp($lib))) . "';\n"
+		. "await chargerExtensions();\n"
 		. "tiptap_spip_init();\n"
 		. "onAjaxLoad(function () { tiptap_spip_init(this); });\n"
 		. "</script>\n";

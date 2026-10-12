@@ -43,6 +43,69 @@ function tiptap_spip_barres_json($valeur = null): string {
 	return (string) json_encode(tiptap_spip_barres() ?: null, TIPTAP_SPIP_JSON);
 }
 
+/**
+ * Scripts des extensions tierces (spec 07 §3) déclarés par le pipeline tiptap_spip_extensions :
+ * flux['data'] = nom → ['src' => chemin ou URL, 'dependances' => [noms]]. Chacun vient après ses
+ * dépendances (une dépendance inconnue ou circulaire est ignorée) ; un chemin devient une URL
+ * absolue horodatée. Le bundle les importe avant de lancer les éditeurs (chargerExtensions).
+ *
+ * @return string[] URL dans l'ordre de chargement
+ */
+function tiptap_spip_extensions(): array {
+	$flux = pipeline('tiptap_spip_extensions', ['args' => [], 'data' => []]);
+	$declarees = is_array($flux['data'] ?? null) ? $flux['data'] : [];
+	$ordre = [];
+	$vues = [];
+	$visiter = static function (string $nom) use (&$visiter, &$ordre, &$vues, $declarees): void {
+		if (isset($vues[$nom]) || !is_array($declarees[$nom] ?? null)) {
+			return;
+		}
+		$vues[$nom] = true;
+		foreach ((array) ($declarees[$nom]['dependances'] ?? []) as $dependance) {
+			$visiter((string) $dependance);
+		}
+		$ordre[] = $nom;
+	};
+	foreach (array_keys($declarees) as $nom) {
+		$visiter((string) $nom);
+	}
+	$urls = [];
+	foreach ($ordre as $nom) {
+		$src = (string) ($declarees[$nom]['src'] ?? '');
+		if ($src !== '') {
+			$urls[] = preg_match('#^(?:https?:)?//#', $src) ? $src : url_absolue(timestamp($src));
+		}
+	}
+	return $urls;
+}
+
+/** Filtre pour la configuration JS : URL des extensions tierces en JSON. La valeur filtrée est ignorée. */
+function tiptap_spip_extensions_json($valeur = null): string {
+	return (string) json_encode(tiptap_spip_extensions(), TIPTAP_SPIP_JSON | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * Chaînes de langue des plugins tiers (spec 07 §3), ajoutées aux libellés de l'interface par le
+ * pipeline tiptap_spip_i18n : flux['data'] = clé → texte (déjà traduit, _T() du plugin).
+ *
+ * @return array<string, string>
+ */
+function tiptap_spip_i18n(): array {
+	$flux = pipeline('tiptap_spip_i18n', ['args' => [], 'data' => []]);
+	$chaines = [];
+	foreach ((array) ($flux['data'] ?? []) as $cle => $texte) {
+		if (is_string($cle) && preg_match('/^\w+$/', $cle) && is_string($texte)) {
+			$chaines[$cle] = $texte;
+		}
+	}
+	return $chaines;
+}
+
+/** Filtre pour la configuration JS : chaînes des plugins tiers en JSON. La valeur filtrée est ignorée. */
+function tiptap_spip_i18n_json($valeur = null): string {
+	return (string) json_encode((object) tiptap_spip_i18n(), TIPTAP_SPIP_JSON);
+}
+
 /** Opérations du formulaire de services. */
 function tiptap_spip_operations(): array {
 	return ['previsu_modele', 'titre_lien', 'rechercher', 'glossaire', 'idiomes'];
