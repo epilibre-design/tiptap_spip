@@ -131,12 +131,14 @@ describe('sérialisation des notes', () => {
 		expect(serialize(node('doc', null, [p(text('x'), note([p(text('<>a'))], 'n'))]))).toBe('x[[<n><>a]]');
 	});
 
-	it('-> avant tout crochet dans le texte d\'une note : -&gt; ([[a -> b]] serait un lien entre crochets)', () => {
+	it('-> avant tout crochet ou ? en tête du texte d\'une note : entité (lien ou glossaire entre crochets)', () => {
 		const cas = [
 			[note([p(text('a -> b'))]), 'x[[a -&gt; b]]'],
 			[note([p(text('a -> b'))], 'n'), 'x[[<n>a -&gt; b]]'],
 			[note([p(text('<-> z'))]), 'x[[<-&gt; z]]'],
 			[note([p(text('a -> b -> c'))]), 'x[[a -&gt; b -&gt; c]]'],
+			// ? en tête : [[? serait un glossaire [?…] (glossaire avant notes)
+			[note([p(text('?[[note'))]), 'x[[&#63;&#91;&#91;note]]'],
 			// lien de la note : pas touché
 			[note([p(text('voir', [link('art1')]))]), 'x[[[voir->art1]]]'],
 		];

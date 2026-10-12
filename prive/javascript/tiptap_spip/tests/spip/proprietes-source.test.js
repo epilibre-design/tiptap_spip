@@ -40,6 +40,9 @@ const source = fc.array(fc.constantFrom(...FRAGMENTS), { maxLength: 40 }).map((f
 
 const verifier = (propriete) => fc.assert(fc.property(source, propriete), { numRuns: runs, seed });
 
+// \r seul (Mac OS 9) : non géré (spec 04 §5), segment brut ; l'identité tient, pas la forme canonique
+const sansRetourChariotSeul = (s) => fc.pre(!/\r(?!\n)/.test(s));
+
 describe('propriétés sur la source', () => {
 	it('totalité et identité : serialize(parse(s)) === s', () => {
 		verifier((s) => serialize(parse(s)) === s);
@@ -47,6 +50,7 @@ describe('propriétés sur la source', () => {
 
 	it('idempotence de la forme canonique', () => {
 		verifier((s) => {
+			sansRetourChariotSeul(s);
 			const once = serialize(parse(s), { conservative: false });
 			return serialize(parse(once), { conservative: false }) === once;
 		});
@@ -54,6 +58,7 @@ describe('propriétés sur la source', () => {
 
 	it('stabilité du JSON : la forme canonique re-parsée redonne le même JSON', () => {
 		verifier((s) => {
+			sansRetourChariotSeul(s);
 			const doc = parse(s);
 			return canon(parse(serialize(doc, { conservative: false })).content) === canon(doc.content);
 		});

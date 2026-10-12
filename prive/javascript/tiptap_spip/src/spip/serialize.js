@@ -43,9 +43,19 @@ export function serialize(doc, { conservative = true, regles } = {}) {
 /**
  * Contexte de la sérialisation en cours : conservative (forme canonique ou non, transmise au
  * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer) ; multi
- * (partie d'un multi : un [xx] s'écrit en entité).
+ * (partie d'un multi : un [xx] s'écrit en entité) ; ouvert (un < reste ouvert avant ce bloc).
  */
-let contexte = { conservative: true, note: false, multi: false };
+let contexte = { conservative: true, note: false, multi: false, ouvert: false };
+
+/**
+ * Un < reste-t-il ouvert à la fin de ce texte ? Le modèle du core ([a-z_-]{3,} … >) et une balise
+ * peuvent se fermer plus loin, même après une ligne vide. Sans chevron, l'état précédent demeure.
+ */
+function chevronOuvert(texte, avant = false) {
+	const a = texte.lastIndexOf('<');
+	const b = texte.lastIndexOf('>');
+	return a < 0 && b < 0 ? avant : a > b;
+}
 
 function serializeDoc(doc, conservative) {
 	const blocks = doc.content ?? [];
@@ -60,7 +70,14 @@ function serializeDoc(doc, conservative) {
 			i += a.spipGroup;
 			continue;
 		}
-		out += sep + serializeBlock(b);
+		// un < resté ouvert plus haut (modèle, balise) peut se fermer dans ce bloc : serializeInline le sait
+		const avant = contexte;
+		contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert) };
+		try {
+			out += sep + serializeBlock(b);
+		} finally {
+			contexte = avant;
+		}
 		i++;
 	}
 	return out + (conservative ? (doc.attrs?.spipTrail ?? '') : '');
@@ -277,9 +294,10 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 	let out = '';
 	const stack = [];
 	let atLineStart = lineStart;
-	// après le < brut d'une balise incomplète, un > du texte la fermerait : il s'écrit &gt; jusqu'au
-	// prochain fragment brut qui contient un chevron
-	let chevron = false;
+	// tant qu'un < reste ouvert (balise incomplète, ici ou dans un bloc précédent), un > du texte le
+	// fermerait et un | en ferait un modèle (<doc|x>) : &gt; et \|
+	let chevron = contexte.ouvert;
+	let lu = 0;
 	const closeTo = (k) => {
 		while (stack.length > k) out += stack.pop().close;
 	};
@@ -322,7 +340,12 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			// un [ final devant une note ou un fragment brut s'écrit en entité (\[[[n]] serait une note)
 			const avantCrochets = ecritAvecCrochet(nodes[i + 1], n);
 			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
-			out += chevron && !code ? texte.replace(/>/g, '&gt;') : texte;
+			chevron = chevronOuvert(out.slice(lu), chevron);
+			let ecrit = chevron && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
+			// > juste après un modèle : ses paramètres admettent des balises (<doc|<sup>>)
+			if (nodes[i - 1]?.type === 'spipModel') ecrit = ecrit.replace(/^>/, '&gt;');
+			out += ecrit;
+			lu = out.length;
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
 			const autobr = n.attrs?.syntax === 'autobr';
@@ -330,7 +353,6 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			atLineStart = autobr;
 		} else if (n.type === 'spipRawInline') {
 			out += n.attrs.source;
-			if (/[<>]/.test(n.attrs.source)) chevron = n.attrs.source === '<';
 			atLineStart = false;
 		} else if (n.type === 'spipLinkAuto') {
 			out += `[${linkEnd(n.attrs)}`;
@@ -378,10 +400,13 @@ function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) 
 		const doc = { type: 'doc', attrs: { spipLead, spipTrail }, content: content?.length ? content : [node('paragraph')] };
 		const nom = name == null ? '' : `<${name}>`;
 		let texte = serialize(doc, { conservative: avant.conservative });
-		// -> avant tout crochet : [[a -> b]] est un lien [a -> b] entre crochets (liens avant notes)
+		// relue, la note doit rester une note : ? en tête ([[? : glossaire [?…], traité avant les notes),
+		// puis -> avant tout crochet ([[a -> b]] : lien [a -> b] entre crochets) en entités
 		let fleche;
-		while (!noteDe(`[[${nom}${texte}]]`) && (fleche = texte.match(/^[^[\]]*?->/))) {
-			texte = `${fleche[0].slice(0, -2)}-&gt;${texte.slice(fleche[0].length)}`;
+		while (!noteDe(`[[${nom}${texte}]]`)) {
+			if (!nom && texte.startsWith('?')) texte = `&#63;${texte.slice(1)}`;
+			else if ((fleche = texte.match(/^[^[\]]*?->/))) texte = `${fleche[0].slice(0, -2)}-&gt;${texte.slice(fleche[0].length)}`;
+			else break;
 		}
 		// note automatique dont le texte commence par <…> : le core y lirait un nom
 		const m = name == null ? texte.match(RE_NOM_NOTE) : null;
@@ -432,7 +457,8 @@ export function escapeText(value, atLineStart, { link = false, avantCrochets = f
 		.replace(/[{}`~]/g, (c) => `\\${c}`)
 		.replace(/ /g, '~')
 		.replace(/&(?=#?[a-z0-9]+;)/gi, '&amp;')
-		.replace(/<(?=[a-z/!:])/gi, '&lt;')
+		// balise, idiome, ou modèle ([a-z_-]{3,} : <- d'une ancre reste tel quel)
+		.replace(/<(?=[a-z/!:]|[_-][a-z_-]{2})/gi, '&lt;')
 		// notes et glossaire sont traités avant les échappements \[ : on passe par des entités
 		.replace(/\[\?/g, '[&#63;')
 		.replace(/\[\[/g, '[&#91;');

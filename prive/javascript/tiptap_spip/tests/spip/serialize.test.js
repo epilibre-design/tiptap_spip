@@ -113,6 +113,25 @@ describe('< brut d\'une balise incomplète', () => {
 		expect(serialize(doc)).toBe('<https://x.org&gt; a<b>c>');
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
+
+	it('chevron resté ouvert dans un bloc précédent, ou modèle juste avant : > en &gt;', () => {
+		const model = { name: 'doc', id: '', params: [{ key: null, value: '' }, { key: null, value: '<sup' }], source: '<doc||<sup>' };
+		const cas = [
+			[[node('spipRaw', { source: '|<art12' }), p(text('>'))], '|<art12\n\n&gt;'],
+			[[p(node('spipModel', { model }), text('>'))], '<doc||<sup>&gt;'],
+		];
+		for (const [content, attendu] of cas) {
+			const doc = node('doc', null, content);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('un | du texte qui suit s\'écrit \\| : il formerait un modèle (<doc|x>)', () => {
+		const doc = node('doc', null, [p(raw('<'), text('doc|'), raw('{{'), text('t'), raw('}}'), text('|'), raw('</del>'))]);
+		expect(serialize(doc)).toBe('<doc\\|{{t}}\\|</del>');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
 });
 
 describe('accolades contre un fragment brut', () => {
@@ -137,6 +156,8 @@ describe('escapeText', () => {
 		['~ et  ', '\\~ et ~'],
 		['`x`', '\\`x\\`'],
 		['<b> <doc1> <:a:b:> a < b', '&lt;b> &lt;doc1> &lt;:a:b:> a < b'],
+		// nom de modèle : lettres, - et _ ([a-z_-]{3,})
+		['<-----|> <_xy|> <_x|>', '&lt;-----|> &lt;_xy|> <_x|>'],
 		['&eacute; & co', '&amp;eacute; & co'],
 		// \[ protège un lien et une abréviation (comme dans SPIP), pas une ancre : entité
 		['[?g] [[n]] [x->y] [a|b] [#a<-] [b<-] [sic]', '[&#63;g] [&#91;n]] \\[x->y] \\[a|b] &#91;#a<-] &#91;b<-] [sic]'],

@@ -18104,7 +18104,12 @@ function serialize(doc4, { conservative = true, regles } = {}) {
     contexte = avant;
   }
 }
-var contexte = { conservative: true, note: false, multi: false };
+var contexte = { conservative: true, note: false, multi: false, ouvert: false };
+function chevronOuvert(texte2, avant = false) {
+  const a = texte2.lastIndexOf("<");
+  const b = texte2.lastIndexOf(">");
+  return a < 0 && b < 0 ? avant : a > b;
+}
 function serializeDoc(doc4, conservative) {
   const blocks2 = doc4.content ?? [];
   let out = conservative ? doc4.attrs?.spipLead ?? "" : "";
@@ -18118,7 +18123,13 @@ function serializeDoc(doc4, conservative) {
       i2 += a.spipGroup;
       continue;
     }
-    out += sep + serializeBlock(b);
+    const avant = contexte;
+    contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert) };
+    try {
+      out += sep + serializeBlock(b);
+    } finally {
+      contexte = avant;
+    }
     i2++;
   }
   return out + (conservative ? doc4.attrs?.spipTrail ?? "" : "");
@@ -18295,7 +18306,8 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
   let out = "";
   const stack = [];
   let atLineStart = lineStart;
-  let chevron = false;
+  let chevron = contexte.ouvert;
+  let lu = 0;
   const closeTo = (k) => {
     while (stack.length > k) out += stack.pop().close;
   };
@@ -18328,7 +18340,11 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
       const avantCrochets = ecritAvecCrochet(nodes[i2 + 1], n);
       const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
-      out += chevron && !code2 ? texte2.replace(/>/g, "&gt;") : texte2;
+      chevron = chevronOuvert(out.slice(lu), chevron);
+      let ecrit = chevron && !code2 ? texte2.replace(/>/g, "&gt;").replace(/(?<!\\)\|/g, "\\|") : texte2;
+      if (nodes[i2 - 1]?.type === "spipModel") ecrit = ecrit.replace(/^>/, "&gt;");
+      out += ecrit;
+      lu = out.length;
       atLineStart = false;
     } else if (n.type === "hardBreak") {
       const autobr = n.attrs?.syntax === "autobr";
@@ -18336,7 +18352,6 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       atLineStart = autobr;
     } else if (n.type === "spipRawInline") {
       out += n.attrs.source;
-      if (/[<>]/.test(n.attrs.source)) chevron = n.attrs.source === "<";
       atLineStart = false;
     } else if (n.type === "spipLinkAuto") {
       out += `[${linkEnd(n.attrs)}`;
@@ -18373,8 +18388,10 @@ function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) 
     const nom = name == null ? "" : `<${name}>`;
     let texte2 = serialize(doc4, { conservative: avant.conservative });
     let fleche;
-    while (!noteDe(`[[${nom}${texte2}]]`) && (fleche = texte2.match(/^[^[\]]*?->/))) {
-      texte2 = `${fleche[0].slice(0, -2)}-&gt;${texte2.slice(fleche[0].length)}`;
+    while (!noteDe(`[[${nom}${texte2}]]`)) {
+      if (!nom && texte2.startsWith("?")) texte2 = `&#63;${texte2.slice(1)}`;
+      else if (fleche = texte2.match(/^[^[\]]*?->/)) texte2 = `${fleche[0].slice(0, -2)}-&gt;${texte2.slice(fleche[0].length)}`;
+      else break;
     }
     const m = name == null ? texte2.match(RE_NOM_NOTE) : null;
     if (m && parseNote(`[[${texte2}]]`, noteDe(`[[${texte2}]]`)?.data.masked)?.name != null) {
@@ -18404,7 +18421,7 @@ function serializeCode(code2) {
   return code2.includes("`") ? `\`\`${code2}\`\`` : `\`${code2}\``;
 }
 function escapeText(value, atLineStart, { link = false, avantCrochets = false, cellule = false } = {}) {
-  let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:])/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
+  let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:]|[_-][a-z_-]{2})/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
   if (contexte.multi) s = s.replace(RE_AVANT_LANGUE, "&#91;");
   if (!link) {
     s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?![^\]]*\])(?=[\s\S])/g, "&#91;").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
@@ -18712,13 +18729,13 @@ function segment(source, masked) {
     return { lead: source, trail: "", segments: [] };
   }
   const lead = masked.match(/^(?:[ \t\r]*\n)*/)[0];
-  const trail = masked.slice(lead.length).match(/(?:\n[ \t\r]*)*$/)[0];
+  const trail = masked.slice(lead.length).match(/(?:\r?\n[ \t\r]*)*$/)[0];
   const bodyStart = lead.length;
   const bodyEnd = masked.length - trail.length;
   const raw2 = [];
   let pos = bodyStart;
   let sep = "";
-  const SEP = /\n(?:[ \t\r]*\n)+/g;
+  const SEP = /\r?\n(?:[ \t\r]*\n)+/g;
   SEP.lastIndex = bodyStart;
   let m;
   while ((m = SEP.exec(masked)) && m.index < bodyEnd) {
@@ -18774,7 +18791,7 @@ function blocksOf(src, msk, regions) {
   try {
     const verbatim = verbatimBlock(src, regions);
     if (verbatim) return verbatim;
-    if (/\r(?!\n|$)/.test(msk)) throw new Fallback();
+    if (/\r(?!\n)/.test(msk)) throw new Fallback();
     return containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
   } catch {
     return [node("spipRaw", { source: src })];
