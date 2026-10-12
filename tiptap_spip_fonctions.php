@@ -107,6 +107,15 @@ function tiptap_spip_i18n_json($valeur = null): string {
 	return (string) json_encode((object) tiptap_spip_i18n(), TIPTAP_SPIP_JSON);
 }
 
+/**
+ * Catalogue des modèles pour la config JS (`modeles`) : nom du modèle → formulaire du plugin Insérer
+ * modèles et ses champs ; null sans le plugin (inc/tiptap_spip_modeles.php).
+ */
+function tiptap_spip_catalogue_modeles_json($valeur = null): string {
+	include_spip('inc/tiptap_spip_modeles');
+	return (string) json_encode(tiptap_spip_catalogue_modeles(), TIPTAP_SPIP_JSON);
+}
+
 /** Opérations du formulaire de services. */
 function tiptap_spip_operations(): array {
 	return ['previsu_modele', 'titre_lien', 'rechercher', 'glossaire', 'idiomes'];

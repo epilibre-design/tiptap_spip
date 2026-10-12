@@ -14,6 +14,8 @@
 	<licence lien="https://spdx.org/licenses/GPL-3.0-or-later.html">GPL-3.0-or-later</licence>
 
 	<utilise nom="porte_plume" />
+	<!-- catalogue des modèles : formulaires YAML en modalbox (spec 05 §3, Q3) -->
+	<utilise nom="inserer_modeles" />
 
 	<pipeline nom="header_prive" inclure="tiptap_spip_pipelines.php" />
 	<pipeline nom="insert_head" inclure="tiptap_spip_pipelines.php" />
