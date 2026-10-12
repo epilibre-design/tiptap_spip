@@ -74,6 +74,7 @@
   - **Saisies du formulaire :** la liste du plugin 2.4.1 ne contient plus les saisies (`parametres`) ; elles sont lues par `charger_infos_formulaire_modele()`.
   - **Bug du plein écran (antérieur à ce lot) :** `.formulaire_spip` (`position: relative`, `z-index: 2`) enfermait l'éditeur plein écran sous le bandeau de l'espace privé (`z-index: 1001`), qui recouvrait sa barre d'outils. L'e2e du plein écran ne testait que le clavier. Désormais, le plein écran est à 9000, sous lity (9990), et ses ancêtres passent au même niveau par `:has()`. L'e2e vérifie qu'un bouton de la barre est cliquable.
   - **Page de configuration :** pas d'option propre. Elle renvoie à la configuration du plugin (`test_plugin_actif` : `#PLUGIN{inserer_modeles}` y rendait la liste sérialisée des plugins).
+- **Après revue :** une valeur vide ou `0` (`<doc12|alt=0>`, `<doc0>`) passe aussi en saisie brute. Le `traiter()` du plugin écarte les valeurs fausses en PHP, et « Modifier » perdait le paramètre.
 - **Limites :**
   - le formulaire réécrit le raccourci dans l'ordre du plugin ;
   - un modèle dans une note s'édite en brut ;

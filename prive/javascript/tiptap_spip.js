@@ -26521,15 +26521,16 @@ function catalogueDe(textarea) {
   const url = urlCatalogue(textarea);
   return url && modeles && Object.keys(modeles).length ? { url, modeles } : null;
 }
+var reecrite = (valeur) => valeur !== "" && valeur !== "0";
 function parametresFormulaire(model, description) {
   const { formulaire, id, champs, valeurs, multiples } = description;
   const params = new URLSearchParams({ formulaire_modele: formulaire });
   if (model.id) {
-    if (!id) return null;
+    if (!id || !reecrite(model.id)) return null;
     params.set(id, model.id);
   }
   const poser = (champ, valeur) => {
-    if (!champs.includes(champ) || params.has(champ) || params.has(`${champ}[]`)) return false;
+    if (!champs.includes(champ) || !reecrite(valeur) || params.has(champ) || params.has(`${champ}[]`)) return false;
     if (multiples.includes(champ)) {
       for (const v of valeur.split(",")) params.append(`${champ}[]`, v);
     } else {

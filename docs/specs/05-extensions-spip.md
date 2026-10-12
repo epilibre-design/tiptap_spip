@@ -166,8 +166,10 @@ avec les évolutions suivantes.
   - **Barre :** avec catalogue, « Modèle » est un menu : « Catalogue des modèles… » ou « Saisir le
     raccourci… ». `Mod-Alt-M` ouvre la saisie brute. Sans catalogue (pas de plugin, pas de droit, aucun
     modèle proposé, SPIP 5), c'est le bouton de la saisie brute.
-  - **« Modifier » :** il ouvre le formulaire prérempli si le modèle est au catalogue et que chacun de ses
-    paramètres y a un champ ; sinon la saisie brute, pour ne jamais perdre un paramètre.
+  - **« Modifier » :** il ouvre le formulaire prérempli si le modèle est au catalogue et que le formulaire
+    peut réécrire chacun de ses paramètres ; sinon la saisie brute, pour ne jamais perdre un paramètre.
+    Le formulaire perdrait un paramètre sans champ, ou une valeur vide ou `0` (identifiant compris) :
+    le `traiter()` du plugin écarte les valeurs fausses en PHP.
   - **Limites :**
     - le formulaire réécrit le raccourci dans son ordre (identifiant, `variante`, `classe`, `align`, puis
       les champs) ;

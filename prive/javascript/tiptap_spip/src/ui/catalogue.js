@@ -36,9 +36,15 @@ export function catalogueDe(textarea) {
 }
 
 /**
+ * Valeur que le plugin réécrit : son traiter() écarte les valeurs fausses en PHP (`if (_request($champ)
+ * && …)`), identifiant compris : '' et '0'.
+ */
+const reecrite = (valeur) => valeur !== '' && valeur !== '0';
+
+/**
  * Paramètres d'URL qui préremplissent le formulaire avec un modèle existant (`charger()` du plugin
- * lit chaque champ par _request()), ou null si un paramètre n'a pas de champ : le formulaire le
- * perdrait en réécrivant le raccourci, la saisie brute s'impose alors.
+ * lit chaque champ par _request()), ou null si le formulaire perdrait un paramètre en réécrivant le
+ * raccourci (paramètre sans champ, valeur vide ou 0) : la saisie brute s'impose alors.
  *
  * @param {{ id: string, params: { key: ?string, value: string }[] }} model
  * @param {{ formulaire: string, id: ?string, champs: string[], valeurs: Record<string, string>, multiples: string[] }} description
@@ -49,11 +55,11 @@ export function parametresFormulaire(model, description) {
 	const { formulaire, id, champs, valeurs, multiples } = description;
 	const params = new URLSearchParams({ formulaire_modele: formulaire });
 	if (model.id) {
-		if (!id) return null;
+		if (!id || !reecrite(model.id)) return null;
 		params.set(id, model.id);
 	}
 	const poser = (champ, valeur) => {
-		if (!champs.includes(champ) || params.has(champ) || params.has(`${champ}[]`)) return false;
+		if (!champs.includes(champ) || !reecrite(valeur) || params.has(champ) || params.has(`${champ}[]`)) return false;
 		if (multiples.includes(champ)) {
 			for (const v of valeur.split(',')) params.append(`${champ}[]`, v);
 		} else {

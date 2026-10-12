@@ -14,7 +14,7 @@ const MEDIA = {
 	nom: 'Document',
 	modele: 'doc',
 	id: 'id_modele',
-	champs: ['align', 'largeur', 'masquer', 'titre'],
+	champs: ['align', 'largeur', 'masquer', 'titre', 'alt'],
 	valeurs: { left: 'align', center: 'align', right: 'align' },
 	multiples: ['masquer'],
 };
@@ -91,6 +91,15 @@ describe('parametresFormulaire', () => {
 
 	it('valeur seule égale au nom d\'un champ : champ=champ, comme l\'écrit le plugin', () => {
 		expect(params('<doc5|titre>')).toBe('formulaire_modele=media&id_modele=5&titre=titre');
+	});
+
+	it('null pour une valeur vide ou 0 : le plugin ne réécrit pas les valeurs fausses en PHP', () => {
+		// traiter() du plugin : `if (_request($champ) && …)` écarte '' et '0', identifiant compris
+		expect(params('<doc12|alt=0>')).toBeNull();
+		expect(params('<doc12|alt=>')).toBeNull();
+		expect(params('<doc12|masquer=>')).toBeNull();
+		expect(params('<doc0|left>')).toBeNull();
+		expect(params('<doc12|largeur=10>')).toBe('formulaire_modele=media&id_modele=12&largeur=10');
 	});
 
 	it('null si un paramètre n\'a pas de champ : la réécriture le perdrait', () => {
