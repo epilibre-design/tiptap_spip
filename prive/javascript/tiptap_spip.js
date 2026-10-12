@@ -17860,7 +17860,8 @@ function parseMulti(src, masked = src) {
 var BARRE_FINALE = /(?<!\\)(?:\\\\)*\\$/;
 function serializeMulti(parts) {
   const ordre = [...parts.filter((p) => !p.lang), ...parts.filter((p) => p.lang)];
-  return `<multi>${ordre.map(({ lang, texte: texte2 }) => (lang ? `[${lang}]` : "") + texte2).join("")}</multi>`;
+  const texte2 = (t, k) => k < ordre.length - 1 ? t.replace(/\\?\[$/, "&#91;") : t;
+  return `<multi>${ordre.map(({ lang, texte: t }, k) => (lang ? `[${lang}]` : "") + texte2(t, k)).join("")}</multi>`;
 }
 function parseIdiome(src) {
   const m = src.match(RE_IDIOME_SEUL);
@@ -18104,11 +18105,15 @@ function serialize(doc4, { conservative = true, regles } = {}) {
     contexte = avant;
   }
 }
-var contexte = { conservative: true, note: false, multi: false, ouvert: false, crochets: 0 };
-function chevronOuvert(texte2, avant = false) {
-  const a = texte2.lastIndexOf("<");
-  const b = texte2.lastIndexOf(">");
-  return a < 0 && b < 0 ? avant : a > b;
+var contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0 };
+function chevronsOuverts(texte2, avant = 0) {
+  if (!texte2.includes("<") && !texte2.includes(">")) return avant;
+  let n = avant;
+  for (const c of texte2.replace(/->|<-/g, "")) {
+    if (c === "<") n++;
+    else if (c === ">" && n > 0) n--;
+  }
+  return n;
 }
 function crochetsOuverts(texte2, avant = 0) {
   if (!texte2.includes("[") && !texte2.includes("]")) return avant;
@@ -18131,7 +18136,7 @@ function serializeDoc(doc4, conservative) {
     const sep = separator(i2, conservative ? a.spipSep : null);
     if (conservative && a.spipGroup && typeof a.spipSrc === "string" && canon(blocks2.slice(i2, i2 + a.spipGroup)) === a.spipHash) {
       crochets = crochetsOuverts(sep + a.spipSrc, crochets);
-      ouvert2 = chevronOuvert(a.spipSrc, ouvert2);
+      ouvert2 = chevronsOuverts(a.spipSrc, ouvert2);
       out += sep + a.spipSrc;
       i2 += a.spipGroup;
       continue;
@@ -18141,7 +18146,7 @@ function serializeDoc(doc4, conservative) {
     try {
       const ecrit = sep + serializeBlock(b);
       crochets = crochetsOuverts(ecrit, crochets);
-      ouvert2 = chevronOuvert(ecrit, ouvert2);
+      ouvert2 = chevronsOuverts(ecrit, ouvert2);
       out += ecrit;
     } finally {
       contexte = avant;
@@ -18377,13 +18382,15 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
       const avantCrochets = ecritAvecCrochet(nodes[i2 + 1], n);
       const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
-      chevron = chevronOuvert(out.slice(lu), chevron);
+      chevron = chevronsOuverts(out.slice(lu), chevron);
       crochets = crochetsOuverts(out.slice(lu), crochets);
-      let ecrit = chevron && !code2 ? texte2.replace(/>/g, "&gt;").replace(/(?<!\\)\|/g, "\\|") : texte2;
+      let ecrit = chevron > 0 && !code2 ? texte2.replace(/>/g, "&gt;").replace(/(?<!\\)\|/g, "\\|") : texte2;
       if (crochets > 0 && !code2 && !inLink && !atomique) ecrit = ecrit.replace(/->/g, "-&gt;");
       if (contexte.note && !code2 && out.endsWith("]")) ecrit = ecrit.replace(/^\]/, "&#93;");
       if (nodes[i2 - 1]?.type === "spipModel") ecrit = ecrit.replace(/^>/, "&gt;");
+      if (/^--?$/.test(brut(nodes[i2 - 1]))) ecrit = ecrit.replace(/^[*#-]/, "\\$&");
       crochets = crochetsOuverts(ecrit, crochets);
+      chevron = chevronsOuverts(ecrit, chevron);
       out += ecrit;
       lu = out.length;
       atLineStart = false;
@@ -18436,6 +18443,11 @@ function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) 
       else if (texte2.endsWith("]")) texte2 += "\n";
       else break;
     }
+    const masque = name == null ? protect(texte2).masked : "";
+    if (name == null && /^[ \t\n\v\f\r]*<[^>'"]*$/.test(masque)) {
+      const blancs = texte2.match(/^[ \t\n\v\f\r]*/)[0];
+      texte2 = `${blancs}&lt;${texte2.slice(blancs.length + 1)}`;
+    }
     const m = name == null ? texte2.match(RE_NOM_NOTE) : null;
     if (m && parseNote(`[[${texte2}]]`, noteDe(`[[${texte2}]]`)?.data.masked)?.name != null) {
       texte2 = `${m[1]}&lt;${texte2.slice(m[1].length + 1)}`;
@@ -18484,8 +18496,8 @@ var LINK_ENTITIES = { ...ENTITIES, "#124": "|", "#93": "]" };
 var entityRegex = (entities) => new RegExp(`^&(${Object.keys(entities).join("|")});`);
 var RE_ENTITY = entityRegex(ENTITIES);
 var RE_LINK_ENTITY = entityRegex(LINK_ENTITIES);
-function parseInline(source, masked, regions, { lineStart = false, link = false, uneLigne = false } = {}) {
-  return buildNodes(tokenize(source, masked, regions, lineStart, link, uneLigne));
+function parseInline(source, masked, regions, { lineStart = false, link = false, uneLigne = false, bords = true } = {}) {
+  return buildNodes(tokenize(source, masked, regions, lineStart, link, uneLigne, bords));
 }
 function maskCode(part) {
   let masked = part;
@@ -18536,7 +18548,7 @@ function multiNode(src, masked) {
     const barre = BARRE_FINALE.test(src.slice(start, end)) ? 1 : 0;
     const part = src.slice(start, end - barre);
     const p = protect(part);
-    const content = parseInline(part, p.masked, p.regions);
+    const content = parseInline(part, p.masked, p.regions, { bords: false });
     return { lang, content: barre ? [...content, raw("\\")] : content };
   });
   return node("spipMultiInline", { parts, spipSrc: src, spipHash: canon(parts) });
@@ -18544,7 +18556,7 @@ function multiNode(src, masked) {
 function noteNode({ name, content, lead, trail }) {
   return node("spipNote", { ...name === null ? {} : { name }, content, spipLead: lead, spipTrail: trail });
 }
-function tokenize(source, masked, regions, lineStart, link, uneLigne) {
+function tokenize(source, masked, regions, lineStart, link, uneLigne, bords) {
   const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
   const entities = link ? LINK_ENTITIES : ENTITIES;
   const tokens = [];
@@ -18610,11 +18622,12 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne) {
     if (c === "\r" && masked[i2 + 1] === "\n") {
       i2++;
     } else if (c === "\n") {
-      if ((m = rest.match(/^\n_ +/)) && !rest.startsWith("\n____")) {
-        push({ t: "br", syntax: "manual" });
+      const enTete = bords && tokens.length === 0 && buf === "";
+      if ((m = rest.match(/^\n_ +/)) && !rest.startsWith("\n____") && /\S/.test(rest.slice(m[0].length))) {
+        if (!enTete) push({ t: "br", syntax: "manual" });
         i2 += m[0].length;
       } else {
-        push({ t: "br", syntax: "autobr" });
+        if (!enTete) push({ t: "br", syntax: "autobr" });
         i2++;
         lineMarker();
       }
@@ -18631,7 +18644,7 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne) {
     } else if (c === "<" && (m = rest.match(/^<(\/?)(strong|i|del|sup|sub)>/))) {
       push({ t: m[1] ? "close" : "open", mark: MARK_TAGS[m[2]], src: m[0] });
       i2 += m[0].length;
-    } else if (uneLigne && rest.startsWith("<br />")) {
+    } else if (uneLigne && rest.startsWith("<br />") && !(tokens.length === 0 && buf === "") && /\S/.test(rest.slice(6))) {
       push({ t: "br", syntax: "manual" });
       i2 += 6;
     } else if (c === "<" && (m = rest.match(/^(?:<!--[\s\S]*?-->|<\/?[a-z][a-z0-9]*\b[^<>]*>)/i))) {
@@ -18892,7 +18905,12 @@ function multiBlock(src, masked) {
 function containerBlock(src, msk) {
   let m;
   const ferme = (inner, tag) => {
-    if (new RegExp(`</${tag}>`, "i").test(inner)) throw new Fallback();
+    let profondeur = 0;
+    for (const [balise] of inner.matchAll(new RegExp(`</?${tag}\\b[^>]*>`, "gi"))) {
+      profondeur += balise[1] === "/" ? -1 : 1;
+      if (profondeur < 0) throw new Fallback();
+    }
+    if (profondeur !== 0) throw new Fallback();
   };
   if (m = msk.match(/^<quote>([\s\S]*)<\/quote>$/i)) {
     ferme(m[1], "quote");
@@ -18966,7 +18984,11 @@ function runBlocks(src, msk, regions) {
       while (j < lines.length && !special(L(j))) j++;
       if (LIGNE_VIDE.test(msk.slice(lines[k].start, lines[j - 1].end))) throw new Fallback();
       const content = inlineOf(src, msk, regions, lines[k].start, lines[j - 1].end, { lineStart: true });
-      out.push(node("paragraph", null, content.length ? content : void 0));
+      if (content.length === 1 && content[0].type === "spipModel" && !content[0].marks) {
+        out.push(node("spipModelBlock", { model: content[0].attrs.model }));
+      } else {
+        out.push(node("paragraph", null, content.length ? content : void 0));
+      }
       k = j;
     }
   }
@@ -18977,8 +18999,11 @@ function listBlocks(src, msk, regions, lines, L, first2) {
   lines.forEach((line, n) => {
     const m = L(first2 + n).match(RE_ITEM);
     if (m) {
-      items.push({ depth: m[1].length, type: m[1][0] === "*" ? "bulletList" : "orderedList", start: line.start + m[0].length, end: line.end });
+      const vide2 = L(first2 + n).slice(m[0].length).trim() === "";
+      items.push({ depth: m[1].length, type: m[1][0] === "*" ? "bulletList" : "orderedList", start: line.start + m[0].length, end: line.end, vide: vide2 });
     } else if (RE_HR.test(L(first2 + n)) || heading(L(first2 + n)) !== null) {
+      throw new Fallback();
+    } else if (items[items.length - 1].vide) {
       throw new Fallback();
     } else {
       items[items.length - 1].end = line.end;

@@ -109,6 +109,16 @@ describe('multi bloc', () => {
 		}
 	});
 
+	it('code contenant un marqueur de langue : brut (SPIP y lit un marqueur, le code ne s\'échappe pas)', () => {
+		expect(parse('<multi>[fr]`[mot]`\n\nb</multi>').content[0].type).toBe('spipRaw');
+	});
+
+	it('partie qui finit par [ : &#91; (devant le marqueur suivant, \\[[fr] ferait une note)', () => {
+		const doc = node('doc', null, [bloc(['fr', [p(text('['))]], ['en', [p(text('b')), p(text('c'))]]), p(text(']]a'))]);
+		expect(serialize(doc)).toBe('<multi>[fr]&#91;[en]b\n\nc</multi>\n\n]]a');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('partie qui n\'est pas faite de paragraphes : brut', () => {
 		const source = '<multi>[fr]Un\n\n-* liste[en]One\n\nTwo</multi>';
 		expect(parse(source).content[0].type).toBe('spipRaw');

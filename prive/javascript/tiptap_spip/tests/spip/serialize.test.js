@@ -121,9 +121,22 @@ describe('serializeInline', () => {
 });
 
 describe('< brut d\'une balise incomplète', () => {
-	it('un > du texte qui suit s\'écrit &gt; : il fermerait la balise, jusqu\'au prochain fragment à chevron', () => {
+	it('un > du texte qui suit s\'écrit &gt; : il fermerait la balise', () => {
 		const doc = node('doc', null, [p(raw('<'), text('https://x.org> a'), raw('<b>'), text('c>'))]);
-		expect(serialize(doc)).toBe('<https://x.org&gt; a<b>c>');
+		// chevrons comptés : le < incomplet reste ouvert après <b>, le > final aussi en entité
+		expect(serialize(doc)).toBe('<https://x.org&gt; a<b>c&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('chevrons comptés : le -> d\'un lien ne referme pas le < (liens masqués avant les balises)', () => {
+		const doc = node('doc', null, [p(raw('<'), text('https://x.org'), node('spipLinkAuto', { href: 'art12', newWindow: false }), text('>'))]);
+		expect(serialize(doc)).toBe('<https://x.org[->art12]&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('chevrons comptés : un idiome (<:m:c:>) ne referme pas le < ouvert avant lui', () => {
+		const doc = node('doc', null, [p(raw('<'), text('doc'), node('spipIdiome', { module: 'mod', cle: 'cle' }), text('>'))]);
+		expect(serialize(doc)).toBe('<doc<:mod:cle:>&gt;');
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
@@ -175,6 +188,16 @@ describe('accolades contre un fragment brut', () => {
 		];
 		for (const [para, attendu] of cas) {
 			const doc = node('doc', null, [para]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+});
+
+describe('marqueur de début de ligne brut', () => {
+	it('* # ou - en tête du texte qui suit un - brut : échappé (-* serait une liste, ---- un filet)', () => {
+		for (const [t, attendu] of [['*', '-\\*'], ['#', '-\\#'], ['--', '-\\--']]) {
+			const doc = node('doc', null, [p(raw('-'), text(t))]);
 			expect(serialize(doc)).toBe(attendu);
 			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 		}
@@ -279,6 +302,10 @@ describe('serializeBlock', () => {
 		const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text('a'), br, text('b'))])])])]);
 		expect(serialize(doc)).toBe('|a<br />b|');
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		// au bord du contenu, <br /> reste brut (un saut de bord ne s'écrit pas, SPIP le rend)
+		const bord = stripTech(parse('|a|<br />|a|').content[0].content[0].content[1].content[0].content);
+		expect(bord).toEqual([raw('<br />')]);
+		expect(serialize(parse('|a|<br />|a|'), { conservative: false })).toBe('|a|<br />|a|');
 		// hors cellule, <br /> reste un fragment brut
 		expect(stripTech(parse('a<br />b').content[0].content)).toEqual([text('a'), raw('<br />'), text('b')]);
 	});

@@ -102,9 +102,15 @@ function multiBlock(src, masked) {
 
 function containerBlock(src, msk) {
 	let m;
-	// contenu qui porte la balise fermante du conteneur : réécrit, il le fermerait plus tôt
+	// contenu où les balises du conteneur ne s'équilibrent pas (</div> en trop, <div> non refermé) :
+	// réécrit, il fermerait le conteneur plus tôt ou plus tard
 	const ferme = (inner, tag) => {
-		if (new RegExp(`</${tag}>`, 'i').test(inner)) throw new Fallback();
+		let profondeur = 0;
+		for (const [balise] of inner.matchAll(new RegExp(`</?${tag}\\b[^>]*>`, 'gi'))) {
+			profondeur += balise[1] === '/' ? -1 : 1;
+			if (profondeur < 0) throw new Fallback();
+		}
+		if (profondeur !== 0) throw new Fallback();
 	};
 	if ((m = msk.match(/^<quote>([\s\S]*)<\/quote>$/i))) {
 		ferme(m[1], 'quote');
@@ -193,7 +199,12 @@ function runBlocks(src, msk, regions) {
 			// schéma (deux sauts de ligne de suite ne se relisent pas)
 			if (LIGNE_VIDE.test(msk.slice(lines[k].start, lines[j - 1].end))) throw new Fallback();
 			const content = inlineOf(src, msk, regions, lines[k].start, lines[j - 1].end, { lineStart: true });
-			out.push(node('paragraph', null, content.length ? content : undefined));
+			// modèle seul (sans mark) : modèle de bloc, comme seul dans son segment (même rendu)
+			if (content.length === 1 && content[0].type === 'spipModel' && !content[0].marks) {
+				out.push(node('spipModelBlock', { model: content[0].attrs.model }));
+			} else {
+				out.push(node('paragraph', null, content.length ? content : undefined));
+			}
 			k = j;
 		}
 	}
@@ -206,9 +217,14 @@ function listBlocks(src, msk, regions, lines, L, first) {
 	lines.forEach((line, n) => {
 		const m = L(first + n).match(RE_ITEM);
 		if (m) {
-			items.push({ depth: m[1].length, type: m[1][0] === '*' ? 'bulletList' : 'orderedList', start: line.start + m[0].length, end: line.end });
+			const vide = L(first + n).slice(m[0].length).trim() === '';
+			items.push({ depth: m[1].length, type: m[1][0] === '*' ? 'bulletList' : 'orderedList', start: line.start + m[0].length, end: line.end, vide });
 		} else if (RE_HR.test(L(first + n)) || heading(L(first + n)) !== null) {
 			// filet ou intertitre dans un élément (<li>a<hr /></li>) : pas dans le schéma
+			throw new Fallback();
+		} else if (items[items.length - 1].vide) {
+			// première ligne vide puis continuation : rendu SPIP irrégulier (<br /> devant un marqueur de
+			// ligne, rien sinon), pas dans le schéma
 			throw new Fallback();
 		} else {
 			items[items.length - 1].end = line.end; // ligne de continuation

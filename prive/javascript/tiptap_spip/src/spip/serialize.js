@@ -43,19 +43,25 @@ export function serialize(doc, { conservative = true, regles } = {}) {
 /**
  * Contexte de la sérialisation en cours : conservative (forme canonique ou non, transmise au
  * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer) ; multi
- * (partie d'un multi : un [xx] s'écrit en entité) ; ouvert (un < reste ouvert avant ce bloc) ;
+ * (partie d'un multi : un [xx] s'écrit en entité) ; ouvert (nombre de < restés ouverts avant ce bloc) ;
  * crochets (nombre de [ restés ouverts avant ce bloc).
  */
-let contexte = { conservative: true, note: false, multi: false, ouvert: false, crochets: 0 };
+let contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0 };
 
 /**
- * Un < reste-t-il ouvert à la fin de ce texte ? Le modèle du core ([a-z_-]{3,} … >) et une balise
- * peuvent se fermer plus loin, même après une ligne vide. Sans chevron, l'état précédent demeure.
+ * Chevrons < restés ouverts à la fin de ce texte, en partant de ceux d'avant : le modèle du core
+ * ([a-z_-]{3,} … >) et une balise peuvent se fermer plus loin, même après une ligne vide. Comptés : un
+ * idiome (<:m:c:>) ferme son propre chevron, pas celui d'avant.
  */
-function chevronOuvert(texte, avant = false) {
-	const a = texte.lastIndexOf('<');
-	const b = texte.lastIndexOf('>');
-	return a < 0 && b < 0 ? avant : a > b;
+function chevronsOuverts(texte, avant = 0) {
+	if (!texte.includes('<') && !texte.includes('>')) return avant;
+	let n = avant;
+	// -> et <- des liens et des ancres : masqués avant la recherche des balises, ils ne comptent pas
+	for (const c of texte.replace(/->|<-/g, '')) {
+		if (c === '<') n++;
+		else if (c === '>' && n > 0) n--;
+	}
+	return n;
 }
 
 /** Crochets [ restés ouverts à la fin de ce texte, en partant de ceux d'avant (un lien les ferme par ->). */
@@ -81,7 +87,7 @@ function serializeDoc(doc, conservative) {
 		const sep = separator(i, conservative ? a.spipSep : null);
 		if (conservative && a.spipGroup && typeof a.spipSrc === 'string' && canon(blocks.slice(i, i + a.spipGroup)) === a.spipHash) {
 			crochets = crochetsOuverts(sep + a.spipSrc, crochets);
-			ouvert = chevronOuvert(a.spipSrc, ouvert);
+			ouvert = chevronsOuverts(a.spipSrc, ouvert);
 			out += sep + a.spipSrc;
 			i += a.spipGroup;
 			continue;
@@ -92,7 +98,7 @@ function serializeDoc(doc, conservative) {
 		try {
 			const ecrit = sep + serializeBlock(b);
 			crochets = crochetsOuverts(ecrit, crochets);
-			ouvert = chevronOuvert(ecrit, ouvert);
+			ouvert = chevronsOuverts(ecrit, ouvert);
 			out += ecrit;
 		} finally {
 			contexte = avant;
@@ -396,15 +402,18 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			// un [ final devant une note ou un fragment brut s'écrit en entité (\[[[n]] serait une note)
 			const avantCrochets = ecritAvecCrochet(nodes[i + 1], n);
 			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
-			chevron = chevronOuvert(out.slice(lu), chevron);
+			chevron = chevronsOuverts(out.slice(lu), chevron);
 			crochets = crochetsOuverts(out.slice(lu), crochets);
-			let ecrit = chevron && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
+			let ecrit = chevron > 0 && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
 			if (crochets > 0 && !code && !inLink && !atomique) ecrit = ecrit.replace(/->/g, '-&gt;');
 			// dans une note, un ] de tête derrière un ] ferait ]] et la fermerait
 			if (contexte.note && !code && out.endsWith(']')) ecrit = ecrit.replace(/^\]/, '&#93;');
 			// > juste après un modèle : ses paramètres admettent des balises (<doc|<sup>>)
 			if (nodes[i - 1]?.type === 'spipModel') ecrit = ecrit.replace(/^>/, '&gt;');
+			// après un marqueur de début de ligne brut (- ou --) : -* ferait une liste, ---- un filet
+			if (/^--?$/.test(brut(nodes[i - 1]))) ecrit = ecrit.replace(/^[*#-]/, '\\$&');
 			crochets = crochetsOuverts(ecrit, crochets);
+			chevron = chevronsOuverts(ecrit, chevron);
 			out += ecrit;
 			lu = out.length;
 			atLineStart = false;
@@ -478,6 +487,15 @@ function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) 
 			// range un saut de ligne final hors du contenu
 			else if (texte.endsWith(']')) texte += '\n';
 			else break;
+		}
+		// note automatique dont le texte commence par un < sans > dans la note : le nom du core
+		// (<[^>'"]*>) chercherait son > plus loin dans le texte, au-delà de la note ; cherché dans le
+		// texte masqué, où le core a déjà remplacé liens, modèles et glossaire
+		const masque = name == null ? protect(texte).masked : '';
+		// (s'arrête au premier ' ou " : une balise à attributs n'est pas concernée)
+		if (name == null && /^[ \t\n\v\f\r]*<[^>'"]*$/.test(masque)) {
+			const blancs = texte.match(/^[ \t\n\v\f\r]*/)[0];
+			texte = `${blancs}&lt;${texte.slice(blancs.length + 1)}`;
 		}
 		// note automatique dont le texte commence par <…> : le core y lirait un nom
 		const m = name == null ? texte.match(RE_NOM_NOTE) : null;

@@ -36,6 +36,19 @@ describe('parseInline : marks', () => {
 	});
 });
 
+describe('parseInline : sauts de ligne au bord', () => {
+	it('\\n_ final : saut simple et _ brut (SPIP rend a<br />_)', () => {
+		expect(inl('a\n_ ', { lineStart: true })).toEqual([text('a'), br('autobr'), raw('_ ')]);
+		expect(inl('a\n_ b')).toEqual([text('a'), br('manual'), text('b')]);
+	});
+
+	it('saut en tout début de contenu : pas produit (SPIP ne l\'affiche pas)', () => {
+		expect(inl('\n{')).toEqual([raw('{')]);
+		// dans une mark, le saut reste ({\n})
+		expect(inl('{\n}')).toEqual([br('autobr', [I])]);
+	});
+});
+
 describe('parseInline : marks vides', () => {
 	it('délimiteurs d\'une mark vide gardés bruts (SPIP rend <strong></strong>)', () => {
 		expect(inl('{{</strong>')).toEqual([raw('{{'), raw('</strong>')]);

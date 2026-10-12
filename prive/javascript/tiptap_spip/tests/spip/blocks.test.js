@@ -23,6 +23,11 @@ describe('blocs simples', () => {
 		]);
 	});
 
+	it('paragraphe fait d\'un seul modèle, dans un segment de plusieurs blocs : modèle de bloc (même rendu)', () => {
+		const blocs = parseContent('<doc3|center>\n-* a');
+		expect(blocs.map((b) => b.type)).toEqual(['spipModelBlock', 'bulletList']);
+	});
+
 	it('un intertitre contenant du gras n\'est pas un intertitre éditable', () => {
 		expect(parseContent('{{{a {{b}} c}}}')).toEqual([p(raw('{{{'), text('a '), text('b', [{ type: 'bold' }]), text(' c'), raw('}}}'))]);
 	});
@@ -47,6 +52,11 @@ describe('listes', () => {
 		expect(parseContent('-* a\n-## b\n-# c')).toEqual([
 			node('bulletList', null, [item('a', node('orderedList', null, [item('b')])), item('c')]),
 		]);
+	});
+
+	it('élément dont la première ligne est vide, suivie d\'une continuation : bloc brut (rendu SPIP irrégulier)', () => {
+		// SPIP : -# \n-> donne <li>&nbsp;<br />– ></li>, -* \n{ donne <li> <i></li>
+		for (const source of ['-# \n->', '-* \n{', '-* a\n-*\nb']) expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
 	});
 
 	it('saut de profondeur ou deux sous-listes dans un élément : bloc brut', () => {
@@ -99,8 +109,8 @@ describe('conteneurs', () => {
 		expect(parseContent('<div class="text-justify">\n\na\n\n</div>')).toEqual([node('spipAlign', { align: 'justify' }, [p(text('a'))])]);
 	});
 
-	it('conteneur dont le contenu porte sa balise fermante : bloc brut', () => {
-		for (const source of ['<div class="text-center"></div></div>', '<quote>a</quote></quote>', '<poesie>a</poesie></poesie>']) {
+	it('conteneur dont le contenu porte sa balise, ouvrante ou fermante : bloc brut', () => {
+		for (const source of ['<div class="text-center"></div></div>', '<quote>a</quote></quote>', '<poesie>a</poesie></poesie>', '<div class="text-center"><div class="text-center"></div>', '<quote><quote>a</quote>']) {
 			expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
 		}
 	});

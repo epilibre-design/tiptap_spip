@@ -276,6 +276,10 @@ quelle. Un tel contenu ferme le bloc plus tôt à la relecture. Un bloc de code 
 n'est pas concerné. Un bloc de code qui ne s'écrit pas entre backticks (`\\`, `` \` ``, `\` final, saut de
 ligne en tête, `` ` `` final) passe par `<code>` et perd sa langue, que seuls les backticks portent (```` ```php ````).
 
+**Limite (lot corpus et propriétés)** : dans un multi, du code qui contient un marqueur de langue
+(`` `[mot]` ``) est lu comme un marqueur par SPIP (vérifié avec l'oracle : `<!-- langue mot -->`), et le code
+n'a pas d'échappement. Le multi reste brut à la relecture.
+
 ## 6. Copier-coller
 
 | Source | Traitement |

@@ -135,7 +135,7 @@ describe('sérialisation des notes', () => {
 		const cas = [
 			[note([p(text('a -> b'))]), 'x[[a -&gt; b]]'],
 			[note([p(text('a -> b'))], 'n'), 'x[[<n>a -&gt; b]]'],
-			[note([p(text('<-> z'))]), 'x[[<-&gt; z]]'],
+			[note([p(text('<-> z'))]), 'x[[&lt;-&gt; z]]'],
 			[note([p(text('a -> b -> c'))]), 'x[[a -&gt; b -&gt; c]]'],
 			// <-] : le [ du [[ ferait une ancre [<-] (ancres avant notes)
 			[note([p(text('a<-] b'))], 'n'), 'x[[<n>a&lt;-] b]]'],
@@ -180,6 +180,22 @@ describe('sérialisation des notes', () => {
 		const gras = node('doc', null, [p(text('x'), note([p(text(' ', [{ type: 'bold' }]))]))]);
 		expect(serialize(gras)).toBe('x[[{{ }}]]');
 		expect(stripTech(parse(serialize(gras)).content)).toEqual(gras.content);
+	});
+
+	it('texte de note qui commence par un < sans > : &lt; (le nom chercherait son > au-delà de la note)', () => {
+		const L = { type: 'spipLink', attrs: { href: 'art12', newWindow: false } };
+		const doc = node('doc', null, [
+			p(note([p(text('<#'), text('a', [L]))]), text(' <b>')),
+			p(text(']] fin')),
+		]);
+		expect(serialize(doc).startsWith('[[&lt;#[a->art12]]]')).toBe(true);
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('texte de note qui commence par une balise à attributs : intacte (le nom s\'arrête au premier " ou \')', () => {
+		const doc = node('doc', null, [p(text('x'), note([p(raw('<div class="text-center">'))]))]);
+		expect(serialize(doc)).toBe('x[[<div class="text-center">]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
 	it('note saisie sans contenu', () => {

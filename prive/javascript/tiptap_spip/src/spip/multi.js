@@ -47,7 +47,9 @@ export const BARRE_FINALE = /(?<!\\)(?:\\\\)*\\$/;
  */
 export function serializeMulti(parts) {
 	const ordre = [...parts.filter((p) => !p.lang), ...parts.filter((p) => p.lang)];
-	return `<multi>${ordre.map(({ lang, texte }) => (lang ? `[${lang}]` : '') + texte).join('')}</multi>`;
+	// [ final d'une partie devant le marqueur suivant : \[[fr] ferait une note (notes avant échappements)
+	const texte = (t, k) => (k < ordre.length - 1 ? t.replace(/\\?\[$/, '&#91;') : t);
+	return `<multi>${ordre.map(({ lang, texte: t }, k) => (lang ? `[${lang}]` : '') + texte(t, k)).join('')}</multi>`;
 }
 
 /**

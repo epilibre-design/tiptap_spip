@@ -10,6 +10,7 @@ import { canon, parse, serialize } from '../../src/spip/index.js';
 import { mergeText, node, sameMark, sortMarks } from '../../src/spip/json.js';
 import { parseModel } from '../../src/spip/models.js';
 import { canBacktick } from '../../src/spip/protect.js';
+import { RE_LANGUE_MULTI } from '../../src/spip/regex.js';
 
 const runs = Number(process.env.TTS_FC_RUNS) || 200;
 const seed = process.env.TTS_FC_SEED ? Number(process.env.TTS_FC_SEED) : process.env.TTS_FC_RUNS ? undefined : 20261012;
@@ -88,6 +89,8 @@ function formeNormale(nodes) {
 function formeNormaleUneFois(nodes) {
 	if (nodes.every((n) => n.type === 'text' && !n.marks?.length && /^[ \t]*$/.test(n.text))) return [];
 	const out = [...nodes];
+	// première ligne faite de blancs : une ligne vide pour le découpage, elle disparaît avec son saut
+	if (out[0]?.type === 'text' && !out[0].marks?.length && /^[ \t]*$/.test(out[0].text) && out[1]?.type === 'hardBreak') out.shift();
 	while (out[0]?.type === 'hardBreak') out.shift();
 	while (out.at(-1)?.type === 'hardBreak') out.pop();
 	for (let k = 0; k + 1 < out.length; k++) {
@@ -197,7 +200,14 @@ const tableau = fc.integer({ min: 1, max: 3 }).chain((colonnes) => fc.record({
 	.map(({ entete, lignes, titres, caption, summary }) => node('table', { caption: summary !== null && caption === null ? '' : caption, summary },
 	[...(entete ? [titres] : []), ...lignes].map((cells) => node('tableRow', null, cells))));
 
-const multiEnLigne = fc.array(fc.tuple(fc.constantFrom('fr', 'en', 'de'), enLigne(false)), { minLength: 1, maxLength: 3 })
+/**
+ * Limite (spec 04 §5) : dans un multi, du code qui contient un marqueur de langue ([mot]) est lu comme un
+ * marqueur par SPIP, et le code ne s'échappe pas ; exclu des parties de multi.
+ */
+const marqueurDansCode = (nodes) => nodes.some((n) => n.marks?.some((m) => m.type === 'code') && new RegExp(RE_LANGUE_MULTI.source, 'i').test(n.text));
+const sansMarqueurDansCode = (blocs) => !blocs.some((b) => marqueurDansCode(b.content ?? []));
+
+const multiEnLigne = fc.array(fc.tuple(fc.constantFrom('fr', 'en', 'de'), enLigne(false).filter((nodes) => !marqueurDansCode(nodes))), { minLength: 1, maxLength: 3 })
 	.map((parts) => ({ type: 'spipMultiInline', attrs: { parts: parts.map(([lang, content]) => ({ lang, content })) } }));
 
 /** Poésie et partie de multi en bloc : paragraphes seulement (paragraph+), pas de modèle de bloc. */
@@ -218,7 +228,7 @@ const bloc = (profondeur) => fc.oneof(
 			.map((t) => node(type, { openTag: `<${tag}>`, closeTag: `</${tag}>` }, contenuCode(t)))) },
 	{ weight: 1, arbitrary: fc.array(seulementParagraphe(paragraphe()), { minLength: 1, maxLength: 2 }).map((content) => node('spipPoesie', { tag: 'poesie' }, content)) },
 	{ weight: 1, arbitrary: tableau },
-	{ weight: 1, arbitrary: fc.array(fc.tuple(fc.constantFrom('fr', 'en'), fc.array(seulementParagraphe(paragraphe(false)), { minLength: 1, maxLength: 2 })), { minLength: 1, maxLength: 2 })
+	{ weight: 1, arbitrary: fc.array(fc.tuple(fc.constantFrom('fr', 'en'), fc.array(seulementParagraphe(paragraphe(false)), { minLength: 1, maxLength: 2 }).filter(sansMarqueurDansCode)), { minLength: 1, maxLength: 2 })
 		.map((parts) => node('spipMultiBlock', null, parts.map(([lang, content]) => node('spipLangBlock', { lang }, content)))) },
 	...(profondeur > 0 ? [
 		{ weight: 1, arbitrary: fc.array(bloc(profondeur - 1), { minLength: 1, maxLength: 2 }).map((content) => node('blockquote', null, content)) },

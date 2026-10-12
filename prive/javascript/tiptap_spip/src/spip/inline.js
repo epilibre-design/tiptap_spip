@@ -26,14 +26,15 @@ const RE_LINK_ENTITY = entityRegex(LINK_ENTITIES);
  * @param {string} source  texte source du contenu
  * @param {string} masked  même texte masqué (cf. protect.js)
  * @param {import('./protect.js').Region[]} regions  régions, positions relatives à source
- * @param {{ lineStart?: boolean, link?: boolean, uneLigne?: boolean }} options  lineStart : le contenu commence en début
+ * @param {{ lineStart?: boolean, link?: boolean, uneLigne?: boolean, bords?: boolean }} options  lineStart : le contenu commence en début
  *        de ligne (paragraphe), donc les marqueurs de début de ligne (`- `, `_ `) s'appliquent ;
  *        link : texte d'un lien (entités &#124; et &#93; décodées) ; uneLigne : contenu d'une seule
- *        ligne, cellule ou intertitre (<br /> y est un saut de ligne)
+ *        ligne, cellule ou intertitre (<br /> y est un saut de ligne) ; bords : false garde un saut de
+ *        ligne de tête (partie de multi)
  * @returns {object[]} nœuds inline JSON
  */
-export function parseInline(source, masked, regions, { lineStart = false, link = false, uneLigne = false } = {}) {
-	return buildNodes(tokenize(source, masked, regions, lineStart, link, uneLigne));
+export function parseInline(source, masked, regions, { lineStart = false, link = false, uneLigne = false, bords = true } = {}) {
+	return buildNodes(tokenize(source, masked, regions, lineStart, link, uneLigne, bords));
 }
 
 /** Texte où seul le code (backticks, <code>, <cadre>…) est masqué : ce que voit le core quand il
@@ -101,7 +102,7 @@ function multiNode(src, masked) {
 		const barre = BARRE_FINALE.test(src.slice(start, end)) ? 1 : 0;
 		const part = src.slice(start, end - barre);
 		const p = protect(part);
-		const content = parseInline(part, p.masked, p.regions);
+		const content = parseInline(part, p.masked, p.regions, { bords: false });
 		return { lang, content: barre ? [...content, raw('\\')] : content };
 	});
 	return node('spipMultiInline', { parts, spipSrc: src, spipHash: canon(parts) });
@@ -112,7 +113,7 @@ function noteNode({ name, content, lead, trail }) {
 	return node('spipNote', { ...(name === null ? {} : { name }), content, spipLead: lead, spipTrail: trail });
 }
 
-function tokenize(source, masked, regions, lineStart, link, uneLigne) {
+function tokenize(source, masked, regions, lineStart, link, uneLigne, bords) {
 	const reEntity = link ? RE_LINK_ENTITY : RE_ENTITY;
 	const entities = link ? LINK_ENTITIES : ENTITIES;
 	const tokens = [];
@@ -184,11 +185,15 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne) {
 		if (c === '\r' && masked[i + 1] === '\n') {
 			i++;
 		} else if (c === '\n') {
-			if ((m = rest.match(/^\n_ +/)) && !rest.startsWith('\n____')) {
-				push({ t: 'br', syntax: 'manual' });
+			// saut en tout début de contenu : SPIP ne l'affiche pas, il n'est pas produit (sauf dans une
+			// partie de multi, bords: false, que le sérialiseur restitue telle quelle)
+			const enTete = bords && tokens.length === 0 && buf === '';
+			// _ n'est un saut forcé que suivi de texte : final, SPIP rend un saut simple et le _
+			if ((m = rest.match(/^\n_ +/)) && !rest.startsWith('\n____') && /\S/.test(rest.slice(m[0].length))) {
+				if (!enTete) push({ t: 'br', syntax: 'manual' });
 				i += m[0].length;
 			} else {
-				push({ t: 'br', syntax: 'autobr' });
+				if (!enTete) push({ t: 'br', syntax: 'autobr' });
 				i++;
 				lineMarker();
 			}
@@ -205,8 +210,9 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne) {
 		} else if (c === '<' && (m = rest.match(/^<(\/?)(strong|i|del|sup|sub)>/))) {
 			push({ t: m[1] ? 'close' : 'open', mark: MARK_TAGS[m[2]], src: m[0] });
 			i += m[0].length;
-		} else if (uneLigne && rest.startsWith('<br />')) {
-			// saut de ligne d'un contenu d'une seule ligne (cellule, intertitre), écrit <br /> par le sérialiseur
+		} else if (uneLigne && rest.startsWith('<br />') && !(tokens.length === 0 && buf === '') && /\S/.test(rest.slice(6))) {
+			// saut de ligne d'un contenu d'une seule ligne (cellule, intertitre), écrit <br /> par le
+			// sérialiseur ; au bord du contenu, il reste brut (un saut de bord ne s'écrit pas)
 			push({ t: 'br', syntax: 'manual' });
 			i += 6;
 		} else if (c === '<' && (m = rest.match(/^(?:<!--[\s\S]*?-->|<\/?[a-z][a-z0-9]*\b[^<>]*>)/i))) {
