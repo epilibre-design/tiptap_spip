@@ -2,7 +2,7 @@
  * Libellés de l'interface : chaînes de langue SPIP transmises par la configuration
  * (window.spipConfig.tiptap_spip.i18n), français par défaut.
  */
-const DEFAUTS = {
+export const DEFAUTS = {
 	mode_source: 'Source',
 	lien: 'Lien',
 	modele: 'Modèle',
