@@ -247,6 +247,8 @@ function tiptap_spip_traitements_previsu(string $texte, string $nom_champ, strin
 	include_spip('inc/texte');
 
 	global $table_des_traitements;
+	// variables des traitements évalués (propre(%s, $connect, $Pile[0])) : connexion principale
+	$connect = null;
 	$Pile = [0 => $contexte];
 	$ps = $table_des_traitements[$nom_champ] ?? null;
 	if (is_array($ps)) {
