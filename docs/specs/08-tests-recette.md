@@ -63,9 +63,10 @@ L'équivalence de rendu tourne en CI avec une image SPIP 4.4 et une SPIP 5 (spip
    Sautés partout : la réécriture des fixtures CVT (sur demande) et la mesure du critère 6 hors Chromium.
    Équivalence de rendu (§1, invariant 3) contre les trois oracles : 27/28, l'écart accepté `code-accoles` ayant
    un diff propre à SPIP 5 (§4).
-   Lancement : `TTS_PHP` désigne le PHP du site (SPIP 4.2 s'arrête à PHP 8.3) ; le serveur PHP de test tourne
-   avec `PHP_CLI_SERVER_WORKERS=4`, SPIP 4.2 s'appelant lui-même au premier rendu public (vérification des
-   accès, environ 70 s de blocage avec un seul processus).
+   Lancement : `TTS_PHP` désigne le PHP du site, pour le pilote des e2e et pour l'oracle de l'équivalence
+   (SPIP 4.2 s'arrête à PHP 8.3) ; le serveur PHP de test tourne avec `PHP_CLI_SERVER_WORKERS=4`, SPIP 4.2
+   s'appelant lui-même au premier rendu public (vérification des accès, environ 70 s de blocage avec un
+   seul processus).
 
 ## 4. Écarts de rendu acceptés
 

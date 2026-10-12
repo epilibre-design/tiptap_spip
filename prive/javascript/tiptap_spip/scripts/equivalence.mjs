@@ -1,5 +1,6 @@
 // Équivalence de rendu (spec 04 §5, invariant 3) : propre(source) ≡ propre(forme canonique).
-// Usage : SPIP_ROOT=/chemin/vers/spip node scripts/equivalence.mjs [--figer] [dossier de corpus…]
+// Usage : SPIP_ROOT=/chemin/vers/spip [TTS_PHP=php8.3] node scripts/equivalence.mjs [--figer] [dossier de corpus…]
+// TTS_PHP : PHP de l'oracle, celui du site (SPIP 4.2 s'arrête à PHP 8.3), php par défaut.
 // --figer : (ré)écrit le diff figé de chaque écart enregistré dans tests/corpus/ecarts.yaml (celui de
 // la branche de SPIP de l'oracle si l'entrée en déclare un).
 import { execFileSync } from 'node:child_process';
@@ -22,9 +23,10 @@ if (!process.env.SPIP_ROOT) {
 	process.exit(2);
 }
 
-const propre = (text) => execFileSync('php', [oracle], { input: text, encoding: 'utf8' });
+const php = process.env.TTS_PHP || 'php';
+const propre = (text) => execFileSync(php, [oracle], { input: text, encoding: 'utf8' });
 // branche majeure de SPIP de l'oracle : choisit le diff figé d'un écart rendu autrement selon la branche
-const branche = execFileSync('php', [oracle, '--branche'], { encoding: 'utf8' }).trim();
+const branche = execFileSync(php, [oracle, '--branche'], { encoding: 'utf8' }).trim();
 
 const registre = join(corpus, 'ecarts.yaml');
 const entries = existsSync(registre) ? loadEcarts(readFileSync(registre, 'utf8')) : [];
