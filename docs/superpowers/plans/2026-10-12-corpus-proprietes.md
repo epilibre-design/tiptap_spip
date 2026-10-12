@@ -53,8 +53,9 @@
   dans la spec 04 §3, « Ajouts du lot corpus et propriétés ».
 - **Forme normale du générateur JSON** (ce que l'éditeur peut produire, spec 03) : termes de glossaire et
   d'abréviation valides et entiers, texte de lien non vide une fois rogné, modèle seul en bloc, pas de saut
-  de ligne au bord ni de paragraphe vide, saut forcé dans une cellule ou un intertitre, en-têtes sans gras,
-  légende vide quand seul le résumé est donné.
+  de ligne au bord ni de paragraphe vide, contenu fait seulement d'espaces vide (`[[ ]]` est une note vide,
+  relevé par la revue), saut forcé dans une cellule ou un intertitre, en-têtes sans gras, légende vide quand
+  seul le résumé est donné.
 - **Limites écrites** (spec 04 §5) :
   - `\r` seul (Mac OS 9) : non géré, segment brut (décision de l'utilisateur, pour les notes de version) ;
   - note automatique qui commence par un idiome ou une mark écrite en balise HTML : lue nommée par le core ;
