@@ -24,8 +24,9 @@ export function blocksOf(src, msk, regions) {
 	try {
 		const verbatim = verbatimBlock(src, regions);
 		if (verbatim) return verbatim;
-		// \r seul (fins de ligne Mac) : saut de ligne pour SPIP, pas pour le découpage en lignes
-		if (/\r(?!\n)/.test(msk)) throw new Fallback();
+		// \r seul (fins de ligne Mac OS 9) : saut de ligne pour SPIP, pas pour le découpage en lignes ; un
+		// \r en fin de segment précède le \n du séparateur (fins de ligne CRLF)
+		if (/\r(?!\n|$)/.test(msk)) throw new Fallback();
 		return containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
 	} catch {
 		return [node('spipRaw', { source: src })];
@@ -133,6 +134,8 @@ function linesOf(msk) {
 
 /** Contenu inline de src[s, e[ ; refuse une région à cheval sur la limite. */
 function inlineOf(src, msk, regions, s, e, options) {
+	// le \r d'une fin de ligne CRLF n'est pas du texte (SPIP le retire)
+	if (msk[e - 1] === '\r') e--;
 	if (regions.some((r) => r.start < e && r.end > s && (r.start < s || r.end > e))) throw new Fallback();
 	return parseInline(src.slice(s, e), msk.slice(s, e), regionsIn(regions, s, e), options);
 }

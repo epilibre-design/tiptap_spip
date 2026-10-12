@@ -74,9 +74,14 @@ describe('lignes commençant par |', () => {
 
 describe('retour chariot seul', () => {
 	it('\\r non suivi de \\n : saut de ligne pour SPIP (a\\r\\r\\nb : deux paragraphes), segment brut', () => {
-		for (const source of ['a\r\r\nb', 'a\rb', '{\r\r\n{']) expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
-		// \r\n : fin de ligne ordinaire ; \r dans du code : sans effet
+		for (const source of ['a\r\r\nb', 'a\rb', '{\r\r\n{', '{\r\r']) expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		// \r\n : fin de ligne ordinaire, y compris avant une ligne vide (fins de ligne CRLF des navigateurs) ;
+		// \r dans du code : sans effet
 		expect(parseContent('a\r\nb')[0].type).toBe('paragraph');
+		expect(parseContent('a\r\n\r\nb')).toEqual([p(text('a')), p(text('b'))]);
+		expect(parseContent('-* a\r\n-* b\r\n\r\n{{{T}}}\r\n\r\nx').map((b) => b.type)).toEqual(['bulletList', 'heading', 'paragraph']);
+		// le \r d'une fin de ligne n'est pas du texte
+		expect(parseContent('{{a}}\r\n-# b')).toEqual([p(text('a', [{ type: 'bold' }])), node('orderedList', null, [item('b')])]);
 		expect(parseContent('`a\rb`')[0].type).toBe('paragraph');
 	});
 });
