@@ -18104,29 +18104,41 @@ function serialize(doc4, { conservative = true, regles } = {}) {
     contexte = avant;
   }
 }
-var contexte = { conservative: true, note: false, multi: false, ouvert: false };
+var contexte = { conservative: true, note: false, multi: false, ouvert: false, crochets: 0 };
 function chevronOuvert(texte2, avant = false) {
   const a = texte2.lastIndexOf("<");
   const b = texte2.lastIndexOf(">");
   return a < 0 && b < 0 ? avant : a > b;
 }
+function crochetsOuverts(texte2, avant = 0) {
+  let n = avant;
+  for (const c of texte2) {
+    if (c === "[") n++;
+    else if (c === "]" && n > 0) n--;
+  }
+  return n;
+}
 function serializeDoc(doc4, conservative) {
   const blocks2 = doc4.content ?? [];
   let out = conservative ? doc4.attrs?.spipLead ?? "" : "";
+  let crochets = contexte.crochets;
   let i2 = 0;
   while (i2 < blocks2.length) {
     const b = blocks2[i2];
     const a = b.attrs ?? {};
     const sep = separator(i2, conservative ? a.spipSep : null);
     if (conservative && a.spipGroup && typeof a.spipSrc === "string" && canon(blocks2.slice(i2, i2 + a.spipGroup)) === a.spipHash) {
+      crochets = crochetsOuverts(sep + a.spipSrc, crochets);
       out += sep + a.spipSrc;
       i2 += a.spipGroup;
       continue;
     }
     const avant = contexte;
-    contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert) };
+    contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert), crochets };
     try {
-      out += sep + serializeBlock(b);
+      const ecrit = sep + serializeBlock(b);
+      crochets = crochetsOuverts(ecrit, crochets);
+      out += ecrit;
     } finally {
       contexte = avant;
     }
@@ -18300,13 +18312,18 @@ var HTML = { bold: ["<strong>", "</strong>"], italic: ["<i>", "</i>"] };
 var MARKS_CROCHET = ["spipLink", "spipGlossary", "spipAbbr"];
 var ecritAvecCrochet = (suivant, n) => ["spipNote", "spipRawInline", "spipLinkAuto", "spipAnchor"].includes(suivant?.type) || (suivant?.marks ?? []).some((m) => MARKS_CROCHET.includes(m.type) && !(n.marks ?? []).some((x) => sameMark(x, m)));
 var brut = (n) => n?.type === "spipRawInline" ? n.attrs.source : "";
-var accoladeContre = (nodes, i2, run2) => /^[{}]/.test(brut(nodes[i2])) || /[{}]$/.test(brut(nodes[i2 + run2 - 1]));
+var accoladeContre = (nodes, i2, run2) => /[{}]$/.test(brut(nodes[i2 - 1])) || /^[{}]/.test(brut(nodes[i2])) || /[{}]$/.test(brut(nodes[i2 + run2 - 1])) || /^[{}]/.test(brut(nodes[i2 + run2]));
 function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false } = {}) {
-  nodes = marksAtomiques(nodes);
+  let debut = 0;
+  let fin = nodes.length;
+  while (debut < fin && nodes[debut].type === "hardBreak") debut++;
+  while (fin > debut && nodes[fin - 1].type === "hardBreak") fin--;
+  nodes = marksAtomiques(nodes.slice(debut, fin));
   let out = "";
   const stack = [];
   let atLineStart = lineStart;
   let chevron = contexte.ouvert;
+  let crochets = contexte.crochets;
   let lu = 0;
   const closeTo = (k) => {
     while (stack.length > k) out += stack.pop().close;
@@ -18341,13 +18358,16 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       const avantCrochets = ecritAvecCrochet(nodes[i2 + 1], n);
       const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
       chevron = chevronOuvert(out.slice(lu), chevron);
+      crochets = crochetsOuverts(out.slice(lu), crochets);
       let ecrit = chevron && !code2 ? texte2.replace(/>/g, "&gt;").replace(/(?<!\\)\|/g, "\\|") : texte2;
+      if (crochets > 0 && !code2 && !inLink && !atomique) ecrit = ecrit.replace(/->/g, "-&gt;");
       if (nodes[i2 - 1]?.type === "spipModel") ecrit = ecrit.replace(/^>/, "&gt;");
+      crochets = crochetsOuverts(ecrit, crochets);
       out += ecrit;
       lu = out.length;
       atLineStart = false;
     } else if (n.type === "hardBreak") {
-      const autobr = n.attrs?.syntax === "autobr";
+      const autobr = n.attrs?.syntax === "autobr" && (nodes[i2 + 1]?.type !== "hardBreak" || inLink);
       out += autobr ? "\n" : "\n_ ";
       atLineStart = autobr;
     } else if (n.type === "spipRawInline") {
@@ -18382,7 +18402,7 @@ var RE_NOM_NOTE = /^([ \t\n\v\f\r]*)<[^>'"]*>/;
 var noteDe = (raccourci) => protect(raccourci).regions.find((r) => r.kind === "note" && r.start === 0 && r.end === raccourci.length);
 function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) {
   const avant = contexte;
-  contexte = { ...contexte, note: true };
+  contexte = { ...contexte, note: true, crochets: contexte.crochets + 2 };
   try {
     const doc4 = { type: "doc", attrs: { spipLead, spipTrail }, content: content?.length ? content : [node("paragraph")] };
     const nom = name == null ? "" : `<${name}>`;
@@ -18391,6 +18411,7 @@ function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) 
     while (!noteDe(`[[${nom}${texte2}]]`)) {
       if (!nom && texte2.startsWith("?")) texte2 = `&#63;${texte2.slice(1)}`;
       else if (fleche = texte2.match(/^[^[\]]*?->/)) texte2 = `${fleche[0].slice(0, -2)}-&gt;${texte2.slice(fleche[0].length)}`;
+      else if (texte2.endsWith("]")) texte2 += "\n";
       else break;
     }
     const m = name == null ? texte2.match(RE_NOM_NOTE) : null;

@@ -99,6 +99,17 @@ describe('serializeInline', () => {
 			.toBe('a\n_ b\nc');
 	});
 
+	it('saut de ligne au bord du contenu : non écrit (SPIP ne l\'affiche pas en tête, affiche _ en fin)', () => {
+		const br = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		expect(serializeInline([br, text('a'), br, text('b'), br, br])).toBe('a\n_ b');
+		expect(serializeInline([br])).toBe('');
+	});
+
+	it('saut autobr suivi d\'un autre saut : écrit forcé (\\n\\n ferait une ligne vide)', () => {
+		const auto = { type: 'hardBreak', attrs: { syntax: 'autobr' } };
+		expect(serializeInline([text('a'), auto, auto, text('b')])).toBe('a\n_ \nb');
+	});
+
 	it('code : backticks, doubles backticks ou <code>', () => {
 		expect(serializeInline([text('a {b}', [C])])).toBe('`a {b}`');
 		expect(serializeInline([text('a`b', [C])])).toBe('``a`b``');
@@ -134,11 +145,30 @@ describe('< brut d\'une balise incomplète', () => {
 	});
 });
 
+describe('-> après un [ resté ouvert', () => {
+	it('-> du texte en entité quand un [ reste ouvert avant lui (il fermerait un lien) ; sinon tel quel', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'x' } };
+		const note = (content) => node('spipNote', { content });
+		const cas = [
+			// le [[ de la note reste ouvert
+			[p(note([p(text('a', [abbr]), text('->b'))])), '[[[a|x]-&gt;b]]'],
+			[p(text('a -> b')), 'a -> b'],
+		];
+		for (const [para, attendu] of cas) {
+			const doc = node('doc', null, [para]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+});
+
 describe('accolades contre un fragment brut', () => {
-	it('gras ou italique dont le contenu commence ou finit par un fragment brut à accolade : en HTML', () => {
+	it('gras ou italique contre un fragment brut à accolade, dedans ou à côté : en HTML', () => {
 		const cas = [
 			[p(raw('{{{', [I])), '<i>{{{</i>'],
 			[p(text('x', [B]), raw('}}}', [B])), '<strong>x}}}</strong>'],
+			// fragment brut juste avant : {{{ orphelin devant un italique
+			[p(raw('{{{'), text('SPIP', [I])), '{{{<i>SPIP</i>'],
 			[p(text('x', [B]), text('y')), '{{x}}y'],
 		];
 		for (const [para, attendu] of cas) {

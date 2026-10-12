@@ -1,0 +1,136 @@
+// @vitest-environment jsdom
+// Sûreté du schéma (spec 04 §5, invariant 5) : un document JSON tiré selon le schéma de l'éditeur se
+// sérialise, et sa forme canonique relue redonne le même JSON. npm test : graine fixe ; TTS_FC_RUNS :
+// passe longue, graine aléatoire (TTS_FC_SEED la rejoue).
+import { getSchema } from '@tiptap/core';
+import fc from 'fast-check';
+import { describe, it } from 'vitest';
+import { coreExtensions } from '../../src/editor/extensions.js';
+import { canon, parse, serialize } from '../../src/spip/index.js';
+import { mergeText, node, sameMark, sortMarks } from '../../src/spip/json.js';
+import { parseModel } from '../../src/spip/models.js';
+
+const runs = Number(process.env.TTS_FC_RUNS) || 200;
+const seed = process.env.TTS_FC_SEED ? Number(process.env.TTS_FC_SEED) : process.env.TTS_FC_RUNS ? undefined : 20261012;
+const schema = getSchema(coreExtensions());
+
+/** Morceaux de texte : lettres, blancs, et tout ce que le sérialiseur doit échapper. */
+const MORCEAUX = [
+	'a', 'mot', 'É', ' ', ' ', '0', '{', '}', '[', ']', '|', '<', '>', '&', '~', '`', '\\', '#', '-', '_', '*', '?',
+	':', '!', '"', "'", '=', '/', '->', '<-', '[[', ']]', '&lt;', '&eacute;', '<b>', '<doc1>', 'https://x.org', '----',
+];
+const texte = fc.array(fc.constantFrom(...MORCEAUX), { minLength: 1, maxLength: 6 }).map((m) => m.join(''));
+/**
+ * Terme de glossaire ou d'abréviation, comme le valide le popover : la regex du core y interdit
+ * [ ] < > (spec 03 §3), y veut un caractère de mot ASCII (\w sans /u : [?É] n'est pas un terme) et
+ * en retire les blancs de bord.
+ */
+const terme = fc.array(fc.constantFrom('a', 'SPIP', 'É', ' ', '0', '-'), { minLength: 1, maxLength: 4 }).map((m) => m.join(''))
+	.filter((t) => /\w/.test(t) && t.trim() === t);
+const option = (arb) => fc.option(arb, { nil: null });
+const langue = option(fc.constantFrom('fr', 'en'));
+const bulle = option(fc.constantFrom('bulle', 'une bulle'));
+
+const lien = fc.record({
+	href: fc.constantFrom('art12', 'rub3', 'https://x.org', '#ancre', 'mailto:a@b.c', 'doc1'),
+	bulle, hreflang: langue, newWindow: fc.boolean(),
+});
+const MARKS_SIMPLES = ['bold', 'italic', 'strike', 'superscript', 'subscript', 'code'];
+
+/** Marks d'un texte, exclusions du schéma respectées (spipLink, spipGlossary, spipAbbr, code). */
+const marks = fc.tuple(
+	fc.subarray(MARKS_SIMPLES),
+	fc.oneof(
+		fc.constant(null),
+		lien.map((attrs) => ({ type: 'spipLink', attrs })),
+		fc.record({ glossaire: option(fc.constant('wikipedia')), numero: option(fc.constant('2')), bulle, hreflang: langue })
+			.map((attrs) => ({ type: 'spipGlossary', attrs })),
+		fc.record({ title: fc.constantFrom('explication', 'une explication'), lang: langue }).map((attrs) => ({ type: 'spipAbbr', attrs })),
+	),
+).map(([simples, special]) => {
+	const avecCode = simples.includes('code') && ['spipGlossary', 'spipAbbr'].includes(special?.type) ? simples.filter((m) => m !== 'code') : simples;
+	return sortMarks([...avecCode.map((type) => ({ type })), ...(special ? [special] : [])]);
+});
+
+const texteMarque = marks.chain((m) => (m.some((x) => ['spipGlossary', 'spipAbbr'].includes(x.type)) ? terme : texte)
+	.map((t) => (m.length ? { type: 'text', text: t, marks: m } : { type: 'text', text: t })));
+
+const MODELES = ['<doc12>', '<doc12|left>', '<img3|center|largeur=300>', '<emb4|autostart=true>', '<doc1|legende=<i>x</i>>'];
+
+/** Nœuds en ligne atomiques, sans note (la note a son propre contenu). */
+const atome = fc.oneof(
+	fc.constantFrom('manual', 'autobr').map((syntax) => ({ type: 'hardBreak', attrs: { syntax } })),
+	fc.constantFrom(...MODELES).map((source) => ({ type: 'spipModel', attrs: { model: parseModel(source) } })),
+	lien.map((attrs) => ({ type: 'spipLinkAuto', attrs })),
+	fc.constantFrom('ancre', 'a1').map((name) => ({ type: 'spipAnchor', attrs: { name } })),
+	fc.record({ module: option(fc.constant('public')), cle: fc.constantFrom('cle', 'info_x') }).map((attrs) => ({ type: 'spipIdiome', attrs })),
+);
+
+/**
+ * Forme normale du contenu en ligne :
+ * - aucune autre mark à l'intérieur d'un glossaire ou d'une abréviation (spec 03 §3) : des textes
+ *   voisins sous la même de ces marks ne gardent que leurs marks communes, puis fusionnent ;
+ * - pas de saut de ligne au bord (SPIP ne l'affiche pas en tête, affiche _ en fin : non écrit) ;
+ * - un saut autobr suivi d'un autre saut est forcé (\n\n ferait une ligne vide).
+ */
+function formeNormale(nodes) {
+	const out = [...nodes];
+	while (out[0]?.type === 'hardBreak') out.shift();
+	while (out.at(-1)?.type === 'hardBreak') out.pop();
+	for (let k = 0; k + 1 < out.length; k++) {
+		if (out[k].type === 'hardBreak' && out[k + 1].type === 'hardBreak') out[k] = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+	}
+	for (let i = 0; i < out.length;) {
+		const terme = out[i].marks?.find((m) => ['spipGlossary', 'spipAbbr'].includes(m.type));
+		let j = i + 1;
+		while (terme && j < out.length && out[j].type === 'text' && out[j].marks?.some((m) => sameMark(m, terme))) j++;
+		if (j - i > 1) {
+			const communes = out[i].marks.filter((m) => out.slice(i, j).every((n) => n.marks.some((x) => sameMark(x, m))));
+			for (let k = i; k < j; k++) out[k] = { ...out[k], marks: communes };
+		}
+		i = j;
+	}
+	return mergeText(out);
+}
+
+const enLigne = (avecNote) => fc.array(
+	avecNote ? fc.oneof({ weight: 6, arbitrary: texteMarque }, { weight: 2, arbitrary: atome }, { weight: 1, arbitrary: note }) : fc.oneof({ weight: 3, arbitrary: texteMarque }, { weight: 1, arbitrary: atome }),
+	{ minLength: 1, maxLength: 6 },
+).map(formeNormale).filter((nodes) => nodes.length > 0);
+
+/**
+ * Paragraphe, jamais vide (SPIP n'a que des lignes vides) ; un modèle seul (sans mark) y est un
+ * modèle de bloc (spec 03 §3), forme que l'éditeur insère dans un paragraphe vide.
+ */
+const paragraphe = (avecNote = true) => enLigne(avecNote).map((content) => (content.length === 1 && content[0].type === 'spipModel' && !content[0].marks
+	? node('spipModelBlock', { model: content[0].attrs.model })
+	: node('paragraph', null, content)));
+
+/** Marks écrites en balise HTML (pas de raccourci SPIP). */
+const EN_HTML = ['strike', 'superscript', 'subscript'];
+
+/**
+ * Note. Limite (spec 04 §5) : une note automatique qui commence par un idiome (<:cle:>, traité après
+ * les notes) ou par une mark écrite en HTML (<sup>…, si la balise revient plus loin sur la ligne) se
+ * lit nommée (règle du core) ; exclue.
+ */
+const note = fc.record({
+	name: fc.constantFrom(null, 'n', ''),
+	content: fc.array(paragraphe(false), { minLength: 1, maxLength: 2 }),
+}).filter(({ name, content }) => {
+	const premier = content[0].content?.[0];
+	return name !== null || !(premier?.type === 'spipIdiome' || (premier?.marks ?? []).some((m) => EN_HTML.includes(m.type)));
+})
+	.map((attrs) => ({ type: 'spipNote', attrs }));
+
+const documents = fc.array(paragraphe(), { minLength: 1, maxLength: 4 }).map((content) => node('doc', null, content));
+
+describe('sûreté du schéma (invariant 5)', () => {
+	it('un document valide pour le schéma se relit à l\'identique après sérialisation canonique', () => {
+		fc.assert(fc.property(documents, (doc) => {
+			schema.nodeFromJSON(doc).check();
+			const source = serialize(doc, { conservative: false });
+			return canon(parse(source).content) === canon(doc.content);
+		}), { numRuns: runs, seed });
+	});
+});

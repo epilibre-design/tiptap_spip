@@ -149,6 +149,13 @@ describe('sérialisation des notes', () => {
 		}
 	});
 
+	it('contenu qui finit par une abréviation : saut de ligne avant ]] (]]] fermerait la note trop tôt)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication' } };
+		const doc = node('doc', null, [p(note([p(text('a', [abbr]))]), text('x'))]);
+		expect(serialize(doc)).toBe('[[[a|explication]\n]]x');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('note saisie sans contenu', () => {
 		expect(serialize(node('doc', null, [p(text('x'), node('spipNote', { name: null, content: null }))]))).toBe('x[[]]');
 	});

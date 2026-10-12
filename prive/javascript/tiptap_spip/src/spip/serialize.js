@@ -43,9 +43,10 @@ export function serialize(doc, { conservative = true, regles } = {}) {
 /**
  * Contexte de la sérialisation en cours : conservative (forme canonique ou non, transmise au
  * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer) ; multi
- * (partie d'un multi : un [xx] s'écrit en entité) ; ouvert (un < reste ouvert avant ce bloc).
+ * (partie d'un multi : un [xx] s'écrit en entité) ; ouvert (un < reste ouvert avant ce bloc) ;
+ * crochets (nombre de [ restés ouverts avant ce bloc).
  */
-let contexte = { conservative: true, note: false, multi: false, ouvert: false };
+let contexte = { conservative: true, note: false, multi: false, ouvert: false, crochets: 0 };
 
 /**
  * Un < reste-t-il ouvert à la fin de ce texte ? Le modèle du core ([a-z_-]{3,} … >) et une balise
@@ -57,24 +58,38 @@ function chevronOuvert(texte, avant = false) {
 	return a < 0 && b < 0 ? avant : a > b;
 }
 
+/** Crochets [ restés ouverts à la fin de ce texte, en partant de ceux d'avant (un lien les ferme par ->). */
+function crochetsOuverts(texte, avant = 0) {
+	let n = avant;
+	for (const c of texte) {
+		if (c === '[') n++;
+		else if (c === ']' && n > 0) n--;
+	}
+	return n;
+}
+
 function serializeDoc(doc, conservative) {
 	const blocks = doc.content ?? [];
 	let out = conservative ? (doc.attrs?.spipLead ?? '') : '';
+	let crochets = contexte.crochets;
 	let i = 0;
 	while (i < blocks.length) {
 		const b = blocks[i];
 		const a = b.attrs ?? {};
 		const sep = separator(i, conservative ? a.spipSep : null);
 		if (conservative && a.spipGroup && typeof a.spipSrc === 'string' && canon(blocks.slice(i, i + a.spipGroup)) === a.spipHash) {
+			crochets = crochetsOuverts(sep + a.spipSrc, crochets);
 			out += sep + a.spipSrc;
 			i += a.spipGroup;
 			continue;
 		}
 		// un < resté ouvert plus haut (modèle, balise) peut se fermer dans ce bloc : serializeInline le sait
 		const avant = contexte;
-		contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert) };
+		contexte = { ...contexte, ouvert: chevronOuvert(out, contexte.ouvert), crochets };
 		try {
-			out += sep + serializeBlock(b);
+			const ecrit = sep + serializeBlock(b);
+			crochets = crochetsOuverts(ecrit, crochets);
+			out += ecrit;
 		} finally {
 			contexte = avant;
 		}
@@ -276,10 +291,11 @@ const ecritAvecCrochet = (suivant, n) => ['spipNote', 'spipRawInline', 'spipLink
 const brut = (n) => (n?.type === 'spipRawInline' ? n.attrs.source : '');
 
 /**
- * La mark sur nodes[i, i + run[ commence-t-elle ou finit-elle par un fragment brut à accolade ?
- * ({ devant {{{ ferait {{{{) : ses délimiteurs s'écrivent alors en HTML.
+ * La mark sur nodes[i, i + run[ a-t-elle un fragment brut à accolade contre l'un de ses délimiteurs,
+ * dedans ou juste avant ou après ({ contre {{{ ferait {{{{) ? Ses délimiteurs s'écrivent alors en HTML.
  */
-const accoladeContre = (nodes, i, run) => /^[{}]/.test(brut(nodes[i])) || /[{}]$/.test(brut(nodes[i + run - 1]));
+const accoladeContre = (nodes, i, run) => /[{}]$/.test(brut(nodes[i - 1])) || /^[{}]/.test(brut(nodes[i]))
+	|| /[{}]$/.test(brut(nodes[i + run - 1])) || /^[{}]/.test(brut(nodes[i + run]));
 
 /**
  * Contenu inline → SPIP.
@@ -290,13 +306,21 @@ const accoladeContre = (nodes, i, run) => /^[{}]/.test(brut(nodes[i])) || /[{}]$
  * @param {{ lineStart?: boolean, html?: boolean, cellule?: boolean }} options  cellule : texte d'une cellule de tableau
  */
 export function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false } = {}) {
-	nodes = marksAtomiques(nodes);
+	// saut de ligne au bord : SPIP n'affiche pas un _ de tête et affiche un _ final ; un <br> final ne
+	// se voit pas. Non écrit.
+	let debut = 0;
+	let fin = nodes.length;
+	while (debut < fin && nodes[debut].type === 'hardBreak') debut++;
+	while (fin > debut && nodes[fin - 1].type === 'hardBreak') fin--;
+	nodes = marksAtomiques(nodes.slice(debut, fin));
 	let out = '';
 	const stack = [];
 	let atLineStart = lineStart;
 	// tant qu'un < reste ouvert (balise incomplète, ici ou dans un bloc précédent), un > du texte le
 	// fermerait et un | en ferait un modèle (<doc|x>) : &gt; et \|
 	let chevron = contexte.ouvert;
+	// un [ resté ouvert (ici, plus haut, ou le [[ d'une note) : un -> du texte fermerait un lien
+	let crochets = contexte.crochets;
 	let lu = 0;
 	const closeTo = (k) => {
 		while (stack.length > k) out += stack.pop().close;
@@ -341,14 +365,19 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			const avantCrochets = ecritAvecCrochet(nodes[i + 1], n);
 			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
 			chevron = chevronOuvert(out.slice(lu), chevron);
+			crochets = crochetsOuverts(out.slice(lu), crochets);
 			let ecrit = chevron && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
+			if (crochets > 0 && !code && !inLink && !atomique) ecrit = ecrit.replace(/->/g, '-&gt;');
 			// > juste après un modèle : ses paramètres admettent des balises (<doc|<sup>>)
 			if (nodes[i - 1]?.type === 'spipModel') ecrit = ecrit.replace(/^>/, '&gt;');
+			crochets = crochetsOuverts(ecrit, crochets);
 			out += ecrit;
 			lu = out.length;
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
-			const autobr = n.attrs?.syntax === 'autobr';
+			// deux \n de suite feraient une ligne vide : un saut suivi d'un autre s'écrit forcé, sauf dans un
+			// lien (masqué avant le découpage en segments, il peut contenir une ligne vide)
+			const autobr = n.attrs?.syntax === 'autobr' && (nodes[i + 1]?.type !== 'hardBreak' || inLink);
 			out += autobr ? '\n' : '\n_ ';
 			atLineStart = autobr;
 		} else if (n.type === 'spipRawInline') {
@@ -395,17 +424,21 @@ const noteDe = (raccourci) => protect(raccourci).regions.find((r) => r.kind === 
  */
 function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) {
 	const avant = contexte;
-	contexte = { ...contexte, note: true };
+	contexte = { ...contexte, note: true, crochets: contexte.crochets + 2 };
 	try {
 		const doc = { type: 'doc', attrs: { spipLead, spipTrail }, content: content?.length ? content : [node('paragraph')] };
 		const nom = name == null ? '' : `<${name}>`;
 		let texte = serialize(doc, { conservative: avant.conservative });
 		// relue, la note doit rester une note : ? en tête ([[? : glossaire [?…], traité avant les notes),
-		// puis -> avant tout crochet ([[a -> b]] : lien [a -> b] entre crochets) en entités
+		// puis -> avant tout crochet ([[a -> b]] : lien [a -> b] entre crochets) en entités, ou ] final
 		let fleche;
 		while (!noteDe(`[[${nom}${texte}]]`)) {
 			if (!nom && texte.startsWith('?')) texte = `&#63;${texte.slice(1)}`;
 			else if ((fleche = texte.match(/^[^[\]]*?->/))) texte = `${fleche[0].slice(0, -2)}-&gt;${texte.slice(fleche[0].length)}`;
+			// contenu qui finit par ] d'un raccourci traité après les notes (abréviation) : ]]] fermerait
+			// la note un crochet trop tôt ; SPIP retire les blancs de fin du texte d'une note, le parseur
+			// range un saut de ligne final hors du contenu
+			else if (texte.endsWith(']')) texte += '\n';
 			else break;
 		}
 		// note automatique dont le texte commence par <…> : le core y lirait un nom

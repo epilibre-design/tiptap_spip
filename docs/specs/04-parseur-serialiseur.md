@@ -234,6 +234,12 @@ gérées. SPIP les traite comme des sauts de ligne ; le parseur ne découpe que 
 segment qui contient un `\r` non suivi de `\n` reste un bloc brut : restitué tel quel, modifiable seulement en
 mode source. À reprendre dans les notes de version.
 
+**Limite (lot corpus et propriétés)** : une note automatique dont le texte commence par un idiome
+(`<:cle:>`, traité après les notes) ou par une mark écrite en balise HTML (`<sup>`, `<sub>`, `<del>`) quand la
+même balise revient plus loin sur la ligne se lit nommée (`[[<sup>1</sup> voir <sup>2</sup>]]` est la note
+`sup` pour `traiter_raccourci_notes()`). Aucune écriture ne garde à la fois la note automatique et ce début :
+le sérialiseur écrit le premier `<` en `&lt;`, qui s'affiche.
+
 ## 6. Copier-coller
 
 | Source | Traitement |
