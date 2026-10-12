@@ -115,6 +115,18 @@ Barre contextuelle (bubble menu, optionnelle) sur sélection de texte : gras, it
 | Abréviation | popover : explication, langue |
 | Nœud brut | popover : source éditable + validation par re-parse (« convertir » si devenu reconnaissable) |
 
+Lot L5.2, nœud brut :
+- **Ouverture :** clic ou `Entrée` sur un `spipRawInline` ou un `spipRaw`, ou bouton des anomalies de la barre
+  d'état.
+- **Contenu du popover :**
+  - la source exacte du **segment** qui contient le nœud, c'est-à-dire la sérialisation conservatrice de son
+    groupe de blocs (carte de segments) ;
+  - l'explication de l'anomalie s'il en est une.
+- **« Appliquer »** (ou `Mod-Entrée`) relit la source (`parse`) et remplace le segment : un raccourci réparé
+  devient éditable (« convertir »). Le séparateur qui précédait le segment est gardé. Une source qui ne peut
+  pas se placer là est refusée, par exemple un tableau dans une note : le popover s'ouvre aussi depuis les
+  sous-éditeurs (note, partie de multi).
+
 Tous les popovers : fermeture par `Échap`, focus rendu à l'éditeur, validation par `Entrée`.
 
 Lot L3.2 : un popover peut en ouvrir un autre (lien ou glossaire depuis le sous-éditeur d'une note) :
@@ -128,6 +140,27 @@ Les nœuds `spipRaw*` issus d'un raccourci cassé (accolade orpheline, `[[` non 
 (soulignement ondulé) et comptés dans la barre d'état. Un clic ouvre le popover du nœud brut avec
 l'explication (« accolade fermante manquante : tout le texte qui suit sera en italique »).
 Les nœuds bruts légitimes (HTML inconnu volontaire) ne sont pas signalés comme anomalies.
+
+Lot L5.2 (`src/spip/anomalies.js`, `src/editor/anomalies.js`, `src/ui/StatusBar.js`). Le rendu de SPIP a été
+vérifié avec l'oracle (SPIP 4.4) ; l'explication décrit ce qu'il fera de chaque cas.
+
+| Source du nœud brut | Anomalie | Rendu SPIP |
+|---------------------|----------|------------|
+| `{`, `{{`, `<i>`, `<strong>`, `<del>`, `<sup>`, `<sub>`, `<code>` | `ouverture` | mise en forme jusqu'à la fin du paragraphe |
+| `}`, `}}`, `</i>`…, `</quote>`… | `fermeture` | affiché tel quel, ou sans effet |
+| `{{{` et plus | `intertitre` | la suite devient un intertitre |
+| `<quote>` | `citation` | tout le texte qui suit passe en citation |
+| `<multi>`, `<cadre>`, `<frame>`, `<poesie>`, `<poetry>`, `<html>`, `<math>` | `balise` | non traité |
+
+- **Non signalés :** le HTML inconnu, les entités, `{}`, et les blocs gardés bruts par repli (tableau
+  incohérent…). Ils restent éditables par le popover.
+- **Signalement :**
+  - soulignement ondulé (`.tts-anomalie`), explication en bulle ;
+  - barre d'état sous le textarea : « N mots », et « N anomalies de syntaxe » (bouton : anomalie suivante
+    après la sélection, popover ouvert ; région `aria-live`) ;
+  - barre d'état masquée en mode source.
+- `[[` ou `[x->` non fermés restent du texte (SPIP les affiche tels quels) : ce ne sont pas des nœuds bruts, ils
+  ne sont pas signalés.
 
 ## 6. Raccourcis clavier
 
@@ -178,7 +211,17 @@ Lot L5.1 :
   `menuitemcheckbox` (types de liste), avec `aria-checked`. `↓` ou `Entrée` ouvre, `↑` `↓` `Début` `Fin`
   parcourent, `Échap` ferme et rend le focus au bouton, `Tab` ou un clic ailleurs ferme. Un choix coché
   reste atteignable même sans effet. Un seul menu ouvert à la fois.
-- Piège de focus des popovers, nœuds atomiques annoncés, audit axe : lot L5.2.
+
+Lot L5.2 :
+- **Zone éditable :** `aria-label` = libellé du champ (son `<label>`, sinon son `aria-label` ou sa bulle, sinon
+  « Texte ») et `aria-multiline="true"`.
+- **Atomes :** modèles `role="group"`, `aria-label="Modèle doc 12"` ; appels de note `role="note"` avec leur
+  `aria-label`.
+- **Piège de focus :** `Tab` sur le dernier élément d'un popover revient au premier, `Maj+Tab` sur le premier va
+  au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'est pas reprise.
+- **Audit axe** (`@axe-core/playwright`, e2e) de l'éditeur, d'un menu ouvert et d'un popover ouvert : aucune
+  violation critique ni sérieuse. Reste une violation mineure (`aria-allowed-role`) : le popover est un
+  `<form role="dialog">`, et le rôle `dialog` n'est pas permis sur un `form`.
 
 ## 8. Internationalisation
 

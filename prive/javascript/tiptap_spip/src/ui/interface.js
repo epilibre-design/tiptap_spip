@@ -4,6 +4,7 @@ import { openAbbrPopover, openGlossaryPopover } from './MarkPopover.js';
 import { openModelPopover } from './ModelPopover.js';
 import { openIdiomePopover, openMultiPopover } from './MultiPopover.js';
 import { openNotePopover } from './NotePopover.js';
+import { openRawPopover } from './RawPopover.js';
 
 /**
  * Interface d'une instance d'éditeur, transmise aux extensions (coreExtensions({ ui })) : caches des
@@ -26,6 +27,7 @@ export function creerInterface({ editor, wrapper, services }) {
 		openAbbr: () => openAbbrPopover(contexte()),
 		editMulti: (pos) => openMultiPopover(contexte(), pos),
 		editIdiome: (pos) => openIdiomePopover(contexte(), pos),
+		editRaw: (pos) => openRawPopover(contexte(), pos),
 	};
 	return ui;
 }

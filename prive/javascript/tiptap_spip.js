@@ -10512,8 +10512,8 @@ var DecorationSet = class _DecorationSet {
   document. This will consume (modify) the `decorations` array, so
   you must make a copy if you want need to preserve that.
   */
-  static create(doc4, decorations) {
-    return decorations.length ? buildTree(decorations, doc4, 0, noSpec) : empty;
+  static create(doc4, decorations2) {
+    return decorations2.length ? buildTree(decorations2, doc4, 0, noSpec) : empty;
   }
   /**
   Find all decorations in this set which touch the given range
@@ -10573,18 +10573,18 @@ var DecorationSet = class _DecorationSet {
   access to the current document to create the appropriate tree
   structure.
   */
-  add(doc4, decorations) {
-    if (!decorations.length)
+  add(doc4, decorations2) {
+    if (!decorations2.length)
       return this;
     if (this == empty)
-      return _DecorationSet.create(doc4, decorations);
-    return this.addInner(doc4, decorations, 0);
+      return _DecorationSet.create(doc4, decorations2);
+    return this.addInner(doc4, decorations2, 0);
   }
-  addInner(doc4, decorations, offset) {
+  addInner(doc4, decorations2, offset) {
     let children, childIndex = 0;
     doc4.forEach((childNode, childOffset) => {
       let baseOffset = childOffset + offset, found2;
-      if (!(found2 = takeSpansForNode(decorations, childNode, baseOffset)))
+      if (!(found2 = takeSpansForNode(decorations2, childNode, baseOffset)))
         return;
       if (!children)
         children = this.children.slice();
@@ -10596,7 +10596,7 @@ var DecorationSet = class _DecorationSet {
         children.splice(childIndex, 0, childOffset, childOffset + childNode.nodeSize, buildTree(found2, childNode, baseOffset + 1, noSpec));
       childIndex += 3;
     });
-    let local = moveSpans(childIndex ? withoutNulls(decorations) : decorations, -offset);
+    let local = moveSpans(childIndex ? withoutNulls(decorations2) : decorations2, -offset);
     for (let i2 = 0; i2 < local.length; i2++)
       if (!local[i2].type.valid(doc4, local[i2]))
         local.splice(i2--, 1);
@@ -10606,20 +10606,20 @@ var DecorationSet = class _DecorationSet {
   Create a new set that contains the decorations in this set, minus
   the ones in the given array.
   */
-  remove(decorations) {
-    if (decorations.length == 0 || this == empty)
+  remove(decorations2) {
+    if (decorations2.length == 0 || this == empty)
       return this;
-    return this.removeInner(decorations, 0);
+    return this.removeInner(decorations2, 0);
   }
-  removeInner(decorations, offset) {
+  removeInner(decorations2, offset) {
     let children = this.children, local = this.local;
     for (let i2 = 0; i2 < children.length; i2 += 3) {
       let found2;
       let from2 = children[i2] + offset, to = children[i2 + 1] + offset;
-      for (let j = 0, span; j < decorations.length; j++)
-        if (span = decorations[j]) {
+      for (let j = 0, span; j < decorations2.length; j++)
+        if (span = decorations2[j]) {
           if (span.from > from2 && span.to < to) {
-            decorations[j] = null;
+            decorations2[j] = null;
             (found2 || (found2 = [])).push(span);
           }
         }
@@ -10636,8 +10636,8 @@ var DecorationSet = class _DecorationSet {
       }
     }
     if (local.length) {
-      for (let i2 = 0, span; i2 < decorations.length; i2++)
-        if (span = decorations[i2]) {
+      for (let i2 = 0, span; i2 < decorations2.length; i2++)
+        if (span = decorations2[i2]) {
           for (let j = 0; j < local.length; j++)
             if (local[j].eq(span, offset)) {
               if (local == this.local)
@@ -10841,8 +10841,8 @@ function mapChildren(oldChildren, newLocal, mapping, node2, offset, oldOffset, o
       }
     }
   if (mustRebuild) {
-    let decorations = mapAndGatherRemainingDecorations(children, oldChildren, newLocal, mapping, offset, oldOffset, options);
-    let built = buildTree(decorations, node2, 0, options);
+    let decorations2 = mapAndGatherRemainingDecorations(children, oldChildren, newLocal, mapping, offset, oldOffset, options);
+    let built = buildTree(decorations2, node2, 0, options);
     newLocal = built.local;
     for (let i2 = 0; i2 < children.length; i2 += 3)
       if (children[i2 + 1] < 0) {
@@ -10868,12 +10868,12 @@ function moveSpans(spans, offset) {
   }
   return result;
 }
-function mapAndGatherRemainingDecorations(children, oldChildren, decorations, mapping, offset, oldOffset, options) {
+function mapAndGatherRemainingDecorations(children, oldChildren, decorations2, mapping, offset, oldOffset, options) {
   function gather(set, oldOffset2) {
     for (let i2 = 0; i2 < set.local.length; i2++) {
       let mapped = set.local[i2].map(mapping, offset, oldOffset2);
       if (mapped)
-        decorations.push(mapped);
+        decorations2.push(mapped);
       else if (options.onRemove)
         options.onRemove(set.local[i2].spec);
     }
@@ -10883,7 +10883,7 @@ function mapAndGatherRemainingDecorations(children, oldChildren, decorations, ma
   for (let i2 = 0; i2 < children.length; i2 += 3)
     if (children[i2 + 1] == -1)
       gather(children[i2 + 2], oldChildren[i2] + oldOffset + 1);
-  return decorations;
+  return decorations2;
 }
 function takeSpansForNode(spans, node2, offset) {
   if (node2.isLeaf)
@@ -15056,10 +15056,10 @@ var isDev = typeof process !== "undefined" && true;
 function isWidgetDecoration(decoration) {
   return decoration.kind === "widget";
 }
-function decorationsToPMDecorations(decorations, extensionName) {
+function decorationsToPMDecorations(decorations2, extensionName) {
   const pmDecorations = [];
   const widgetKeys = /* @__PURE__ */ new Set();
-  for (const decoration of decorations) {
+  for (const decoration of decorations2) {
     if (decoration.kind === "widget") {
       if (isWidgetDecoration(decoration)) widgetKeys.add(decoration.key);
     }
@@ -15070,8 +15070,8 @@ function decorationsToPMDecorations(decorations, extensionName) {
     widgetKeys
   };
 }
-function buildDecorationSet(doc4, decorations, extensionName) {
-  const { decorations: pmDecorations, widgetKeys } = decorationsToPMDecorations(decorations, extensionName);
+function buildDecorationSet(doc4, decorations2, extensionName) {
+  const { decorations: pmDecorations, widgetKeys } = decorationsToPMDecorations(decorations2, extensionName);
   return {
     set: DecorationSet.create(doc4, pmDecorations),
     widgetKeys
@@ -15082,8 +15082,8 @@ function rangeOwnsPosition({ position, from: from2, to, docSize }) {
   if (position < to) return true;
   return position === to && to === docSize;
 }
-function filterOutOfRangeDecorations({ decorations, from: from2, to, docSize, extensionName, warnedExtensions }) {
-  return decorations.filter((decoration) => {
+function filterOutOfRangeDecorations({ decorations: decorations2, from: from2, to, docSize, extensionName, warnedExtensions }) {
+  return decorations2.filter((decoration) => {
     if (rangeOwnsPosition({
       position: decoration.anchor,
       from: from2,
@@ -15431,12 +15431,12 @@ var DecorationManager = class {
   * @returns The decoration set and widget keys
   */
   buildFullSet(name, spec, state) {
-    const decorations = this.runCreate(name, "create", () => spec.create({
+    const decorations2 = this.runCreate(name, "create", () => spec.create({
       editor: this.editor,
       state,
       view: this.mountedView
     }));
-    return buildDecorationSet(state.doc, decorations, name);
+    return buildDecorationSet(state.doc, decorations2, name);
   }
   /**
   * Runs a decoration callback and swallows anything it throws. These run inside
@@ -16266,13 +16266,13 @@ var ExtensionManager = class {
       if (!addNodeView) return [];
       const nodeViewResult = addNodeView();
       if (!nodeViewResult) return [];
-      const nodeview = (node2, view, getPos, decorations, innerDecorations) => {
+      const nodeview = (node2, view, getPos, decorations2, innerDecorations) => {
         const HTMLAttributes = getRenderedAttributes(node2, extensionAttributes);
         return nodeViewResult({
           node: node2,
           view,
           getPos,
-          decorations,
+          decorations: decorations2,
           innerDecorations,
           editor,
           extension,
@@ -22746,7 +22746,7 @@ function zeroes(n) {
   return Array(n).fill(0);
 }
 function handleDecorations(state, cell) {
-  const decorations = [];
+  const decorations2 = [];
   const $cell = state.doc.resolve(cell);
   const table = $cell.node(-1);
   if (!table) return DecorationSet.empty;
@@ -22761,11 +22761,11 @@ function handleDecorations(state, cell) {
       const pos = start + cellPos + table.nodeAt(cellPos).nodeSize - 1;
       const dom = document.createElement("div");
       dom.className = "column-resize-handle";
-      if ((_columnResizingPlugin = columnResizingPluginKey.getState(state)) === null || _columnResizingPlugin === void 0 ? void 0 : _columnResizingPlugin.dragging) decorations.push(Decoration.node(start + cellPos, start + cellPos + table.nodeAt(cellPos).nodeSize, { class: "column-resize-dragging" }));
-      decorations.push(Decoration.widget(pos, dom));
+      if ((_columnResizingPlugin = columnResizingPluginKey.getState(state)) === null || _columnResizingPlugin === void 0 ? void 0 : _columnResizingPlugin.dragging) decorations2.push(Decoration.node(start + cellPos, start + cellPos + table.nodeAt(cellPos).nodeSize, { class: "column-resize-dragging" }));
+      decorations2.push(Decoration.widget(pos, dom));
     }
   }
-  return DecorationSet.create(state.doc, decorations);
+  return DecorationSet.create(state.doc, decorations2);
 }
 function tableEditing({ allowTableNodeSelection = false } = {}) {
   return new Plugin({
@@ -23975,7 +23975,7 @@ var Focus = Extension.create({
       props: { decorations: ({ doc: doc4, selection }) => {
         const { isEditable, isFocused } = this.editor;
         const { anchor } = selection;
-        const decorations = [];
+        const decorations2 = [];
         if (!isEditable || !isFocused) return DecorationSet.create(doc4, []);
         let maxLevels = 0;
         if (this.options.mode === "deepest") doc4.descendants((node2, pos) => {
@@ -23989,9 +23989,9 @@ var Focus = Extension.create({
           if (!(anchor >= pos && anchor <= pos + node2.nodeSize - 1)) return false;
           currentLevel += 1;
           if (this.options.mode === "deepest" && maxLevels - currentLevel > 0 || this.options.mode === "shallowest" && currentLevel > 1) return this.options.mode === "deepest";
-          decorations.push(Decoration.node(pos, pos + node2.nodeSize, { class: this.options.className }));
+          decorations2.push(Decoration.node(pos, pos + node2.nodeSize, { class: this.options.className }));
         });
-        return DecorationSet.create(doc4, decorations);
+        return DecorationSet.create(doc4, decorations2);
       } }
     })];
   }
@@ -24032,13 +24032,13 @@ function resolveEmptyNodeClass(emptyNodeClass, props) {
 }
 function scanRangeForDecorations({ editor, options, dataAttribute, doc: doc4, selection, from: from2, to }) {
   const { anchor } = selection;
-  const decorations = [];
+  const decorations2 = [];
   const isEmptyDoc = editor.isEmpty;
   doc4.nodesBetween(from2, to, (node2, pos) => {
     const hasAnchor = anchor >= pos && anchor <= pos + node2.nodeSize;
     const isEmpty2 = !node2.isLeaf && isNodeEmpty(node2);
     if (!node2.type.isTextblock) return options.includeChildren;
-    if ((hasAnchor || !options.showOnlyCurrent) && isEmpty2) decorations.push(createPlaceholderDecoration({
+    if ((hasAnchor || !options.showOnlyCurrent) && isEmpty2) decorations2.push(createPlaceholderDecoration({
       editor,
       isEmptyDoc,
       dataAttribute,
@@ -24058,12 +24058,12 @@ function scanRangeForDecorations({ editor, options, dataAttribute, doc: doc4, se
     }));
     return options.includeChildren;
   });
-  return decorations;
+  return decorations2;
 }
 function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4, selection }) {
   if (!(editor.isEditable || !options.showOnlyWhenEditable)) return null;
   const { anchor } = selection;
-  const decorations = [];
+  const decorations2 = [];
   const isEmptyDoc = editor.isEmpty;
   if (options.showOnlyCurrent && !options.includeChildren) {
     const resolved = doc4.resolve(anchor);
@@ -24071,7 +24071,7 @@ function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4
     const nodeStart = resolved.depth > 0 ? resolved.before(1) : anchor;
     if (node2 && node2.type.isTextblock && isNodeEmpty(node2)) {
       const hasAnchor = anchor >= nodeStart && anchor <= nodeStart + node2.nodeSize;
-      decorations.push(createPlaceholderDecoration({
+      decorations2.push(createPlaceholderDecoration({
         editor,
         isEmptyDoc,
         dataAttribute,
@@ -24090,7 +24090,7 @@ function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4
         pos: nodeStart
       }));
     }
-  } else decorations.push(...scanRangeForDecorations({
+  } else decorations2.push(...scanRangeForDecorations({
     editor,
     options,
     dataAttribute,
@@ -24099,7 +24099,7 @@ function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4
     from: 0,
     to: doc4.content.size
   }));
-  return DecorationSet.create(doc4, decorations);
+  return DecorationSet.create(doc4, decorations2);
 }
 function resolveTopLevelRange(doc4, pos) {
   const resolved = doc4.resolve(pos);
@@ -24180,8 +24180,8 @@ function clampRange(from2, to, doc4) {
     to: Math.max(clampedFrom, Math.min(to, doc4.content.size))
   };
 }
-function updateDecorationsInRanges({ decorations, ranges, editor, options, dataAttribute, doc: doc4, selection }) {
-  let next = decorations;
+function updateDecorationsInRanges({ decorations: decorations2, ranges, editor, options, dataAttribute, doc: doc4, selection }) {
+  let next = decorations2;
   for (const range of ranges) {
     const { from: from2, to } = clampRange(range.from, range.to, doc4);
     const existing = next.find(from2, to).filter((decoration) => decoration.from >= from2 && decoration.to <= to);
@@ -24202,14 +24202,14 @@ function updateDecorationsInRanges({ decorations, ranges, editor, options, dataA
 function createPlaceholderStateField({ editor, options, dataAttribute }) {
   return {
     init(_config, state) {
-      const decorations = buildPlaceholderDecorations({
+      const decorations2 = buildPlaceholderDecorations({
         editor,
         options,
         dataAttribute,
         doc: state.doc,
         selection: state.selection
       });
-      return decorations !== null && decorations !== void 0 ? decorations : DecorationSet.empty;
+      return decorations2 !== null && decorations2 !== void 0 ? decorations2 : DecorationSet.empty;
     },
     apply(tr, prev, oldState, newState) {
       if (!tr.docChanged && !tr.selectionSet) return prev;
@@ -24516,6 +24516,21 @@ var DEFAUTS = {
   outil_minuscules: "Minuscules",
   outil_plein_ecran: "Plein \xE9cran",
   outil_plein_ecran_sortir: "Quitter le plein \xE9cran",
+  anomalie_ouverture: "Mise en forme ouverte sans \xEAtre ferm\xE9e : au rendu, elle s\u2019\xE9tend jusqu\u2019\xE0 la fin du paragraphe.",
+  anomalie_fermeture: "Fermeture sans ouverture : au rendu, elle s\u2019affiche telle quelle ou reste sans effet.",
+  anomalie_intertitre: "Accolades d\u2019intertitre hors d\u2019un intertitre complet : au rendu, la suite devient un intertitre.",
+  anomalie_citation: "<quote> sans </quote> : au rendu, tout le texte qui suit passe en citation.",
+  anomalie_balise: "Balise SPIP sans fermeture : au rendu, elle n\u2019est pas trait\xE9e.",
+  etat: "\xC9tat du texte",
+  etat_mot: "1 mot",
+  etat_mots: "@nb@ mots",
+  etat_anomalie: "1 anomalie de syntaxe",
+  etat_anomalies: "@nb@ anomalies de syntaxe",
+  brut: "Source SPIP",
+  brut_source: "Source SPIP, relue quand on applique",
+  brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
+  modele_aria: "Mod\xE8le @modele@",
+  zone_texte: "Texte",
   appliquer: "Appliquer",
   annuler: "Annuler"
 };
@@ -24557,6 +24572,10 @@ var chip = (text2) => {
   span.textContent = text2;
   return span;
 };
+var ariaModele = (model) => ({
+  role: "group",
+  "aria-label": label("modele_aria").replace("@modele@", [model?.name, model?.id].filter(Boolean).join(" "))
+});
 var modelView = (ui) => ({ node: node2, getPos }) => {
   const block = node2.type.name === "spipModelBlock";
   const dom = document.createElement(block ? "div" : "span");
@@ -24576,6 +24595,7 @@ var modelView = (ui) => ({ node: node2, getPos }) => {
     source = model?.source ?? "";
     dom.dataset.ttsModel = JSON.stringify(model);
     dom.title = source;
+    for (const [nom, valeur] of Object.entries(ariaModele(model))) dom.setAttribute(nom, valeur);
     preview.replaceChildren(chip(source));
     dom.classList.add("tts-model--chargement");
     dom.classList.remove("tts-model--erreur", "tts-model--vide");
@@ -24671,7 +24691,7 @@ function texteEtAppels(content, labels = []) {
   ecrire2(false);
   return noeuds;
 }
-var multiView = () => ({ node: node2, decorations }) => {
+var multiView = () => ({ node: node2, decorations: decorations2 }) => {
   const dom = document.createElement("span");
   dom.className = "tts-multi";
   dom.contentEditable = "false";
@@ -24685,7 +24705,7 @@ var multiView = () => ({ node: node2, decorations }) => {
     dom.dataset.ttsLang = affichee?.lang ?? "";
     dom.title = parts.map((p) => `${p.lang ?? "*"} : ${apercu(p.content)}`).join(" \xB7 ");
   };
-  render2(node2, decorations);
+  render2(node2, decorations2);
   return {
     dom,
     update(updated, decos) {
@@ -24732,6 +24752,50 @@ var idiomeView = (ui) => ({ node: node2 }) => {
     ignoreMutation: () => true
   };
 };
+
+// src/spip/anomalies.js
+var MISE_EN_FORME = "strong|i|del|sup|sub|code";
+var BLOCS2 = "quote|multi|cadre|frame|poesie|poetry|html|math";
+var REGLES = [
+  // {{{ hors d'un intertitre complet : la suite devient un intertitre
+  [/^\{{3,}$/, "intertitre"],
+  [/^\{{1,2}$/, "ouverture"],
+  [/^\}+$/, "fermeture"],
+  [new RegExp(`^<(?:${MISE_EN_FORME})>$`, "i"), "ouverture"],
+  [new RegExp(`^</(?:${MISE_EN_FORME}|${BLOCS2})>$`, "i"), "fermeture"],
+  // <quote> sans fermeture : tout le texte qui suit passe en citation
+  [/^<quote\b[^<>]*>$/i, "citation"],
+  [new RegExp(`^<(?:${BLOCS2})\\b[^<>]*>$`, "i"), "balise"]
+];
+function anomalie(source) {
+  return REGLES.find(([re]) => re.test(source))?.[1] ?? null;
+}
+
+// src/editor/anomalies.js
+function anomaliesDuDocument(doc4) {
+  const out = [];
+  doc4.descendants((node2, pos) => {
+    if (node2.type.name !== "spipRawInline") return true;
+    const cle = anomalie(node2.attrs.source);
+    if (cle) out.push({ pos, cle, node: node2 });
+    return false;
+  });
+  return out;
+}
+var explication = (cle) => label(`anomalie_${cle}`);
+var decorations = (doc4) => DecorationSet.create(doc4, anomaliesDuDocument(doc4).map(({ pos, cle, node: node2 }) => Decoration.node(pos, pos + node2.nodeSize, { class: "tts-anomalie", "data-tts-anomalie": cle, title: explication(cle) })));
+var clef = new PluginKey("spipAnomalies");
+var SpipAnomalies = Extension.create({
+  name: "spipAnomalies",
+  addProseMirrorPlugins: () => [new Plugin({
+    key: clef,
+    state: {
+      init: (config2, { doc: doc4 }) => decorations(doc4),
+      apply: (tr, valeur) => tr.docChanged ? decorations(tr.doc) : valeur
+    },
+    props: { decorations: (state) => clef.getState(state) }
+  })]
+});
 
 // src/editor/edition.js
 var ALIGNEMENTS = ["left", "center", "right", "justify"];
@@ -25120,7 +25184,7 @@ var SpipModel = Node3.create({
   selectable: true,
   addAttributes: modelAttributes,
   parseHTML: () => [{ tag: "span[data-tts-model]" }],
-  renderHTML: ({ node: node2, HTMLAttributes }) => ["span", { ...HTMLAttributes, class: "tts-model" }, node2.attrs.model?.source ?? ""]
+  renderHTML: ({ node: node2, HTMLAttributes }) => ["span", { ...HTMLAttributes, ...ariaModele(node2.attrs.model), class: "tts-model" }, node2.attrs.model?.source ?? ""]
 });
 var SpipModelBlock = Node3.create({
   name: "spipModelBlock",
@@ -25130,7 +25194,7 @@ var SpipModelBlock = Node3.create({
   draggable: true,
   addAttributes: modelAttributes,
   parseHTML: () => [{ tag: "div[data-tts-model]" }],
-  renderHTML: ({ node: node2, HTMLAttributes }) => ["div", { ...HTMLAttributes, class: "tts-model tts-model-block" }, node2.attrs.model?.source ?? ""]
+  renderHTML: ({ node: node2, HTMLAttributes }) => ["div", { ...HTMLAttributes, ...ariaModele(node2.attrs.model), class: "tts-model tts-model-block" }, node2.attrs.model?.source ?? ""]
 });
 var jsonAttr = (name, dataAttr, fallback) => ({
   [name]: {
@@ -25223,21 +25287,21 @@ var SpipLangues = Extension.create({
   }),
   addProseMirrorPlugins() {
     const decorer = (doc4, langue) => {
-      const decorations = [];
+      const decorations2 = [];
       doc4.descendants((node2, pos) => {
         if (node2.type.name === "spipMultiInline") {
-          decorations.push(Decoration.node(pos, pos + node2.nodeSize, {}, { langue }));
+          decorations2.push(Decoration.node(pos, pos + node2.nodeSize, {}, { langue }));
         } else if (node2.type.name === "spipMultiBlock") {
           const parts = [];
           node2.forEach((part, offset) => parts.push({ lang: part.attrs.lang, pos: pos + 1 + offset, size: part.nodeSize }));
           const montree = partieAffichee(parts, langue);
           for (const p of parts) {
-            if (p !== montree) decorations.push(Decoration.node(p.pos, p.pos + p.size, { class: "tts-lang--autre" }));
+            if (p !== montree) decorations2.push(Decoration.node(p.pos, p.pos + p.size, { class: "tts-lang--autre" }));
           }
           return false;
         }
       });
-      return DecorationSet.create(doc4, decorations);
+      return DecorationSet.create(doc4, decorations2);
     };
     return [new Plugin({
       key: clefLangues,
@@ -25286,7 +25350,8 @@ var SpipNote = Node3.create({
   }),
   // avant la mark exposant, qui lit aussi <sup>
   parseHTML: () => [{ tag: "sup[data-tts-note]", priority: 60 }],
-  renderHTML: ({ node: node2, HTMLAttributes }) => ["sup", { ...HTMLAttributes, class: "tts-note", title: apercu(node2.attrs.content) }],
+  // role note : l'aria-label posé par la numérotation (« Note 2 : … ») est annoncé (spec 06 §7)
+  renderHTML: ({ node: node2, HTMLAttributes }) => ["sup", { ...HTMLAttributes, class: "tts-note", role: "note", title: apercu(node2.attrs.content) }],
   addCommands() {
     return {
       /** Note au curseur ; sans contenu, ouvre le popover de note (spec 05 §1). */
@@ -25343,11 +25408,11 @@ var SpipNoteNumbers = Extension.create({
     const key = new PluginKey("spipNoteNumbers");
     const numeroter = (doc4, langue) => {
       const notes = notesDuDocument(doc4, langue);
-      const decorations = notes.filter((note) => !note.multi).map(({ pos, label: label2, aria }) => Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, { "data-tts-label": label2, "aria-label": aria }));
+      const decorations2 = notes.filter((note) => !note.multi).map(({ pos, label: label2, aria }) => Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, { "data-tts-label": label2, "aria-label": aria }));
       const multis = /* @__PURE__ */ new Map();
       for (const note of notes.filter((nt) => nt.multi)) multis.set(note.pos, [...multis.get(note.pos) ?? [], note.label]);
-      for (const [pos, labels] of multis) decorations.push(Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, {}, { notes: labels }));
-      return { langue, set: DecorationSet.create(doc4, decorations) };
+      for (const [pos, labels] of multis) decorations2.push(Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, {}, { notes: labels }));
+      return { langue, set: DecorationSet.create(doc4, decorations2) };
     };
     return [new Plugin({
       key,
@@ -25363,7 +25428,7 @@ var SpipNoteNumbers = Extension.create({
     })];
   }
 });
-var POPOVERS = { spipNote: "editNote", spipMultiInline: "editMulti", spipIdiome: "editIdiome" };
+var POPOVERS = { spipNote: "editNote", spipMultiInline: "editMulti", spipIdiome: "editIdiome", spipRawInline: "editRaw", spipRaw: "editRaw" };
 var SpipUi = Extension.create({
   name: "spipUi",
   addOptions: () => ({ ui: null }),
@@ -25459,6 +25524,7 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
     Gapcursor,
     UndoRedo,
     SpipEdition,
+    SpipAnomalies,
     SpipUi.configure({ ui })
   ];
 }
@@ -25855,6 +25921,8 @@ var Popover = class _Popover {
       if (event.key === "Escape") {
         event.preventDefault();
         this.close();
+      } else if (event.key === "Tab" && !event.defaultPrevented) {
+        this.pieger(event);
       }
     });
   }
@@ -25889,6 +25957,24 @@ var Popover = class _Popover {
     }
     this.actions.append(bouton);
     return bouton;
+  }
+  /** Éléments du popover atteignables à la tabulation, dans l'ordre. */
+  focusables() {
+    return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')].filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest("[hidden]"));
+  }
+  /**
+   * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
+   * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
+   */
+  pieger(event) {
+    const cibles = this.focusables();
+    if (!cibles.length) return;
+    const actif = this.form.ownerDocument.activeElement;
+    const dedans = cibles.includes(actif);
+    const cible = event.shiftKey ? (!dedans || actif === cibles[0]) && cibles.at(-1) : (!dedans || actif === cibles.at(-1)) && cibles[0];
+    if (!cible) return;
+    event.preventDefault();
+    cible.focus();
   }
   error(message) {
     this.erreur.textContent = message;
@@ -26214,6 +26300,240 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
   return popover2;
 }
 
+// src/ui/icones.js
+var ICONES = {
+  annuler: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.82843 6.99955L8.36396 9.53509L6.94975 10.9493L2 5.99955L6.94975 1.0498L8.36396 2.46402L5.82843 4.99955H13C17.4183 4.99955 21 8.58127 21 12.9996C21 17.4178 17.4183 20.9996 13 20.9996H4V18.9996H13C16.3137 18.9996 19 16.3133 19 12.9996C19 9.68584 16.3137 6.99955 13 6.99955H5.82843Z"/></svg>',
+  retablir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.1716 6.99955H11C7.68629 6.99955 5 9.68584 5 12.9996C5 16.3133 7.68629 18.9996 11 18.9996H20V20.9996H11C6.58172 20.9996 3 17.4178 3 12.9996C3 8.58127 6.58172 4.99955 11 4.99955H18.1716L15.636 2.46402L17.0503 1.0498L22 5.99955L17.0503 10.9493L15.636 9.53509L18.1716 6.99955Z"/></svg>',
+  titre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17 11V4H19V21H17V13H7V21H5V4H7V11H17Z"/></svg>',
+  paragraphe: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6V21H10V16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4H20V6H17V21H15V6H12ZM10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14V6Z"/></svg>',
+  liste: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 4H21V6H8V4ZM4.5 6.5C3.67157 6.5 3 5.82843 3 5C3 4.17157 3.67157 3.5 4.5 3.5C5.32843 3.5 6 4.17157 6 5C6 5.82843 5.32843 6.5 4.5 6.5ZM4.5 13.5C3.67157 13.5 3 12.8284 3 12C3 11.1716 3.67157 10.5 4.5 10.5C5.32843 10.5 6 11.1716 6 12C6 12.8284 5.32843 13.5 4.5 13.5ZM4.5 20.4C3.67157 20.4 3 19.7284 3 18.9C3 18.0716 3.67157 17.4 4.5 17.4C5.32843 17.4 6 18.0716 6 18.9C6 19.7284 5.32843 20.4 4.5 20.4ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"/></svg>',
+  listeNumerotee: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.75024 3.5H4.71733L3.25 3.89317V5.44582L4.25002 5.17782L4.25018 8.5H3V10H7V8.5H5.75024V3.5ZM10 4H21V6H10V4ZM10 11H21V13H10V11ZM10 18H21V20H10V18ZM2.875 15.625C2.875 14.4514 3.82639 13.5 5 13.5C6.17361 13.5 7.125 14.4514 7.125 15.625C7.125 16.1106 6.96183 16.5587 6.68747 16.9167L6.68271 16.9229L5.31587 18.5H7V20H3.00012L2.99959 18.8786L5.4717 16.035C5.5673 15.9252 5.625 15.7821 5.625 15.625C5.625 15.2798 5.34518 15 5 15C4.67378 15 4.40573 15.2501 4.37747 15.5688L4.3651 15.875H2.875V15.625Z"/></svg>',
+  indenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM7 12.5L3 16V9L7 12.5Z"/></svg>',
+  desindenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM3 12.5L7 9V16L3 12.5Z"/></svg>',
+  citation: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M4.58341 17.3211C3.55316 16.2274 3 15 3 13.0103C3 9.51086 5.45651 6.37366 9.03059 4.82318L9.92328 6.20079C6.58804 8.00539 5.93618 10.346 5.67564 11.822C6.21263 11.5443 6.91558 11.4466 7.60471 11.5105C9.40908 11.6778 10.8312 13.159 10.8312 15C10.8312 16.933 9.26416 18.5 7.33116 18.5C6.2581 18.5 5.23196 18.0095 4.58341 17.3211ZM14.5834 17.3211C13.5532 16.2274 13 15 13 13.0103C13 9.51086 15.4565 6.37366 19.0306 4.82318L19.9233 6.20079C16.588 8.00539 15.9362 10.346 15.6756 11.822C16.2126 11.5443 16.9156 11.4466 17.6047 11.5105C19.4091 11.6778 20.8312 13.159 20.8312 15C20.8312 16.933 19.2642 18.5 17.3312 18.5C16.2581 18.5 15.232 18.0095 14.5834 17.3211Z"/></svg>',
+  poesie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M6.93912 14.0328C6.7072 14.6563 6.51032 15.2331 6.33421 15.8155C7.29345 15.1189 8.43544 14.6767 9.75193 14.5121C12.2652 14.198 14.4976 12.5385 15.6279 10.4537L14.1721 8.99888L15.5848 7.58417C15.9185 7.25004 16.2521 6.91614 16.5858 6.58248C17.0151 6.15312 17.5 5.35849 18.0129 4.2149C12.4197 5.08182 8.99484 8.50647 6.93912 14.0328ZM17 8.99739L18 9.99669C17 12.9967 14 15.9967 10 16.4967C7.33146 16.8303 5.66421 18.6636 4.99824 21.9967H3C4 15.9967 6 1.99669 21 1.99669C20.0009 4.99402 19.0018 6.99313 18.0027 7.99402C17.6662 8.33049 17.3331 8.66382 17 8.99739Z"/></svg>',
+  cadre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3.41436 5.99995L5.70726 3.70706L4.29304 2.29285L0.585938 5.99995L4.29304 9.70706L5.70726 8.29285L3.41436 5.99995ZM9.58594 5.99995L7.29304 3.70706L8.70726 2.29285L12.4144 5.99995L8.70726 9.70706L7.29304 8.29285L9.58594 5.99995ZM14.0002 2.99995H21.0002C21.5524 2.99995 22.0002 3.44767 22.0002 3.99995V20C22.0002 20.5522 21.5524 21 21.0002 21H3.00015C2.44787 21 2.00015 20.5522 2.00015 20V12H4.00015V19H20.0002V4.99995H14.0002V2.99995Z"/></svg>',
+  gras: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 11H12.5C13.8807 11 15 9.88071 15 8.5C15 7.11929 13.8807 6 12.5 6H8V11ZM18 15.5C18 17.9853 15.9853 20 13.5 20H6V4H12.5C14.9853 4 17 6.01472 17 8.5C17 9.70431 16.5269 10.7981 15.7564 11.6058C17.0979 12.3847 18 13.837 18 15.5ZM8 13V18H13.5C14.8807 18 16 16.8807 16 15.5C16 14.1193 14.8807 13 13.5 13H8Z"/></svg>',
+  italique: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M15 20H7V18H9.92661L12.0425 6H9V4H17V6H14.0734L11.9575 18H15V20Z"/></svg>',
+  barre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17.1538 14C17.3846 14.5161 17.5 15.0893 17.5 15.7196C17.5 17.0625 16.9762 18.1116 15.9286 18.867C14.8809 19.6223 13.4335 20 11.5862 20C9.94674 20 8.32335 19.6185 6.71592 18.8555V16.6009C8.23538 17.4783 9.7908 17.917 11.3822 17.917C13.9333 17.917 15.2128 17.1846 15.2208 15.7196C15.2208 15.0939 15.0049 14.5598 14.5731 14.1173C14.5339 14.0772 14.4939 14.0381 14.4531 14H3V12H21V14H17.1538ZM13.076 11H7.62908C7.4566 10.8433 7.29616 10.6692 7.14776 10.4778C6.71592 9.92084 6.5 9.24559 6.5 8.45207C6.5 7.21602 6.96583 6.165 7.89749 5.299C8.82916 4.43299 10.2706 4 12.2219 4C13.6934 4 15.1009 4.32808 16.4444 4.98426V7.13591C15.2448 6.44921 13.9293 6.10587 12.4978 6.10587C10.0187 6.10587 8.77917 6.88793 8.77917 8.45207C8.77917 8.87172 8.99709 9.23796 9.43293 9.55079C9.86878 9.86362 10.4066 10.1135 11.0463 10.3004C11.6665 10.4816 12.3431 10.7148 13.076 11H13.076Z"/></svg>',
+  exposant: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 5L10.5 10.9283L15.4043 5H18L11.7978 12.4971L18 19.9943V20H15.4091L10.5 14.0659L5.59092 20H3V19.9943L9.20216 12.4971L3 5H5.59567ZM21.5507 6.5803C21.7042 6.43453 21.8 6.22845 21.8 6C21.8 5.55817 21.4418 5.2 21 5.2C20.5582 5.2 20.2 5.55817 20.2 6C20.2 6.07624 20.2107 6.14999 20.2306 6.21983L19.0765 6.54958C19.0267 6.37497 19 6.1906 19 6C19 4.89543 19.8954 4 21 4C22.1046 4 23 4.89543 23 6C23 6.57273 22.7593 7.08923 22.3735 7.45384L20.7441 9H23V10H19V9L21.5507 6.5803V6.5803Z"/></svg>',
+  indice: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 4L10.5 9.92831L15.4043 4H18L11.7978 11.4971L18 18.9943V19H15.4091L10.5 13.0659L5.59092 19H3V18.9943L9.20216 11.4971L3 4H5.59567ZM21.8 16C21.8 15.5582 21.4418 15.2 21 15.2C20.5582 15.2 20.2 15.5582 20.2 16C20.2 16.0762 20.2107 16.15 20.2306 16.2198L19.0765 16.5496C19.0267 16.375 19 16.1906 19 16C19 14.8954 19.8954 14 21 14C22.1046 14 23 14.8954 23 16C23 16.5727 22.7593 17.0892 22.3735 17.4538L20.7441 19H23V20H19V19L21.5507 16.5803C21.7042 16.4345 21.8 16.2284 21.8 16Z"/></svg>',
+  code: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12L15.9289 19.0711L14.5147 17.6569L20.1716 12L14.5147 6.34317L15.9289 4.92896L23 12ZM3.82843 12L9.48528 17.6569L8.07107 19.0711L1 12L8.07107 4.92896L9.48528 6.34317L3.82843 12Z"/></svg>',
+  lien: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3638 15.5355L16.9496 14.1213L18.3638 12.7071C20.3164 10.7545 20.3164 7.58866 18.3638 5.63604C16.4112 3.68341 13.2453 3.68341 11.2927 5.63604L9.87849 7.05025L8.46428 5.63604L9.87849 4.22182C12.6122 1.48815 17.0443 1.48815 19.778 4.22182C22.5117 6.95549 22.5117 11.3876 19.778 14.1213L18.3638 15.5355ZM15.5353 18.364L14.1211 19.7782C11.3875 22.5118 6.95531 22.5118 4.22164 19.7782C1.48797 17.0445 1.48797 12.6123 4.22164 9.87868L5.63585 8.46446L7.05007 9.87868L5.63585 11.2929C3.68323 13.2455 3.68323 16.4113 5.63585 18.364C7.58847 20.3166 10.7543 20.3166 12.7069 18.364L14.1211 16.9497L15.5353 18.364ZM14.8282 7.75736L16.2425 9.17157L9.17139 16.2426L7.75717 14.8284L14.8282 7.75736Z"/></svg>',
+  note: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12.9998 3L12.9996 10.267L19.294 6.63397L20.294 8.36602L14.0006 11.999L20.294 15.634L19.294 17.366L12.9996 13.732L12.9998 21H10.9998L10.9996 13.732L4.70557 17.366L3.70557 15.634L9.99857 12L3.70557 8.36602L4.70557 6.63397L10.9996 10.267L10.9998 3H12.9998Z"/></svg>',
+  glossaire: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18H6C5.44772 18 5 18.4477 5 19C5 19.5523 5.44772 20 6 20H21V22H6C4.34315 22 3 20.6569 3 19V4C3 2.89543 3.89543 2 5 2H21V18ZM5 16.05C5.16156 16.0172 5.32877 16 5.5 16H19V4H5V16.05ZM16 9H8V7H16V9Z"/></svg>',
+  abbr: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM7 8H17V11H15V10H13V14H14.5V16H9.5V14H11V10H9V11H7V8Z"/></svg>',
+  modele: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5C7 2.79086 8.79086 1 11 1C13.2091 1 15 2.79086 15 5H18C18.5523 5 19 5.44772 19 6V9C21.2091 9 23 10.7909 23 13C23 15.2091 21.2091 17 19 17V20C19 20.5523 18.5523 21 18 21H4C3.44772 21 3 20.5523 3 20V6C3 5.44772 3.44772 5 4 5H7ZM11 3C9.89543 3 9 3.89543 9 5C9 5.23554 9.0403 5.45952 9.11355 5.66675C9.22172 5.97282 9.17461 6.31235 8.98718 6.57739C8.79974 6.84243 8.49532 7 8.17071 7H5V19H17V15.8293C17 15.5047 17.1576 15.2003 17.4226 15.0128C17.6877 14.8254 18.0272 14.7783 18.3332 14.8865C18.5405 14.9597 18.7645 15 19 15C20.1046 15 21 14.1046 21 13C21 11.8954 20.1046 11 19 11C18.7645 11 18.5405 11.0403 18.3332 11.1135C18.0272 11.2217 17.6877 11.1746 17.4226 10.9872C17.1576 10.7997 17 10.4953 17 10.1707V7H13.8293C13.5047 7 13.2003 6.84243 13.0128 6.57739C12.8254 6.31235 12.7783 5.97282 12.8865 5.66675C12.9597 5.45952 13 5.23555 13 5C13 3.89543 12.1046 3 11 3Z"/></svg>',
+  multi: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 10L22.9 21H20.745L19.544 18H15.454L14.255 21H12.101L16.5 10H18.5ZM10 2V4H16V6L14.0322 6.0006C13.2425 8.36616 11.9988 10.5057 10.4115 12.301C11.1344 12.9457 11.917 13.5176 12.7475 14.0079L11.9969 15.8855C10.9237 15.2781 9.91944 14.5524 8.99961 13.7249C7.21403 15.332 5.10914 16.5553 2.79891 17.2734L2.26257 15.3442C4.2385 14.7203 6.04543 13.6737 7.59042 12.3021C6.46277 11.0281 5.50873 9.57985 4.76742 8.00028L7.00684 8.00037C7.57018 9.03885 8.23979 10.0033 8.99967 10.877C10.2283 9.46508 11.2205 7.81616 11.9095 6.00101L2 6V4H8V2H10ZM17.5 12.8852L16.253 16H18.745L17.5 12.8852Z"/></svg>',
+  alignement: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
+  alignGauche: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
+  alignCentre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM5 19H19V21H5V19ZM3 14H21V16H3V14ZM5 9H19V11H5V9Z"/></svg>',
+  alignDroite: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM7 19H21V21H7V19ZM3 14H21V16H3V14ZM7 9H21V11H7V9Z"/></svg>',
+  alignJustifie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM3 14H21V16H3V14ZM3 9H21V11H3V9Z"/></svg>',
+  tableau: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V14H19V10H13ZM11 10H5V14H11V10ZM13 19H19V16H13V19ZM11 19V16H5V19H11ZM13 5V8H19V5H13ZM11 5H5V8H11V5ZM4 3H20C20.5523 3 21 3.44772 21 4V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3Z"/></svg>',
+  guillemets: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4167 6.67891C20.4469 7.77257 21.0001 9 21.0001 10.9897C21.0001 14.4891 18.5436 17.6263 14.9695 19.1768L14.0768 17.7992C17.4121 15.9946 18.0639 13.6539 18.3245 12.178C17.7875 12.4557 17.0845 12.5533 16.3954 12.4895C14.591 12.3222 13.1689 10.8409 13.1689 9C13.1689 7.067 14.7359 5.5 16.6689 5.5C17.742 5.5 18.7681 5.99045 19.4167 6.67891ZM9.41669 6.67891C10.4469 7.77257 11.0001 9 11.0001 10.9897C11.0001 14.4891 8.54359 17.6263 4.96951 19.1768L4.07682 17.7992C7.41206 15.9946 8.06392 13.6539 8.32447 12.178C7.78747 12.4557 7.08452 12.5533 6.39539 12.4895C4.59102 12.3222 3.16895 10.8409 3.16895 9C3.16895 7.067 4.73595 5.5 6.66895 5.5C7.742 5.5 8.76814 5.99045 9.41669 6.67891Z"/></svg>',
+  caracteres: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M14 20V17.8432C15.8631 16.6512 17.5 13.9677 17.5 10.8844C17.5 7.8107 15.5 4.85516 12 4.85516C8.5 4.85516 6.5 7.8107 6.5 10.8844C6.5 13.9677 8.13687 16.6512 10 17.8432V20H3V18H7.7597C5.66635 16.5054 4 13.9889 4 10.8844C4 6.24653 7.5 3 12 3C16.5 3 20 6.24653 20 10.8844C20 13.9889 18.3336 16.5054 16.2403 18H21V20H14Z"/></svg>',
+  source: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M16.95 8.46451L18.3642 7.05029L23.3139 12L18.3642 16.9498L16.95 15.5356L20.4855 12L16.95 8.46451ZM7.05048 8.46451L3.51495 12L7.05048 15.5356L5.63627 16.9498L0.686523 12L5.63627 7.05029L7.05048 8.46451Z"/></svg>',
+  pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
+  pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
+};
+
+// src/ui/boutons.js
+var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
+function raccourciLisible(raccourci) {
+  const touches = raccourci.split("-").map((t) => t.length === 1 ? t.toUpperCase() : t);
+  if (MAC) return touches.map((t) => ({ Mod: "\u2318", Alt: "\u2325", Shift: "\u21E7" })[t] ?? t).join("");
+  return touches.map((t) => t === "Mod" ? "Ctrl" : t).join("+");
+}
+function habiller(bouton, { icone, libelle, raccourci }) {
+  bouton.setAttribute("aria-label", libelle);
+  bouton.title = raccourci ? `${libelle} (${raccourciLisible(raccourci)})` : libelle;
+  if (ICONES[icone]) bouton.innerHTML = ICONES[icone];
+  else bouton.textContent = libelle;
+}
+function boutonOutil({ nom, icone = nom, libelle, raccourci, bascule: bascule2 = false, action }) {
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  bouton.className = `tts-outil tts-outil--${nom}`;
+  habiller(bouton, { icone, libelle, raccourci });
+  if (bascule2) bouton.setAttribute("aria-pressed", "false");
+  bouton.addEventListener("click", () => action());
+  return bouton;
+}
+var ouvert = null;
+function menuOutil({ nom, icone = nom, libelle, elements }) {
+  const element2 = document.createElement("div");
+  element2.className = `tts-menu tts-menu--${nom}`;
+  const liste = document.createElement("div");
+  liste.className = "tts-menu__liste";
+  liste.setAttribute("role", "menu");
+  liste.setAttribute("aria-label", libelle);
+  liste.id = idUnique("tts-menu");
+  liste.hidden = true;
+  const bouton = boutonOutil({ nom, icone, libelle, action: () => liste.hidden ? ouvrir() : fermer() });
+  bouton.setAttribute("aria-haspopup", "menu");
+  bouton.setAttribute("aria-expanded", "false");
+  bouton.setAttribute("aria-controls", liste.id);
+  element2.append(bouton, liste);
+  const items = () => [...liste.querySelectorAll("[role^=menuitem]:not(:disabled)")];
+  const dehors = (event) => {
+    if (!element2.contains(event.target)) fermer();
+  };
+  function construire(el) {
+    if (el.separateur) {
+      const s = document.createElement("div");
+      s.setAttribute("role", "separator");
+      return s;
+    }
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tts-menu__element";
+    b.tabIndex = -1;
+    b.setAttribute("role", { radio: "menuitemradio", case: "menuitemcheckbox" }[el.coche] ?? "menuitem");
+    if (el.coche) b.setAttribute("aria-checked", String(Boolean(el.actif?.())));
+    if (el.ariaLabel) b.setAttribute("aria-label", el.ariaLabel);
+    if (ICONES[el.icone]) b.insertAdjacentHTML("afterbegin", ICONES[el.icone]);
+    const texte2 = document.createElement("span");
+    texte2.textContent = el.libelle;
+    b.append(texte2);
+    b.disabled = el.possible ? !(el.possible() || el.coche && el.actif?.()) : false;
+    b.addEventListener("click", () => {
+      fermer();
+      el.action();
+    });
+    return b;
+  }
+  function ouvrir(dernier = false) {
+    if (ouvert && ouvert !== menu) ouvert.fermer();
+    liste.replaceChildren(...elements().map(construire));
+    liste.hidden = false;
+    bouton.setAttribute("aria-expanded", "true");
+    ouvert = menu;
+    document.addEventListener("pointerdown", dehors, true);
+    const premiers = items();
+    (dernier ? premiers.at(-1) : premiers[0])?.focus();
+  }
+  function fermer({ focus: focus2 = false } = {}) {
+    if (liste.hidden) return;
+    liste.hidden = true;
+    bouton.setAttribute("aria-expanded", "false");
+    if (ouvert === menu) ouvert = null;
+    document.removeEventListener("pointerdown", dehors, true);
+    if (focus2) bouton.focus();
+  }
+  bouton.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    ouvrir(event.key === "ArrowUp");
+  });
+  liste.addEventListener("keydown", (event) => {
+    const tous = items();
+    const i2 = tous.indexOf(event.target);
+    const suivant = {
+      ArrowDown: tous[(i2 + 1) % tous.length],
+      ArrowUp: tous[(i2 - 1 + tous.length) % tous.length],
+      Home: tous[0],
+      End: tous.at(-1)
+    }[event.key];
+    if (suivant) {
+      event.preventDefault();
+      suivant.focus();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      fermer({ focus: true });
+    } else if (event.key === "Tab") {
+      fermer();
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") event.stopPropagation();
+  });
+  const menu = { element: element2, cible: bouton, fermer };
+  return menu;
+}
+
+// src/ui/RawPopover.js
+function segmentDe(doc4, pos) {
+  const enfants = [];
+  doc4.forEach((node2, p) => enfants.push({ node: node2, p }));
+  const index = doc4.resolve(pos).index(0);
+  let [premier, dernier] = [index, index];
+  for (let k = index; k >= 0; k--) {
+    const groupe = enfants[k].node.attrs.spipGroup;
+    if (!groupe) continue;
+    if (k + groupe > index) [premier, dernier] = [k, Math.min(k + groupe, enfants.length) - 1];
+    break;
+  }
+  return {
+    premier,
+    dernier,
+    debut: enfants[premier].p,
+    fin: enfants[dernier].p + enfants[dernier].node.nodeSize,
+    blocs: enfants.slice(premier, dernier + 1).map((e) => e.node)
+  };
+}
+function openRawPopover({ editor, wrapper, parent }, pos) {
+  const { doc: doc4 } = editor.state;
+  const brut = doc4.nodeAt(pos);
+  if (!brut) return null;
+  editor.commands.setNodeSelection(pos);
+  const segment2 = segmentDe(doc4, pos);
+  const suivi = suivrePosition(editor, pos);
+  const source = serialize({ type: "doc", content: segment2.blocs.map((b) => b.toJSON()) });
+  const popover2 = new Popover({ editor, wrapper, parent, titre: label("brut"), className: "tts-popover--brut", onSubmit: () => appliquer(), onClose: () => suivi.fin() });
+  const cle = brut.type.name === "spipRawInline" ? anomalie(brut.attrs.source) : null;
+  if (cle) {
+    const texte2 = document.createElement("p");
+    texte2.className = "tts-popover__explication";
+    texte2.id = idUnique("tts-explication");
+    texte2.textContent = explication(cle);
+    popover2.form.prepend(texte2);
+    popover2.form.setAttribute("aria-describedby", texte2.id);
+  }
+  const zone = document.createElement("textarea");
+  zone.name = "source";
+  zone.rows = Math.min(12, Math.max(3, source.split("\n").length + 1));
+  zone.value = source;
+  popover2.field(label("brut_source"), zone);
+  zone.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      popover2.form.requestSubmit();
+    }
+  });
+  const appliquer = () => {
+    if (zone.value === source) return true;
+    const position = suivi.pos();
+    if (position === null) return true;
+    const actuel = editor.state.doc;
+    const cible = segmentDe(actuel, position);
+    let blocs;
+    try {
+      blocs = editor.schema.nodeFromJSON(schemaJSON(parse(zone.value), editor.schema)).content;
+    } catch {
+      blocs = null;
+    }
+    const ancien = cible.blocs[0];
+    if (blocs?.firstChild && "spipSep" in blocs.firstChild.attrs) {
+      const premier = blocs.firstChild;
+      blocs = blocs.replaceChild(0, premier.type.create({ ...premier.attrs, spipSep: ancien.attrs.spipSep }, premier.content, premier.marks));
+    }
+    if (!blocs || !actuel.canReplace(cible.premier, cible.dernier + 1, blocs)) {
+      popover2.error(label("brut_invalide"));
+      return false;
+    }
+    editor.chain().focus().command(({ tr }) => {
+      tr.replaceWith(cible.debut, cible.fin, blocs);
+      return true;
+    }).run();
+    return true;
+  };
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" }).title = `${label("appliquer")} (${raccourciLisible("Mod-Enter")})`;
+  popover2.button(label("annuler"), () => {
+  }, { name: "annuler" });
+  popover2.open(zone);
+  return popover2;
+}
+
 // src/ui/MultiPopover.js
 var langueParDefaut = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || "").replace("-", "_");
 var languesValides = (langues) => langues.every((l) => l === null || RE_CODE_LANGUE.test(l)) && langues.filter((l) => l === null).length <= 1;
@@ -26276,7 +26596,8 @@ function multiEnLigne(contexte3, existant) {
       previews: contexte3.previews ?? null,
       titles: contexte3.titles ?? null,
       openLink: () => openLinkPopover({ ...contexte3, editor: l.sous, parent: popover2 }),
-      openGlossary: () => openGlossaryPopover({ ...contexte3, editor: l.sous, parent: popover2 })
+      openGlossary: () => openGlossaryPopover({ ...contexte3, editor: l.sous, parent: popover2 }),
+      editRaw: (p) => openRawPopover({ ...contexte3, editor: l.sous, parent: popover2 }, p)
     };
     const sous = new Editor({
       element: zone,
@@ -26548,7 +26869,8 @@ function openNotePopover(contexte3, pos = null) {
     titles: contexte3.titles ?? null,
     openLink: () => openLinkPopover(enfant()),
     openGlossary: () => openGlossaryPopover(enfant()),
-    editModel: (p) => openModelPopover(enfant(), p)
+    editModel: (p) => openModelPopover(enfant(), p),
+    editRaw: (p) => openRawPopover(enfant(), p)
   };
   const extensions = noteExtensions({ ui: sousUi });
   let content;
@@ -26634,7 +26956,8 @@ function creerInterface({ editor, wrapper, services }) {
     openGlossary: () => openGlossaryPopover(contexte3()),
     openAbbr: () => openAbbrPopover(contexte3()),
     editMulti: (pos) => openMultiPopover(contexte3(), pos),
-    editIdiome: (pos) => openIdiomePopover(contexte3(), pos)
+    editIdiome: (pos) => openIdiomePopover(contexte3(), pos),
+    editRaw: (pos) => openRawPopover(contexte3(), pos)
   };
   return ui;
 }
@@ -26678,157 +27001,6 @@ var barres_default = {
   forum: ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
   minimale: ["gras", "italique", "lien", "|", "source"]
 };
-
-// src/ui/icones.js
-var ICONES = {
-  annuler: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.82843 6.99955L8.36396 9.53509L6.94975 10.9493L2 5.99955L6.94975 1.0498L8.36396 2.46402L5.82843 4.99955H13C17.4183 4.99955 21 8.58127 21 12.9996C21 17.4178 17.4183 20.9996 13 20.9996H4V18.9996H13C16.3137 18.9996 19 16.3133 19 12.9996C19 9.68584 16.3137 6.99955 13 6.99955H5.82843Z"/></svg>',
-  retablir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.1716 6.99955H11C7.68629 6.99955 5 9.68584 5 12.9996C5 16.3133 7.68629 18.9996 11 18.9996H20V20.9996H11C6.58172 20.9996 3 17.4178 3 12.9996C3 8.58127 6.58172 4.99955 11 4.99955H18.1716L15.636 2.46402L17.0503 1.0498L22 5.99955L17.0503 10.9493L15.636 9.53509L18.1716 6.99955Z"/></svg>',
-  titre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17 11V4H19V21H17V13H7V21H5V4H7V11H17Z"/></svg>',
-  paragraphe: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6V21H10V16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4H20V6H17V21H15V6H12ZM10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14V6Z"/></svg>',
-  liste: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 4H21V6H8V4ZM4.5 6.5C3.67157 6.5 3 5.82843 3 5C3 4.17157 3.67157 3.5 4.5 3.5C5.32843 3.5 6 4.17157 6 5C6 5.82843 5.32843 6.5 4.5 6.5ZM4.5 13.5C3.67157 13.5 3 12.8284 3 12C3 11.1716 3.67157 10.5 4.5 10.5C5.32843 10.5 6 11.1716 6 12C6 12.8284 5.32843 13.5 4.5 13.5ZM4.5 20.4C3.67157 20.4 3 19.7284 3 18.9C3 18.0716 3.67157 17.4 4.5 17.4C5.32843 17.4 6 18.0716 6 18.9C6 19.7284 5.32843 20.4 4.5 20.4ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"/></svg>',
-  listeNumerotee: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.75024 3.5H4.71733L3.25 3.89317V5.44582L4.25002 5.17782L4.25018 8.5H3V10H7V8.5H5.75024V3.5ZM10 4H21V6H10V4ZM10 11H21V13H10V11ZM10 18H21V20H10V18ZM2.875 15.625C2.875 14.4514 3.82639 13.5 5 13.5C6.17361 13.5 7.125 14.4514 7.125 15.625C7.125 16.1106 6.96183 16.5587 6.68747 16.9167L6.68271 16.9229L5.31587 18.5H7V20H3.00012L2.99959 18.8786L5.4717 16.035C5.5673 15.9252 5.625 15.7821 5.625 15.625C5.625 15.2798 5.34518 15 5 15C4.67378 15 4.40573 15.2501 4.37747 15.5688L4.3651 15.875H2.875V15.625Z"/></svg>',
-  indenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM7 12.5L3 16V9L7 12.5Z"/></svg>',
-  desindenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM3 12.5L7 9V16L3 12.5Z"/></svg>',
-  citation: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M4.58341 17.3211C3.55316 16.2274 3 15 3 13.0103C3 9.51086 5.45651 6.37366 9.03059 4.82318L9.92328 6.20079C6.58804 8.00539 5.93618 10.346 5.67564 11.822C6.21263 11.5443 6.91558 11.4466 7.60471 11.5105C9.40908 11.6778 10.8312 13.159 10.8312 15C10.8312 16.933 9.26416 18.5 7.33116 18.5C6.2581 18.5 5.23196 18.0095 4.58341 17.3211ZM14.5834 17.3211C13.5532 16.2274 13 15 13 13.0103C13 9.51086 15.4565 6.37366 19.0306 4.82318L19.9233 6.20079C16.588 8.00539 15.9362 10.346 15.6756 11.822C16.2126 11.5443 16.9156 11.4466 17.6047 11.5105C19.4091 11.6778 20.8312 13.159 20.8312 15C20.8312 16.933 19.2642 18.5 17.3312 18.5C16.2581 18.5 15.232 18.0095 14.5834 17.3211Z"/></svg>',
-  poesie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M6.93912 14.0328C6.7072 14.6563 6.51032 15.2331 6.33421 15.8155C7.29345 15.1189 8.43544 14.6767 9.75193 14.5121C12.2652 14.198 14.4976 12.5385 15.6279 10.4537L14.1721 8.99888L15.5848 7.58417C15.9185 7.25004 16.2521 6.91614 16.5858 6.58248C17.0151 6.15312 17.5 5.35849 18.0129 4.2149C12.4197 5.08182 8.99484 8.50647 6.93912 14.0328ZM17 8.99739L18 9.99669C17 12.9967 14 15.9967 10 16.4967C7.33146 16.8303 5.66421 18.6636 4.99824 21.9967H3C4 15.9967 6 1.99669 21 1.99669C20.0009 4.99402 19.0018 6.99313 18.0027 7.99402C17.6662 8.33049 17.3331 8.66382 17 8.99739Z"/></svg>',
-  cadre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3.41436 5.99995L5.70726 3.70706L4.29304 2.29285L0.585938 5.99995L4.29304 9.70706L5.70726 8.29285L3.41436 5.99995ZM9.58594 5.99995L7.29304 3.70706L8.70726 2.29285L12.4144 5.99995L8.70726 9.70706L7.29304 8.29285L9.58594 5.99995ZM14.0002 2.99995H21.0002C21.5524 2.99995 22.0002 3.44767 22.0002 3.99995V20C22.0002 20.5522 21.5524 21 21.0002 21H3.00015C2.44787 21 2.00015 20.5522 2.00015 20V12H4.00015V19H20.0002V4.99995H14.0002V2.99995Z"/></svg>',
-  gras: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 11H12.5C13.8807 11 15 9.88071 15 8.5C15 7.11929 13.8807 6 12.5 6H8V11ZM18 15.5C18 17.9853 15.9853 20 13.5 20H6V4H12.5C14.9853 4 17 6.01472 17 8.5C17 9.70431 16.5269 10.7981 15.7564 11.6058C17.0979 12.3847 18 13.837 18 15.5ZM8 13V18H13.5C14.8807 18 16 16.8807 16 15.5C16 14.1193 14.8807 13 13.5 13H8Z"/></svg>',
-  italique: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M15 20H7V18H9.92661L12.0425 6H9V4H17V6H14.0734L11.9575 18H15V20Z"/></svg>',
-  barre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17.1538 14C17.3846 14.5161 17.5 15.0893 17.5 15.7196C17.5 17.0625 16.9762 18.1116 15.9286 18.867C14.8809 19.6223 13.4335 20 11.5862 20C9.94674 20 8.32335 19.6185 6.71592 18.8555V16.6009C8.23538 17.4783 9.7908 17.917 11.3822 17.917C13.9333 17.917 15.2128 17.1846 15.2208 15.7196C15.2208 15.0939 15.0049 14.5598 14.5731 14.1173C14.5339 14.0772 14.4939 14.0381 14.4531 14H3V12H21V14H17.1538ZM13.076 11H7.62908C7.4566 10.8433 7.29616 10.6692 7.14776 10.4778C6.71592 9.92084 6.5 9.24559 6.5 8.45207C6.5 7.21602 6.96583 6.165 7.89749 5.299C8.82916 4.43299 10.2706 4 12.2219 4C13.6934 4 15.1009 4.32808 16.4444 4.98426V7.13591C15.2448 6.44921 13.9293 6.10587 12.4978 6.10587C10.0187 6.10587 8.77917 6.88793 8.77917 8.45207C8.77917 8.87172 8.99709 9.23796 9.43293 9.55079C9.86878 9.86362 10.4066 10.1135 11.0463 10.3004C11.6665 10.4816 12.3431 10.7148 13.076 11H13.076Z"/></svg>',
-  exposant: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 5L10.5 10.9283L15.4043 5H18L11.7978 12.4971L18 19.9943V20H15.4091L10.5 14.0659L5.59092 20H3V19.9943L9.20216 12.4971L3 5H5.59567ZM21.5507 6.5803C21.7042 6.43453 21.8 6.22845 21.8 6C21.8 5.55817 21.4418 5.2 21 5.2C20.5582 5.2 20.2 5.55817 20.2 6C20.2 6.07624 20.2107 6.14999 20.2306 6.21983L19.0765 6.54958C19.0267 6.37497 19 6.1906 19 6C19 4.89543 19.8954 4 21 4C22.1046 4 23 4.89543 23 6C23 6.57273 22.7593 7.08923 22.3735 7.45384L20.7441 9H23V10H19V9L21.5507 6.5803V6.5803Z"/></svg>',
-  indice: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 4L10.5 9.92831L15.4043 4H18L11.7978 11.4971L18 18.9943V19H15.4091L10.5 13.0659L5.59092 19H3V18.9943L9.20216 11.4971L3 4H5.59567ZM21.8 16C21.8 15.5582 21.4418 15.2 21 15.2C20.5582 15.2 20.2 15.5582 20.2 16C20.2 16.0762 20.2107 16.15 20.2306 16.2198L19.0765 16.5496C19.0267 16.375 19 16.1906 19 16C19 14.8954 19.8954 14 21 14C22.1046 14 23 14.8954 23 16C23 16.5727 22.7593 17.0892 22.3735 17.4538L20.7441 19H23V20H19V19L21.5507 16.5803C21.7042 16.4345 21.8 16.2284 21.8 16Z"/></svg>',
-  code: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12L15.9289 19.0711L14.5147 17.6569L20.1716 12L14.5147 6.34317L15.9289 4.92896L23 12ZM3.82843 12L9.48528 17.6569L8.07107 19.0711L1 12L8.07107 4.92896L9.48528 6.34317L3.82843 12Z"/></svg>',
-  lien: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3638 15.5355L16.9496 14.1213L18.3638 12.7071C20.3164 10.7545 20.3164 7.58866 18.3638 5.63604C16.4112 3.68341 13.2453 3.68341 11.2927 5.63604L9.87849 7.05025L8.46428 5.63604L9.87849 4.22182C12.6122 1.48815 17.0443 1.48815 19.778 4.22182C22.5117 6.95549 22.5117 11.3876 19.778 14.1213L18.3638 15.5355ZM15.5353 18.364L14.1211 19.7782C11.3875 22.5118 6.95531 22.5118 4.22164 19.7782C1.48797 17.0445 1.48797 12.6123 4.22164 9.87868L5.63585 8.46446L7.05007 9.87868L5.63585 11.2929C3.68323 13.2455 3.68323 16.4113 5.63585 18.364C7.58847 20.3166 10.7543 20.3166 12.7069 18.364L14.1211 16.9497L15.5353 18.364ZM14.8282 7.75736L16.2425 9.17157L9.17139 16.2426L7.75717 14.8284L14.8282 7.75736Z"/></svg>',
-  note: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12.9998 3L12.9996 10.267L19.294 6.63397L20.294 8.36602L14.0006 11.999L20.294 15.634L19.294 17.366L12.9996 13.732L12.9998 21H10.9998L10.9996 13.732L4.70557 17.366L3.70557 15.634L9.99857 12L3.70557 8.36602L4.70557 6.63397L10.9996 10.267L10.9998 3H12.9998Z"/></svg>',
-  glossaire: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18H6C5.44772 18 5 18.4477 5 19C5 19.5523 5.44772 20 6 20H21V22H6C4.34315 22 3 20.6569 3 19V4C3 2.89543 3.89543 2 5 2H21V18ZM5 16.05C5.16156 16.0172 5.32877 16 5.5 16H19V4H5V16.05ZM16 9H8V7H16V9Z"/></svg>',
-  abbr: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM7 8H17V11H15V10H13V14H14.5V16H9.5V14H11V10H9V11H7V8Z"/></svg>',
-  modele: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5C7 2.79086 8.79086 1 11 1C13.2091 1 15 2.79086 15 5H18C18.5523 5 19 5.44772 19 6V9C21.2091 9 23 10.7909 23 13C23 15.2091 21.2091 17 19 17V20C19 20.5523 18.5523 21 18 21H4C3.44772 21 3 20.5523 3 20V6C3 5.44772 3.44772 5 4 5H7ZM11 3C9.89543 3 9 3.89543 9 5C9 5.23554 9.0403 5.45952 9.11355 5.66675C9.22172 5.97282 9.17461 6.31235 8.98718 6.57739C8.79974 6.84243 8.49532 7 8.17071 7H5V19H17V15.8293C17 15.5047 17.1576 15.2003 17.4226 15.0128C17.6877 14.8254 18.0272 14.7783 18.3332 14.8865C18.5405 14.9597 18.7645 15 19 15C20.1046 15 21 14.1046 21 13C21 11.8954 20.1046 11 19 11C18.7645 11 18.5405 11.0403 18.3332 11.1135C18.0272 11.2217 17.6877 11.1746 17.4226 10.9872C17.1576 10.7997 17 10.4953 17 10.1707V7H13.8293C13.5047 7 13.2003 6.84243 13.0128 6.57739C12.8254 6.31235 12.7783 5.97282 12.8865 5.66675C12.9597 5.45952 13 5.23555 13 5C13 3.89543 12.1046 3 11 3Z"/></svg>',
-  multi: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 10L22.9 21H20.745L19.544 18H15.454L14.255 21H12.101L16.5 10H18.5ZM10 2V4H16V6L14.0322 6.0006C13.2425 8.36616 11.9988 10.5057 10.4115 12.301C11.1344 12.9457 11.917 13.5176 12.7475 14.0079L11.9969 15.8855C10.9237 15.2781 9.91944 14.5524 8.99961 13.7249C7.21403 15.332 5.10914 16.5553 2.79891 17.2734L2.26257 15.3442C4.2385 14.7203 6.04543 13.6737 7.59042 12.3021C6.46277 11.0281 5.50873 9.57985 4.76742 8.00028L7.00684 8.00037C7.57018 9.03885 8.23979 10.0033 8.99967 10.877C10.2283 9.46508 11.2205 7.81616 11.9095 6.00101L2 6V4H8V2H10ZM17.5 12.8852L16.253 16H18.745L17.5 12.8852Z"/></svg>',
-  alignement: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
-  alignGauche: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
-  alignCentre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM5 19H19V21H5V19ZM3 14H21V16H3V14ZM5 9H19V11H5V9Z"/></svg>',
-  alignDroite: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM7 19H21V21H7V19ZM3 14H21V16H3V14ZM7 9H21V11H7V9Z"/></svg>',
-  alignJustifie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM3 14H21V16H3V14ZM3 9H21V11H3V9Z"/></svg>',
-  tableau: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V14H19V10H13ZM11 10H5V14H11V10ZM13 19H19V16H13V19ZM11 19V16H5V19H11ZM13 5V8H19V5H13ZM11 5H5V8H11V5ZM4 3H20C20.5523 3 21 3.44772 21 4V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3Z"/></svg>',
-  guillemets: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4167 6.67891C20.4469 7.77257 21.0001 9 21.0001 10.9897C21.0001 14.4891 18.5436 17.6263 14.9695 19.1768L14.0768 17.7992C17.4121 15.9946 18.0639 13.6539 18.3245 12.178C17.7875 12.4557 17.0845 12.5533 16.3954 12.4895C14.591 12.3222 13.1689 10.8409 13.1689 9C13.1689 7.067 14.7359 5.5 16.6689 5.5C17.742 5.5 18.7681 5.99045 19.4167 6.67891ZM9.41669 6.67891C10.4469 7.77257 11.0001 9 11.0001 10.9897C11.0001 14.4891 8.54359 17.6263 4.96951 19.1768L4.07682 17.7992C7.41206 15.9946 8.06392 13.6539 8.32447 12.178C7.78747 12.4557 7.08452 12.5533 6.39539 12.4895C4.59102 12.3222 3.16895 10.8409 3.16895 9C3.16895 7.067 4.73595 5.5 6.66895 5.5C7.742 5.5 8.76814 5.99045 9.41669 6.67891Z"/></svg>',
-  caracteres: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M14 20V17.8432C15.8631 16.6512 17.5 13.9677 17.5 10.8844C17.5 7.8107 15.5 4.85516 12 4.85516C8.5 4.85516 6.5 7.8107 6.5 10.8844C6.5 13.9677 8.13687 16.6512 10 17.8432V20H3V18H7.7597C5.66635 16.5054 4 13.9889 4 10.8844C4 6.24653 7.5 3 12 3C16.5 3 20 6.24653 20 10.8844C20 13.9889 18.3336 16.5054 16.2403 18H21V20H14Z"/></svg>',
-  source: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M16.95 8.46451L18.3642 7.05029L23.3139 12L18.3642 16.9498L16.95 15.5356L20.4855 12L16.95 8.46451ZM7.05048 8.46451L3.51495 12L7.05048 15.5356L5.63627 16.9498L0.686523 12L5.63627 7.05029L7.05048 8.46451Z"/></svg>',
-  pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
-  pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
-};
-
-// src/ui/boutons.js
-var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
-function raccourciLisible(raccourci) {
-  const touches = raccourci.split("-").map((t) => t.length === 1 ? t.toUpperCase() : t);
-  if (MAC) return touches.map((t) => ({ Mod: "\u2318", Alt: "\u2325", Shift: "\u21E7" })[t] ?? t).join("");
-  return touches.map((t) => t === "Mod" ? "Ctrl" : t).join("+");
-}
-function habiller(bouton, { icone, libelle, raccourci }) {
-  bouton.setAttribute("aria-label", libelle);
-  bouton.title = raccourci ? `${libelle} (${raccourciLisible(raccourci)})` : libelle;
-  if (ICONES[icone]) bouton.innerHTML = ICONES[icone];
-  else bouton.textContent = libelle;
-}
-function boutonOutil({ nom, icone = nom, libelle, raccourci, bascule: bascule2 = false, action }) {
-  const bouton = document.createElement("button");
-  bouton.type = "button";
-  bouton.className = `tts-outil tts-outil--${nom}`;
-  habiller(bouton, { icone, libelle, raccourci });
-  if (bascule2) bouton.setAttribute("aria-pressed", "false");
-  bouton.addEventListener("click", () => action());
-  return bouton;
-}
-var ouvert = null;
-function menuOutil({ nom, icone = nom, libelle, elements }) {
-  const element2 = document.createElement("div");
-  element2.className = `tts-menu tts-menu--${nom}`;
-  const liste = document.createElement("div");
-  liste.className = "tts-menu__liste";
-  liste.setAttribute("role", "menu");
-  liste.setAttribute("aria-label", libelle);
-  liste.id = idUnique("tts-menu");
-  liste.hidden = true;
-  const bouton = boutonOutil({ nom, icone, libelle, action: () => liste.hidden ? ouvrir() : fermer() });
-  bouton.setAttribute("aria-haspopup", "menu");
-  bouton.setAttribute("aria-expanded", "false");
-  bouton.setAttribute("aria-controls", liste.id);
-  element2.append(bouton, liste);
-  const items = () => [...liste.querySelectorAll("[role^=menuitem]:not(:disabled)")];
-  const dehors = (event) => {
-    if (!element2.contains(event.target)) fermer();
-  };
-  function construire(el) {
-    if (el.separateur) {
-      const s = document.createElement("div");
-      s.setAttribute("role", "separator");
-      return s;
-    }
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "tts-menu__element";
-    b.tabIndex = -1;
-    b.setAttribute("role", { radio: "menuitemradio", case: "menuitemcheckbox" }[el.coche] ?? "menuitem");
-    if (el.coche) b.setAttribute("aria-checked", String(Boolean(el.actif?.())));
-    if (el.ariaLabel) b.setAttribute("aria-label", el.ariaLabel);
-    if (ICONES[el.icone]) b.insertAdjacentHTML("afterbegin", ICONES[el.icone]);
-    const texte2 = document.createElement("span");
-    texte2.textContent = el.libelle;
-    b.append(texte2);
-    b.disabled = el.possible ? !(el.possible() || el.coche && el.actif?.()) : false;
-    b.addEventListener("click", () => {
-      fermer();
-      el.action();
-    });
-    return b;
-  }
-  function ouvrir(dernier = false) {
-    if (ouvert && ouvert !== menu) ouvert.fermer();
-    liste.replaceChildren(...elements().map(construire));
-    liste.hidden = false;
-    bouton.setAttribute("aria-expanded", "true");
-    ouvert = menu;
-    document.addEventListener("pointerdown", dehors, true);
-    const premiers = items();
-    (dernier ? premiers.at(-1) : premiers[0])?.focus();
-  }
-  function fermer({ focus: focus2 = false } = {}) {
-    if (liste.hidden) return;
-    liste.hidden = true;
-    bouton.setAttribute("aria-expanded", "false");
-    if (ouvert === menu) ouvert = null;
-    document.removeEventListener("pointerdown", dehors, true);
-    if (focus2) bouton.focus();
-  }
-  bouton.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    event.preventDefault();
-    ouvrir(event.key === "ArrowUp");
-  });
-  liste.addEventListener("keydown", (event) => {
-    const tous = items();
-    const i2 = tous.indexOf(event.target);
-    const suivant = {
-      ArrowDown: tous[(i2 + 1) % tous.length],
-      ArrowUp: tous[(i2 - 1 + tous.length) % tous.length],
-      Home: tous[0],
-      End: tous.at(-1)
-    }[event.key];
-    if (suivant) {
-      event.preventDefault();
-      suivant.focus();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      fermer({ focus: true });
-    } else if (event.key === "Tab") {
-      fermer();
-    }
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") event.stopPropagation();
-  });
-  const menu = { element: element2, cible: bouton, fermer };
-  return menu;
-}
 
 // src/ui/Toolbar.js
 var _Toolbar = class _Toolbar {
@@ -27198,6 +27370,63 @@ var NotesPanel = class {
   }
 };
 
+// src/ui/StatusBar.js
+var compte = (n, un, plusieurs) => n === 1 ? label(un) : label(plusieurs).replace("@nb@", String(n));
+var StatusBar = class {
+  /**
+   * @param {{ editor: import('@tiptap/core').Editor, editRaw: (pos: number) => void }} options
+   */
+  constructor({ editor, editRaw }) {
+    this.editor = editor;
+    this.editRaw = editRaw;
+    this.element = document.createElement("div");
+    this.element.className = "tts-etat";
+    this.element.setAttribute("role", "group");
+    this.element.setAttribute("aria-label", label("etat"));
+    this.mots = document.createElement("span");
+    this.mots.className = "tts-etat__mots";
+    const annonce = document.createElement("span");
+    annonce.setAttribute("aria-live", "polite");
+    this.anomalies = document.createElement("button");
+    this.anomalies.type = "button";
+    this.anomalies.className = "tts-etat__anomalies";
+    this.anomalies.addEventListener("click", () => this.suivante());
+    annonce.append(this.anomalies);
+    this.element.append(this.mots, annonce);
+    this.source = false;
+    this.render = ({ transaction }) => {
+      if (transaction.docChanged) this.afficher();
+    };
+    editor.on("transaction", this.render);
+    this.afficher();
+  }
+  /** Mode source : barre masquée. */
+  setMode(source) {
+    this.source = source;
+    this.afficher();
+  }
+  afficher() {
+    this.element.hidden = this.source;
+    if (this.source) return;
+    const { doc: doc4 } = this.editor.state;
+    const mots = doc4.textBetween(0, doc4.content.size, " ", " ").match(/\S+/g)?.length ?? 0;
+    this.mots.textContent = compte(mots, "etat_mot", "etat_mots");
+    this.liste = anomaliesDuDocument(doc4);
+    this.anomalies.hidden = this.liste.length === 0;
+    this.anomalies.textContent = this.liste.length ? compte(this.liste.length, "etat_anomalie", "etat_anomalies") : "";
+  }
+  /** Anomalie suivante après la sélection : son popover. */
+  suivante() {
+    const { from: from2 } = this.editor.state.selection;
+    const cible = this.liste.find((a) => a.pos > from2) ?? this.liste[0];
+    if (cible) this.editRaw(cible.pos);
+  }
+  destroy() {
+    this.editor.off("transaction", this.render);
+    this.element.remove();
+  }
+};
+
 // src/main.js
 var SELECTOR = [
   "textarea.inserer_barre_edition",
@@ -27222,6 +27451,7 @@ var ecrirePreference = (mode) => {
   } catch {
   }
 };
+var nomDuChamp = (textarea) => textarea.labels?.[0]?.textContent.replace(/\s+/g, " ").trim() || textarea.getAttribute("aria-label") || textarea.title || label("zone_texte");
 var MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
 var instances = /* @__PURE__ */ new Set();
 var observer = null;
@@ -27263,7 +27493,8 @@ var Instance = class {
       element: this.content,
       source: textarea.value,
       ui: this.ui,
-      editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em` } }
+      // zone éditable nommée comme le champ SPIP (spec 06 §7)
+      editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em`, "aria-label": nomDuChamp(textarea), "aria-multiline": "true" } }
     });
     this.bridge = new TextareaBridge({ textarea, editor: this.editor });
     this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
@@ -27276,8 +27507,9 @@ var Instance = class {
     this.majBarre = () => this.toolbar.maj();
     this.editor.on("transaction", this.majBarre);
     this.content.after(this.notes.element);
+    this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
     textarea.before(this.wrapper);
-    this.wrapper.append(textarea);
+    this.wrapper.append(textarea, this.etat.element);
     textarea.hidden = true;
     this.wrapper.addEventListener("keydown", (event) => this.raccourci(event), true);
     if ((lirePreference() ?? config().mode) === "source") this.toggleMode({ focus: false });
@@ -27326,6 +27558,7 @@ var Instance = class {
     this.textarea.hidden = !source;
     this.content.hidden = source;
     this.notes.setMode(source);
+    this.etat.setMode(source);
     this.toolbar.maj();
     ecrirePreference(mode);
     if (focus2) (source ? this.textarea : this.editor).focus?.();
@@ -27335,6 +27568,7 @@ var Instance = class {
     instances.delete(this);
     while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
     this.notes.destroy();
+    this.etat.destroy();
     this.editor.off("transaction", this.majBarre);
     if (this.pleinEcran()) this.togglePleinEcran(false);
     this.bridge.destroy();

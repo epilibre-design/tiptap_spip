@@ -1,6 +1,7 @@
 /**
- * Popover de l'éditeur : petit dialogue non modal ancré dans .tts-editor, près de la sélection.
- * Échap ferme, Entrée valide (spec 06 §4), le focus revient à l'éditeur à la fermeture.
+ * Popover de l'éditeur : petit dialogue ancré dans .tts-editor, près de la sélection. Échap ferme,
+ * Entrée valide (spec 06 §4), Tab reste dans le popover (piège de focus, spec 06 §7), le focus revient
+ * à l'éditeur à la fermeture.
  *
  * Un popover peut en ouvrir un autre (lien depuis le sous-éditeur d'une note) : l'enfant s'ouvre
  * sans fermer son parent ; fermé, il rend la main au parent ; le parent fermé ferme l'enfant.
@@ -37,6 +38,8 @@ export class Popover {
 			if (event.key === 'Escape') {
 				event.preventDefault();
 				this.close();
+			} else if (event.key === 'Tab' && !event.defaultPrevented) {
+				this.pieger(event);
 			}
 		});
 	}
@@ -74,6 +77,29 @@ export class Popover {
 		}
 		this.actions.append(bouton);
 		return bouton;
+	}
+
+	/** Éléments du popover atteignables à la tabulation, dans l'ordre. */
+	focusables() {
+		return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')]
+			.filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest('[hidden]'));
+	}
+
+	/**
+	 * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
+	 * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
+	 */
+	pieger(event) {
+		const cibles = this.focusables();
+		if (!cibles.length) return;
+		const actif = this.form.ownerDocument.activeElement;
+		const dedans = cibles.includes(actif);
+		const cible = event.shiftKey
+			? (!dedans || actif === cibles[0]) && cibles.at(-1)
+			: (!dedans || actif === cibles.at(-1)) && cibles[0];
+		if (!cible) return;
+		event.preventDefault();
+		cible.focus();
 	}
 
 	error(message) {

@@ -2,6 +2,7 @@
 // critère d'acceptation 4) sur un site SPIP JETABLE : prévisualisation, titres des liens sans texte,
 // popovers, insertion, modification, suppression, enregistrement.
 // Usage et serveur : cf. article.e2e.js.
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { activer, configure, creerDocument, crlf, ecrireTexte, editer, enregistrer, selectionStable, texte } from './site.js';
 
@@ -249,4 +250,46 @@ test('plein écran : F11, popover au-dessus, Échap ferme le popover puis le ple
 	await expect(editeur).toHaveClass(/tts-editor--plein-ecran/);
 	await page.keyboard.press('Escape');
 	await expect(editeur).not.toHaveClass(/tts-editor--plein-ecran/);
+});
+
+test('anomalie : signalée dans la barre d\'état, source corrigée dans son popover, enregistrée', async ({ page }) => {
+	const id = await editer(page, 'Un {deux\n\nFin');
+	await expect(page.locator('.ProseMirror .tts-anomalie')).toHaveText('{');
+	const bouton = page.locator('.tts-etat__anomalies');
+	await expect(bouton).toHaveText('1 anomalie de syntaxe');
+	await bouton.click();
+	const zone = page.locator('.tts-popover--brut textarea');
+	await expect(zone).toBeFocused();
+	await expect(zone).toHaveValue('Un {deux');
+	await zone.fill('Un {deux}');
+	await page.keyboard.press('ControlOrMeta+Enter');
+	await expect(page.locator('.ProseMirror em')).toHaveText('deux');
+	await expect(bouton).toBeHidden();
+	await enregistrer(page);
+	expect(texte(id)).toBe(crlf('Un {deux}\n\nFin'));
+});
+
+test('audit axe (critère 7) : éditeur, menu ouvert, popover ouvert, sans violation critique', async ({ page }) => {
+	let doc;
+	await editer(page, '', {
+		avant: (idArticle) => {
+			doc = creerDocument(idArticle);
+			ecrireTexte(idArticle, `Un {{gras}}, une note[[texte de la note]], un {orphelin.\n\n<doc${doc}|left>\n\n|{{a}}|{{b}}|\n|1|2|`);
+		},
+	});
+	await expect(page.locator('.tts-model-block img')).toBeVisible();
+	const audit = async (etape) => {
+		const { violations } = await new AxeBuilder({ page }).include('.tts-editor').analyze();
+		for (const v of violations) console.log(`[${etape}] ${v.impact} ${v.id} : ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+		// critère 7 : aucune violation critique ; les sérieuses sont exclues aussi (aucune aujourd'hui)
+		expect(violations.filter((v) => ['critical', 'serious'].includes(v.impact)).map((v) => v.id), etape).toEqual([]);
+	};
+	await audit('éditeur');
+	await page.locator('.tts-outil--titre').click();
+	await audit('menu Titre');
+	await page.keyboard.press('Escape');
+	await page.locator('.ProseMirror p').first().click();
+	await page.keyboard.press('ControlOrMeta+k');
+	await expect(page.locator('.tts-popover input[name=cible]')).toBeVisible();
+	await audit('popover de lien');
 });

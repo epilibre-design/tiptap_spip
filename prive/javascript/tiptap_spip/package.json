@@ -13,6 +13,7 @@
     "icones": "node scripts/icones.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.61.0",
     "esbuild": "0.28.2",
     "jsdom": "30.1.2",

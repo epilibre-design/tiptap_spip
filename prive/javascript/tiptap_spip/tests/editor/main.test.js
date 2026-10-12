@@ -230,6 +230,29 @@ describe('tiptap_spip_init', () => {
 		expect(document.documentElement.classList.contains('tts-plein-ecran')).toBe(false);
 	});
 
+	it('barre d\'état sous le textarea, masquée en mode source ; le bouton ouvre la source de l\'anomalie', () => {
+		page('<textarea class="inserer_barre_edition">Un {deux</textarea>');
+		tiptap_spip_init();
+		const etat = document.querySelector('.tts-etat');
+		expect(etat.previousElementSibling.tagName).toBe('TEXTAREA');
+		expect(etat.textContent).toBe('2 mots1 anomalie de syntaxe');
+		etat.querySelector('button').click();
+		expect(document.querySelector('.tts-popover--brut textarea').value).toBe('Un {deux');
+		Popover.current.close();
+		document.querySelector('.tts-outil--source').click();
+		expect(etat.hidden).toBe(true);
+	});
+
+	it('zone éditable nommée comme le champ : label, sinon aria-label, sinon nom générique', () => {
+		page(`<form><label for="t">Texte de l'article</label><textarea id="t" class="inserer_barre_edition">a</textarea>
+			<textarea class="inserer_barre_edition" aria-label="Post-scriptum">b</textarea>
+			<textarea class="inserer_barre_edition">c</textarea></form>`);
+		tiptap_spip_init();
+		const zones = [...document.querySelectorAll('.ProseMirror')];
+		expect(zones.map((z) => z.getAttribute('aria-label'))).toEqual(['Texte de l\'article', 'Post-scriptum', 'Texte']);
+		expect(zones[0].getAttribute('aria-multiline')).toBe('true');
+	});
+
 	it('ne monte rien si la source n\'est pas représentable', () => {
 		page('<textarea class="inserer_barre_edition">Texte</textarea>');
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

@@ -10,6 +10,7 @@ import { label } from './labels.js';
 import { openLinkPopover } from './LinkPopover.js';
 import { openGlossaryPopover } from './MarkPopover.js';
 import { lireSelection, Popover, suivrePosition } from './popover.js';
+import { openRawPopover } from './RawPopover.js';
 
 /** Langue proposée pour une nouvelle partie : celle qu'affichent les multis, sinon celle de l'interface. */
 const langueParDefaut = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || '').replace('-', '_');
@@ -94,6 +95,7 @@ function multiEnLigne(contexte, existant) {
 			titles: contexte.titles ?? null,
 			openLink: () => openLinkPopover({ ...contexte, editor: l.sous, parent: popover }),
 			openGlossary: () => openGlossaryPopover({ ...contexte, editor: l.sous, parent: popover }),
+			editRaw: (p) => openRawPopover({ ...contexte, editor: l.sous, parent: popover }, p),
 		};
 		const sous = new Editor({
 			element: zone,

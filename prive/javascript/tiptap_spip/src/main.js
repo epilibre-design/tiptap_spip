@@ -5,9 +5,11 @@ import { barreDuTextarea, contexte as contexteHote } from './hosts/contexte.js';
 import { Services } from './services/cvt.js';
 import { creerInterface } from './ui/interface.js';
 import BARRES from './ui/barres.json';
+import { label } from './ui/labels.js';
 import './ui/composants.js';
 import { NotesPanel } from './ui/NotesPanel.js';
 import { Popover } from './ui/popover.js';
+import { StatusBar } from './ui/StatusBar.js';
 import { Toolbar } from './ui/Toolbar.js';
 
 /**
@@ -43,6 +45,12 @@ const ecrirePreference = (mode) => {
 		// navigation privée, stockage bloqué : préférence non gardée
 	}
 };
+
+/** Nom accessible du champ : son <label>, sinon son aria-label ou sa bulle, sinon un nom générique. */
+const nomDuChamp = (textarea) => textarea.labels?.[0]?.textContent.replace(/\s+/g, ' ').trim()
+	|| textarea.getAttribute('aria-label')
+	|| textarea.title
+	|| label('zone_texte');
 
 /** Textareas pris par markdown_editor : jamais touchés. */
 const MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
@@ -106,7 +114,8 @@ class Instance {
 			element: this.content,
 			source: textarea.value,
 			ui: this.ui,
-			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em` } },
+			// zone éditable nommée comme le champ SPIP (spec 06 §7)
+			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em`, 'aria-label': nomDuChamp(textarea), 'aria-multiline': 'true' } },
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
 		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
@@ -122,8 +131,11 @@ class Instance {
 		this.editor.on('transaction', this.majBarre);
 		this.content.after(this.notes.element);
 
+		// barre d'état (mots, anomalies) en bas, sous le textarea du mode source
+		this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
+
 		textarea.before(this.wrapper);
-		this.wrapper.append(textarea);
+		this.wrapper.append(textarea, this.etat.element);
 		textarea.hidden = true;
 
 		// raccourcis de l'instance (spec 06 §6), depuis l'éditeur comme depuis le textarea ; en capture :
@@ -184,6 +196,7 @@ class Instance {
 		this.textarea.hidden = !source;
 		this.content.hidden = source;
 		this.notes.setMode(source);
+		this.etat.setMode(source);
 		this.toolbar.maj();
 		ecrirePreference(mode);
 		if (focus) (source ? this.textarea : this.editor).focus?.();
@@ -195,6 +208,7 @@ class Instance {
 		// popovers de l'instance (et sous-éditeur d'une note) fermés
 		while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
 		this.notes.destroy();
+		this.etat.destroy();
 		this.editor.off('transaction', this.majBarre);
 		if (this.pleinEcran()) this.togglePleinEcran(false);
 		this.bridge.destroy();

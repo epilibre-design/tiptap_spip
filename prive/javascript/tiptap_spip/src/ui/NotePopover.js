@@ -6,6 +6,7 @@ import { label } from './labels.js';
 import { openLinkPopover } from './LinkPopover.js';
 import { openGlossaryPopover } from './MarkPopover.js';
 import { openModelPopover } from './ModelPopover.js';
+import { openRawPopover } from './RawPopover.js';
 import { idUnique, lireSelection, Popover, suivrePosition } from './popover.js';
 
 /** Contenu de note sans texte ni objet : paragraphes vides seulement. */
@@ -95,6 +96,7 @@ export function openNotePopover(contexte, pos = null) {
 		openLink: () => openLinkPopover(enfant()),
 		openGlossary: () => openGlossaryPopover(enfant()),
 		editModel: (p) => openModelPopover(enfant(), p),
+		editRaw: (p) => openRawPopover(enfant(), p),
 	};
 	const extensions = noteExtensions({ ui: sousUi });
 	let content;

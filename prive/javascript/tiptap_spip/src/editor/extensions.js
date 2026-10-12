@@ -18,9 +18,10 @@ import Text from '@tiptap/extension-text';
 import { Dropcursor, Gapcursor, UndoRedo } from '@tiptap/extensions';
 import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { idiomeView, linkAutoView, modelView, multiView } from '../nodeviews/views.js';
+import { ariaModele, idiomeView, linkAutoView, modelView, multiView } from '../nodeviews/views.js';
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
 import { serializeIdiome } from '../spip/multi.js';
+import { SpipAnomalies } from './anomalies.js';
 import { SpipEdition } from './edition.js';
 import { apercu, partieAffichee } from './texte.js';
 import { label as libelle } from '../ui/labels.js';
@@ -291,7 +292,7 @@ const SpipModel = Node.create({
 	selectable: true,
 	addAttributes: modelAttributes,
 	parseHTML: () => [{ tag: 'span[data-tts-model]' }],
-	renderHTML: ({ node, HTMLAttributes }) => ['span', { ...HTMLAttributes, class: 'tts-model' }, node.attrs.model?.source ?? ''],
+	renderHTML: ({ node, HTMLAttributes }) => ['span', { ...HTMLAttributes, ...ariaModele(node.attrs.model), class: 'tts-model' }, node.attrs.model?.source ?? ''],
 });
 
 /** Modèle seul dans son paragraphe. */
@@ -303,7 +304,7 @@ const SpipModelBlock = Node.create({
 	draggable: true,
 	addAttributes: modelAttributes,
 	parseHTML: () => [{ tag: 'div[data-tts-model]' }],
-	renderHTML: ({ node, HTMLAttributes }) => ['div', { ...HTMLAttributes, class: 'tts-model tts-model-block' }, node.attrs.model?.source ?? ''],
+	renderHTML: ({ node, HTMLAttributes }) => ['div', { ...HTMLAttributes, ...ariaModele(node.attrs.model), class: 'tts-model tts-model-block' }, node.attrs.model?.source ?? ''],
 });
 
 /** Attribut JSON transporté dans le HTML (copier-coller interne). */
@@ -499,7 +500,8 @@ const SpipNote = Node.create({
 	}),
 	// avant la mark exposant, qui lit aussi <sup>
 	parseHTML: () => [{ tag: 'sup[data-tts-note]', priority: 60 }],
-	renderHTML: ({ node, HTMLAttributes }) => ['sup', { ...HTMLAttributes, class: 'tts-note', title: apercu(node.attrs.content) }],
+	// role note : l'aria-label posé par la numérotation (« Note 2 : … ») est annoncé (spec 06 §7)
+	renderHTML: ({ node, HTMLAttributes }) => ['sup', { ...HTMLAttributes, class: 'tts-note', role: 'note', title: apercu(node.attrs.content) }],
 	addCommands() {
 		return {
 			/** Note au curseur ; sans contenu, ouvre le popover de note (spec 05 §1). */
@@ -595,8 +597,8 @@ const SpipNoteNumbers = Extension.create({
 	},
 });
 
-/** Atomes dont un clic ou Entrée ouvre le popover : action de l'interface. */
-const POPOVERS = { spipNote: 'editNote', spipMultiInline: 'editMulti', spipIdiome: 'editIdiome' };
+/** Atomes dont un clic ou Entrée ouvre le popover : action de l'interface (nœuds bruts : leur source). */
+const POPOVERS = { spipNote: 'editNote', spipMultiInline: 'editMulti', spipIdiome: 'editIdiome', spipRawInline: 'editRaw', spipRaw: 'editRaw' };
 
 /** Raccourcis clavier de l'interface (spec 06 §6). */
 const SpipUi = Extension.create({
@@ -705,6 +707,7 @@ export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = 
 		Gapcursor,
 		UndoRedo,
 		SpipEdition,
+		SpipAnomalies,
 		SpipUi.configure({ ui }),
 	];
 }

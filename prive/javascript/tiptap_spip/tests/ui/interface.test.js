@@ -17,6 +17,8 @@ describe('prévisualisation des modèles', () => {
 		expect(bloc.querySelector('img').alt).toBe('<doc12|center>');
 		expect(bloc.querySelector('img').hasAttribute('onerror')).toBe(false);
 		expect(bloc.contentEditable).toBe('false');
+		expect(bloc.getAttribute('aria-label')).toBe('Modèle doc 12');
+		expect(inline.getAttribute('aria-label')).toBe('Modèle img 3');
 		expect(inline.querySelector('img').alt).toBe('<img3>');
 		expect(services.call).toHaveBeenCalledTimes(2);
 		expect(source()).toBe('Avant\n\n<doc12|center>\n\nUn <img3> ici');

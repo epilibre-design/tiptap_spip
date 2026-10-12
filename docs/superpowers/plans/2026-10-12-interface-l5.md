@@ -189,3 +189,39 @@
   - 02 (pipeline `tiptap_spip_toolbars`, `barres.json`) ;
   - 09 (découpage de L5).
 - **Bundle :** `npm run build`, puis commit.
+
+## Tâches L5.2
+
+**Constats (oracle, SPIP 4.4) :**
+- **Raccourcis cassés qui restent bruts** (`spipRawInline`) :
+  - `{` ou `{{` sans fermeture, `<i>` ou `<strong>` sans fermeture : italique ou gras jusqu'à la fin du paragraphe ;
+  - `}` ou `</i>` orphelins : affichés tels quels, ou sans effet ;
+  - `{{{` hors d'un intertitre complet : la suite devient un intertitre ;
+  - `<quote>` sans fermeture : tout le texte qui suit passe en citation ;
+  - `<multi>`, `<cadre>`, `<poesie>`, `<html>` sans fermeture : non traités.
+- **Restent du texte, et ne sont donc pas des nœuds bruts :** `[[` et `[x->` non fermés.
+- **Bruts légitimes, jamais signalés :** HTML inconnu, entités, `{}`, blocs gardés bruts par repli (tableau incohérent…).
+
+1. **`src/spip/anomalies.js` :**
+   - `anomalie(source)` renvoie `'ouverture' | 'fermeture' | 'intertitre' | 'citation' | 'balise' | null` pour la source d'un `spipRawInline` ;
+   - tests sur les cas de l'oracle.
+2. **Extension `SpipAnomalies` :**
+   - décoration `tts-anomalie` (soulignement ondulé, bulle avec l'explication) ;
+   - `anomaliesDuDocument(doc)` ;
+   - clic ou `Entrée` sur un `spipRawInline` ou un `spipRaw` : `ui.editRaw(pos)`.
+3. **`RawPopover` :**
+   - source éditable du segment qui contient le nœud brut (sérialisation conservatrice de son groupe de blocs : la source exacte), avec l'explication de l'anomalie ;
+   - « Appliquer » relit la source (`parse`) et remplace le groupe : séparateur d'avant gardé, refus si le résultat ne peut pas se placer là (sous-éditeurs) ;
+   - `Mod-Entrée` valide.
+4. **Barre d'état** (`StatusBar`), sous l'éditeur :
+   - nombre de mots ;
+   - « N anomalies de syntaxe » (bouton : anomalie suivante sélectionnée, popover ouvert), annoncé par `aria-live` ;
+   - masquée en mode source.
+5. **Piège de focus des popovers :** `Tab` et `Maj+Tab` bouclent dans le popover ; une tabulation déjà traitée (liste du sous-éditeur) n'est pas reprise.
+6. **Atomes annoncés :**
+   - modèles `role="group"` et `aria-label="Modèle doc 12"` ;
+   - appels de note `role="note"` (l'`aria-label` existe), pour ne pas laisser d'`aria-label` sur un `span` sans rôle.
+7. **e2e :**
+   - anomalie signalée, corrigée par le popover, source enregistrée ;
+   - audit axe (`@axe-core/playwright`) de l'éditeur, d'un popover ouvert et d'un menu ouvert : aucune violation critique (critère 7).
+   - Specs 06 §4, §5, §7 et 08, plus le bundle.

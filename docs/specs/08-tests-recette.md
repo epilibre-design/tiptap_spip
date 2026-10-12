@@ -42,6 +42,10 @@ L'équivalence de rendu tourne en CI avec une image SPIP 4.4 et une SPIP 5 (spip
 5. Une modification d'un paragraphe ne change, dans la révision SPIP, que ce paragraphe.
 6. Performance : parse + montage < 150 ms pour 50 000 caractères (mesuré en CI, Chromium).
 7. Accessibilité : barre et popovers utilisables au clavier seul ; audit axe sans erreur critique.
+   Vérifié en e2e (lots L5.1 et L5.2) :
+   - barre au clavier seul, jusqu'à l'enregistrement ;
+   - audit axe de l'éditeur, d'un menu ouvert et d'un popover ouvert : aucune violation critique ni
+     sérieuse.
 8. Fonctionne dans l'espace privé SPIP 4.2, 4.4 et 5.x (Firefox ESR, Chromium, Safari récents).
 
 ## 4. Écarts de rendu acceptés

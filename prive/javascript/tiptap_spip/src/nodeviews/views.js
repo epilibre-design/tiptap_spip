@@ -16,6 +16,12 @@ const chip = (text) => {
 	return span;
 };
 
+/** Modèle annoncé par son nom et son numéro (« Modèle doc 12 », spec 06 §7). */
+export const ariaModele = (model) => ({
+	role: 'group',
+	'aria-label': label('modele_aria').replace('@modele@', [model?.name, model?.id].filter(Boolean).join(' ')),
+});
+
 /**
  * Modèle (spipModel, spipModelBlock) : HTML calculé par SPIP, inerte ; bouton « Modifier ».
  * @param {{ previews: import('../services/cache.js').ModelPreviews, editModel: (pos: number) => void }} ui
@@ -40,6 +46,7 @@ export const modelView = (ui) => ({ node, getPos }) => {
 		source = model?.source ?? '';
 		dom.dataset.ttsModel = JSON.stringify(model);
 		dom.title = source;
+		for (const [nom, valeur] of Object.entries(ariaModele(model))) dom.setAttribute(nom, valeur);
 		preview.replaceChildren(chip(source));
 		dom.classList.add('tts-model--chargement');
 		dom.classList.remove('tts-model--erreur', 'tts-model--vide');

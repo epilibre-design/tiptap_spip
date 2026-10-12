@@ -507,3 +507,61 @@ html.tts-plein-ecran {
 .tts-outil--langues[hidden] {
 	display: none;
 }
+
+/* Anomalies de syntaxe (lot L5.2) : raccourci cassé souligné, explication en bulle. */
+.tts-anomalie {
+	text-decoration: underline wavy #c01c28;
+	text-decoration-skip-ink: none;
+	background: #fdecea;
+	cursor: pointer;
+}
+
+/* Barre d'état : mots, anomalies. */
+.tts-etat {
+	display: flex;
+	gap: 1em;
+	justify-content: flex-end;
+	padding: 2px 8px;
+	border-top: 1px solid #ccc;
+	background: #f7f7f7;
+	color: #555;
+	font-size: 0.9em;
+}
+
+.tts-etat[hidden],
+.tts-etat__anomalies[hidden] {
+	display: none;
+}
+
+.tts-etat__anomalies {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #a51d2d;
+	font: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.tts-etat__anomalies::before {
+	content: "⚠ ";
+}
+
+/* Popover d'un nœud brut : source éditable. */
+.tts-popover__explication {
+	margin: 0 0 0.5em;
+	padding: 0.3em 0.5em;
+	border-left: 3px solid #c01c28;
+	background: #fdecea;
+}
+
+.tts-popover--brut {
+	max-width: 40em;
+}
+
+.tts-popover--brut textarea {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	font-family: monospace;
+}
