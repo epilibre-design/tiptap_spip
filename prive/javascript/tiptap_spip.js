@@ -18850,10 +18850,8 @@ function runBlocks(src, msk, regions) {
       out.push(node("heading", { level: h2.level }, inlineOf(src, msk, regions, s, s + h2.length)));
       k++;
     } else if (RE_ITEM.test(line)) {
-      let j = k + 1;
-      while (j < lines.length && !RE_HR.test(L(j)) && heading(L(j)) === null) j++;
-      out.push(...listBlocks(src, msk, regions, lines.slice(k, j), L, k));
-      k = j;
+      out.push(...listBlocks(src, msk, regions, lines.slice(k), L, k));
+      k = lines.length;
     } else {
       let j = k + 1;
       while (j < lines.length && !special(L(j))) j++;
@@ -18868,8 +18866,13 @@ function listBlocks(src, msk, regions, lines, L, first2) {
   const items = [];
   lines.forEach((line, n) => {
     const m = L(first2 + n).match(RE_ITEM);
-    if (m) items.push({ depth: m[1].length, type: m[1][0] === "*" ? "bulletList" : "orderedList", start: line.start + m[0].length, end: line.end });
-    else items[items.length - 1].end = line.end;
+    if (m) {
+      items.push({ depth: m[1].length, type: m[1][0] === "*" ? "bulletList" : "orderedList", start: line.start + m[0].length, end: line.end });
+    } else if (RE_HR.test(L(first2 + n)) || heading(L(first2 + n)) !== null) {
+      throw new Fallback();
+    } else {
+      items[items.length - 1].end = line.end;
+    }
   });
   const tops = [];
   const stack = [];

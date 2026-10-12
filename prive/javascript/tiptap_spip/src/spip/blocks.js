@@ -167,10 +167,9 @@ function runBlocks(src, msk, regions) {
 			out.push(node('heading', { level: h.level }, inlineOf(src, msk, regions, s, s + h.length)));
 			k++;
 		} else if (RE_ITEM.test(line)) {
-			let j = k + 1;
-			while (j < lines.length && !RE_HR.test(L(j)) && heading(L(j)) === null) j++;
-			out.push(...listBlocks(src, msk, regions, lines.slice(k, j), L, k));
-			k = j;
+			// comme SPIP, la liste va jusqu'à la fin du segment (ligne vide)
+			out.push(...listBlocks(src, msk, regions, lines.slice(k), L, k));
+			k = lines.length;
 		} else {
 			let j = k + 1;
 			while (j < lines.length && !special(L(j))) j++;
@@ -187,8 +186,14 @@ function listBlocks(src, msk, regions, lines, L, first) {
 	const items = [];
 	lines.forEach((line, n) => {
 		const m = L(first + n).match(RE_ITEM);
-		if (m) items.push({ depth: m[1].length, type: m[1][0] === '*' ? 'bulletList' : 'orderedList', start: line.start + m[0].length, end: line.end });
-		else items[items.length - 1].end = line.end; // ligne de continuation
+		if (m) {
+			items.push({ depth: m[1].length, type: m[1][0] === '*' ? 'bulletList' : 'orderedList', start: line.start + m[0].length, end: line.end });
+		} else if (RE_HR.test(L(first + n)) || heading(L(first + n)) !== null) {
+			// filet ou intertitre dans un élément (<li>a<hr /></li>) : pas dans le schéma
+			throw new Fallback();
+		} else {
+			items[items.length - 1].end = line.end; // ligne de continuation
+		}
 	});
 
 	const tops = [];

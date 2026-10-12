@@ -52,6 +52,15 @@ describe('listes', () => {
 		expect(parseContent('-* a\n-*** b')).toEqual([node('spipRaw', { source: '-* a\n-*** b' })]);
 		expect(parseContent('-* a\n-** b\n-## c')).toEqual([node('spipRaw', { source: '-* a\n-** b\n-## c' })]);
 	});
+
+	it('filet ou intertitre sans ligne vide après un élément : il en fait partie pour SPIP, bloc brut', () => {
+		// SPIP : <li>a<hr class="spip" /></li><li>b</li> (textwheel base/sparse_list)
+		for (const source of ['-* a\n----\n-* b', '-* a\n----', '-* a\n{{{T}}}\n-* b', '-* a\n<h3>T</h3>']) {
+			expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		}
+		// avant la liste, le filet reste un bloc
+		expect(parseContent('----\n-* a')).toEqual([node('horizontalRule'), node('bulletList', null, [item('a')])]);
+	});
 });
 
 describe('conteneurs', () => {
