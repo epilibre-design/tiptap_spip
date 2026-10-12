@@ -11,12 +11,18 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 include_spip('inc/tiptap_spip_config');
 
 /**
- * Configuration, feuilles de style et bundle de l'éditeur, à insérer dans le <head> (SPIP 4).
- * La configuration est calculée avec `prive` dans son contexte : le même squelette sert l'espace
- * privé et le site public sans partager son cache.
+ * Feuilles de style et module de lancement de l'éditeur, à insérer dans le <head>.
+ *
+ * La configuration est calculée à chaque page, avec `prive` dans son contexte : le même squelette sert
+ * l'espace privé et le site public sans partager son cache. Elle n'est pas dans
+ * prive/javascript/_inits/ : SPIP 5 en fait un fichier statique, gardé tant que son cache dure (la
+ * configuration du plugin n'y serait pas reprise) et chargé dans les deux espaces.
+ *
+ * Elle est posée dans le module, avant le lancement : en SPIP 5, window.spipConfig est remplacé par
+ * le module d'initialisation de SPIP, qui passe avant ce module.
  */
 function tiptap_spip_head(bool $prive): string {
-	$config = recuperer_fond('prive/javascript/_inits/09_tiptap_spip_config.js', ['prive' => $prive ? 'oui' : 'non']);
+	$config = recuperer_fond('prive/javascript/tiptap_spip_config.js', ['prive' => $prive ? 'oui' : 'non']);
 	$lib = find_in_path('prive/javascript/tiptap_spip.min.js') ?: find_in_path('prive/javascript/tiptap_spip.js');
 	if (!$config || !$lib) {
 		return '';
@@ -27,10 +33,16 @@ function tiptap_spip_head(bool $prive): string {
 			$head .= '<link rel="stylesheet" href="' . timestamp($css) . '" type="text/css" />' . "\n";
 		}
 	}
-	$head .= "<script>\n" . $config . "\n</script>\n";
+	// SPIP 5 : bundle et onAjaxLoad par l'importmap, le bundle étant alors le même module que celui
+	// qu'importent les plugins tiers (spec 07) ; SPIP 4 : URL du bundle, onAjaxLoad global
+	$imports = tiptap_spip_spip5()
+		? "import { onAjaxLoad } from 'ajaxCallback.js';\n"
+			. "import { chargerExtensions, tiptap_spip_init } from 'tiptap_spip.js';\n"
+		: "import { chargerExtensions, tiptap_spip_init } from '" . protocole_implicite(url_absolue(timestamp($lib))) . "';\n";
 	// extensions des plugins tiers (pipeline tiptap_spip_extensions) importées avant le lancement
 	$head .= "<script type=\"module\">\n"
-		. "import { chargerExtensions, tiptap_spip_init } from '" . protocole_implicite(url_absolue(timestamp($lib))) . "';\n"
+		. $imports
+		. trim($config) . "\n"
 		. "await chargerExtensions();\n"
 		. "tiptap_spip_init();\n"
 		. "onAjaxLoad(function () { tiptap_spip_init(this); });\n"
@@ -40,12 +52,9 @@ function tiptap_spip_head(bool $prive): string {
 }
 
 /**
- * Espace privé, SPIP 4. SPIP 5 passe par l'importmap et les scripts prive/javascript/_inits/.
+ * Espace privé.
  */
 function tiptap_spip_header_prive($flux) {
-	if ((int) substr($GLOBALS['spip_version_branche'] ?? '4', 0, 1) >= 5) {
-		return $flux;
-	}
 	return $flux . tiptap_spip_head(true);
 }
 
@@ -62,7 +71,8 @@ function tiptap_spip_insert_head($flux) {
 }
 
 /**
- * SPIP 5 : déclare le bundle dans l'importmap.
+ * SPIP 5 : déclare le bundle dans l'importmap, pour le lancement (tiptap_spip_head) et les plugins
+ * tiers qui l'importent.
  */
 function tiptap_spip_importmap($flux) {
 	$flux['data'][] = 'tiptap_spip.js';

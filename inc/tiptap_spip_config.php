@@ -16,6 +16,13 @@ const TIPTAP_SPIP_NIVEAUX = [2, 3, 4, 5, 6];
 const TIPTAP_SPIP_NIVEAUX_DEFAUT = [2, 3, 4];
 
 /**
+ * SPIP 5 ou plus récent.
+ */
+function tiptap_spip_spip5(): bool {
+	return (int) substr($GLOBALS['spip_version_branche'] ?? '4', 0, 1) >= 5;
+}
+
+/**
  * Configuration lue dans la méta tiptap_spip, chaque valeur absente ou invalide remplacée par son
  * défaut. `champs` (objet → champs équipés) et `glossaires` (glossaires nommés proposés) valent
  * null tant qu'ils n'ont pas été choisis : tous les candidats.

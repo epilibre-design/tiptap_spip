@@ -142,4 +142,3 @@ function faq_tiptap_spip_extensions(array $flux): array {
     par mégarde.
   - Le rendu reste à la charge du plugin. Une syntaxe en forme de modèle (`<faq|q=…>`) doit être
     transformée avant les modèles (`pre_echappe_html_propre`), car SPIP les traite avant `pre_propre`.
-  - Le chargement SPIP 5 (`_inits/80`) n'est pas testé, faute de site.

@@ -12,7 +12,7 @@ const langue = Object.fromEntries([...lire('lang/tiptap_spip_fr.php').matchAll(/
 	.map(([, cle, valeur]) => [cle, valeur.replace(/\\(.)/g, '$1')]));
 
 /** Clés de la configuration JS : `cle: "<:tiptap_spip:cle|texte_script:>"`, virgule finale ou non (dernière). */
-const config = [...lire('prive/javascript/_inits/09_tiptap_spip_config.js.html').matchAll(/^\t+(\w+): "<:tiptap_spip:(\w+)\|texte_script:>",?$/gm)];
+const config = [...lire('prive/javascript/tiptap_spip_config.js.html').matchAll(/^\t+(\w+): "<:tiptap_spip:(\w+)\|texte_script:>",?$/gm)];
 
 /** Fichiers sources du bundle. */
 const sources = (dossier) => readdirSync(new URL(dossier, import.meta.url), { withFileTypes: true }).flatMap((f) => (

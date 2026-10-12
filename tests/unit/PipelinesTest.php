@@ -10,7 +10,7 @@ final class PipelinesTest extends TestCase
 {
 	protected function setUp(): void {
 		test_reset_globals();
-		$GLOBALS['_test_fonds']['prive/javascript/_inits/09_tiptap_spip_config.js'] = 'window.spipConfig ??= {};';
+		$GLOBALS['_test_fonds']['prive/javascript/tiptap_spip_config.js'] = 'window.spipConfig ??= {};';
 		$GLOBALS['_test_chemins'] = [
 			'prive/javascript/tiptap_spip.min.js' => 'plugins/tiptap_spip/prive/javascript/tiptap_spip.min.js',
 			'prive/javascript/tiptap_spip.js' => 'plugins/tiptap_spip/prive/javascript/tiptap_spip.js',
@@ -18,19 +18,22 @@ final class PipelinesTest extends TestCase
 		];
 	}
 
-	public function testHeaderPriveSpip4ChargeConfigCssEtModule(): void {
+	public function testHeaderPriveSpip4ChargeCssEtModuleAvecSaConfig(): void {
 		$flux = tiptap_spip_header_prive('<head>');
 
 		$this->assertStringStartsWith('<head>', $flux);
-		$this->assertStringContainsString('<script>' . "\n" . 'window.spipConfig ??= {};', $flux);
 		$this->assertStringContainsString('href="plugins/tiptap_spip/css/tiptap_spip.css?1700000000"', $flux);
+		// configuration dans le module : posée avant le lancement, après le chargement du bundle
 		$this->assertStringContainsString(
-			"import { chargerExtensions, tiptap_spip_init } from '//exemple.test/plugins/tiptap_spip/prive/javascript/tiptap_spip.min.js?1700000000';\n"
+			"<script type=\"module\">\n"
+				. "import { chargerExtensions, tiptap_spip_init } from '//exemple.test/plugins/tiptap_spip/prive/javascript/tiptap_spip.min.js?1700000000';\n"
+				. "window.spipConfig ??= {};\n"
 				. "await chargerExtensions();\n"
 				. "tiptap_spip_init();",
 			$flux
 		);
 		$this->assertStringContainsString('onAjaxLoad(function () { tiptap_spip_init(this); });', $flux);
+		$this->assertStringNotContainsString('ajaxCallback.js', $flux);
 	}
 
 	public function testHeaderPriveSansBundleMinifiePrendLeBundleNormal(): void {
@@ -45,15 +48,26 @@ final class PipelinesTest extends TestCase
 		$this->assertSame('<head>', tiptap_spip_header_prive('<head>'));
 	}
 
-	public function testHeaderPriveSpip5LaissePasserLeFlux(): void {
+	public function testHeaderPriveSpip5ImporteBundleEtOnAjaxLoadParLImportmap(): void {
 		$GLOBALS['spip_version_branche'] = '5.0.0';
 
-		$this->assertSame('<head>', tiptap_spip_header_prive('<head>'));
+		$flux = tiptap_spip_header_prive('<head>');
+
+		// même module que celui qu'importent les plugins tiers (spec 07)
+		$this->assertStringContainsString(
+			"<script type=\"module\">\n"
+				. "import { onAjaxLoad } from 'ajaxCallback.js';\n"
+				. "import { chargerExtensions, tiptap_spip_init } from 'tiptap_spip.js';\n"
+				. "window.spipConfig ??= {};\n"
+				. "await chargerExtensions();",
+			$flux
+		);
+		$this->assertStringContainsString('href="plugins/tiptap_spip/css/tiptap_spip.css?1700000000"', $flux);
 	}
 
 	public function testConfigurationCalculeeSelonLEspace(): void {
 		$contextes = [];
-		$GLOBALS['_test_fonds']['prive/javascript/_inits/09_tiptap_spip_config.js'] = static function (array $c) use (&$contextes) {
+		$GLOBALS['_test_fonds']['prive/javascript/tiptap_spip_config.js'] = static function (array $c) use (&$contextes) {
 			$contextes[] = $c;
 			return 'window.spipConfig ??= {};';
 		};

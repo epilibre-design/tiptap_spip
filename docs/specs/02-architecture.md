@@ -43,8 +43,7 @@ tiptap_spip/
 ├── modeles/*.yaml                   # descriptions de formulaires de modèles (doc, img, emb…)
 ├── prive/
 │   ├── javascript/
-│   │   ├── _inits/09_tiptap_spip_config.js.html
-│   │   ├── _inits/80_tiptap_spip.js
+│   │   ├── tiptap_spip_config.js.html            # configuration JS, calculée à chaque page
 │   │   ├── tiptap_spip.js / tiptap_spip.min.js   # bundle généré
 │   │   └── tiptap_spip/                          # sources npm (cf. §3)
 │   ├── squelettes/contenu/configurer_tiptap_spip.html
@@ -58,13 +57,27 @@ tiptap_spip/
 
 | Pipeline / mécanisme | Rôle |
 |----------------------|------|
-| `importmap` (SPIP 5) / `header_prive` (SPIP 4) | Charger le bundle et la config (repris de markdown_editor) |
+| `header_prive` / `insert_head` | Charger la config, les feuilles de style et le module de lancement (SPIP 4 et 5) |
+| `importmap` (SPIP 5) | Déclarer le bundle (`tiptap_spip.js`), importé par le module de lancement et par les plugins tiers |
 | `tiptap_spip_toolbars` (nouveau) | Déclarer/modifier les barres d'outils (`edition`, `forum`, …) : `flux['data']`, barres de `src/ui/barres.json` (lot L5.1, [06](06-interface.md) §2) |
 | `tiptap_spip_contextes` (nouveau) | Déclarer le contexte (objet, id, champ) des CVT de plugins qui embarquent l'éditeur (§6) |
 | `tiptap_spip_extensions` (nouveau) | Déclarer des extensions JS tierces à charger (cf. [07](07-extensibilite.md)) : `nom => ['src', 'dependances']` |
 | `tiptap_spip_i18n` (nouveau) | Ajouter des chaînes de langue aux libellés de l'interface (cf. [07](07-extensibilite.md)) |
 | `autoriser` | `tiptapspipmodele_previsualiser`, `tiptapspip_utiliser` |
 | `porte_plume_barre_pre_charger` / config | Désactiver le porte-plume sur les champs pris en charge |
+
+Lancement (vérifié sur SPIP 4.2, 4.4 et 5.0-dev, cf. [08](08-tests-recette.md) critère 8) :
+- Un même chemin pour SPIP 4 et 5 : `tiptap_spip_head()` insère les feuilles de style et un module qui
+  pose la configuration, importe les extensions tierces puis lance `tiptap_spip_init()`, relancé à chaque
+  `onAjaxLoad`.
+- SPIP 5 : le module importe le bundle et `onAjaxLoad` par l'importmap (`'tiptap_spip.js'`,
+  `'ajaxCallback.js'`) : un plugin tiers qui importe `tiptap_spip.js` partage alors le même module, donc
+  le même registre d'extensions. La configuration est posée dans le module, car le module
+  d'initialisation de SPIP remplace `window.spipConfig` avant lui.
+- Pas de script dans `prive/javascript/_inits/` : SPIP 5 les concatène en un fichier statique, gardé
+  tant que le cache de `_init.js` dure (100 h) et que l'invalidation n'atteint pas. La configuration
+  du plugin n'y était pas reprise (`prive` y valait même `false`, SPIP 5 passant un booléen), et le
+  bundle y était chargé sur toutes les pages publiques (chemin `prive` du plugin).
 
 ### Configuration (CFG)
 
@@ -233,7 +246,7 @@ Champ `operation` + paramètres, validés dans `verifier()` (liste blanche, tail
 |-----------|------------|------------------------|----------|
 | `previsu_modele` | `modele` | exactement **un** raccourci de modèle (regex du core, ancrée), ≤ 2 000 caractères, modèle existant : déclaré par un objet (`modeles` de `lister_tables_objets_sql()`, cas de `doc`, `img`, `emb`, résolus par `styliser_modele()` sans squelette `modeles/doc.html`) ou trouvé par `trouve_modele()` ; nom non exclu par la config (lot L5) | HTML via les traitements du champ (`tiptap_spip_traitements_previsu`, repris de `traitements_previsu`) puis `safehtml` ; contexte limité à `objet`, `id_objet`, `id_<objet>` signés (jamais `$_POST`) |
 | `titre_lien` | `cibles` (liste JSON) | 1 à 50 cibles, ≤ 500 caractères chacune | `[{cible, titre, url, objet, id}]` ; pour un objet SPIP (`typer_raccourci`), titre et URL seulement si `autoriser('voir', objet, id)` ; URL explicite : titre et URL de `calculer_url()` ; `#ancre` : rien |
-| `glossaire` | `raccourci` (`[?terme#glossaireN\|bulle{lang}]`), facultatif | un seul raccourci de glossaire (`_RACCOURCI_GLOSSAIRE` ancrée), ≤ 500 caractères, glossaire connu (par défaut, ou `glossaire_<nom>()` existante) ; sans raccourci : la liste seule (`url` nulle) | `{url, glossaires}` : URL de la définition rendue par `traiter_raccourci_glossaire()` dans la langue de l'objet édité (sinon celle du site), le glossaire par défaut en dépendant (`@lang@.wikipedia.org`) ; `glossaires` : noms des fonctions `glossaire_<nom>()` définies, hors `glossaire_std` (aucun appel réseau sortant) — **lot L3.2** |
+| `glossaire` | `raccourci` (`[?terme#glossaireN\|bulle{lang}]`), facultatif | un seul raccourci de glossaire (`_RACCOURCI_GLOSSAIRE` ancrée), ≤ 500 caractères, glossaire connu (par défaut, ou `glossaire_<nom>()` existante) ; sans raccourci : la liste seule (`url` nulle) | `{url, glossaires}` : URL de la définition rendue par `traiter_raccourci_glossaire()` (SPIP 4) ou par le pipeline `pre_liens` (SPIP 5, écouteur du glossaire de TextWheel) dans la langue de l'objet édité (sinon celle du site), le glossaire par défaut en dépendant (`@lang@.wikipedia.org`) ; `glossaires` : noms des fonctions `glossaire_<nom>()` définies, hors `glossaire_std` (aucun appel réseau sortant) — **lot L3.2** |
 | `rechercher` | `q`, `objets` (liste JSON) | `q` de 2 à 100 caractères, objets parmi `article, rubrique, breve, document, auteur, mot, site` | `[{objet, id, titre, raccourci}]` (`raccourci` = `article12`), filtré par `autoriser('voir')` **avant** de retenir les résultats (des objets invisibles en tête ne masquent pas les suivants), hors poubelle, 20 résultats max, les plus récemment modifiés d'abord (`maj`) tous types confondus : une suite par type, lue par pages de 50, fusionnée par `maj` |
 | `idiomes` | `cles` (liste JSON de `module:cle` ou `cle`) | 1 à 50 clés, ≤ 100 caractères, forme de la regex de `Idiomes::collecter()` | `[{cle, texte}]` : traduction par `inc_traduire` dans la langue de l'objet édité (sinon celle du site), sans balises ; `texte` nul pour une chaîne absente (SPIP laisse alors le raccourci) — **lot L4.2** |
 
@@ -365,7 +378,7 @@ Tiptap n'utilise pas d'iframe : la zone d'édition fait partie du DOM de la page
   charge l'éditeur dans le site public (pipeline `insert_head`) ; `tiptap_spip/crayons` équipe les crayons
   (`.formulaire_crayon textarea.crayon-active`) — Q9 tranchée : sur option. Avec l'option publique, le
   formulaire de forum d'un article (`textarea[name=texte]`) est équipé lui aussi.
-- **Configuration JS** (`09_tiptap_spip_config.js.html`, sans cache, calculée avec `prive` dans son
+- **Configuration JS** (`tiptap_spip_config.js.html`, sans cache, calculée avec `prive` dans son
   contexte pour ne pas partager le cache entre privé et public) : `prive`, `services` (URL de la page de
   services à la demande), et depuis le lot L5.3 `crayons`, `mode`, `niveaux`, `champs`
   (`tiptap_spip_config_js`).
