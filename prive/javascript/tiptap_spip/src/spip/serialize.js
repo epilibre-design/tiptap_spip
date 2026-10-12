@@ -169,7 +169,7 @@ function serializeTable(table) {
 	for (const row of occ) {
 		const cells = row.map((x) => {
 			if (typeof x === 'string') return x;
-			const inline = serializeInline(x.content?.[0]?.content);
+			const inline = serializeInline(x.content?.[0]?.content, { cellule: true });
 			return x.type === 'tableHeader' && inline !== '' ? `{{${inline}}}` : inline;
 		});
 		lines.push(`|${cells.join('|')}|`);
@@ -245,6 +245,16 @@ function marksAtomiques(nodes) {
 }
 const HTML = { bold: ['<strong>', '</strong>'], italic: ['<i>', '</i>'] };
 
+/** Marks écrites entre crochets. */
+const MARKS_CROCHET = ['spipLink', 'spipGlossary', 'spipAbbr'];
+
+/**
+ * Le nœud suivant s'écrit-il en commençant par [ ? Note, fragment brut, lien sans texte, ancre, ou
+ * texte qui ouvre un lien, un glossaire ou une abréviation : un [ final devant lui ferait [[ (note).
+ */
+const ecritAvecCrochet = (suivant, n) => ['spipNote', 'spipRawInline', 'spipLinkAuto', 'spipAnchor'].includes(suivant?.type)
+	|| (suivant?.marks ?? []).some((m) => MARKS_CROCHET.includes(m.type) && !(n.marks ?? []).some((x) => sameMark(x, m)));
+
 /** Source d'un fragment brut, '' pour un autre nœud (un texte a ses accolades échappées). */
 const brut = (n) => (n?.type === 'spipRawInline' ? n.attrs.source : '');
 
@@ -260,9 +270,9 @@ const accoladeContre = (nodes, i, run) => /^[{}]/.test(brut(nodes[i])) || /[{}]$
  * HTML (<strong>, <i>, même rendu) pour ne jamais produire {{{ ou }}}.
  *
  * @param {object[]} nodes
- * @param {{ lineStart?: boolean, html?: boolean }} options
+ * @param {{ lineStart?: boolean, html?: boolean, cellule?: boolean }} options  cellule : texte d'une cellule de tableau
  */
-export function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
+export function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false } = {}) {
 	nodes = marksAtomiques(nodes);
 	let out = '';
 	const stack = [];
@@ -310,8 +320,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
 			// texte d'un glossaire ou d'une abréviation : validé par marksAtomiques, écrit tel quel
 			// un [ final devant une note ou un fragment brut s'écrit en entité (\[[[n]] serait une note)
-			const avantCrochets = ['spipNote', 'spipRawInline'].includes(nodes[i + 1]?.type);
-			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
+			const avantCrochets = ecritAvecCrochet(nodes[i + 1], n);
+			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
 			out += chevron && !code ? texte.replace(/>/g, '&gt;') : texte;
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
@@ -416,7 +426,7 @@ function serializeCode(code) {
  * Dans le texte d'un lien, le collecteur de liens passe avant les échappements : [ ] | et ->
  * s'écrivent en entités.
  */
-export function escapeText(value, atLineStart, { link = false, avantCrochets = false } = {}) {
+export function escapeText(value, atLineStart, { link = false, avantCrochets = false, cellule = false } = {}) {
 	let s = value
 		.replace(/\\/g, '\\\\')
 		.replace(/[{}`~]/g, (c) => `\\${c}`)
@@ -432,8 +442,10 @@ export function escapeText(value, atLineStart, { link = false, avantCrochets = f
 		// \[ protège un lien ou une abréviation, comme dans SPIP ; pas une ancre (pre_liens) : entité
 		s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, '&#91;')
 			.replace(/\[$/, avantCrochets ? '&#91;' : '\\[')
-			// [ sans ] dans ce texte : le ], le -> ou le | peuvent venir dans un nœud suivant
-			.replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\]|(?![^\]]*\])[\s\S])/g, '\\[');
+			// [ sans ] dans ce texte : le ], le ->, le | ou le <- peuvent venir dans un nœud suivant ; l'entité
+			// protège de tous les raccourcis (\[ ne protège pas une ancre)
+			.replace(/\[(?![^\]]*\])(?=[\s\S])/g, '&#91;')
+			.replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, '\\[');
 	} else {
 		s = s.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/\|/g, '&#124;').replace(/->/g, '-&gt;');
 	}
@@ -441,5 +453,7 @@ export function escapeText(value, atLineStart, { link = false, avantCrochets = f
 	// (le core cherche le premier ]] avant de traiter les échappements) : entité
 	if (contexte.note && !link) s = s.replace(/\](?=\]|$)/g, '&#93;');
 	if (atLineStart) s = s.replace(/^([-|]|_(?= |_))/, '\\$1');
+	// texte d'une cellule : un | la couperait (un lien l'écrit déjà en entité)
+	if (cellule && !link) s = s.replace(/\|/g, '\\|');
 	return s;
 }

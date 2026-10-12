@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Propriétés sur la source (spec 04 §5, spec 08 §2) : textes tirés au hasard parmi des fragments de
-// syntaxe SPIP. TTS_FC_RUNS augmente le nombre de tirages (passe longue) ; un échec affiche la graine
-// et le contre-exemple réduit, à reprendre dans un test unitaire.
+// syntaxe SPIP. npm test : graine fixe, résultat reproductible. TTS_FC_RUNS : passe longue, graine
+// aléatoire ; un échec affiche la graine (TTS_FC_SEED la rejoue) et le contre-exemple réduit, à
+// reprendre dans un test unitaire.
 import { getSchema } from '@tiptap/core';
 import fc from 'fast-check';
 import { describe, it } from 'vitest';
@@ -9,6 +10,7 @@ import { coreExtensions } from '../../src/editor/extensions.js';
 import { canon, parse, serialize } from '../../src/spip/index.js';
 
 const runs = Number(process.env.TTS_FC_RUNS) || 300;
+const seed = process.env.TTS_FC_SEED ? Number(process.env.TTS_FC_SEED) : process.env.TTS_FC_RUNS ? undefined : 20261012;
 const schema = getSchema(coreExtensions());
 
 /** Fragments : délimiteurs des raccourcis, balises, débuts de ligne, blancs et texte. */
@@ -36,7 +38,7 @@ const FRAGMENTS = [
 
 const source = fc.array(fc.constantFrom(...FRAGMENTS), { maxLength: 40 }).map((f) => f.join(''));
 
-const verifier = (propriete) => fc.assert(fc.property(source, propriete), { numRuns: runs });
+const verifier = (propriete) => fc.assert(fc.property(source, propriete), { numRuns: runs, seed });
 
 describe('propriétés sur la source', () => {
 	it('totalité et identité : serialize(parse(s)) === s', () => {

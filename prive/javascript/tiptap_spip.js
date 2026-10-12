@@ -18225,7 +18225,7 @@ function serializeTable(table) {
   for (const row of occ) {
     const cells = row.map((x) => {
       if (typeof x === "string") return x;
-      const inline = serializeInline(x.content?.[0]?.content);
+      const inline = serializeInline(x.content?.[0]?.content, { cellule: true });
       return x.type === "tableHeader" && inline !== "" ? `{{${inline}}}` : inline;
     });
     lines.push(`|${cells.join("|")}|`);
@@ -18286,9 +18286,11 @@ function marksAtomiques(nodes) {
   return out;
 }
 var HTML = { bold: ["<strong>", "</strong>"], italic: ["<i>", "</i>"] };
+var MARKS_CROCHET = ["spipLink", "spipGlossary", "spipAbbr"];
+var ecritAvecCrochet = (suivant, n) => ["spipNote", "spipRawInline", "spipLinkAuto", "spipAnchor"].includes(suivant?.type) || (suivant?.marks ?? []).some((m) => MARKS_CROCHET.includes(m.type) && !(n.marks ?? []).some((x) => sameMark(x, m)));
 var brut = (n) => n?.type === "spipRawInline" ? n.attrs.source : "";
 var accoladeContre = (nodes, i2, run2) => /^[{}]/.test(brut(nodes[i2])) || /[{}]$/.test(brut(nodes[i2 + run2 - 1]));
-function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
+function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false } = {}) {
   nodes = marksAtomiques(nodes);
   let out = "";
   const stack = [];
@@ -18324,8 +18326,8 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
     } else if (n.type === "text") {
       const code2 = n.marks?.find((m) => m.type === "code");
       const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
-      const avantCrochets = ["spipNote", "spipRawInline"].includes(nodes[i2 + 1]?.type);
-      const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
+      const avantCrochets = ecritAvecCrochet(nodes[i2 + 1], n);
+      const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
       out += chevron && !code2 ? texte2.replace(/>/g, "&gt;") : texte2;
       atLineStart = false;
     } else if (n.type === "hardBreak") {
@@ -18401,16 +18403,17 @@ function serializeCode(code2) {
   if (!backtick) return `<code>${encodeCode(code2)}</code>`;
   return code2.includes("`") ? `\`\`${code2}\`\`` : `\`${code2}\``;
 }
-function escapeText(value, atLineStart, { link = false, avantCrochets = false } = {}) {
+function escapeText(value, atLineStart, { link = false, avantCrochets = false, cellule = false } = {}) {
   let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:])/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
   if (contexte.multi) s = s.replace(RE_AVANT_LANGUE, "&#91;");
   if (!link) {
-    s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\]|(?![^\]]*\])[\s\S])/g, "\\[");
+    s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?![^\]]*\])(?=[\s\S])/g, "&#91;").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
   } else {
     s = s.replace(/\[/g, "&#91;").replace(/\]/g, "&#93;").replace(/\|/g, "&#124;").replace(/->/g, "-&gt;");
   }
   if (contexte.note && !link) s = s.replace(/\](?=\]|$)/g, "&#93;");
   if (atLineStart) s = s.replace(/^([-|]|_(?= |_))/, "\\$1");
+  if (cellule && !link) s = s.replace(/\|/g, "\\|");
   return s;
 }
 
@@ -18771,7 +18774,7 @@ function blocksOf(src, msk, regions) {
   try {
     const verbatim = verbatimBlock(src, regions);
     if (verbatim) return verbatim;
-    if (/\r(?!\n)/.test(msk)) throw new Fallback();
+    if (/\r(?!\n|$)/.test(msk)) throw new Fallback();
     return containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
   } catch {
     return [node("spipRaw", { source: src })];
@@ -18852,6 +18855,7 @@ function linesOf(msk) {
   return lines;
 }
 function inlineOf(src, msk, regions, s, e, options) {
+  if (msk[e - 1] === "\r") e--;
   if (regions.some((r) => r.start < e && r.end > s && (r.start < s || r.end > e))) throw new Fallback();
   return parseInline(src.slice(s, e), msk.slice(s, e), regionsIn(regions, s, e), options);
 }

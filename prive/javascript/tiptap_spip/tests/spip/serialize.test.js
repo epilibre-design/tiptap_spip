@@ -144,10 +144,15 @@ describe('escapeText', () => {
 		expect(escapeText(input, false)).toBe(expected);
 	});
 
-	it('[ sans ] dans le même texte : \\[ (le ] et le -> ou | peuvent suivre dans d\'autres nœuds)', () => {
+	it('[ sans ] dans le même texte : entité (le ], le ->, le | ou le <- peuvent suivre dans d\'autres nœuds)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication', lang: 'fr' } };
 		const cas = [
-			[p(text('[ABBR|explication'), text('fr', [I]), text(']')), '\\[ABBR|explication{fr}]'],
-			[p(text('[?'), raw('{'), text('->]')), '\\[&#63;{->]'],
+			[p(text('[ABBR|explication'), text('fr', [I]), text(']')), '&#91;ABBR|explication{fr}]'],
+			[p(text('[?'), raw('{'), text('->]')), '&#91;&#63;{->]'],
+			// ancre : \[ ne la protège pas (pre_liens)
+			[p(text('[0'), raw('{'), text('<-]')), '&#91;0{<-]'],
+			// [ final devant un raccourci écrit avec [ : \[[ serait une note
+			[p(text('['), text('ABBR', [abbr])), '&#91;[ABBR|explication{fr}]'],
 		];
 		for (const [para, attendu] of cas) {
 			const doc = node('doc', null, [para]);
@@ -196,6 +201,12 @@ describe('serializeBlock', () => {
 			node('tableRow', null, []),
 		]);
 		expect(serializeBlock(table)).toBe('||L||\n|{{A}}|{{B}}|\n|1|<|\n|^|^|');
+	});
+
+	it('| dans le texte d\'une cellule : \\| (il couperait la cellule)', () => {
+		const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text('<|a|'))])])])]);
+		expect(serialize(doc)).toBe('|<\\|a\\||');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
 	it('conteneurs', () => {
