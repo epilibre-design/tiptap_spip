@@ -87,6 +87,11 @@
 	content: "[" attr(data-tts-label) "]";
 }
 
+/* note d'une partie de multi non affichée : pas numérotée par SPIP dans cette langue */
+.tts-note:not([data-tts-label])::before {
+	content: "[–]";
+}
+
 .tts-note[data-tts-note-name=""]::before {
 	content: "•";
 }

@@ -113,7 +113,7 @@ export const linkAutoView = (ui) => ({ node }) => {
 };
 
 /**
- * Contenu inline affiché en texte, ses notes en appels numérotés (libellés de SpipNoteNumbers ;
+ * Contenu inline affiché en texte (sans limite de longueur), ses notes en appels numérotés (libellés de SpipNoteNumbers ;
  * numéro absent : appel vide).
  */
 function texteEtAppels(content, labels = []) {
@@ -121,7 +121,8 @@ function texteEtAppels(content, labels = []) {
 	let morceau = [];
 	// apercu coupe les blancs de bord : ceux qui séparent un appel du texte sont gardés
 	const ecrire = (avantAppel) => {
-		const t = apercu(morceau);
+		// texte entier : la limite d'apercu vaut pour les infobulles
+		const t = apercu(morceau, Infinity);
 		if (t) {
 			const debut = noeuds.length && /^\s/.test(morceau[0].text ?? '') ? ' ' : '';
 			const fin = avantAppel && /\s$/.test(morceau.at(-1).text ?? '') ? ' ' : '';

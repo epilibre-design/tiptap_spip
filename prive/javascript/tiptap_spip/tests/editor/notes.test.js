@@ -57,6 +57,14 @@ describe('appels de note', () => {
 		}
 	});
 
+	it('multi en ligne : partie affichée en entier, au-delà de la limite des infobulles', () => {
+		const long = 'mot '.repeat(30).trim();
+		monter(`x <multi>[fr]${long}[[n]] fin[en]b</multi>`);
+		const multi = document.querySelector('.tts-multi');
+		expect(multi.textContent).toBe(`${long} fin`);
+		expect(multi.title.length).toBeLessThan(long.length);
+	});
+
 	it('infobulle : texte de la note, sans raccourcis, coupé à 80 caractères', () => {
 		monter(`x[[Voir [la doc->art1] et {{ceci}}.\n\nSuite.]] y[[${'long '.repeat(30)}]]`);
 		expect(appels()[0].title).toBe('Voir la doc et ceci. Suite.');

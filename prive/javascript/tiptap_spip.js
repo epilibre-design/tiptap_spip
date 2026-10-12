@@ -24597,7 +24597,7 @@ function texteEtAppels(content, labels = []) {
   const noeuds = [];
   let morceau = [];
   const ecrire2 = (avantAppel) => {
-    const t = apercu(morceau);
+    const t = apercu(morceau, Infinity);
     if (t) {
       const debut = noeuds.length && /^\s/.test(morceau[0].text ?? "") ? " " : "";
       const fin = avantAppel && /\s$/.test(morceau.at(-1).text ?? "") ? " " : "";
