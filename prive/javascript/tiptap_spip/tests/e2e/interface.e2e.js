@@ -4,6 +4,7 @@
 // Usage et serveur : cf. article.e2e.js.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { DEFAUTS } from '../../src/ui/labels.js';
 import { activer, configure, creerDocument, crlf, ecrireTexte, editer, enregistrer, module, selectionStable, texte } from './site.js';
 
 configure(test);
@@ -59,6 +60,8 @@ test('bouton Modèle : raccourci inséré en bloc, prévisualisé, enregistré',
 	await selectionStable(page);
 	await page.keyboard.press('Enter');
 	await page.locator('.tts-toolbar .tts-outil--modele').click();
+	// avec le plugin Insérer modèles, le bouton ouvre un menu : saisie brute (catalogue.e2e.js pour l'autre)
+	if (await page.locator('.tts-menu--modele').count()) await page.getByRole('menuitem', { name: DEFAUTS.modele_saisir }).click();
 	await page.locator('.tts-popover input[name=raccourci]').fill(`<doc${doc}|center>`);
 	await page.keyboard.press('Enter');
 	await expect(page.locator('.tts-model-block img')).toBeVisible();
@@ -260,6 +263,8 @@ test('plein écran : F11, popover au-dessus, Échap ferme le popover puis le ple
 	await expect(editeur).toHaveClass(/tts-editor--plein-ecran/);
 	const taille = page.viewportSize();
 	expect(await editeur.boundingBox()).toEqual({ x: 0, y: 0, width: taille.width, height: taille.height });
+	// rien ne recouvre la barre (bandeau de l'espace privé, ancêtre à z-index propre)
+	await page.locator('.tts-toolbar .tts-outil--gras').click({ trial: true, timeout: 2000 });
 	await page.keyboard.press('ControlOrMeta+k');
 	await expect(page.locator('.tts-popover input[name=cible]')).toBeVisible();
 	await page.keyboard.press('Escape');
