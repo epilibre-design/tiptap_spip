@@ -269,7 +269,7 @@ test('anomalie : signalée dans la barre d\'état, source corrigée dans son pop
 	expect(texte(id)).toBe(crlf('Un {deux}\n\nFin'));
 });
 
-test('audit axe (critère 7) : éditeur, menu ouvert, popover ouvert, sans violation critique', async ({ page }) => {
+test('audit axe (critère 7) : éditeur, menu ouvert, popover ouvert, sans aucune violation', async ({ page }) => {
 	let doc;
 	await editer(page, '', {
 		avant: (idArticle) => {
@@ -281,8 +281,8 @@ test('audit axe (critère 7) : éditeur, menu ouvert, popover ouvert, sans viola
 	const audit = async (etape) => {
 		const { violations } = await new AxeBuilder({ page }).include('.tts-editor').analyze();
 		for (const v of violations) console.log(`[${etape}] ${v.impact} ${v.id} : ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
-		// critère 7 : aucune violation critique ; les sérieuses sont exclues aussi (aucune aujourd'hui)
-		expect(violations.filter((v) => ['critical', 'serious'].includes(v.impact)).map((v) => v.id), etape).toEqual([]);
+		// critère 7 : aucune violation critique ; aucune autre non plus depuis le lot L5.3
+		expect(violations.map((v) => v.id), etape).toEqual([]);
 	};
 	await audit('éditeur');
 	await page.locator('.tts-outil--titre').click();
@@ -292,4 +292,8 @@ test('audit axe (critère 7) : éditeur, menu ouvert, popover ouvert, sans viola
 	await page.keyboard.press('ControlOrMeta+k');
 	await expect(page.locator('.tts-popover input[name=cible]')).toBeVisible();
 	await audit('popover de lien');
+	await page.keyboard.press('Escape');
+	await page.locator('.tts-etat__anomalies').click();
+	await expect(page.locator('.tts-popover--brut textarea')).toBeVisible();
+	await audit('popover du nœud brut');
 });

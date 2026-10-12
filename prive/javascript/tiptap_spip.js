@@ -25905,10 +25905,13 @@ var Popover = class _Popover {
     this.enfant = null;
     this.onClose = onClose;
     this.ouvert = false;
+    this.element = document.createElement("div");
+    this.element.className = "tts-popover-dialogue";
+    this.element.setAttribute("role", "dialog");
+    this.element.setAttribute("aria-label", titre);
     this.form = document.createElement("form");
     this.form.className = `tts-popover ${className ?? ""}`.trim();
-    this.form.setAttribute("role", "dialog");
-    this.form.setAttribute("aria-label", titre);
+    this.element.append(this.form);
     this.erreur = document.createElement("p");
     this.erreur.className = "tts-popover__erreur";
     this.erreur.setAttribute("role", "alert");
@@ -25988,7 +25991,7 @@ var Popover = class _Popover {
     if (this.parent) this.parent.enfant = this;
     _Popover.current = this;
     this.ouvert = true;
-    this.wrapper.append(this.form);
+    this.wrapper.append(this.element);
     this.place();
     (focus2 ?? this.form.querySelector("input, button"))?.focus();
   }
@@ -26009,7 +26012,7 @@ var Popover = class _Popover {
     this.enfant?.close({ refocus: false });
     if (_Popover.current === this) _Popover.current = this.parent;
     if (this.parent?.enfant === this) this.parent.enfant = null;
-    this.form.remove();
+    this.element.remove();
     if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
     this.onClose?.();
   }
@@ -26491,7 +26494,7 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
     texte2.id = idUnique("tts-explication");
     texte2.textContent = explication(cle);
     popover2.form.prepend(texte2);
-    popover2.form.setAttribute("aria-describedby", texte2.id);
+    popover2.element.setAttribute("aria-describedby", texte2.id);
   }
   const zone = document.createElement("textarea");
   zone.name = "source";

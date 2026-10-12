@@ -388,7 +388,7 @@ html.tts-plein-ecran {
 }
 
 /* Popover ouvert depuis un autre (lien du sous-éditeur d'une note) : au-dessus de son parent. */
-.tts-popover + .tts-popover {
+.tts-popover-dialogue + .tts-popover-dialogue > .tts-popover {
 	z-index: 11;
 }
 

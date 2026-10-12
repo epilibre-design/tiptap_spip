@@ -42,6 +42,18 @@ describe('popover du nœud brut', () => {
 		expect(wrapper.querySelector('.tts-anomalie')).toBeNull();
 	});
 
+	it('dialogue : élément role="dialog" nommé et décrit, qui contient le formulaire (sans rôle)', () => {
+		const { ui } = monter('a {b');
+		ui.editRaw(brutPos('{'));
+		const dialogue = wrapper.querySelector('[role=dialog]');
+		expect(dialogue.tagName).toBe('DIV');
+		expect(dialogue.getAttribute('aria-label')).toBe('Source SPIP');
+		expect(document.getElementById(dialogue.getAttribute('aria-describedby')).textContent).toMatch(/fin du paragraphe/);
+		expect(dialogue.querySelector('form.tts-popover').hasAttribute('role')).toBe(false);
+		Popover.current.close();
+		expect(wrapper.querySelector('[role=dialog]')).toBeNull();
+	});
+
 	it('source inchangée : document intact ; Mod-Entrée applique', () => {
 		const { ui } = monter('a <span>b</span>');
 		ui.editRaw(brutPos('<span>'));

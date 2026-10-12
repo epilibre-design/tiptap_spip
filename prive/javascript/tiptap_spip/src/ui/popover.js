@@ -19,10 +19,14 @@ export class Popover {
 		this.enfant = null;
 		this.onClose = onClose;
 		this.ouvert = false;
+		// dialogue : un div, un <form> ne pouvant pas porter role="dialog" (ARIA in HTML)
+		this.element = document.createElement('div');
+		this.element.className = 'tts-popover-dialogue';
+		this.element.setAttribute('role', 'dialog');
+		this.element.setAttribute('aria-label', titre);
 		this.form = document.createElement('form');
 		this.form.className = `tts-popover ${className ?? ''}`.trim();
-		this.form.setAttribute('role', 'dialog');
-		this.form.setAttribute('aria-label', titre);
+		this.element.append(this.form);
 		this.erreur = document.createElement('p');
 		this.erreur.className = 'tts-popover__erreur';
 		this.erreur.setAttribute('role', 'alert');
@@ -113,7 +117,7 @@ export class Popover {
 		if (this.parent) this.parent.enfant = this;
 		Popover.current = this;
 		this.ouvert = true;
-		this.wrapper.append(this.form);
+		this.wrapper.append(this.element);
 		this.place();
 		(focus ?? this.form.querySelector('input, button'))?.focus();
 	}
@@ -137,7 +141,7 @@ export class Popover {
 		this.enfant?.close({ refocus: false });
 		if (Popover.current === this) Popover.current = this.parent;
 		if (this.parent?.enfant === this) this.parent.enfant = null;
-		this.form.remove();
+		this.element.remove();
 		// focus rendu tout de suite (la commande focus de Tiptap attend l'image suivante) : une touche
 		// pressée juste après agit dans l'éditeur, sur la sélection gardée
 		if (refocus && !this.editor.isDestroyed) this.editor.view.focus();

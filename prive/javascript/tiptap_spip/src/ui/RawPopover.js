@@ -57,7 +57,7 @@ export function openRawPopover({ editor, wrapper, parent }, pos) {
 		texte.id = idUnique('tts-explication');
 		texte.textContent = explication(cle);
 		popover.form.prepend(texte);
-		popover.form.setAttribute('aria-describedby', texte.id);
+		popover.element.setAttribute('aria-describedby', texte.id);
 	}
 	const zone = document.createElement('textarea');
 	zone.name = 'source';
