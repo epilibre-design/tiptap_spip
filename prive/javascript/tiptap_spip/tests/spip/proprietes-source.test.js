@@ -10,6 +10,8 @@ import { coreExtensions } from '../../src/editor/extensions.js';
 import { canon, parse, serialize } from '../../src/spip/index.js';
 
 const runs = Number(process.env.TTS_FC_RUNS) || 300;
+// passe longue : au-delà des 5 s par défaut de Vitest
+const delai = Math.max(5000, runs);
 const seed = process.env.TTS_FC_SEED ? Number(process.env.TTS_FC_SEED) : process.env.TTS_FC_RUNS ? undefined : 20261012;
 const schema = getSchema(coreExtensions());
 
@@ -46,7 +48,7 @@ const sansRetourChariotSeul = (s) => fc.pre(!/\r(?!\n)/.test(s));
 describe('propriétés sur la source', () => {
 	it('totalité et identité : serialize(parse(s)) === s', () => {
 		verifier((s) => serialize(parse(s)) === s);
-	});
+	}, delai);
 
 	it('idempotence de la forme canonique', () => {
 		verifier((s) => {
@@ -54,7 +56,7 @@ describe('propriétés sur la source', () => {
 			const once = serialize(parse(s), { conservative: false });
 			return serialize(parse(once), { conservative: false }) === once;
 		});
-	});
+	}, delai);
 
 	it('stabilité du JSON : la forme canonique re-parsée redonne le même JSON', () => {
 		verifier((s) => {
@@ -62,12 +64,12 @@ describe('propriétés sur la source', () => {
 			const doc = parse(s);
 			return canon(parse(serialize(doc, { conservative: false })).content) === canon(doc.content);
 		});
-	});
+	}, delai);
 
 	it('le JSON du parseur est valide pour le schéma de l\'éditeur (node.check)', () => {
 		verifier((s) => {
 			schema.nodeFromJSON(parse(s)).check();
 			return true;
 		});
-	});
+	}, delai);
 });

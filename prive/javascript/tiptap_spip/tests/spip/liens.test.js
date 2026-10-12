@@ -95,6 +95,15 @@ describe('liens', () => {
 		}
 	});
 
+	it('italique plus étendu que le lien : {…} autour du lien, pas de HTML (revue : note qui perdait son italique)', () => {
+		const L = { type: 'spipLink', attrs: { href: 'art1', newWindow: false } };
+		const I = { type: 'italic' };
+		const contenu = [text('a', [L, I]), text('b', [I]), text(' c '), text('d', [L, I]), text('e', [I])];
+		const doc = node('doc', null, [node('paragraph', null, [text('x'), node('spipNote', { content: [node('paragraph', null, contenu)] })])]);
+		expect(serialize(doc)).toBe('x[[{[a->art1]b} c {[d->art1]e}]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('deux liens voisins restent deux liens', () => {
 		expect(serializeInline([text('a', [link('art1')]), text('b', [link('art2')])])).toBe('[a->art1][b->art2]');
 	});

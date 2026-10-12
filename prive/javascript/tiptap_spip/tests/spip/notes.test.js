@@ -137,6 +137,8 @@ describe('sérialisation des notes', () => {
 			[note([p(text('a -> b'))], 'n'), 'x[[<n>a -&gt; b]]'],
 			[note([p(text('<-> z'))]), 'x[[<-&gt; z]]'],
 			[note([p(text('a -> b -> c'))]), 'x[[a -&gt; b -&gt; c]]'],
+			// <-] : le [ du [[ ferait une ancre [<-] (ancres avant notes)
+			[note([p(text('a<-] b'))], 'n'), 'x[[<n>a&lt;-] b]]'],
 			// ? en tête : [[? serait un glossaire [?…] (glossaire avant notes)
 			[note([p(text('?[[note'))]), 'x[[&#63;&#91;&#91;note]]'],
 			// lien de la note : pas touché
@@ -160,6 +162,13 @@ describe('sérialisation des notes', () => {
 		const abbr = { type: 'spipAbbr', attrs: { title: 'explication' } };
 		const doc = node('doc', null, [p(note([p(text('a', [abbr]), text(']aa'))]))]);
 		expect(serialize(doc)).toBe('[[[a|explication]&#93;aa]]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('-> dans du code d\'une note : intact (le code est protégé avant les liens)', () => {
+		const abbr = { type: 'spipAbbr', attrs: { title: 'explication' } };
+		const doc = node('doc', null, [p(note([p(text('->', [{ type: 'code' }]), text('a', [abbr]))]))]);
+		expect(serialize(doc)).toBe('[[`->`[a|explication]\n]]');
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 

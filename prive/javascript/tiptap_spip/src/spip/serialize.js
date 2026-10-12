@@ -350,11 +350,12 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 	};
 	const marksOf = (n) => (n.marks ?? []).filter((m) => m.type !== 'code');
 	// italique qui finit le texte d'un lien : son } ferait un {…} final, lu comme une langue ({} : celle
-	// de l'objet)
+	// de l'objet). Seulement à étendue égale (le lien est alors extérieur) : plus étendu, l'italique
+	// s'ouvre avant le lien et se ferme après son ].
 	const finitLeLien = (m, i) => {
 		if (m.type !== 'italic') return false;
 		const lien = marksOf(nodes[i]).find((x) => x.type === 'spipLink');
-		return lien !== undefined && runLength(i, m) >= runLength(i, lien);
+		return lien !== undefined && runLength(i, m) === runLength(i, lien);
 	};
 	// longueur de la suite de nœuds portant la mark à partir du nœud i
 	const runLength = (i, mark) => {
@@ -468,7 +469,10 @@ function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) 
 		let fleche;
 		while (!noteDe(`[[${nom}${texte}]]`)) {
 			if (!nom && texte.startsWith('?')) texte = `&#63;${texte.slice(1)}`;
-			else if ((fleche = texte.match(/^[^[\]]*?->/))) texte = `${fleche[0].slice(0, -2)}-&gt;${texte.slice(fleche[0].length)}`;
+			// cherché dans le texte masqué : un -> du code n'est pas un lien (code protégé avant les liens)
+			else if ((fleche = protect(texte).masked.match(/^[^[\]]*?->/))) texte = `${texte.slice(0, fleche[0].length - 2)}-&gt;${texte.slice(fleche[0].length)}`;
+			// <- avant tout crochet : [[a<-]] ferait une ancre [a<-] (ancres avant notes)
+			else if ((fleche = protect(texte).masked.match(/^[^[\]]*?<-/))) texte = `${texte.slice(0, fleche[0].length - 2)}&lt;-${texte.slice(fleche[0].length)}`;
 			// contenu qui finit par ] d'un raccourci traité après les notes (abréviation) : ]]] fermerait
 			// la note un crochet trop tôt ; SPIP retire les blancs de fin du texte d'une note, le parseur
 			// range un saut de ligne final hors du contenu

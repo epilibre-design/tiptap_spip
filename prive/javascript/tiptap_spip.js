@@ -18347,7 +18347,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
   const finitLeLien = (m, i2) => {
     if (m.type !== "italic") return false;
     const lien = marksOf(nodes[i2]).find((x) => x.type === "spipLink");
-    return lien !== void 0 && runLength(i2, m) >= runLength(i2, lien);
+    return lien !== void 0 && runLength(i2, m) === runLength(i2, lien);
   };
   const runLength = (i2, mark2) => {
     let j = i2;
@@ -18431,7 +18431,8 @@ function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) 
     let fleche;
     while (!noteDe(`[[${nom}${texte2}]]`)) {
       if (!nom && texte2.startsWith("?")) texte2 = `&#63;${texte2.slice(1)}`;
-      else if (fleche = texte2.match(/^[^[\]]*?->/)) texte2 = `${fleche[0].slice(0, -2)}-&gt;${texte2.slice(fleche[0].length)}`;
+      else if (fleche = protect(texte2).masked.match(/^[^[\]]*?->/)) texte2 = `${texte2.slice(0, fleche[0].length - 2)}-&gt;${texte2.slice(fleche[0].length)}`;
+      else if (fleche = protect(texte2).masked.match(/^[^[\]]*?<-/)) texte2 = `${texte2.slice(0, fleche[0].length - 2)}&lt;-${texte2.slice(fleche[0].length)}`;
       else if (texte2.endsWith("]")) texte2 += "\n";
       else break;
     }

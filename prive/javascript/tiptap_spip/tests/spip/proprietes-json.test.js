@@ -130,8 +130,10 @@ const EN_HTML = ['strike', 'superscript', 'subscript'];
 
 /**
  * Note. Limite (spec 04 §5) : une note automatique qui commence par un idiome (<:cle:>, traité après
- * les notes) ou par une mark écrite en HTML (<sup>…, si la balise revient plus loin sur la ligne) se
- * lit nommée (règle du core) ; exclue.
+ * les notes) ou par une mark écrite en balise HTML (<sup>…, si la balise revient plus loin sur la ligne)
+ * se lit nommée (règle du core) ; exclue. Barré, exposant et indice s'écrivent toujours en balise ; gras
+ * et italique seulement contre un fragment brut à accolade, que ce générateur ne produit pas (un
+ * italique en tête de note autour d'un lien s'écrit {…}).
  */
 const note = fc.record({
 	name: fc.constantFrom(null, 'n', ''),
@@ -231,5 +233,5 @@ describe('sûreté du schéma (invariant 5)', () => {
 			const source = serialize(doc, { conservative: false });
 			return canon(parse(source).content) === canon(doc.content);
 		}), { numRuns: runs, seed });
-	});
+	}, Math.max(5000, runs * 20));
 });

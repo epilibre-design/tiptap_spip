@@ -35,8 +35,8 @@ Le parseur suit l'ordre de TextWheel. Chaque étape est une **règle enregistré
 (`src/spip/registry.js`) avec une priorité, ce qui permet aux extensions tierces d'en insérer
 ([07](07-extensibilite.md)).
 
-1. **Normalisation** : `\r\n?` → `\n` ; lignes ne contenant que des blancs → vides. Ces normalisations ne
-   servent qu'à l'analyse : la carte de segments (§4) garde la source exacte.
+1. **Normalisation** : `\r\n` → `\n` (un `\r` seul n'est pas une fin de ligne, voir §5) ;
+   lignes ne contenant que des blancs → vides. Ces normalisations ne servent qu'à l'analyse : la carte de segments (§4) garde la source exacte.
 2. **Protection** (priorité la plus basse) — remplacer par des jetons opaques `\u0001N\u0001` :
    - wheel backticks, **avant tout** (`pre_echappe_html_propre`), sur tout le texte, y compris dans `<code>`
      ou `<html>` : d'abord les échappements `\\` et `` \` ``, puis ```` ``` ```` (bloc, 1re ligne = langage
@@ -256,15 +256,18 @@ même la sérialisation), y compris sources vides, blancs seuls, lignes vides in
 4. **Totalité** : `parse` ne lève jamais d'exception ; au pire il produit des nœuds bruts.
 5. **Sûreté du schéma** : tout JSON valide pour le schéma est sérialisable, et son re-parse redonne le même JSON.
 
-**Limite assumée (décision utilisateur, 2026-10-12)** : les fins de ligne `\r` seules (Mac OS 9) ne sont pas
-gérées. SPIP les traite comme des sauts de ligne ; le parseur ne découpe que sur `\n` (`\r\n` compris). Un
+**Écart toléré avec TextWheel (décision utilisateur, 2026-10-12)** : un `\r` seul n'est pas une fin de
+ligne. Seul Mac OS 9 l'utilisait, et son support est abandonné. TextWheel le convertit en `\n`
+(`traiter_retours_chariots_1`, `\r\n?`) ; le parseur ne découpe que sur `\n` (`\r\n` compris). Un
 segment qui contient un `\r` non suivi de `\n` reste un bloc brut : restitué tel quel, modifiable seulement en
 mode source. À reprendre dans les notes de version.
 
 **Limite (lot corpus et propriétés)** : une note automatique dont le texte commence par un idiome
-(`<:cle:>`, traité après les notes) ou par une mark écrite en balise HTML (`<sup>`, `<sub>`, `<del>`) quand la
-même balise revient plus loin sur la ligne se lit nommée (`[[<sup>1</sup> voir <sup>2</sup>]]` est la note
-`sup` pour `traiter_raccourci_notes()`). Aucune écriture ne garde à la fois la note automatique et ce début :
+(`<:cle:>`, traité après les notes) ou par une mark écrite en balise HTML quand la même balise revient plus
+loin sur la ligne se lit nommée. Barré, exposant et indice s'écrivent toujours en balise (`<del>`, `<sup>`,
+`<sub>`) ; gras et italique seulement contre un fragment brut à accolade (un italique autour d'un lien
+s'écrit `{…}`, en HTML seulement quand il finit le texte du lien). Exemple : `[[<sup>1</sup> voir <sup>2</sup>]]`
+est la note `sup` pour `traiter_raccourci_notes()`. Aucune écriture ne garde à la fois la note automatique et ce début :
 le sérialiseur écrit le premier `<` en `&lt;`, qui s'affiche.
 
 **Limite (lot corpus et propriétés)** : la balise fermante d'un bloc verbatim (`</cadre>` dans un cadre,
