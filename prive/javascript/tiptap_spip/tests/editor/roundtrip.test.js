@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { Editor, getSchema } from '@tiptap/core';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
+import { fichiersCorpus } from '../../scripts/corpus.mjs';
 import { toEditorJSON } from '../../src/editor/content.js';
 import { coreExtensions } from '../../src/editor/extensions.js';
 import { canon, parse, serialize } from '../../src/spip/index.js';
@@ -11,7 +12,7 @@ import { canon, parse, serialize } from '../../src/spip/index.js';
 // jsdom remplace URL : on part de la chaîne import.meta.url
 const corpus = join(dirname(fileURLToPath(import.meta.url)), '../../../../../tests/corpus');
 const dirs = [corpus, ...(process.env.TTS_CORPUS ? [process.env.TTS_CORPUS] : [])];
-const files = dirs.flatMap((dir) => readdirSync(dir).filter((f) => f.endsWith('.spip')).sort().map((f) => join(dir, f)));
+const files = dirs.flatMap((dir) => fichiersCorpus(dir).map((f) => join(dir, f)));
 
 const schema = getSchema(coreExtensions());
 let editor;
