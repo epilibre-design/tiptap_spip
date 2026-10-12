@@ -217,7 +217,9 @@ function tableBlock(src, msk, regions) {
 
 	const attrs = {};
 	let rowLines = lines.map((_, k) => k);
-	const cm = L(0).match(/^\|\|([^|]*)(?:\|([^|]*))?\|\|$/);
+	// légende : cherchée comme textwheel (traiter_tableau()) sur la ligne privée de son | final puis de
+	// tous les | de fin : ||x| en est une, |||| non (ligne d'en-têtes vides)
+	const cm = L(0).slice(0, -1).replace(/\|+$/, '').match(/^\|\|([^|]*)(?:\|([\s\S]*))?$/);
 	if (cm) {
 		if (cm[0].includes(FILL)) throw new Fallback();
 		attrs.caption = cm[1];

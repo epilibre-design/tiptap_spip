@@ -100,6 +100,14 @@ describe('tableaux', () => {
 		]);
 	});
 
+	it('légende comme textwheel (ligne sans ses | finaux) : ||x|, résumé avec |, |||| n\'en est pas une', () => {
+		const legende = (src) => { const [t] = parseContent(src); return t.type === 'table' ? t.attrs ?? {} : t.type; };
+		expect(legende('||x|\n|a|b|')).toEqual({ caption: 'x' });
+		expect(legende('|||x||\n|a|b|')).toEqual({ caption: '', summary: 'x' });
+		expect(legende('||cap|sum|more||\n|a|b|')).toEqual({ caption: 'cap', summary: 'sum|more' });
+		expect(parseContent('||||\n|a|b|c|')[0].content).toHaveLength(2);
+	});
+
 	it('lignes de longueurs différentes ou fusion incohérente : bloc brut', () => {
 		expect(parseContent('|a|b|\n|c|')[0].type).toBe('spipRaw');
 		expect(parseContent('|a|b|\n|3|<|\n|^|4|')[0].type).toBe('spipRaw');
