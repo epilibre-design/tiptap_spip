@@ -99,6 +99,31 @@ describe('règles tierces : en ligne', () => {
 	});
 });
 
+describe('règle tierce portant le nom d\'une extension du cœur : prioritaire à l\'écriture', () => {
+	const gras = creerRegle({
+		name: 'bold',
+		type: 'mark',
+		tokenizer: { level: 'inline', start: '<x>', match: /<x>(.*?)<\/x>/ },
+		parseSpip: (m, h) => ({ content: h.parseInline(m[1]) }),
+		renderSpip: { open: '<x>', close: '</x>' },
+	});
+	const filet = creerRegle({ name: 'horizontalRule', type: 'block', renderSpip: () => '<hr-x>' });
+	const ancre = creerRegle({ name: 'spipAnchor', type: 'inline', renderSpip: (n) => `[ancre ${n.attrs.name}]` });
+
+	it('mark : lue et écrite par la règle ; le raccourci du cœur se lit encore, s\'écrit par la règle', () => {
+		expect(lire('a <x>b</x>', [gras])).toEqual([p(text('a '), text('b', [{ type: 'bold' }]))]);
+		expect(canonique('a <x>b</x>', [gras])).toBe('a <x>b</x>');
+		expect(canonique('a {{b}}', [gras])).toBe('a <x>b</x>');
+		// italique dans le gras : plus d'écriture HTML de secours, propre aux accolades du cœur
+		expect(canonique('<x>{b}</x>', [gras])).toBe('<x>{b}</x>');
+	});
+
+	it('bloc et nœud en ligne du cœur écrits par la règle', () => {
+		expect(canonique('a\n\n----', [filet])).toBe('a\n\n<hr-x>');
+		expect(canonique('a [#n<-] b', [ancre])).toBe('a [ancre n] b');
+	});
+});
+
 describe('creerRegle', () => {
 	it('niveau inconnu ou sans motif : ignorée avec un avertissement', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

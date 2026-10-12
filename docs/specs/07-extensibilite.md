@@ -113,6 +113,12 @@ function faq_tiptap_spip_extensions(array $flux): array {
   - les sous-éditeurs de note et de multi reprennent les extensions tierces ;
   - les validations des popovers relisent avec les règles de l'éditeur.
 - **Marks tierces :** rangées après celles du cœur, comme dans le schéma de l'éditeur.
+- **Surcharge d'une extension du cœur :**
+  - À l'écriture, la règle d'une extension tierce passe avant le cœur pour son type, qu'il s'agisse d'un
+    bloc, d'un nœud en ligne ou d'une mark. Une mark `bold` qui écrit `<x>…</x>` n'est plus écrite en
+    `{{…}}`, ni en `<strong>` de secours.
+  - À la lecture, le raccourci du cœur reste reconnu, en plus de celui de la règle. Son texte est donc
+    réécrit par la règle dès qu'il est modifié.
 - **API :**
   - `window.tiptapSpip` et exports du bundle : `registerExtension(ext, { toolbars })`,
     `registerToolbarComponent(nom, fabrique)`, `core`, `ui` (`boutonOutil`, `menuOutil`, `Popover`),

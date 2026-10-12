@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { Node } from '@tiptap/core';
+import { Mark, Node } from '@tiptap/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { allerRetour, oublierExtensions } from '../../src/api.js';
 import { instances, tiptap_spip_init } from '../../src/main.js';
@@ -91,6 +91,19 @@ describe('allerRetour (harnais des extensions tierces)', () => {
 	it('extension dont l\'écriture ne se relit pas : stable faux', () => {
 		const Perdu = Emoji.extend({ renderSpip: (n) => `[${n.attrs.nom}]` });
 		expect(allerRetour('Un :smile:', [Perdu])).toMatchObject({ identique: true, stable: false });
+	});
+
+	it('extension tierce au nom d\'une extension du cœur (bold) : elle lit et écrit à sa place', () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const Gras = Mark.create({
+			name: 'bold',
+			renderHTML: () => ['b', 0],
+			spipTokenizer: { level: 'inline', start: '<x>', match: /<x>(.*?)<\/x>/ },
+			parseSpip: (m, h) => ({ content: h.parseInline(m[1]) }),
+			renderSpip: { open: '<x>', close: '</x>' },
+		});
+		expect(allerRetour('a <x>b</x>', [Gras])).toMatchObject({ identique: true, stable: true, valide: true, canonique: 'a <x>b</x>' });
+		expect(allerRetour('a {{b}}', [Gras]).canonique).toBe('a <x>b</x>');
 	});
 
 	it('contenu refusé par le schéma : valide faux', () => {

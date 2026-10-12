@@ -18091,6 +18091,10 @@ function regionsIn(regions, start, end) {
 }
 
 // src/spip/serialize.js
+var regleEcrite = (nom, type) => {
+  const regle = regleDe(nom);
+  return regle?.type === type && regle.renderSpip ? regle : null;
+};
 function serialize(doc4, { conservative = true, regles } = {}) {
   const avant = contexte;
   contexte = { ...contexte, conservative };
@@ -18128,6 +18132,8 @@ var blocks = (content = []) => content.map(serializeBlock).join("\n\n");
 var serializeBlocks = blocks;
 function serializeBlock(b) {
   const a = b.attrs ?? {};
+  const regle = regleEcrite(b.type, "block");
+  if (regle) return ecrireRegle(regle, b);
   switch (b.type) {
     case "paragraph":
       return serializeInline(b.content, { lineStart: true });
@@ -18169,11 +18175,8 @@ ${blocks(b.content)}
       }))));
     case "table":
       return serializeTable(b);
-    default: {
-      const regle = regleDe(b.type);
-      if (regle?.type === "block" && regle.renderSpip) return ecrireRegle(regle, b);
+    default:
       throw new Error(`serialize: type de bloc inconnu \xAB ${b.type} \xBB`);
-    }
   }
 }
 function serializeCodeBlock(b) {
@@ -18231,12 +18234,12 @@ function serializeTable(table) {
 }
 var OPEN = { bold: ["{{", "}}"], italic: ["{", "}"], strike: ["<del>", "</del>"], superscript: ["<sup>", "</sup>"], subscript: ["<sub>", "</sub>"] };
 var delimiters = (mark2) => {
+  const regle = regleEcrite(mark2.type, "mark");
+  if (regle) return delimiteursRegle(regle, mark2);
   if (mark2.type === "spipLink") return ["[", linkEnd(mark2.attrs)];
   if (mark2.type === "spipGlossary") return ["[?", serializeGlossary("", mark2.attrs).slice(2)];
   if (mark2.type === "spipAbbr") return ["[", serializeAbbr("", mark2.attrs).slice(1)];
   if (OPEN[mark2.type]) return OPEN[mark2.type];
-  const regle = regleDe(mark2.type);
-  if (regle?.type === "mark" && regle.renderSpip) return delimiteursRegle(regle, mark2);
   throw new Error(`serialize: mark inconnue \xAB ${mark2.type} \xBB`);
 };
 var ATOMIQUES = ["spipGlossary", "spipAbbr"];
@@ -18304,14 +18307,18 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
     closeTo(k);
     const toOpen = marks.filter((m) => !stack.some((s) => sameMark(s.mark, m))).map((m) => ({ m, run: runLength(i2, m) })).sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
     for (const { m } of toOpen) {
-      const useHtml = HTML[m.type] && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")));
+      const useHtml = HTML[m.type] && !regleEcrite(m.type, "mark") && (html || stack.some((s) => delimiters(s.mark)[0].startsWith("{")));
       const [open, close2] = useHtml ? HTML[m.type] : delimiters(m);
       out += open;
       stack.push({ mark: m, close: close2 });
       atLineStart = false;
     }
     const inLink = stack.some((s) => s.mark.type === "spipLink");
-    if (n.type === "text") {
+    const regleNoeud = n.type === "text" ? null : regleEcrite(n.type, "inline");
+    if (regleNoeud) {
+      out += ecrireRegle(regleNoeud, n);
+      atLineStart = false;
+    } else if (n.type === "text") {
       const code2 = n.marks?.find((m) => m.type === "code");
       const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
       const avantCrochets = ["spipNote", "spipRawInline"].includes(nodes[i2 + 1]?.type);
@@ -18341,9 +18348,6 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
       atLineStart = false;
     } else if (n.type === "spipIdiome") {
       out += serializeIdiome(n.attrs);
-      atLineStart = false;
-    } else if (regleDe(n.type)?.type === "inline" && regleDe(n.type).renderSpip) {
-      out += ecrireRegle(regleDe(n.type), n);
       atLineStart = false;
     } else {
       throw new Error(`serialize: type inline inconnu \xAB ${n.type} \xBB`);

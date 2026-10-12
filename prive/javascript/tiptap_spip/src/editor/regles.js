@@ -24,4 +24,3 @@ export function reglesSpip(extensions) {
 		return regle ? [regle] : [];
 	});
 }
-

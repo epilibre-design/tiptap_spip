@@ -11,6 +11,15 @@ import { RE_AVANT_LANGUE } from './regex.js';
 import { avecRegles, regleDe } from './regles.js';
 
 /**
+ * Règle tierce qui écrit ce type (bloc, nœud en ligne ou mark), null sinon. Elle passe avant le
+ * cœur : une extension tierce peut remplacer une extension du cœur de même nom (spec 07 §4).
+ */
+const regleEcrite = (nom, type) => {
+	const regle = regleDe(nom);
+	return regle?.type === type && regle.renderSpip ? regle : null;
+};
+
+/**
  * Document JSON → source SPIP.
  * Sérialisation conservatrice : un segment dont les blocs ont gardé leur forme canonique est
  * restitué à l'identique (spipSep + spipSrc), les autres blocs sont sérialisés.
@@ -74,6 +83,8 @@ export const serializeBlocks = blocks;
 
 export function serializeBlock(b) {
 	const a = b.attrs ?? {};
+	const regle = regleEcrite(b.type, 'block');
+	if (regle) return ecrireRegle(regle, b);
 	switch (b.type) {
 		case 'paragraph':
 			return serializeInline(b.content, { lineStart: true });
@@ -109,11 +120,8 @@ export function serializeBlock(b) {
 			}))));
 		case 'table':
 			return serializeTable(b);
-		default: {
-			const regle = regleDe(b.type);
-			if (regle?.type === 'block' && regle.renderSpip) return ecrireRegle(regle, b);
+		default:
 			throw new Error(`serialize: type de bloc inconnu « ${b.type} »`);
-		}
 	}
 }
 
@@ -172,12 +180,12 @@ const OPEN = { bold: ['{{', '}}'], italic: ['{', '}'], strike: ['<del>', '</del>
 
 /** Délimiteurs d'une mark ; un lien, un glossaire, une abréviation dépendent de leurs attributs. */
 const delimiters = (mark) => {
+	const regle = regleEcrite(mark.type, 'mark');
+	if (regle) return delimiteursRegle(regle, mark);
 	if (mark.type === 'spipLink') return ['[', linkEnd(mark.attrs)];
 	if (mark.type === 'spipGlossary') return ['[?', serializeGlossary('', mark.attrs).slice(2)];
 	if (mark.type === 'spipAbbr') return ['[', serializeAbbr('', mark.attrs).slice(1)];
 	if (OPEN[mark.type]) return OPEN[mark.type];
-	const regle = regleDe(mark.type);
-	if (regle?.type === 'mark' && regle.renderSpip) return delimiteursRegle(regle, mark);
 	throw new Error(`serialize: mark inconnue « ${mark.type} »`);
 };
 
@@ -271,14 +279,19 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			.map((m) => ({ m, run: runLength(i, m) }))
 			.sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
 		for (const { m } of toOpen) {
-			const useHtml = HTML[m.type] && (html || stack.some((s) => delimiters(s.mark)[0].startsWith('{')));
+			// écriture HTML de secours des accolades du cœur, pas d'une mark écrite par une règle tierce
+			const useHtml = HTML[m.type] && !regleEcrite(m.type, 'mark') && (html || stack.some((s) => delimiters(s.mark)[0].startsWith('{')));
 			const [open, close] = useHtml ? HTML[m.type] : delimiters(m);
 			out += open;
 			stack.push({ mark: m, close });
 			atLineStart = false;
 		}
 		const inLink = stack.some((s) => s.mark.type === 'spipLink');
-		if (n.type === 'text') {
+		const regleNoeud = n.type === 'text' ? null : regleEcrite(n.type, 'inline');
+		if (regleNoeud) {
+			out += ecrireRegle(regleNoeud, n);
+			atLineStart = false;
+		} else if (n.type === 'text') {
 			const code = n.marks?.find((m) => m.type === 'code');
 			const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
 			// texte d'un glossaire ou d'une abréviation : validé par marksAtomiques, écrit tel quel
@@ -310,9 +323,6 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			atLineStart = false;
 		} else if (n.type === 'spipIdiome') {
 			out += serializeIdiome(n.attrs);
-			atLineStart = false;
-		} else if (regleDe(n.type)?.type === 'inline' && regleDe(n.type).renderSpip) {
-			out += ecrireRegle(regleDe(n.type), n);
 			atLineStart = false;
 		} else {
 			throw new Error(`serialize: type inline inconnu « ${n.type} »`);
