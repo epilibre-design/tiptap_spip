@@ -140,6 +140,33 @@ Le sérialiseur échappe dans le **texte** ce qui serait interprété comme racc
   `[` → `&#91;`, `]` → `&#93;`, `|` → `&#124;`, `->` → `-&gt;` ; `\{` y fonctionne. Le parseur décode
   `&#124;` et `&#93;` dans le texte d'un lien seulement.
 
+**Ajouts du lot corpus et propriétés** (contre-exemples de `fast-check` et du corpus, chacun repris dans un
+test unitaire) :
+
+- lecture :
+  - un filet ou un intertitre collé à une liste en fait partie pour SPIP (`<li>a<hr /></li>`) : segment brut ;
+  - une ligne qui commence par `|` hors d'un tableau lu (TextWheel en fait un tableau) : segment brut ;
+  - le `<` d'une balise incomplète (`<img alt="<b>">`, commentaire non fermé) : fragment brut, que SPIP
+    restitue tel quel ;
+  - mark vide (`{{</strong>`) : délimiteurs bruts, SPIP rendant une balise vide ;
+  - `\r` d'une fin de ligne CRLF : rattaché au séparateur, hors du texte ;
+  - `<br />` dans une cellule ou un intertitre : saut de ligne ;
+- écriture :
+  - `[` dont le `]` n'est pas dans le même nœud : `&#91;` ; `[` final devant un raccourci écrit avec `[` :
+    `&#91;` ;
+  - tant qu'un `<` reste ouvert (balise incomplète, modèle, même dans un bloc précédent) : `>` → `&gt;`,
+    `|` → `\|` ; `>` juste après un modèle : `&gt;` ; `<` devant un nom de modèle (`[a-z_-]{3,}`) : `&lt;` ;
+  - tant qu'un `[` reste ouvert (dans le bloc, plus haut, ou le `[[` d'une note) : `->` → `-&gt;` ;
+  - texte d'une note : `&lt;` pour un `<…>` de tête que le core lirait comme un nom, `&#63;` pour un `?` de
+    tête (`[[?` serait un glossaire), `-&gt;` pour un `->` qui ferait un lien, saut de ligne avant `]]`
+    après une abréviation finale (`]]]`) ;
+  - `|` dans une cellule : `\|` ; saut de ligne dans une cellule ou un intertitre : `<br />` ;
+  - saut de ligne au bord d'un contenu : non écrit ; saut autobr suivi d'un autre, hors lien : forcé ;
+  - gras ou italique contre un fragment brut à accolade : en HTML ; italique d'un en-tête de tableau : en
+    HTML ;
+  - parties d'un multi en bloc d'un seul paragraphe : séparées par une ligne vide ;
+  - code qui commence par un saut de ligne ou finit par `` ` `` : `<code>`.
+
 ### Texte d'un lien
 
 Découpé comme `traiter_raccourci_lien_atts()` (`plugins-dist/textwheel/inc/lien.php`) : `texte|bulle{lang}`.

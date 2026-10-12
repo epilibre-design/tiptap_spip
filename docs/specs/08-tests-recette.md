@@ -11,16 +11,16 @@ oracle fourni par SPIP lui-même.
 | Origine | Contenu |
 |---------|---------|
 | Cas unitaires écrits à la main | un fichier par raccourci et par cas limite (notes nommées vs balise `<i>`, `|<|`, `{{{x {y}}}}`, échappements, modèles avec balises dans les paramètres…) |
-| Tests du core | cas extraits des tests TextWheel / `propre()` de SPIP |
-| Corpus réel anonymisé | export de champs `texte` de quelques sites SPIP volontaires (articles longs, tableaux, multi) |
-| Cas pathologiques | accolades orphelines, `[[` non fermés, HTML cassé, textes de 200 Ko |
+| Tests du core | cas extraits des tests TextWheel / `propre()` de SPIP. Réalisé (lot corpus et propriétés) : `tests/corpus/textwheel/`, 124 textes des jeux `base`, `typo`, `modeles_block` et `modeles_inline` de TextWheel (SPIP 4.4.21), doublons retirés, importés par `scripts/importer-textwheel.mjs` |
+| Corpus réel anonymisé | export de champs `texte` de quelques sites SPIP volontaires (articles longs, tableaux, multi) ; hors dépôt (`TTS_CORPUS`, `tests/corpus/exporter.php`) |
+| Cas pathologiques | accolades orphelines, `[[` non fermés, HTML cassé, textes de 200 Ko. Réalisé : `tests/corpus/pathologiques/`, 12 cas (délimiteurs et balises non fermés, HTML cassé, fins de ligne mêlées, caractères de contrôle et Unicode, modèles, multi et tableaux mal formés, imbrications profondes, échappements, raccourcis coupés par une ligne vide) ; le texte de 200 Ko est produit par `tests/spip/invariants.test.js` (corpus concaténé) |
 
 ## 2. Niveaux de tests
 
 | Niveau | Outil | Ce qui est testé |
 |--------|-------|------------------|
 | Unitaires JS | **Vitest** (Node, sans DOM) | `src/spip/` : chaque règle, parse → JSON attendu, serialize → source attendue, invariants 1, 2, 4, 5 de [04](04-parseur-serialiseur.md) §5 |
-| Propriétés | Vitest + `fast-check` | génération de JSON aléatoires valides pour le schéma → sérialisation → re-parse = même JSON (invariant 5) |
+| Propriétés | Vitest + `fast-check` | génération de JSON aléatoires valides pour le schéma → sérialisation → re-parse = même JSON (invariant 5). Réalisé (lot corpus et propriétés, `fast-check` 4.10.2) : `tests/spip/proprietes-source.test.js` (sources tirées parmi des fragments de syntaxe : invariants 1, 2, 4, stabilité du JSON, validité pour le schéma) et `tests/spip/proprietes-json.test.js` (documents tirés selon le schéma, dans la forme normale de la spec 03 et des limites de la spec 04 §5 : invariant 5). Graine fixe dans `npm test` ; `TTS_FC_RUNS` lance une passe longue à graine aléatoire, `TTS_FC_SEED` rejoue un échec. Chaque contre-exemple est repris dans un test unitaire |
 | Schéma | Vitest + `@tiptap/core` (jsdom) | tout JSON produit par `parse` donne un nœud valide : `schema.nodeFromJSON(json)` **puis `node.check()`** (`fromJSON` seul ne vérifie pas les contraintes de contenu) ; en exécution, l'éditeur est créé avec `enableContentCheck: true` et journalise `contentError` |
 | **Équivalence de rendu** | script PHP + Node | pour chaque fichier du corpus : `propre(s)` vs `propre(serializeCanonique(parse(s)))` (HTML normalisé : espaces, ordre d'attributs) ; c'est l'oracle principal (invariant 3). L'oracle ajoute au rendu le texte des notes (`#NOTES`, que `propre()` ne rend pas). `<multi>` ne rendant qu'une langue, un texte qui en contient est rendu aussi dans chaque langue citée par un marqueur, code gardé tel quel (la casse compte) et posé directement dans `spip_lang` (`lang_select()` ignore une langue absente du site), notes remises à zéro entre les langues (lot L4.1). **Décision (lot L3.1)** : la bulle des notes est exclue de la comparaison, et seulement elle — l'attribut `title` de l'appel de note (`a.spip_note` vers `#nb…`) ; SPIP la construit à partir de l'orthographe brute de la note, qui peut donc différer après une réécriture équivalente. Le texte rendu des notes reste comparé en entier. Tests de régression : `normalize` dans `scripts/ecarts.mjs`, `tests/equivalence/ecarts.test.js` |
 | Intégration CVT | Playwright (SPIP réel) + Vitest | une soumission AJAX réelle (`var_ajax=form`) de chaque opération renvoie une réponse que `src/services/cvt.js` analyse correctement : résultat, erreurs de `verifier()`, réponse sans formulaire (non autorisé), signature invalide ; les réponses PHP enregistrées servent de fixtures aux tests JS. Réalisé par `tests/e2e/services.e2e.js` (opérations, falsification des arguments signés et de la signature de session), `tests/services/cvt.test.js` sur les réponses enregistrées par `tests/e2e/fixtures-cvt.e2e.js`, et PHPUnit pour les fonctions pures et `formulaire_fond`. Le cas « deux formulaires d'édition du même objet » est couvert au niveau unitaire (identifiant d'instance différent à chaque calcul, association par instance) |
@@ -37,6 +37,12 @@ L'équivalence de rendu tourne en CI avec une image SPIP 4.4 et une SPIP 5 (spip
    `textarea.value` (invariant 1, [04](04-parseur-serialiseur.md) §4).
 2. 100 % du corpus : équivalence de rendu canonique (invariant 3), hors écarts enregistrés (§4).
 3. Aucun texte du corpus ne fait lever d'exception au parseur.
+
+   Critères 1 à 3, lot corpus et propriétés : corpus de 164 fichiers (28 cas écrits à la main, 124 cas de
+   TextWheel, 12 cas pathologiques), plus le texte de 200 Ko. Identité, idempotence et totalité sur tout le
+   corpus ; équivalence de rendu 163/164 sur SPIP 4.2, 4.4 et 5, avec l'écart accepté `code-accoles`.
+   La normalisation de l'oracle (`normalize`) traite une entité comme le caractère qu'elle code (sauf `<`,
+   `&`, guillemets et blancs) et ignore l'ordre de balises de mise en forme imbriquées de même étendue.
 4. Insérer / modifier / supprimer une note, un terme de glossaire, un modèle (avec et sans YAML) depuis
    l'interface produit la source attendue.
 5. Une modification d'un paragraphe ne change, dans la révision SPIP, que ce paragraphe.

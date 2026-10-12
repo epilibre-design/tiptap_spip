@@ -38,3 +38,30 @@
 4. **Propriétés sur la source :** `fast-check`, `proprietes-source.test.js` ; corrections en TDD.
 5. **Propriétés sur le JSON :** générateur selon le schéma, `proprietes-json.test.js` ; corrections en TDD ou limites écrites dans la spec.
 6. **Specs** 04 §5 et 08 (§1, §2, critères 1 à 3 : chiffres du corpus) ; « Réalisation » de ce plan.
+
+## Réalisation
+
+- **Corpus** : 164 fichiers (28 cas écrits à la main, 124 cas de TextWheel, 12 cas pathologiques), plus le texte
+  de 200 Ko produit par le test. Équivalence de rendu 163/164 sur SPIP 4.2, 4.4 et 5, avec l'écart accepté
+  `code-accoles`.
+- **Normalisation de l'oracle** (`normalize`) : une entité vaut le caractère qu'elle code (sauf `<`, `&`,
+  guillemets, blancs), et l'ordre de balises de mise en forme imbriquées de même étendue est ignoré. Ces deux
+  faux écarts apparaissaient sur les cas de TextWheel ; les diffs figés de `code-accoles` ont été réécrits.
+- **Propriétés** : `fast-check` 4.10.2. Graine fixe dans `npm test` (300 tirages sur la source, 200 sur le
+  JSON) ; `TTS_FC_RUNS` pour une passe longue, `TTS_FC_SEED` pour rejouer.
+- **Corrections** (une trentaine de contre-exemples, chacun repris dans un test unitaire) : liste détaillée
+  dans la spec 04 §3, « Ajouts du lot corpus et propriétés ».
+- **Forme normale du générateur JSON** (ce que l'éditeur peut produire, spec 03) : termes de glossaire et
+  d'abréviation valides et entiers, texte de lien non vide une fois rogné, modèle seul en bloc, pas de saut
+  de ligne au bord ni de paragraphe vide, saut forcé dans une cellule ou un intertitre, en-têtes sans gras,
+  légende vide quand seul le résumé est donné.
+- **Limites écrites** (spec 04 §5) :
+  - `\r` seul (Mac OS 9) : non géré, segment brut (décision de l'utilisateur, pour les notes de version) ;
+  - note automatique qui commence par un idiome ou une mark écrite en balise HTML : lue nommée par le core ;
+  - balise fermante dans un bloc verbatim ; langue d'un code qui passe par `<code>`.
+- **Régression évitée** : la première règle du `\r` seul rendait brut tout segment CRLF suivi d'une ligne vide
+  (corrigée avant fusion, test de non-régression).
+- **Hors plan, constaté** : l'équivalence de rendu sur 143 sources aléatoires dont la forme canonique diffère
+  donne 7 écarts (oracle 4.4), dont des lectures du parseur à revoir (`\<` devant une balise, `<strong>`
+  refermé par `}}`). À traiter dans un lot suivant.
+- **Corpus réel** : non exporté (accord de l'utilisateur requis pour lire une base).
