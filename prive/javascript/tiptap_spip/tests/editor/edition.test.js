@@ -60,7 +60,10 @@ describe('alignement', () => {
 		expect(source()).toBe('<div class="text-right">\n\nA\n\nB\n\n</div>\n\nC');
 		monter('A\n\n<div class="text-center">\n\nB\n\n</div>\n\nC');
 		selectionner('A', 'B');
+		// sélection mixte : pas d'alignement commun
+		expect(alignementActif(editor.state)).toBe(undefined);
 		expect(editor.commands.setAlignement('right')).toBe(true);
+		expect(alignementActif(editor.state)).toBe('right');
 		expect(source()).toBe('<div class="text-right">\n\nA\n\nB\n\n</div>\n\nC');
 		monter('<div class="text-center">\n\nA\n\n</div>\n\nB\n\n<div class="text-left">\n\nC\n\n</div>');
 		selectionner('A', 'C');

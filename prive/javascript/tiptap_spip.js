@@ -24745,11 +24745,11 @@ function blocsSelectionnes(state) {
   });
   return blocs;
 }
-function alignementCourant(state) {
-  const [bloc] = blocsSelectionnes(state);
-  return bloc?.node.type.name === "spipAlign" ? bloc : null;
+function alignementActif(state) {
+  const valeurs = new Set(blocsSelectionnes(state).map(({ node: node2 }) => node2.type.name === "spipAlign" ? node2.attrs.align : null));
+  return valeurs.size === 1 ? [...valeurs][0] : void 0;
 }
-var alignementActif = (state) => alignementCourant(state)?.node.attrs.align ?? null;
+var selectionAlignee = (state) => blocsSelectionnes(state).some(({ node: node2 }) => node2.type.name === "spipAlign");
 var PARENTS_POESIE = ["doc", "spipAlign"];
 var deballer = (tr, pos, node2) => tr.replaceWith(pos, pos + node2.nodeSize, node2.content);
 function paragrapheUnique(cellules, schema) {
@@ -27067,11 +27067,11 @@ var COMPOSANTS = {
         element(editor, "outil_align_aucun", (c) => c.setAlignement(null), {
           coche: "radio",
           actif: () => alignementActif(editor.state) === null,
-          possible: () => alignementActif(editor.state) !== null
+          possible: () => selectionAlignee(editor.state)
         })
       ]
     });
-    return { ...menu, maj: () => menu.cible.classList.toggle("tts-outil--actif", alignementActif(editor.state) !== null) };
+    return { ...menu, maj: () => menu.cible.classList.toggle("tts-outil--actif", selectionAlignee(editor.state)) };
   },
   tableau: ({ editor }) => {
     const t = (cle, cmd) => element(editor, `outil_tableau_${cle}`, cmd);

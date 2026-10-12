@@ -19,14 +19,18 @@ function blocsSelectionnes(state) {
 	return blocs;
 }
 
-/** Bloc spipAlign de premier niveau qui contient le début de la sélection : { node, pos }, ou null. */
-function alignementCourant(state) {
-	const [bloc] = blocsSelectionnes(state);
-	return bloc?.node.type.name === 'spipAlign' ? bloc : null;
+/**
+ * Alignement commun des blocs de premier niveau touchés par la sélection : left, center, right, justify ;
+ * null si aucun n'est aligné ; undefined si la sélection est mixte (alignements différents, ou blocs
+ * alignés et non alignés).
+ */
+export function alignementActif(state) {
+	const valeurs = new Set(blocsSelectionnes(state).map(({ node }) => (node.type.name === 'spipAlign' ? node.attrs.align : null)));
+	return valeurs.size === 1 ? [...valeurs][0] : undefined;
 }
 
-/** Alignement de la sélection (left, center, right, justify), null sans alignement. */
-export const alignementActif = (state) => alignementCourant(state)?.node.attrs.align ?? null;
+/** Vrai si un bloc touché par la sélection est aligné. */
+export const selectionAlignee = (state) => blocsSelectionnes(state).some(({ node }) => node.type.name === 'spipAlign');
 
 /** Blocs où une poésie peut se poser : ceux que le sérialiseur écrit (spec 04). */
 const PARENTS_POESIE = ['doc', 'spipAlign'];

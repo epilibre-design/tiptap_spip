@@ -1,4 +1,4 @@
-import { ALIGNEMENTS, alignementActif } from '../editor/edition.js';
+import { ALIGNEMENTS, alignementActif, selectionAlignee } from '../editor/edition.js';
 import { langueAffichee, languesDuDocument } from '../editor/extensions.js';
 import { boutonOutil, habiller, menuOutil } from './boutons.js';
 import { label } from './labels.js';
@@ -176,6 +176,7 @@ const COMPOSANTS = {
 	},
 
 	alignement: ({ editor }) => {
+		// sélection mixte (alignementActif undefined) : aucun choix coché
 		const menu = menuOutil({
 			nom: 'alignement',
 			libelle: label('outil_alignement'),
@@ -188,11 +189,11 @@ const COMPOSANTS = {
 				element(editor, 'outil_align_aucun', (c) => c.setAlignement(null), {
 					coche: 'radio',
 					actif: () => alignementActif(editor.state) === null,
-					possible: () => alignementActif(editor.state) !== null,
+					possible: () => selectionAlignee(editor.state),
 				}),
 			],
 		});
-		return { ...menu, maj: () => menu.cible.classList.toggle('tts-outil--actif', alignementActif(editor.state) !== null) };
+		return { ...menu, maj: () => menu.cible.classList.toggle('tts-outil--actif', selectionAlignee(editor.state)) };
 	},
 
 	tableau: ({ editor }) => {

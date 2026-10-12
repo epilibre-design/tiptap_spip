@@ -181,6 +181,19 @@ describe('composants', () => {
 		expect(items.map((i) => i.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false', 'false', 'false']);
 	});
 
+	it('alignement d\'une sélection mixte : aucun choix coché, « Sans alignement » possible', () => {
+		barre('edition', { src: 'A\n\n<div class="text-center">\n\nB\n\n</div>' });
+		const coches = () => [...wrapper.querySelectorAll('.tts-menu--alignement [role=menuitemradio]')].map((i) => i.getAttribute('aria-checked'));
+		for (const [de, a] of [['A', 'B'], ['B', 'B']]) {
+			editor.commands.setTextSelection({ from: apres(de) - 1, to: apres(a) });
+			outil('alignement').click();
+			const attendu = de === 'A' ? ['false', 'false', 'false', 'false', 'false'] : ['false', 'true', 'false', 'false', 'false'];
+			expect(coches()).toEqual(attendu);
+			expect(wrapper.querySelector('.tts-menu--alignement [role=menuitemradio]:last-child').disabled).toBe(false);
+			outil('alignement').click();
+		}
+	});
+
 	it('tableau : insertion, puis éléments de ligne et de colonne possibles dans le tableau', () => {
 		barre('edition', { src: 'A' });
 		editor.commands.setTextSelection(apres('A'));
