@@ -4,6 +4,7 @@
 	version="0.1.0"
 	etat="dev"
 	compatibilite="[4.2.0;5.*]"
+	logo="images/tiptap-spip-xx.svg"
 	documentation=""
 >
 	<nom>Éditeur visuel pour SPIP</nom>
