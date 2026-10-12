@@ -1,0 +1,9 @@
+a `code span avec de la typo !`
+
+`this is also a codespan avec de la typo !` trailing text
+
+`and look at this one avec de la typo !`
+
+single &lt;code&gt; in a code span: `<code>`
+
+&lt; in a code span: `<`

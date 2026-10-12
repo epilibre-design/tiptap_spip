@@ -1,0 +1,9 @@
+a `code span`
+
+`this is also a codespan` trailing text
+
+`and look at this one`
+
+single &lt;code&gt; in a code span: `<code>`
+
+&lt; in a code span: `<`
