@@ -24,9 +24,8 @@ export function blocksOf(src, msk, regions) {
 	try {
 		const verbatim = verbatimBlock(src, regions);
 		if (verbatim) return verbatim;
-		// \r seul (fins de ligne Mac OS 9) : saut de ligne pour SPIP, pas pour le découpage en lignes ; un
-		// \r en fin de segment précède le \n du séparateur (fins de ligne CRLF)
-		if (/\r(?!\n|$)/.test(msk)) throw new Fallback();
+		// \r seul (fins de ligne Mac OS 9, non gérées) : saut de ligne pour SPIP, pas pour le découpage
+		if (/\r(?!\n)/.test(msk)) throw new Fallback();
 		return containerBlock(src, msk) ?? tableBlock(src, msk, regions) ?? runBlocks(src, msk, regions);
 	} catch {
 		return [node('spipRaw', { source: src })];

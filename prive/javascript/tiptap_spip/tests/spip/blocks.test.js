@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseContent } from '../../src/spip/blocks.js';
+import { parse } from '../../src/spip/parse.js';
 import { node, raw, text } from '../../src/spip/json.js';
 
 const p = (...content) => node('paragraph', null, content);
@@ -80,6 +81,9 @@ describe('retour chariot seul', () => {
 		expect(parseContent('a\r\nb')[0].type).toBe('paragraph');
 		expect(parseContent('a\r\n\r\nb')).toEqual([p(text('a')), p(text('b'))]);
 		expect(parseContent('-* a\r\n-* b\r\n\r\n{{{T}}}\r\n\r\nx').map((b) => b.type)).toEqual(['bulletList', 'heading', 'paragraph']);
+		// blocs qui occupent tout leur segment : le \r final appartient au séparateur
+		expect(parse('<doc12|left>\r\n').content.map((b) => b.type)).toEqual(['spipModelBlock']);
+		expect(parse('<cadre>x</cadre>\r\n\r\nb').content.map((b) => b.type)).toEqual(['spipCadre', 'paragraph']);
 		// le \r d'une fin de ligne n'est pas du texte
 		expect(parseContent('{{a}}\r\n-# b')).toEqual([p(text('a', [{ type: 'bold' }])), node('orderedList', null, [item('b')])]);
 		expect(parseContent('`a\rb`')[0].type).toBe('paragraph');

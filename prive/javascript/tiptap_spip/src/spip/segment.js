@@ -15,14 +15,15 @@ export function segment(source, masked) {
 		return { lead: source, trail: '', segments: [] };
 	}
 	const lead = masked.match(/^(?:[ \t\r]*\n)*/)[0];
-	const trail = masked.slice(lead.length).match(/(?:\n[ \t\r]*)*$/)[0];
+	// le \r d'une fin de ligne CRLF appartient au séparateur, pas au segment
+	const trail = masked.slice(lead.length).match(/(?:\r?\n[ \t\r]*)*$/)[0];
 	const bodyStart = lead.length;
 	const bodyEnd = masked.length - trail.length;
 
 	const raw = [];
 	let pos = bodyStart;
 	let sep = '';
-	const SEP = /\n(?:[ \t\r]*\n)+/g;
+	const SEP = /\r?\n(?:[ \t\r]*\n)+/g;
 	SEP.lastIndex = bodyStart;
 	let m;
 	while ((m = SEP.exec(masked)) && m.index < bodyEnd) {
