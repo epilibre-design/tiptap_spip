@@ -53,8 +53,19 @@ L'équivalence de rendu tourne en CI avec une image SPIP 4.4 et une SPIP 5 (spip
    - audit axe de l'éditeur, d'un menu ouvert et d'un popover ouvert : aucune violation critique ni
      sérieuse ; depuis le lot L5.3, aucune violation du tout.
 8. Fonctionne dans l'espace privé SPIP 4.2, 4.4 et 5.x (Firefox ESR, Chromium, Safari récents).
-   Lot L5.3 : la suite e2e tourne sous Chromium, Firefox et WebKit (projets Playwright), sur SPIP 4.4. Les
-   sites jetables SPIP 4.2 et 5.x restent à fournir.
+   Lot L5.3 : la suite e2e tourne sous Chromium, Firefox et WebKit (projets Playwright), sur SPIP 4.4.
+   Lot Compatibilité SPIP 4.2 et 5 : vérifié sur trois sites jetables, la même suite sous les trois navigateurs :
+   - SPIP 4.2.16 (PHP 8.3) : 124 passés, 5 sautés ;
+   - SPIP 4.4.21 : 124 passés, 5 sautés ;
+   - SPIP 5.0-dev (branche `master`, `5.0.0-beta`, PHP 8.4) : 115 passés, 14 sautés, dont les tests Crayons,
+     plugin sans version pour SPIP 5.
+
+   Sautés partout : la réécriture des fixtures CVT (sur demande) et la mesure du critère 6 hors Chromium.
+   Équivalence de rendu (§1, invariant 3) contre les trois oracles : 27/28, l'écart accepté `code-accoles` ayant
+   un diff propre à SPIP 5 (§4).
+   Lancement : `TTS_PHP` désigne le PHP du site (SPIP 4.2 s'arrête à PHP 8.3) ; le serveur PHP de test tourne
+   avec `PHP_CLI_SERVER_WORKERS=4`, SPIP 4.2 s'appelant lui-même au premier rendu public (vérification des
+   accès, environ 70 s de blocage avec un seul processus).
 
 ## 4. Écarts de rendu acceptés
 
@@ -88,6 +99,12 @@ Un écart à l'invariant 3 n'est accepté que s'il est **enregistré** dans `tes
 - **Diff figé** : rendus normalisés coupés en une ligne par balise, réduits aux lignes modifiées (sans
   contexte) ; chaque hunk liste ses lignes retirées (`- `) puis ajoutées (`+ `), les hunks sont séparés par
   `@@`. Il s'écrit avec `npm run equivalence -- --figer` (entrées déjà enregistrées seulement).
+- **Diff propre à une branche de SPIP** : quand l'oracle d'une branche majeure rend autrement le même écart,
+  l'entrée déclare `branches: { "5": { diff, justification } }`. L'oracle donne sa branche
+  (`propre.php --branche`) et le diff figé de cette branche remplace le diff commun, y compris pour
+  `--figer`. Cas actuel : `code-accoles.spip` sous SPIP 5, dont le rendu perd le texte `</code` de
+  `<code></code</code>` (régression du cœur signalée sur `spip/ecrire`). Quand SPIP 5 sera corrigé, son diff
+  redeviendra le diff commun et le test signalera un diff changé : supprimer alors la branche et son diff.
 - **Corpus non versionné** (corpus réel, `npm run equivalence -- <dossier>`) : un écart y est « couvert »
   quand tous ses hunks figurent dans le diff figé d'une même entrée, c'est-à-dire quand le cas a été réduit
   à un extrait du corpus versionné et enregistré ; tout autre écart échoue. Un hunk figé peut apparaître

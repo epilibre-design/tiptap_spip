@@ -12,10 +12,12 @@
 | **L4 — Multilinguisme** (fait) | découpé en deux plans : **L4.1** (fait) multi en ligne (atome) et en bloc, idiomes, dans le cœur et le schéma, affichage, oracle dans chaque langue ; **L4.2** (fait) interface : langue affichée, popover de multi en ligne, insertion, langues d'un multi bloc, traductions et popover des idiomes | Édition d'un texte multilingue sans perte |
 | **L5 — Interface** | découpé en trois plans : **L5.1** (fait) barres `edition`/`forum`/`minimale` déclarées (`barres.json`, pipeline `tiptap_spip_toolbars`), registre de composants, menus accessibles, commandes d'édition (alignement, poésie, tableaux, guillemets, casse), plein écran, mode mémorisé, raccourcis ; **L5.2** (fait) anomalies signalées, barre d'état (mots, anomalies), popover du nœud brut (source du segment relue), piège de focus, zone éditable et atomes nommés, audit axe ; **L5.3** (fait) page de configuration CFG (activation, champs équipés, mode, niveaux, glossaires ; modèles masqués reportés avec leur catalogue), contrôle i18n, popovers `div role="dialog"` (axe sans violation), critère 6 mesuré et tenu, e2e sous Chromium, Firefox et WebKit | Critères 6, 7, 8 |
 | **L6 — Extensibilité** | (fait) API `registerExtension`, pipelines `tiptap_spip_extensions` et `tiptap_spip_i18n`, ré-export du core (`window.tiptapSpip`), harnais `allerRetour`, exemple de plugin tiers `exemples/tiptap_spip_faq` | Plugin d'exemple fonctionnel sans modifier le cœur |
+| **Compatibilité SPIP 4.2 et 5** (fait) | sites jetables SPIP 4.2.16 et 5.0-dev, lancement commun SPIP 4/5 hors de `_inits/` (configuration et module par `header_prive`/`insert_head`, bundle par l'importmap en SPIP 5), glossaire par `pre_liens` en SPIP 5, chargement du noyau commun aux scripts de test, diff figé propre à une branche de SPIP | Critère 8 |
 | L7 — Ultérieur | glisser-déposer de documents (upload → `<docN>`), aperçu `<math>`, collaboration | — |
 
 État de L0 : chargement SPIP 4 vérifié de bout en bout (site 4.4.21 jetable) ; chargement SPIP 5 repris de
-markdown_editor, non vérifié faute de site SPIP 5 sur le poste. Mesure du critère 6 (spec 08) : 50 000
+markdown_editor, non vérifié faute de site SPIP 5 sur le poste (vérifié depuis, et refait : lot Compatibilité
+SPIP 4.2 et 5). Mesure du critère 6 (spec 08) : 50 000
 caractères, montage à froid 256 ms, à chaud 102 à 127 ms dans Chromium 149 ; optimisation à prévoir avant la
 recette (L5).
 
