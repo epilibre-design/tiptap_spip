@@ -29,12 +29,12 @@ export const fakeServices = (reponses = {}) => ({
 export let editor = null;
 export let wrapper = null;
 
-/** Éditeur monté comme par main.js, avec ou sans services. */
-export const monter = (source, services = null) => {
+/** Éditeur monté comme par main.js, avec ou sans services, avec ou sans extensions tierces. */
+export const monter = (source, services = null, { tierces = [] } = {}) => {
 	document.body.innerHTML = '<div class="tts-editor"><div class="tts-content"></div></div>';
 	wrapper = document.querySelector('.tts-editor');
 	const ui = creerInterface({ editor: () => editor, wrapper, services });
-	editor = createEditor({ element: wrapper.querySelector('.tts-content'), source, ui });
+	editor = createEditor({ element: wrapper.querySelector('.tts-content'), source, ui, tierces });
 	return { editor, ui };
 };
 
@@ -46,7 +46,7 @@ export const demonter = () => {
 	document.body.innerHTML = '';
 };
 
-export const source = () => serialize(editor.getJSON());
+export const source = () => serialize(editor.getJSON(), { regles: editor.tiptapSpip.regles });
 /** Champ d'un popover : le dernier ouvert (popovers imbriqués). */
 export const champ = (name) => [...wrapper.querySelectorAll(`.tts-popover [name=${name}]`)].pop();
 export const remplir = (name, value) => {

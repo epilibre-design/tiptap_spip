@@ -69,7 +69,9 @@ function multiEnLigne(contexte, existant) {
 	liste.className = 'tts-multi__parties';
 	popover.actions.before(liste);
 
-	const schema = getSchema(partieExtensions());
+	// extensions tierces de l'éditeur : le texte d'une partie peut en contenir
+	const tierces = editor.tiptapSpip?.tierces ?? [];
+	const schema = getSchema(partieExtensions({ tierces }));
 
 	const ajouter = (lang, origine) => {
 		const ligne = document.createElement('div');
@@ -99,10 +101,11 @@ function multiEnLigne(contexte, existant) {
 		};
 		const sous = new Editor({
 			element: zone,
-			extensions: partieExtensions({ ui: sousUi }),
+			extensions: partieExtensions({ ui: sousUi, tierces }),
 			content,
 			editorProps: { attributes: { class: 'tts-prosemirror', 'aria-label': label('multi_texte') } },
 		});
+		sous.tiptapSpip = editor.tiptapSpip;
 		l.sous = sous;
 		sous.on('update', () => {
 			l.modifie = true;

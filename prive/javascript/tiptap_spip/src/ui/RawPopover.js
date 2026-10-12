@@ -47,7 +47,8 @@ export function openRawPopover({ editor, wrapper, parent }, pos) {
 	const segment = segmentDe(doc, pos);
 	// le document peut changer pendant que le popover est ouvert : position suivie
 	const suivi = suivrePosition(editor, pos);
-	const source = serialize({ type: 'doc', content: segment.blocs.map((b) => b.toJSON()) });
+	const regles = editor.tiptapSpip?.regles ?? [];
+	const source = serialize({ type: 'doc', content: segment.blocs.map((b) => b.toJSON()) }, { regles });
 
 	const popover = new Popover({ editor, wrapper, parent, titre: label('brut'), className: 'tts-popover--brut', onSubmit: () => appliquer(), onClose: () => suivi.fin() });
 	const cle = brut.type.name === 'spipRawInline' ? anomalie(brut.attrs.source) : null;
@@ -79,7 +80,7 @@ export function openRawPopover({ editor, wrapper, parent }, pos) {
 		const cible = segmentDe(actuel, position);
 		let blocs;
 		try {
-			blocs = editor.schema.nodeFromJSON(schemaJSON(parse(zone.value), editor.schema)).content;
+			blocs = editor.schema.nodeFromJSON(schemaJSON(parse(zone.value, { regles }), editor.schema)).content;
 		} catch {
 			blocs = null;
 		}

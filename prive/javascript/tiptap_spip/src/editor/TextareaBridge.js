@@ -47,7 +47,7 @@ export class TextareaBridge {
 		clearTimeout(this.timer);
 		this.timer = null;
 		if (this.mode !== 'visual' || this.editor.isDestroyed) return;
-		const value = serialize(this.editor.getJSON());
+		const value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
 		if (value === this.textarea.value) return;
 		this.textarea.value = value;
 		this.dispatching = true;
@@ -61,7 +61,7 @@ export class TextareaBridge {
 
 	/** Recharge l'éditeur depuis le textarea, sans émettre de mise à jour (pas de réécriture). */
 	load() {
-		const json = toEditorJSON(this.textarea.value, this.editor.schema);
+		const json = toEditorJSON(this.textarea.value, this.editor.schema, this.editor.tiptapSpip?.regles);
 		this.editor.commands.setContent(json, { emitUpdate: false });
 	}
 

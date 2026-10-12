@@ -98,7 +98,8 @@ export function openNotePopover(contexte, pos = null) {
 		editModel: (p) => openModelPopover(enfant(), p),
 		editRaw: (p) => openRawPopover(enfant(), p),
 	};
-	const extensions = noteExtensions({ ui: sousUi });
+	// extensions tierces de l'éditeur : le contenu de la note peut en contenir
+	const extensions = noteExtensions({ ui: sousUi, tierces: editor.tiptapSpip?.tierces ?? [] });
 	let content;
 	try {
 		content = schemaJSON({ type: 'doc', content: origine?.length ? origine : initial ?? [{ type: 'paragraph' }] }, getSchema(extensions));
@@ -115,6 +116,7 @@ export function openNotePopover(contexte, pos = null) {
 		content,
 		editorProps: { attributes: { class: 'tts-prosemirror', 'aria-labelledby': titre.id, 'aria-multiline': 'true' } },
 	});
+	sous.tiptapSpip = editor.tiptapSpip;
 	// exposé pour les tests et les extensions
 	popover.sous = sous;
 	let modifie = false;

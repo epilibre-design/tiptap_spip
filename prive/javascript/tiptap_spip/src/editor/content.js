@@ -31,6 +31,7 @@ export function schemaJSON(json, schema) {
  *
  * @param {string} source
  * @param {import('@tiptap/pm/model').Schema} schema
+ * @param {object[]} [regles]  règles tierces de l'éditeur (editor.tiptapSpip.regles)
  * @returns {object} document JSON
  */
-export const toEditorJSON = (source, schema) => schemaJSON(parse(source, { empreintes: false }), schema);
+export const toEditorJSON = (source, schema, regles = []) => schemaJSON(parse(source, { empreintes: false, regles }), schema);

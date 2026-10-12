@@ -651,11 +651,37 @@ const SpipUi = Extension.create({
  * Extensions du cœur, marks dans l'ordre canonique de src/spip/json.js (MARK_ORDER) : le
  * schéma range les marks d'un texte dans l'ordre de déclaration.
  *
- * @param {{ headingLevels?: number[], ui?: { previews?, titles?, editModel?, openLink? } | null }} options
+ * @param {{ headingLevels?: number[], ui?: { previews?, titles?, editModel?, openLink? } | null,
+ *           tierces?: import('@tiptap/core').AnyExtension[] }} options
  *        ui : interface de l'instance ; avec `previews` et `titles` (services serveur présents), les
- *        modèles sont prévisualisés et les liens sans texte affichent leur titre
+ *        modèles sont prévisualisés et les liens sans texte affichent leur titre ; tierces :
+ *        extensions des plugins (spec 07), ajoutées à la fin ou à la place de l'extension du cœur
+ *        de même nom
  */
-export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
+export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null, tierces = [] } = {}) {
+	return avecTierces(extensionsDuCoeur({ headingLevels, ui }), tierces);
+}
+
+/**
+ * Une extension tierce remplace l'extension du cœur de même nom (comme une règle nommée de
+ * TextWheel), avec un avertissement ; les autres s'ajoutent à la fin, après les marks du cœur.
+ */
+function avecTierces(extensions, tierces) {
+	const ajoutees = [];
+	const resultat = [...extensions];
+	for (const tierce of tierces) {
+		const i = resultat.findIndex((e) => e.name === tierce.name);
+		if (i >= 0) {
+			console.warn(`tiptap_spip : l'extension « ${tierce.name} » du cœur est remplacée par une extension tierce`);
+			resultat[i] = tierce;
+		} else {
+			ajoutees.push(tierce);
+		}
+	}
+	return [...resultat, ...ajoutees];
+}
+
+function extensionsDuCoeur({ headingLevels, ui }) {
 	const withView = (node, view, enabled) => (enabled ? node.extend({ addNodeView: () => view(ui) }) : node);
 	return [
 		SpipDocument,
@@ -719,10 +745,11 @@ const NoteDocument = SpipDocument.extend({ content: '(paragraph | bulletList | o
  * Schéma du sous-éditeur d'une note (spec 05 §1) : celui de l'éditeur, sans notes, avec seulement
  * les blocs permis dans une note.
  *
- * @param {{ ui?: object | null }} options  ui : interface du sous-éditeur (lien, glossaire…)
+ * @param {{ ui?: object | null, tierces?: object[] }} options  ui : interface du sous-éditeur (lien,
+ *        glossaire…) ; tierces : extensions tierces de l'éditeur
  */
-export function noteExtensions({ ui = null } = {}) {
-	return coreExtensions({ ui })
+export function noteExtensions({ ui = null, tierces = [] } = {}) {
+	return coreExtensions({ ui, tierces })
 		.filter((e) => !['spipNote', 'spipNoteNumbers'].includes(e.name))
 		.map((e) => (e.name === 'doc' ? NoteDocument : e));
 }
@@ -735,10 +762,11 @@ const PartieDocument = SpipDocument.extend({ content: 'paragraph' });
  * multi en ligne (pas de multi dans un multi), avec un seul paragraphe (les blocs, multi bloc
  * compris, restent déclarés mais inaccessibles).
  *
- * @param {{ ui?: object | null }} options  ui : interface du sous-éditeur (lien, glossaire…)
+ * @param {{ ui?: object | null, tierces?: object[] }} options  ui : interface du sous-éditeur (lien,
+ *        glossaire…) ; tierces : extensions tierces de l'éditeur
  */
-export function partieExtensions({ ui = null } = {}) {
-	return coreExtensions({ ui })
+export function partieExtensions({ ui = null, tierces = [] } = {}) {
+	return coreExtensions({ ui, tierces })
 		.filter((e) => e.name !== 'spipMultiInline')
 		.map((e) => (e.name === 'doc' ? PartieDocument : e));
 }
