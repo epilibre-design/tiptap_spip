@@ -151,4 +151,11 @@ describe('normalize', () => {
 		expect(normalize('<p>a&#160;b</p>')).not.toBe(normalize('<p>a b</p>'));
 		expect(normalize('<p>&#99999999;</p>')).toBe('<p>&#99999999;</p>');
 	});
+
+	it('balises de mise en forme imbriquées de même étendue : l\'ordre ne compte pas (même affichage)', () => {
+		expect(normalize('<p><sup><sub><del>x</del></sub></sup></p>')).toBe(normalize('<p><del><sup><sub>x</sub></sup></del></p>'));
+		expect(normalize('<strong><a href="y">a</a></strong>')).toBe(normalize('<a href="y"><strong>a</strong></a>'));
+		// étendues différentes : comparées telles quelles
+		expect(normalize('<del><sup>x</sup>y</del>')).not.toBe(normalize('<sup><del>x</del></sup><del>y</del>'));
+	});
 });

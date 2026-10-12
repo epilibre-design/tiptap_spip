@@ -147,8 +147,10 @@ export function judge({ fichier, diff, entries, frozen }) {
  * est comparé en entier (oracle tests/equivalence/propre.php).
  * Une entité vaut le caractère qu'elle code (`&#124;` et `|`, `&gt;` et `>` : même texte dans le
  * DOM), sauf `<`, `&`, les guillemets et les blancs, qui changent l'analyse du HTML ou ses espaces.
+ * Des balises de mise en forme imbriquées autour du même texte sont triées : la forme canonique range
+ * les marks de même étendue dans son ordre (spec 04 §3, imbrication des marks), même affichage.
  */
-export const normalize = (html) => html
+export const normalize = (html) => trierImbrications(html
 	.replace(/&(?:gt|#(\d+)|#x([0-9a-f]+));/gi, (e, dec, hex) => {
 		const point = dec ? Number(dec) : hex ? parseInt(hex, 16) : 0x3e;
 		if (point > 0x10ffff) return e;
@@ -163,4 +165,19 @@ export const normalize = (html) => html
 	.replace(/\s+/g, ' ')
 	.replace(/>\s+/g, '>')
 	.replace(/\s+</g, '<')
-	.trim();
+	.trim());
+
+const MISE_EN_FORME = 'a|abbr|b|code|del|em|i|small|strong|sub|sup';
+const RE_IMBRICATION = new RegExp(`((?:<(?:${MISE_EN_FORME})\\b[^>]*>){2,})([^<]*)((?:</(?:${MISE_EN_FORME})>){2,})`, 'g');
+const nomBalise = (b) => b.match(/^<\/?([a-z]+)/)[1];
+
+/** <sup><sub>x</sub></sup> et <sub><sup>x</sup></sub> : ouvrantes triées, fermantes dans l'ordre inverse. */
+function trierImbrications(html) {
+	return html.replace(RE_IMBRICATION, (tout, ouvrantes, texte, fermantes) => {
+		const o = ouvrantes.match(/<[^>]*>/g);
+		const f = fermantes.match(/<[^>]*>/g);
+		if (o.length !== f.length || o.some((b, k) => nomBalise(b) !== nomBalise(f[f.length - 1 - k]))) return tout;
+		const triees = [...o].sort();
+		return triees.join('') + texte + triees.map((b) => `</${nomBalise(b)}>`).reverse().join('');
+	});
+}
