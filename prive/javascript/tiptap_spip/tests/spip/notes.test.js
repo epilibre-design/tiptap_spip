@@ -118,6 +118,35 @@ describe('sérialisation des notes', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
+	it('note automatique dont le texte commence par <…> : &lt; (SPIP y lirait un nom)', () => {
+		for (const debut of ['<>x', '<1> y', '< a >']) {
+			const doc = node('doc', null, [p(text('x'), note([p(text(debut))]))]);
+			expect(serialize(doc)).toBe(`x[[${debut.replace('<', '&lt;')}]]`);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+		// fermante présente : pas un nom, la balise reste
+		const balise = node('doc', null, [p(text('x'), note([p(raw('<span>'), text('a'), raw('</span>'))]))]);
+		expect(serialize(balise)).toBe('x[[<span>a</span>]]');
+		// note nommée : le nom passe avant
+		expect(serialize(node('doc', null, [p(text('x'), note([p(text('<>a'))], 'n'))]))).toBe('x[[<n><>a]]');
+	});
+
+	it('-> avant tout crochet dans le texte d\'une note : -&gt; ([[a -> b]] serait un lien entre crochets)', () => {
+		const cas = [
+			[note([p(text('a -> b'))]), 'x[[a -&gt; b]]'],
+			[note([p(text('a -> b'))], 'n'), 'x[[<n>a -&gt; b]]'],
+			[note([p(text('<-> z'))]), 'x[[<-&gt; z]]'],
+			[note([p(text('a -> b -> c'))]), 'x[[a -&gt; b -&gt; c]]'],
+			// lien de la note : pas touché
+			[note([p(text('voir', [link('art1')]))]), 'x[[[voir->art1]]]'],
+		];
+		for (const [n, attendu] of cas) {
+			const doc = node('doc', null, [p(text('x'), n)]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
 	it('note saisie sans contenu', () => {
 		expect(serialize(node('doc', null, [p(text('x'), node('spipNote', { name: null, content: null }))]))).toBe('x[[]]');
 	});

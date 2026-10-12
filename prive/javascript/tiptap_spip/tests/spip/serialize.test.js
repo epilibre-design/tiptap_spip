@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { node, text } from '../../src/spip/json.js';
+import { node, raw, stripTech, text } from '../../src/spip/json.js';
 import { parse } from '../../src/spip/parse.js';
 import { escapeText, serialize, serializeBlock, serializeInline } from '../../src/spip/serialize.js';
 
@@ -107,6 +107,29 @@ describe('serializeInline', () => {
 	});
 });
 
+describe('< brut d\'une balise incomplète', () => {
+	it('un > du texte qui suit s\'écrit &gt; : il fermerait la balise, jusqu\'au prochain fragment à chevron', () => {
+		const doc = node('doc', null, [p(raw('<'), text('https://x.org> a'), raw('<b>'), text('c>'))]);
+		expect(serialize(doc)).toBe('<https://x.org&gt; a<b>c>');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+});
+
+describe('accolades contre un fragment brut', () => {
+	it('gras ou italique dont le contenu commence ou finit par un fragment brut à accolade : en HTML', () => {
+		const cas = [
+			[p(raw('{{{', [I])), '<i>{{{</i>'],
+			[p(text('x', [B]), raw('}}}', [B])), '<strong>x}}}</strong>'],
+			[p(text('x', [B]), text('y')), '{{x}}y'],
+		];
+		for (const [para, attendu] of cas) {
+			const doc = node('doc', null, [para]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+});
+
 describe('escapeText', () => {
 	it.each([
 		['{a}', '\\{a\\}'],
@@ -119,6 +142,18 @@ describe('escapeText', () => {
 		['[?g] [[n]] [x->y] [a|b] [#a<-] [b<-] [sic]', '[&#63;g] [&#91;n]] \\[x->y] \\[a|b] &#91;#a<-] &#91;b<-] [sic]'],
 	])('%j → %j', (input, expected) => {
 		expect(escapeText(input, false)).toBe(expected);
+	});
+
+	it('[ sans ] dans le même texte : \\[ (le ] et le -> ou | peuvent suivre dans d\'autres nœuds)', () => {
+		const cas = [
+			[p(text('[ABBR|explication'), text('fr', [I]), text(']')), '\\[ABBR|explication{fr}]'],
+			[p(text('[?'), raw('{'), text('->]')), '\\[&#63;{->]'],
+		];
+		for (const [para, attendu] of cas) {
+			const doc = node('doc', null, [para]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
 	});
 
 	it('[ final : \\[, ou entité devant une note ou un fragment brut', () => {

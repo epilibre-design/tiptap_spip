@@ -5,8 +5,9 @@ import { canon, MARK_ORDER, node, sameMark, text } from './json.js';
 import { linkEnd } from './links.js';
 import { serializeModel } from './models.js';
 import { serializeIdiome, serializeMulti } from './multi.js';
+import { parseNote } from './notes.js';
 import { parse } from './parse.js';
-import { canBacktick, encodeCode } from './protect.js';
+import { canBacktick, encodeCode, protect } from './protect.js';
 import { RE_AVANT_LANGUE } from './regex.js';
 import { avecRegles, regleDe } from './regles.js';
 
@@ -244,6 +245,15 @@ function marksAtomiques(nodes) {
 }
 const HTML = { bold: ['<strong>', '</strong>'], italic: ['<i>', '</i>'] };
 
+/** Source d'un fragment brut, '' pour un autre nœud (un texte a ses accolades échappées). */
+const brut = (n) => (n?.type === 'spipRawInline' ? n.attrs.source : '');
+
+/**
+ * La mark sur nodes[i, i + run[ commence-t-elle ou finit-elle par un fragment brut à accolade ?
+ * ({ devant {{{ ferait {{{{) : ses délimiteurs s'écrivent alors en HTML.
+ */
+const accoladeContre = (nodes, i, run) => /^[{}]/.test(brut(nodes[i])) || /[{}]$/.test(brut(nodes[i + run - 1]));
+
 /**
  * Contenu inline → SPIP.
  * Gras et italique imbriqués (ou italique dans un intertitre) : la mark intérieure est écrite en
@@ -257,6 +267,9 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 	let out = '';
 	const stack = [];
 	let atLineStart = lineStart;
+	// après le < brut d'une balise incomplète, un > du texte la fermerait : il s'écrit &gt; jusqu'au
+	// prochain fragment brut qui contient un chevron
+	let chevron = false;
 	const closeTo = (k) => {
 		while (stack.length > k) out += stack.pop().close;
 	};
@@ -280,7 +293,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			.sort((a, b) => b.run - a.run || MARK_ORDER.indexOf(a.m.type) - MARK_ORDER.indexOf(b.m.type));
 		for (const { m } of toOpen) {
 			// écriture HTML de secours des accolades du cœur, pas d'une mark écrite par une règle tierce
-			const useHtml = HTML[m.type] && !regleEcrite(m.type, 'mark') && (html || stack.some((s) => delimiters(s.mark)[0].startsWith('{')));
+			const useHtml = HTML[m.type] && !regleEcrite(m.type, 'mark')
+				&& (html || stack.some((s) => delimiters(s.mark)[0].startsWith('{')) || accoladeContre(nodes, i, runLength(i, m)));
 			const [open, close] = useHtml ? HTML[m.type] : delimiters(m);
 			out += open;
 			stack.push({ mark: m, close });
@@ -297,7 +311,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			// texte d'un glossaire ou d'une abréviation : validé par marksAtomiques, écrit tel quel
 			// un [ final devant une note ou un fragment brut s'écrit en entité (\[[[n]] serait une note)
 			const avantCrochets = ['spipNote', 'spipRawInline'].includes(nodes[i + 1]?.type);
-			out += code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
+			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets });
+			out += chevron && !code ? texte.replace(/>/g, '&gt;') : texte;
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
 			const autobr = n.attrs?.syntax === 'autobr';
@@ -305,6 +320,7 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 			atLineStart = autobr;
 		} else if (n.type === 'spipRawInline') {
 			out += n.attrs.source;
+			if (/[<>]/.test(n.attrs.source)) chevron = n.attrs.source === '<';
 			atLineStart = false;
 		} else if (n.type === 'spipLinkAuto') {
 			out += `[${linkEnd(n.attrs)}`;
@@ -332,6 +348,15 @@ export function serializeInline(nodes = [], { lineStart = false, html = false } 
 	return out;
 }
 
+/** <…> en tête du texte d'une note (_NOTES_RACCOURCI) : blancs, puis nom possible. */
+const RE_NOM_NOTE = /^([ \t\n\v\f\r]*)<[^>'"]*>/;
+
+/**
+ * Zone de note couvrant tout le raccourci relu, comme par parse() : son texte masqué est celui où le
+ * core cherche le nom, modèles, liens et glossaire déjà remplacés (`[[<doc1|left>]]` est automatique).
+ */
+const noteDe = (raccourci) => protect(raccourci).regions.find((r) => r.kind === 'note' && r.start === 0 && r.end === raccourci.length);
+
 /**
  * Note : [[ + <nom> (nommée) ou <> (sans appel) + contenu + ]]. Le contenu est un document dont les
  * blocs gardent leur carte de segments : non modifié, il est restitué à l'identique.
@@ -341,7 +366,19 @@ function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) 
 	contexte = { ...contexte, note: true };
 	try {
 		const doc = { type: 'doc', attrs: { spipLead, spipTrail }, content: content?.length ? content : [node('paragraph')] };
-		return `[[${name == null ? '' : `<${name}>`}${serialize(doc, { conservative: avant.conservative })}]]`;
+		const nom = name == null ? '' : `<${name}>`;
+		let texte = serialize(doc, { conservative: avant.conservative });
+		// -> avant tout crochet : [[a -> b]] est un lien [a -> b] entre crochets (liens avant notes)
+		let fleche;
+		while (!noteDe(`[[${nom}${texte}]]`) && (fleche = texte.match(/^[^[\]]*?->/))) {
+			texte = `${fleche[0].slice(0, -2)}-&gt;${texte.slice(fleche[0].length)}`;
+		}
+		// note automatique dont le texte commence par <…> : le core y lirait un nom
+		const m = name == null ? texte.match(RE_NOM_NOTE) : null;
+		if (m && parseNote(`[[${texte}]]`, noteDe(`[[${texte}]]`)?.data.masked)?.name != null) {
+			texte = `${m[1]}&lt;${texte.slice(m[1].length + 1)}`;
+		}
+		return `[[${nom}${texte}]]`;
 	} finally {
 		contexte = avant;
 	}
@@ -395,7 +432,8 @@ export function escapeText(value, atLineStart, { link = false, avantCrochets = f
 		// \[ protège un lien ou une abréviation, comme dans SPIP ; pas une ancre (pre_liens) : entité
 		s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, '&#91;')
 			.replace(/\[$/, avantCrochets ? '&#91;' : '\\[')
-			.replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, '\\[');
+			// [ sans ] dans ce texte : le ], le -> ou le | peuvent venir dans un nœud suivant
+			.replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\]|(?![^\]]*\])[\s\S])/g, '\\[');
 	} else {
 		s = s.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/\|/g, '&#124;').replace(/->/g, '-&gt;');
 	}
