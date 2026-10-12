@@ -193,6 +193,20 @@ describe('panneau des notes', () => {
 		panel.destroy();
 	});
 
+	it('multi : notes de la partie affichée, mises à jour quand la langue change ; clic : popover du multi', () => {
+		const { ui } = monter('x <multi>[fr]a[[note FR]][en]b</multi> y[[autre]]');
+		editor.commands.setLangueAffichee('fr');
+		const panel = new NotesPanel({ editor, editNote: (pos) => ui.editNote(pos), editMulti: (pos) => ui.editMulti(pos) });
+		wrapper.append(panel.element);
+		expect(items(panel)).toEqual(['[1] note FR', '[2] autre']);
+		panel.liste.querySelector('button').click();
+		expect(Popover.current.form.classList.contains('tts-popover--multi')).toBe(true);
+		Popover.current.close();
+		editor.commands.setLangueAffichee('en');
+		expect(items(panel)).toEqual(['[1] autre']);
+		panel.destroy();
+	});
+
 	it('clic sur une note : popover de cette note', () => {
 		const panel = panneau();
 		panel.liste.querySelectorAll('button')[1].click();

@@ -24593,15 +24593,45 @@ var linkAutoView = (ui) => ({ node: node2 }) => {
     ignoreMutation: () => true
   };
 };
+function texteEtAppels(content, labels = []) {
+  const noeuds = [];
+  let morceau = [];
+  const ecrire2 = (avantAppel) => {
+    const t = apercu(morceau);
+    if (t) {
+      const debut = noeuds.length && /^\s/.test(morceau[0].text ?? "") ? " " : "";
+      const fin = avantAppel && /\s$/.test(morceau.at(-1).text ?? "") ? " " : "";
+      noeuds.push(debut + t + fin);
+    }
+    morceau = [];
+  };
+  let i2 = 0;
+  for (const c of content) {
+    if (c.type !== "spipNote") {
+      morceau.push(c);
+      continue;
+    }
+    ecrire2(true);
+    const appel = document.createElement("sup");
+    appel.className = "tts-note";
+    if (c.attrs?.name != null) appel.dataset.ttsNoteName = c.attrs.name;
+    appel.dataset.ttsLabel = labels[i2++] ?? "";
+    appel.title = apercu(c.attrs?.content);
+    noeuds.push(appel);
+  }
+  ecrire2(false);
+  return noeuds;
+}
 var multiView = () => ({ node: node2, decorations }) => {
   const dom = document.createElement("span");
   dom.className = "tts-multi";
   dom.contentEditable = "false";
   const render2 = (n, decos) => {
     const langue = decos?.find((d) => d.spec?.langue !== void 0)?.spec.langue;
+    const notes = decos?.find((d) => d.spec?.notes)?.spec.notes;
     const parts = n.attrs.parts ?? [];
     const affichee = partieAffichee(parts, langue ?? void 0);
-    dom.textContent = apercu(affichee?.content ?? []);
+    dom.replaceChildren(...texteEtAppels(affichee?.content ?? [], notes));
     dom.dataset.ttsMulti = JSON.stringify(parts);
     dom.dataset.ttsLang = affichee?.lang ?? "";
     dom.title = parts.map((p) => `${p.lang ?? "*"} : ${apercu(p.content)}`).join(" \xB7 ");
@@ -24966,6 +24996,7 @@ function languesDuDocument(doc4) {
   });
   return [...langues];
 }
+var langueInitiale = () => globalThis.document?.documentElement?.lang ?? "";
 var langueAffichee = (state) => clefLangues.getState(state)?.langue ?? "";
 var SpipLangues = Extension.create({
   name: "spipLangues",
@@ -24997,7 +25028,7 @@ var SpipLangues = Extension.create({
       key: clefLangues,
       state: {
         init: (_, { doc: doc4 }) => {
-          const langue = globalThis.document?.documentElement?.lang ?? "";
+          const langue = langueInitiale();
           return { langue, decorations: decorer(doc4, langue) };
         },
         apply: (tr, valeur) => {
@@ -25064,15 +25095,30 @@ var SpipNote = Node3.create({
     };
   }
 });
-function notesDuDocument(doc4) {
+function notesDuDocument(doc4, langue) {
   const notes = [];
   let n = 0;
-  doc4.descendants((node2, pos) => {
-    if (node2.type.name !== "spipNote") return;
-    const { name } = node2.attrs;
+  const noter = (pos, attrs, multi) => {
+    const { name } = attrs;
     const label2 = name == null ? String(++n) : name;
-    const aria = `${name === "" ? label("note_aria_sans_appel") : `${label("note")} ${label2}`} : ${apercu(node2.attrs.content)}`;
-    notes.push({ pos, node: node2, label: label2, aria });
+    const aria = `${name === "" ? label("note_aria_sans_appel") : `${label("note")} ${label2}`} : ${apercu(attrs.content)}`;
+    notes.push({ pos, attrs, multi, label: label2, aria });
+  };
+  doc4.descendants((node2, pos) => {
+    const type = node2.type.name;
+    if (type === "spipNote") noter(pos, node2.attrs, false);
+    else if (type === "spipMultiInline") {
+      const partie = partieAffichee(node2.attrs.parts ?? [], langue);
+      (partie?.content ?? []).filter((c) => c.type === "spipNote").forEach((c) => noter(pos, c.attrs ?? {}, true));
+    } else if (type === "spipMultiBlock") {
+      const parts = [];
+      node2.forEach((part, offset) => parts.push({ lang: part.attrs.lang, part, pos: pos + 1 + offset }));
+      const montree = partieAffichee(parts, langue);
+      montree?.part.descendants((d, p) => {
+        if (d.type.name === "spipNote") noter(montree.pos + 1 + p, d.attrs, false);
+      });
+      return false;
+    }
   });
   return notes;
 }
@@ -25080,14 +25126,25 @@ var SpipNoteNumbers = Extension.create({
   name: "spipNoteNumbers",
   addProseMirrorPlugins() {
     const key = new PluginKey("spipNoteNumbers");
-    const numeroter = (doc4) => DecorationSet.create(doc4, notesDuDocument(doc4).map(({ pos, node: node2, label: label2, aria }) => Decoration.node(pos, pos + node2.nodeSize, { "data-tts-label": label2, "aria-label": aria })));
+    const numeroter = (doc4, langue) => {
+      const notes = notesDuDocument(doc4, langue);
+      const decorations = notes.filter((note) => !note.multi).map(({ pos, label: label2, aria }) => Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, { "data-tts-label": label2, "aria-label": aria }));
+      const multis = /* @__PURE__ */ new Map();
+      for (const note of notes.filter((nt) => nt.multi)) multis.set(note.pos, [...multis.get(note.pos) ?? [], note.label]);
+      for (const [pos, labels] of multis) decorations.push(Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, {}, { notes: labels }));
+      return { langue, set: DecorationSet.create(doc4, decorations) };
+    };
     return [new Plugin({
       key,
       state: {
-        init: (_, { doc: doc4 }) => numeroter(doc4),
-        apply: (tr, set) => tr.docChanged ? numeroter(tr.doc) : set
+        init: (_, { doc: doc4 }) => numeroter(doc4, langueInitiale()),
+        // même langue que SpipLangues (l'ordre des états des plugins n'est pas garanti)
+        apply: (tr, valeur) => {
+          const langue = tr.getMeta(clefLangues) ?? valeur.langue;
+          return tr.docChanged || langue !== valeur.langue ? numeroter(tr.doc, langue) : valeur;
+        }
       },
-      props: { decorations: (state) => key.getState(state) }
+      props: { decorations: (state) => key.getState(state).set }
     })];
   }
 });
@@ -25916,8 +25973,8 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
       return true;
     }
     const { $from } = editor.state.selection;
-    const paragrapheVide = $from.parent.type.name === "paragraph" && $from.parent.content.size === 0 && $from.depth === 1;
-    if (paragrapheVide) {
+    const paragrapheVide2 = $from.parent.type.name === "paragraph" && $from.parent.content.size === 0 && $from.depth === 1;
+    if (paragrapheVide2) {
       editor.chain().focus().command(({ tr }) => {
         tr.replaceWith($from.before(), $from.after(), editor.schema.nodes.spipModelBlock.create({ model }));
         return true;
@@ -25947,16 +26004,7 @@ function openMultiPopover(contexte3, pos = null) {
   for (let d = $from.depth; d > 0; d--) {
     if ($from.node(d).type.name === "spipMultiBlock") return languesDuBloc(contexte3, $from.before(d));
   }
-  if (selection.empty && $from.depth === 1 && $from.parent.type.name === "paragraph" && $from.parent.content.size === 0) {
-    const { schema } = editor;
-    const bloc = schema.nodes.spipMultiBlock.create(null, schema.nodes.spipLangBlock.create({ lang: langueParDefaut(editor) || null }, schema.nodes.paragraph.create()));
-    const debut = $from.before();
-    editor.chain().focus().command(({ tr }) => {
-      tr.replaceWith(debut, $from.after(), bloc);
-      return true;
-    }).setTextSelection(debut + 3).run();
-    return languesDuBloc(contexte3, debut);
-  }
+  if (selection.empty && $from.depth === 1 && paragrapheVide($from.parent)) return languesDuBloc(contexte3, $from.before(), true);
   return multiEnLigne(contexte3, null);
 }
 function multiEnLigne(contexte3, existant) {
@@ -26077,8 +26125,8 @@ function multiEnLigne(contexte3, existant) {
   popover.open(lignes[0]?.langue);
   return popover;
 }
-function languesDuBloc({ editor, wrapper }, pos) {
-  const multi = editor.state.doc.nodeAt(pos);
+var paragrapheVide = (node2) => node2?.type.name === "paragraph" && node2.content.size === 0;
+function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   const suivi = suivrePosition(editor, pos);
   const popover = new Popover({
     editor,
@@ -26114,11 +26162,12 @@ function languesDuBloc({ editor, wrapper }, pos) {
     lignes.push(l);
     return l;
   };
-  multi.forEach((partie) => ajouter(partie.attrs.lang, partie));
+  if (nouveau) ajouter(langueParDefaut(editor), null);
+  else editor.state.doc.nodeAt(pos).forEach((partie) => ajouter(partie.attrs.lang, partie));
   const courant = () => {
     const p = suivi.pos();
     const node2 = p === null ? null : editor.state.doc.nodeAt(p);
-    return node2?.type.name === "spipMultiBlock" ? { p, node: node2 } : null;
+    return (nouveau ? paragrapheVide(node2) : node2?.type.name === "spipMultiBlock") ? { p, node: node2 } : null;
   };
   const appliquer = () => {
     const langues = lignes.map((l) => l.langue.value.trim() || null);
@@ -26134,11 +26183,11 @@ function languesDuBloc({ editor, wrapper }, pos) {
     if (!c) return true;
     const { schema } = editor;
     const parties = lignes.map((l, i2) => l.partie ? schema.nodes.spipLangBlock.create({ lang: langues[i2] }, l.partie.content) : schema.nodes.spipLangBlock.create({ lang: langues[i2] }, schema.nodes.paragraph.create()));
-    const relatif = editor.state.selection.from - c.p;
-    const nouveau = schema.nodes.spipMultiBlock.create(c.node.attrs, parties);
+    const relatif = nouveau ? 1 : editor.state.selection.from - c.p;
+    const bloc = schema.nodes.spipMultiBlock.create(nouveau ? null : c.node.attrs, parties);
     editor.chain().focus().command(({ tr }) => {
-      tr.replaceWith(c.p, c.p + c.node.nodeSize, nouveau);
-      const dedans = Math.max(c.p + 1, Math.min(c.p + relatif, c.p + nouveau.nodeSize - 1));
+      tr.replaceWith(c.p, c.p + c.node.nodeSize, bloc);
+      const dedans = Math.max(c.p + 1, Math.min(c.p + relatif, c.p + bloc.nodeSize - 1));
       tr.setSelection(TextSelection.near(tr.doc.resolve(dedans)));
       return true;
     }).run();
@@ -26149,17 +26198,19 @@ function languesDuBloc({ editor, wrapper }, pos) {
     ajouter("", null).langue.focus();
     return false;
   }, { name: "ajouter_langue" });
-  popover.button(label("multi_supprimer"), () => {
-    const c = courant();
-    if (!c) return;
-    const parties = [];
-    c.node.forEach((partie) => parties.push({ lang: partie.attrs.lang, partie }));
-    const garde = partieAffichee(parties, langueAffichee(editor.state) || void 0).partie;
-    editor.chain().focus().command(({ tr }) => {
-      tr.replaceWith(c.p, c.p + c.node.nodeSize, garde.content);
-      return true;
-    }).run();
-  }, { name: "supprimer" });
+  if (!nouveau) {
+    popover.button(label("multi_supprimer"), () => {
+      const c = courant();
+      if (!c) return;
+      const parties = [];
+      c.node.forEach((partie) => parties.push({ lang: partie.attrs.lang, partie }));
+      const garde = partieAffichee(parties, langueAffichee(editor.state) || void 0).partie;
+      editor.chain().focus().command(({ tr }) => {
+        tr.replaceWith(c.p, c.p + c.node.nodeSize, garde.content);
+        return true;
+      }).run();
+    }, { name: "supprimer" });
+  }
   popover.button(label("annuler"), () => {
   }, { name: "annuler" });
   popover.open(lignes[0]?.langue);
@@ -26368,9 +26419,11 @@ function creerInterface({ editor, wrapper, services }) {
 // src/ui/NotesPanel.js
 var NotesPanel = class {
   /**
-   * @param {{ editor: import('@tiptap/core').Editor, editNote: (pos: number) => void }} options
+   * @param {{ editor: import('@tiptap/core').Editor, editNote: (pos: number) => void,
+   *           editMulti?: (pos: number) => void }} options
    */
-  constructor({ editor, editNote }) {
+  constructor({ editor, editNote, editMulti = () => {
+  } }) {
     this.editor = editor;
     this.element = document.createElement("details");
     this.element.className = "tts-notes";
@@ -26379,9 +26432,10 @@ var NotesPanel = class {
     this.liste.className = "tts-notes__liste";
     this.element.append(this.resume, this.liste);
     this.editNote = editNote;
+    this.editMulti = editMulti;
     this.source = false;
     this.render = ({ transaction }) => {
-      if (transaction.docChanged) this.afficher();
+      if (transaction.docChanged || langueAffichee(this.editor.state) !== this.langue) this.afficher();
     };
     editor.on("transaction", this.render);
     this.afficher();
@@ -26392,19 +26446,21 @@ var NotesPanel = class {
     this.afficher();
   }
   afficher() {
-    const notes = notesDuDocument(this.editor.state.doc);
+    const { state } = this.editor;
+    this.langue = langueAffichee(state);
+    const notes = notesDuDocument(state.doc, this.langue);
     this.element.hidden = this.source || notes.length === 0;
     this.resume.textContent = `${label("notes")} (${notes.length})`;
-    this.liste.replaceChildren(...notes.map(({ pos, node: node2, label: numero }) => {
+    this.liste.replaceChildren(...notes.map(({ pos, attrs, multi, label: numero }) => {
       const li = document.createElement("li");
       const bouton = document.createElement("button");
       bouton.type = "button";
       bouton.className = "tts-notes__note";
       const appel = document.createElement("span");
       appel.className = "tts-notes__appel";
-      appel.textContent = node2.attrs.name === "" ? "\u2022" : `[${numero}]`;
-      bouton.append(appel, ` ${apercu(node2.attrs.content, 200)}`);
-      bouton.addEventListener("click", () => this.editNote(pos));
+      appel.textContent = attrs.name === "" ? "\u2022" : `[${numero}]`;
+      bouton.append(appel, ` ${apercu(attrs.content, 200)}`);
+      bouton.addEventListener("click", () => multi ? this.editMulti(pos) : this.editNote(pos));
       li.append(bouton);
       return li;
     }));
@@ -26498,7 +26554,7 @@ var Instance = class {
       editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em` } }
     });
     this.bridge = new TextareaBridge({ textarea, editor: this.editor });
-    this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos) });
+    this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
     this.majGlossaire = () => {
       const { from: from2, to } = this.editor.state.selection;
       this.glossaryButton.disabled = this.bridge.mode === "source" || /[[\]<>]/.test(this.editor.state.doc.textBetween(from2, to, " "));

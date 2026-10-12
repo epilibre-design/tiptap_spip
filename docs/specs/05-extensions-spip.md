@@ -22,6 +22,8 @@ comportement attendu de chacune.
 - Nœud **inline atomique** affiché comme un appel de note en exposant : `[1]`, `[A]`, ou une puce discrète
   pour `[[<>…]]`. La numérotation automatique est recalculée à chaque transaction (plugin ProseMirror
   à décorations, pas d'attribut stocké).
+  - Un multi ne rend qu'une langue : comme SPIP, seules comptent les notes de sa partie affichée (langue affichée, §5). Celles d'un multi en ligne sont numérotées dans son affichage.
+  - Le panneau des notes suit la langue affichée ; un clic sur une note d'un multi en ligne ouvre le popover du multi.
 - Survol / focus : infobulle avec l'aperçu texte de la note.
 - Clic, `Entrée` sur le nœud sélectionné ou bouton « Modifier » : **popover d'édition** contenant un
   **sous-éditeur Tiptap** (même schéma, sans les notes, barre réduite : gras, italique, lien, glossaire,
@@ -211,7 +213,7 @@ Lot L4.2 :
 - **Bouton « Multilingue »**, selon la sélection :
   - multi en ligne sélectionné, ou clic, ou `Entrée` : popover avec une ligne par partie (code de langue, sous-éditeur d'un paragraphe sans multi, retirer) et « Ajouter une langue » ;
   - curseur dans un multi bloc : popover des langues de ses parties (code, retirer, ajouter) ;
-  - paragraphe vide : nouveau multi bloc dans la langue affichée ;
+  - paragraphe vide : nouveau multi bloc dans la langue affichée, inséré à « Appliquer » (annuler laisse le paragraphe) ;
   - sinon : nouveau multi en ligne, dont la première partie est le texte sélectionné.
 - **Validation :** codes de la regex du core, une seule partie sans langue, multi relu à l'identique (`multiSeRelit`). Une partie ouverte et non modifiée garde son contenu d'origine. « Supprimer le multi » garde le texte de la langue affichée. Lien et glossaire d'une partie s'ouvrent en popovers enfants.
 - **Idiomes :** traduction calculée par SPIP (opération `idiomes`, par lots, cache) affichée à la place du raccourci, qui passe en infobulle. Clic ou `Entrée` : popover du raccourci brut, validé par le parseur, et suppression.

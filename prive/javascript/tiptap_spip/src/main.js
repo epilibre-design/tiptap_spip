@@ -122,7 +122,7 @@ class Instance {
 			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em` } },
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
-		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos) });
+		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
 		// pas de [ ] < > dans un terme de glossaire (spec 05 §2) : bouton désactivé sur une telle sélection
 		this.majGlossaire = () => {
 			const { from, to } = this.editor.state.selection;

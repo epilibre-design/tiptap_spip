@@ -39,6 +39,24 @@ describe('appels de note', () => {
 		expect(serialize(editor.getJSON())).toBe('a b[[deux]] c[[trois]]');
 	});
 
+	it('multi : seules comptent les notes de la partie affichée, numérotées dans le multi', () => {
+		document.documentElement.lang = 'fr';
+		try {
+			monter('x <multi>[fr]bonjour [[note FR]] ici[en]hello</multi> y[[autre]]\n\n<multi>[fr]un[[bloc FR]]\n\nsuite[en]one[[bloc EN]]\n\nnext</multi>');
+			const multi = document.querySelector('.tts-multi');
+			expect(multi.textContent).toBe('bonjour  ici');
+			expect(multi.querySelector('.tts-note').title).toBe('note FR');
+			// appels : celui du multi en ligne, puis ceux du document (bloc en non affiché : sans numéro)
+			expect(labels()).toEqual(['1', '2', '3', null]);
+			// SPIP en anglais : hello y[1], one[2] (oracle de rendu)
+			editor.commands.setLangueAffichee('en');
+			expect(document.querySelector('.tts-multi').textContent).toBe('hello');
+			expect(labels()).toEqual(['1', null, '2']);
+		} finally {
+			document.documentElement.lang = '';
+		}
+	});
+
 	it('infobulle : texte de la note, sans raccourcis, coupé à 80 caractères', () => {
 		monter(`x[[Voir [la doc->art1] et {{ceci}}.\n\nSuite.]] y[[${'long '.repeat(30)}]]`);
 		expect(appels()[0].title).toBe('Voir la doc et ceci. Suite.');

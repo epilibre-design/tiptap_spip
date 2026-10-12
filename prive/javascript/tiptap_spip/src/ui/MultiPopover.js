@@ -21,7 +21,8 @@ const languesValides = (langues) => langues.every((l) => l === null || RE_CODE_L
  * Multi (spec 05 §5) : selon la sélection,
  * - multi en ligne sélectionné (ou à `pos`) : ses parties, chacune dans un sous-éditeur ;
  * - curseur dans un multi bloc : les langues de ses parties ;
- * - curseur dans un paragraphe vide : nouveau multi bloc, une partie dans la langue affichée ;
+ * - curseur dans un paragraphe vide : nouveau multi bloc, une partie dans la langue affichée (inséré
+ *   à « Appliquer » seulement) ;
  * - sinon : nouveau multi en ligne ; un texte sélectionné dans un même bloc devient sa première partie.
  *
  * @param {{ editor, wrapper, services?, titles?, previews? }} contexte
@@ -37,16 +38,7 @@ export function openMultiPopover(contexte, pos = null) {
 	for (let d = $from.depth; d > 0; d--) {
 		if ($from.node(d).type.name === 'spipMultiBlock') return languesDuBloc(contexte, $from.before(d));
 	}
-	if (selection.empty && $from.depth === 1 && $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0) {
-		const { schema } = editor;
-		const bloc = schema.nodes.spipMultiBlock.create(null, schema.nodes.spipLangBlock.create({ lang: langueParDefaut(editor) || null }, schema.nodes.paragraph.create()));
-		const debut = $from.before();
-		editor.chain().focus().command(({ tr }) => {
-			tr.replaceWith(debut, $from.after(), bloc);
-			return true;
-		}).setTextSelection(debut + 3).run();
-		return languesDuBloc(contexte, debut);
-	}
+	if (selection.empty && $from.depth === 1 && paragrapheVide($from.parent)) return languesDuBloc(contexte, $from.before(), true);
 	return multiEnLigne(contexte, null);
 }
 
@@ -178,9 +170,13 @@ function multiEnLigne(contexte, existant) {
 	return popover;
 }
 
-/** Popover des langues d'un multi bloc : code de chaque partie, ajout, retrait, suppression du multi. */
-function languesDuBloc({ editor, wrapper }, pos) {
-	const multi = editor.state.doc.nodeAt(pos);
+const paragrapheVide = (node) => node?.type.name === 'paragraph' && node.content.size === 0;
+
+/**
+ * Popover des langues d'un multi bloc : code de chaque partie, ajout, retrait, suppression du multi.
+ * Nouveau multi : `pos` est le paragraphe vide qu'il remplacera.
+ */
+function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
 	const suivi = suivrePosition(editor, pos);
 	const popover = new Popover({
 		editor, wrapper, titre: label('multi_langues'), className: 'tts-popover--multi-langues',
@@ -213,12 +209,14 @@ function languesDuBloc({ editor, wrapper }, pos) {
 		lignes.push(l);
 		return l;
 	};
-	multi.forEach((partie) => ajouter(partie.attrs.lang, partie));
+	if (nouveau) ajouter(langueParDefaut(editor), null);
+	else editor.state.doc.nodeAt(pos).forEach((partie) => ajouter(partie.attrs.lang, partie));
 
+	// multi modifié, ou paragraphe vide qu'un nouveau multi remplace
 	const courant = () => {
 		const p = suivi.pos();
 		const node = p === null ? null : editor.state.doc.nodeAt(p);
-		return node?.type.name === 'spipMultiBlock' ? { p, node } : null;
+		return (nouveau ? paragrapheVide(node) : node?.type.name === 'spipMultiBlock') ? { p, node } : null;
 	};
 
 	const appliquer = () => {
@@ -237,12 +235,13 @@ function languesDuBloc({ editor, wrapper }, pos) {
 		const parties = lignes.map((l, i) => (l.partie
 			? schema.nodes.spipLangBlock.create({ lang: langues[i] }, l.partie.content)
 			: schema.nodes.spipLangBlock.create({ lang: langues[i] }, schema.nodes.paragraph.create())));
-		// le curseur garde sa place dans le multi (le multi entier est remplacé)
-		const relatif = editor.state.selection.from - c.p;
-		const nouveau = schema.nodes.spipMultiBlock.create(c.node.attrs, parties);
+		// le curseur garde sa place dans le multi (le multi entier est remplacé) ; nouveau multi : au
+		// début de sa première partie
+		const relatif = nouveau ? 1 : editor.state.selection.from - c.p;
+		const bloc = schema.nodes.spipMultiBlock.create(nouveau ? null : c.node.attrs, parties);
 		editor.chain().focus().command(({ tr }) => {
-			tr.replaceWith(c.p, c.p + c.node.nodeSize, nouveau);
-			const dedans = Math.max(c.p + 1, Math.min(c.p + relatif, c.p + nouveau.nodeSize - 1));
+			tr.replaceWith(c.p, c.p + c.node.nodeSize, bloc);
+			const dedans = Math.max(c.p + 1, Math.min(c.p + relatif, c.p + bloc.nodeSize - 1));
 			tr.setSelection(TextSelection.near(tr.doc.resolve(dedans)));
 			return true;
 		}).run();
@@ -255,17 +254,19 @@ function languesDuBloc({ editor, wrapper }, pos) {
 		return false;
 	}, { name: 'ajouter_langue' });
 	// le multi retiré laisse les paragraphes de la langue affichée
-	popover.button(label('multi_supprimer'), () => {
-		const c = courant();
-		if (!c) return;
-		const parties = [];
-		c.node.forEach((partie) => parties.push({ lang: partie.attrs.lang, partie }));
-		const garde = partieAffichee(parties, langueAffichee(editor.state) || undefined).partie;
-		editor.chain().focus().command(({ tr }) => {
-			tr.replaceWith(c.p, c.p + c.node.nodeSize, garde.content);
-			return true;
-		}).run();
-	}, { name: 'supprimer' });
+	if (!nouveau) {
+		popover.button(label('multi_supprimer'), () => {
+			const c = courant();
+			if (!c) return;
+			const parties = [];
+			c.node.forEach((partie) => parties.push({ lang: partie.attrs.lang, partie }));
+			const garde = partieAffichee(parties, langueAffichee(editor.state) || undefined).partie;
+			editor.chain().focus().command(({ tr }) => {
+				tr.replaceWith(c.p, c.p + c.node.nodeSize, garde.content);
+				return true;
+			}).run();
+		}, { name: 'supprimer' });
+	}
 	popover.button(label('annuler'), () => {}, { name: 'annuler' });
 	popover.open(lignes[0]?.langue);
 	return popover;

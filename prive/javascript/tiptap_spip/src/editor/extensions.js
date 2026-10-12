@@ -408,6 +408,9 @@ export function languesDuDocument(doc) {
 	return [...langues];
 }
 
+/** Langue de l'interface : langue affichée par les multis au départ. */
+const langueInitiale = () => globalThis.document?.documentElement?.lang ?? '';
+
 /** Langue affichée par les multis (sélecteur de la barre), la langue de l'interface par défaut. */
 export const langueAffichee = (state) => clefLangues.getState(state)?.langue ?? '';
 
@@ -446,7 +449,7 @@ const SpipLangues = Extension.create({
 			key: clefLangues,
 			state: {
 				init: (_, { doc }) => {
-					const langue = globalThis.document?.documentElement?.lang ?? '';
+					const langue = langueInitiale();
 					return { langue, decorations: decorer(doc, langue) };
 				},
 				apply: (tr, valeur) => {
@@ -522,38 +525,70 @@ const SpipNote = Node.create({
 
 /**
  * Notes du document dans l'ordre, numérotées comme SPIP : seules les notes automatiques sont
- * comptées, une note nommée porte son nom, une note sans appel n'a pas de libellé.
+ * comptées, une note nommée porte son nom, une note sans appel n'a pas de libellé. Un multi ne rend
+ * qu'une langue : seules comptent les notes de sa partie affichée (en ligne : dans ses attributs,
+ * pos est alors celle du multi).
  *
  * @param {import('@tiptap/pm/model').Node} doc
- * @returns {{ pos: number, node: import('@tiptap/pm/model').Node, label: string, aria: string }[]}
+ * @param {string} langue  langue affichée (langueAffichee)
+ * @returns {{ pos: number, attrs: { name: ?string, content: object[] }, multi: boolean, label: string, aria: string }[]}
  */
-export function notesDuDocument(doc) {
+export function notesDuDocument(doc, langue) {
 	const notes = [];
 	let n = 0;
-	doc.descendants((node, pos) => {
-		if (node.type.name !== 'spipNote') return;
-		const { name } = node.attrs;
+	const noter = (pos, attrs, multi) => {
+		const { name } = attrs;
 		const label = name == null ? String(++n) : name;
-		const aria = `${name === '' ? libelle('note_aria_sans_appel') : `${libelle('note')} ${label}`} : ${apercu(node.attrs.content)}`;
-		notes.push({ pos, node, label, aria });
+		const aria = `${name === '' ? libelle('note_aria_sans_appel') : `${libelle('note')} ${label}`} : ${apercu(attrs.content)}`;
+		notes.push({ pos, attrs, multi, label, aria });
+	};
+	doc.descendants((node, pos) => {
+		const type = node.type.name;
+		if (type === 'spipNote') noter(pos, node.attrs, false);
+		else if (type === 'spipMultiInline') {
+			const partie = partieAffichee(node.attrs.parts ?? [], langue);
+			(partie?.content ?? []).filter((c) => c.type === 'spipNote').forEach((c) => noter(pos, c.attrs ?? {}, true));
+		} else if (type === 'spipMultiBlock') {
+			const parts = [];
+			node.forEach((part, offset) => parts.push({ lang: part.attrs.lang, part, pos: pos + 1 + offset }));
+			const montree = partieAffichee(parts, langue);
+			montree?.part.descendants((d, p) => {
+				if (d.type.name === 'spipNote') noter(montree.pos + 1 + p, d.attrs, false);
+			});
+			return false;
+		}
 	});
 	return notes;
 }
 
-/** Numéros des appels de note, recalculés à chaque changement du document (décorations). */
+/**
+ * Numéros des appels de note, recalculés quand le document ou la langue affichée change
+ * (décorations). Un multi en ligne reçoit les libellés des notes de sa partie affichée (spec.notes).
+ */
 const SpipNoteNumbers = Extension.create({
 	name: 'spipNoteNumbers',
 	addProseMirrorPlugins() {
 		const key = new PluginKey('spipNoteNumbers');
-		const numeroter = (doc) => DecorationSet.create(doc, notesDuDocument(doc).map(({ pos, node, label, aria }) =>
-			Decoration.node(pos, pos + node.nodeSize, { 'data-tts-label': label, 'aria-label': aria })));
+		const numeroter = (doc, langue) => {
+			const notes = notesDuDocument(doc, langue);
+			const decorations = notes.filter((note) => !note.multi).map(({ pos, label, aria }) =>
+				Decoration.node(pos, pos + doc.nodeAt(pos).nodeSize, { 'data-tts-label': label, 'aria-label': aria }));
+			const multis = new Map();
+			for (const note of notes.filter((nt) => nt.multi)) multis.set(note.pos, [...(multis.get(note.pos) ?? []), note.label]);
+			for (const [pos, labels] of multis) decorations.push(Decoration.node(pos, pos + doc.nodeAt(pos).nodeSize, {}, { notes: labels }));
+			return { langue, set: DecorationSet.create(doc, decorations) };
+		};
 		return [new Plugin({
 			key,
 			state: {
-				init: (_, { doc }) => numeroter(doc),
-				apply: (tr, set) => (tr.docChanged ? numeroter(tr.doc) : set),
+				init: (_, { doc }) => numeroter(doc, langueInitiale()),
+				// même langue que SpipLangues (l'ordre des états des plugins n'est pas garanti)
+				apply: (tr, valeur) => {
+					const langue = tr.getMeta(clefLangues) ?? valeur.langue;
+					return tr.docChanged || langue !== valeur.langue ? numeroter(tr.doc, langue) : valeur;
+				},
 			},
-			props: { decorations: (state) => key.getState(state) },
+			props: { decorations: (state) => key.getState(state).set },
 		})];
 	},
 });

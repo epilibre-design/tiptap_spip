@@ -113,8 +113,44 @@ export const linkAutoView = (ui) => ({ node }) => {
 };
 
 /**
+ * Contenu inline affiché en texte, ses notes en appels numérotés (libellés de SpipNoteNumbers ;
+ * numéro absent : appel vide).
+ */
+function texteEtAppels(content, labels = []) {
+	const noeuds = [];
+	let morceau = [];
+	// apercu coupe les blancs de bord : ceux qui séparent un appel du texte sont gardés
+	const ecrire = (avantAppel) => {
+		const t = apercu(morceau);
+		if (t) {
+			const debut = noeuds.length && /^\s/.test(morceau[0].text ?? '') ? ' ' : '';
+			const fin = avantAppel && /\s$/.test(morceau.at(-1).text ?? '') ? ' ' : '';
+			noeuds.push(debut + t + fin);
+		}
+		morceau = [];
+	};
+	let i = 0;
+	for (const c of content) {
+		if (c.type !== 'spipNote') {
+			morceau.push(c);
+			continue;
+		}
+		ecrire(true);
+		const appel = document.createElement('sup');
+		appel.className = 'tts-note';
+		if (c.attrs?.name != null) appel.dataset.ttsNoteName = c.attrs.name;
+		appel.dataset.ttsLabel = labels[i++] ?? '';
+		appel.title = apercu(c.attrs?.content);
+		noeuds.push(appel);
+	}
+	ecrire(false);
+	return noeuds;
+}
+
+/**
  * Multi dans une phrase : texte de la partie de la langue affichée (décoration de SpipLangues, sinon
- * langue de l'interface), toutes les parties en infobulle.
+ * langue de l'interface) avec ses appels de note (décoration de SpipNoteNumbers), toutes les parties
+ * en infobulle.
  */
 export const multiView = () => ({ node, decorations }) => {
 	const dom = document.createElement('span');
@@ -122,9 +158,10 @@ export const multiView = () => ({ node, decorations }) => {
 	dom.contentEditable = 'false';
 	const render = (n, decos) => {
 		const langue = decos?.find((d) => d.spec?.langue !== undefined)?.spec.langue;
+		const notes = decos?.find((d) => d.spec?.notes)?.spec.notes;
 		const parts = n.attrs.parts ?? [];
 		const affichee = partieAffichee(parts, langue ?? undefined);
-		dom.textContent = apercu(affichee?.content ?? []);
+		dom.replaceChildren(...texteEtAppels(affichee?.content ?? [], notes));
 		// mêmes attributs que renderHTML : le HTML de la vue se relit (copier-coller)
 		dom.dataset.ttsMulti = JSON.stringify(parts);
 		dom.dataset.ttsLang = affichee?.lang ?? '';

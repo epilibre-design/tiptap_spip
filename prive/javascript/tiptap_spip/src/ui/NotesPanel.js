@@ -1,18 +1,20 @@
-import { notesDuDocument } from '../editor/extensions.js';
+import { langueAffichee, notesDuDocument } from '../editor/extensions.js';
 import { apercu } from '../editor/texte.js';
 import { label } from './labels.js';
 
 /**
  * Panneau des notes (spec 05 §1) : sous l'éditeur, repliable, la liste des notes du texte comme
  * elles apparaîtront en bas de l'article. Vue dérivée du document, recalculée à chaque changement
- * (rechargement depuis le mode source compris, qui n'émet pas d'update) ; cliquer sur une note la
- * sélectionne et ouvre son popover. Masqué sans note et en mode source.
+ * (rechargement depuis le mode source compris, qui n'émet pas d'update) et quand la langue affichée
+ * change (seules comptent les notes de la partie affichée d'un multi). Cliquer sur une note ouvre
+ * son popover, ou celui du multi qui la contient. Masqué sans note et en mode source.
  */
 export class NotesPanel {
 	/**
-	 * @param {{ editor: import('@tiptap/core').Editor, editNote: (pos: number) => void }} options
+	 * @param {{ editor: import('@tiptap/core').Editor, editNote: (pos: number) => void,
+	 *           editMulti?: (pos: number) => void }} options
 	 */
-	constructor({ editor, editNote }) {
+	constructor({ editor, editNote, editMulti = () => {} }) {
 		this.editor = editor;
 		this.element = document.createElement('details');
 		this.element.className = 'tts-notes';
@@ -21,9 +23,10 @@ export class NotesPanel {
 		this.liste.className = 'tts-notes__liste';
 		this.element.append(this.resume, this.liste);
 		this.editNote = editNote;
+		this.editMulti = editMulti;
 		this.source = false;
 		this.render = ({ transaction }) => {
-			if (transaction.docChanged) this.afficher();
+			if (transaction.docChanged || langueAffichee(this.editor.state) !== this.langue) this.afficher();
 		};
 		editor.on('transaction', this.render);
 		this.afficher();
@@ -36,19 +39,21 @@ export class NotesPanel {
 	}
 
 	afficher() {
-		const notes = notesDuDocument(this.editor.state.doc);
+		const { state } = this.editor;
+		this.langue = langueAffichee(state);
+		const notes = notesDuDocument(state.doc, this.langue);
 		this.element.hidden = this.source || notes.length === 0;
 		this.resume.textContent = `${label('notes')} (${notes.length})`;
-		this.liste.replaceChildren(...notes.map(({ pos, node, label: numero }) => {
+		this.liste.replaceChildren(...notes.map(({ pos, attrs, multi, label: numero }) => {
 			const li = document.createElement('li');
 			const bouton = document.createElement('button');
 			bouton.type = 'button';
 			bouton.className = 'tts-notes__note';
 			const appel = document.createElement('span');
 			appel.className = 'tts-notes__appel';
-			appel.textContent = node.attrs.name === '' ? '•' : `[${numero}]`;
-			bouton.append(appel, ` ${apercu(node.attrs.content, 200)}`);
-			bouton.addEventListener('click', () => this.editNote(pos));
+			appel.textContent = attrs.name === '' ? '•' : `[${numero}]`;
+			bouton.append(appel, ` ${apercu(attrs.content, 200)}`);
+			bouton.addEventListener('click', () => (multi ? this.editMulti(pos) : this.editNote(pos)));
 			li.append(bouton);
 			return li;
 		}));

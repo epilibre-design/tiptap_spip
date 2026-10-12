@@ -105,12 +105,28 @@ describe('multi bloc', () => {
 		editor.commands.setTextSelection(apres('Avant'));
 		editor.commands.splitBlock();
 		ui.editMulti(null);
-		expect(editor.state.doc.child(1).type.name).toBe('spipMultiBlock');
+		// inséré à « Appliquer » seulement
+		expect(editor.state.doc.child(1).type.name).toBe('paragraph');
+		expect(wrapper.querySelector('[name=supprimer]')).toBeNull();
 		cliquer('ajouter_langue');
 		lignes()[1].langue.value = 'en';
 		valider();
+		expect(editor.state.doc.child(1).type.name).toBe('spipMultiBlock');
 		editor.commands.insertContent('Bonjour');
 		expect(source()).toBe('Avant\n\n<multi>[fr]Bonjour[en]</multi>');
+	});
+
+	it('nouveau multi bloc annulé, ou fermé par Échap : document inchangé', () => {
+		document.documentElement.lang = 'fr';
+		const { ui } = monter('');
+		ui.editMulti(null);
+		cliquer('annuler');
+		expect(popovers()).toHaveLength(0);
+		expect(source()).toBe('');
+		ui.editMulti(null);
+		champ('langue').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+		expect(popovers()).toHaveLength(0);
+		expect(source()).toBe('');
 	});
 
 	it('curseur dans un multi bloc : langues modifiées, partie retirée, puis multi supprimé', () => {
