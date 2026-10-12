@@ -50,6 +50,15 @@ final class FonctionsTest extends TestCase
 		);
 	}
 
+	public function testGlossairesProposesSelonLaConfiguration(): void {
+		test_reset_globals();
+		$fonctions = ['glossaire_wikipedia', 'glossaire_mots'];
+		$this->assertSame(['mots', 'wikipedia'], tiptap_spip_glossaires_proposes($fonctions));
+
+		$GLOBALS['_test_config']['tiptap_spip'] = ['glossaires' => ['wikipedia', 'disparu']];
+		$this->assertSame(['wikipedia'], tiptap_spip_glossaires_proposes($fonctions));
+	}
+
 	public function testCleDIdiome(): void {
 		foreach (['tiptap_spip:lien', 'info_titre', 'A_b:C9'] as $cle) {
 			$this->assertTrue(tiptap_spip_est_cle_idiome($cle), $cle);

@@ -332,6 +332,35 @@ describe('tiptap_spip_init', () => {
 		}
 	});
 
+	it('formulaire d\'objet : seuls les champs de data-tts-champs sont équipés', () => {
+		page(`<form class="formulaire_spip" data-tts-champs="texte ps">
+			<textarea class="inserer_barre_edition" name="texte">a</textarea>
+			<textarea class="inserer_barre_edition" name="chapo">b</textarea>
+			<textarea class="inserer_barre_edition" name="ps">c</textarea>
+		</form>
+		<form class="formulaire_spip" data-tts-champs=""><textarea name="texte">d</textarea></form>`);
+		tiptap_spip_init();
+		expect([...instances].map((i) => i.textarea.name)).toEqual(['texte', 'ps']);
+		expect(document.querySelector('textarea[name=chapo]').classList.contains('no_barre')).toBe(false);
+	});
+
+	it('crayons : seulement les champs configurés des objets connus', () => {
+		const crayon = (cle, nom, champ) => `<form class="formulaire_crayon"><input class="crayon-id" value="${cle}"><input type="hidden" name="name_${cle}" value="${nom}"><textarea class="crayon-active" name="content_${cle}_${champ}">x</textarea></form>`;
+		page(crayon('w1', 'article-texte-1', 'texte') + crayon('w2', 'article-chapo-1', 'chapo') + crayon('w3', 'livre-resume-2', 'resume'));
+		globalThis.spipConfig = { tiptap_spip: { crayons: true, champs: { article: ['texte'] } } };
+		tiptap_spip_init();
+		expect([...instances].map((i) => i.textarea.name)).toEqual(['content_w1_texte', 'content_w3_resume']);
+	});
+
+	it('niveaux d\'intertitres de la configuration dans le menu Titre', () => {
+		page('<textarea class="inserer_barre_edition" name="texte">a</textarea>');
+		globalThis.spipConfig = { tiptap_spip: { niveaux: [2, 5] } };
+		tiptap_spip_init();
+		document.querySelector('.tts-outil[aria-label=Titre]').click();
+		const items = [...document.querySelectorAll('.tts-menu--titre [role=menuitemradio]')];
+		expect(items.map((i) => i.textContent)).toEqual(['Paragraphe', 'Intertitre', 'Titre de niveau 5']);
+	});
+
 	it('styles de contenu : espace privé par défaut, ou data-tts-styles', () => {
 		page('<textarea class="inserer_barre_edition">a</textarea><textarea class="inserer_barre_edition" data-tts-styles="site">b</textarea>');
 		globalThis.spipConfig = { tiptap_spip: { prive: true } };

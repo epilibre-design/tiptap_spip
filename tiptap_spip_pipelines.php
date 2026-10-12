@@ -8,6 +8,8 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 	return;
 }
 
+include_spip('inc/tiptap_spip_config');
+
 /**
  * Configuration, feuilles de style et bundle de l'éditeur, à insérer dans le <head> (SPIP 4).
  * La configuration est calculée avec `prive` dans son contexte : le même squelette sert l'espace
@@ -50,8 +52,7 @@ function tiptap_spip_header_prive($flux) {
  * formulaires publics et Crayons (spec 02 §6).
  */
 function tiptap_spip_insert_head($flux) {
-	include_spip('inc/config');
-	if (lire_config('tiptap_spip/public', 'non') !== 'oui') {
+	if (tiptap_spip_config()['public'] !== 'oui') {
 		return $flux;
 	}
 	return $flux . tiptap_spip_head(false);
@@ -64,16 +65,6 @@ function tiptap_spip_importmap($flux) {
 	$flux['data'][] = 'tiptap_spip.js';
 
 	return $flux;
-}
-
-/**
- * Champs équipés de l'éditeur pour un objet : un formulaire de services par champ.
- * Le lancement JS équipe le champ texte des formulaires SPIP (spec 02 §6).
- *
- * @return string[]
- */
-function tiptap_spip_champs(string $objet): array {
-	return ['texte'];
 }
 
 /**
@@ -96,15 +87,23 @@ function tiptap_spip_contextes(): array {
  * Contexte de l'éditeur pour un formulaire : formulaires d'objet (editer_<objet>), ou déclarés par
  * tiptap_spip_contextes.
  *
+ * Un formulaire d'objet n'est pris en charge que pour un objet éditable ; ses champs sont ceux de la
+ * configuration, éventuellement aucun.
+ *
  * @return array{objet: string, id_objet: int, champs: string[], marquer: bool}|null  marquer : poser
- *         data-tts-toolbar sur les textareas des champs (le lancement JS ne les reconnaît pas seul)
+ *         data-tts-toolbar sur les textareas des champs (le lancement JS ne les reconnaît pas seul) ;
+ *         sinon (formulaires d'objet), data-tts-champs sur le formulaire : seuls ces champs sont équipés
  */
 function tiptap_spip_contexte_formulaire(string $form, array $args, array $contexte): ?array {
 	if (str_starts_with($form, 'editer_')) {
 		// formulaires d'objet (editer_objet) : SPIP transmet ['type' => objet, 'id' => id] comme args
 		$objet = (string) ($args['type'] ?? substr($form, 7));
+		$champs = tiptap_spip_champs($objet);
+		if ($champs === null) {
+			return null;
+		}
 		$id_objet = intval($args['id'] ?? $args[0] ?? 0);
-		return ['objet' => $objet, 'id_objet' => max(0, $id_objet), 'champs' => tiptap_spip_champs($objet), 'marquer' => false];
+		return ['objet' => $objet, 'id_objet' => max(0, $id_objet), 'champs' => $champs, 'marquer' => false];
 	}
 	$declares = tiptap_spip_contextes();
 	if (!isset($declares[$form]) || !is_callable($declares[$form])) {
@@ -145,11 +144,16 @@ function tiptap_spip_formulaire_fond($flux) {
 			'champ' => $champ,
 		]);
 	}
+	// formulaire d'objet : le lancement JS n'équipe que les champs configurés
+	$champs = $c['marquer'] ? '' : ' data-tts-champs="' . htmlspecialchars(implode(' ', $c['champs'])) . '"';
 	if (trim($services) === '') {
+		if ($champs !== '') {
+			$flux['data'] = preg_replace('/<form\b/i', '<form' . $champs, $flux['data'], 1);
+		}
 		return $flux;
 	}
 	$instance = 'tts-' . bin2hex(random_bytes(6));
-	$data = preg_replace('/<form\b/i', '<form data-tts-instance="' . $instance . '"', $flux['data'], 1);
+	$data = preg_replace('/<form\b/i', '<form data-tts-instance="' . $instance . '"' . $champs, $flux['data'], 1);
 	if ($c['marquer']) {
 		foreach ($c['champs'] as $champ) {
 			$data = preg_replace(

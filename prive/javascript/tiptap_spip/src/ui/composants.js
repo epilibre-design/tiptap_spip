@@ -1,3 +1,4 @@
+import { config } from '../config.js';
 import { ALIGNEMENTS, alignementActif, selectionAlignee } from '../editor/edition.js';
 import { langueAffichee, languesDuDocument } from '../editor/extensions.js';
 import { boutonOutil, habiller, menuOutil } from './boutons.js';
@@ -83,7 +84,8 @@ const COMPOSANTS = {
 	annuler: commande('annuler', 'undo', 'Mod-z'),
 	retablir: commande('retablir', 'redo', 'Mod-Shift-z'),
 
-	titre: ({ editor }, { niveaux = [2, 3, 4] }) => {
+	// niveaux : ceux de la barre, sinon ceux de la configuration (page configurer_tiptap_spip)
+	titre: ({ editor }, { niveaux = config().niveaux ?? [2, 3, 4] }) => {
 		const schema = niveauxDuSchema(editor);
 		const proposes = niveaux.filter((n) => schema.includes(n));
 		const menu = menuOutil({

@@ -8,8 +8,7 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 	return;
 }
 
-/** Options d'encodage JSON : aucun < > & ' " littéral, donc ni </script> ni balise dans un bloc JSON. */
-const TIPTAP_SPIP_JSON = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+include_spip('inc/tiptap_spip_config');
 
 /**
  * Filtre : encode une valeur en JSON insérable dans un <script type="application/json">.
@@ -84,6 +83,19 @@ function tiptap_spip_glossaires(?array $fonctions = null): array {
 	$noms = array_keys($noms);
 	sort($noms);
 	return $noms;
+}
+
+/**
+ * Glossaires nommés proposés dans le popover : ceux retenus par la configuration parmi ceux qui
+ * existent, tous tant qu'aucun choix n'a été fait. Le glossaire par défaut l'est toujours.
+ *
+ * @param ?string[] $fonctions  fonctions définies (get_defined_functions() par défaut)
+ * @return string[]
+ */
+function tiptap_spip_glossaires_proposes(?array $fonctions = null): array {
+	$tous = tiptap_spip_glossaires($fonctions);
+	$choisis = tiptap_spip_config()['glossaires'];
+	return $choisis === null ? $tous : array_values(array_intersect($tous, $choisis));
 }
 
 /**

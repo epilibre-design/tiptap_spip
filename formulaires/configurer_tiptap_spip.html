@@ -1,0 +1,87 @@
+<div class="formulaire_spip formulaire_configurer formulaire_#FORM" id="formulaire_#FORM">
+	<h3 class="titrem"><:tiptap_spip:cfg_titre:></h3>
+	[<div class="reponse_formulaire reponse_formulaire_ok" role="status">(#ENV*{message_ok})</div>]
+	[<div class="reponse_formulaire reponse_formulaire_erreur" role="alert">(#ENV*{message_erreur})</div>]
+	[(#ENV{editable}|oui)
+	<form method="post" action="#ENV{action}"><div>
+		#ACTION_FORMULAIRE
+		<fieldset>
+			<legend><:tiptap_spip:cfg_activation:></legend>
+			<div class="editer-groupe">
+				<div class="editer editer_public">
+					<div class="choix">
+						<input type="checkbox" class="checkbox" name="public" id="tts_cfg_public" value="oui"[ (#ENV{public}|=={oui}|oui)checked="checked"] />
+						<label for="tts_cfg_public"><:tiptap_spip:cfg_public:></label>
+					</div>
+				</div>
+				<div class="editer editer_crayons">
+					<div class="choix">
+						<input type="checkbox" class="checkbox" name="crayons" id="tts_cfg_crayons" value="oui"[ (#ENV{crayons}|=={oui}|oui)checked="checked"] />
+						<label for="tts_cfg_crayons"><:tiptap_spip:cfg_crayons:></label>
+					</div>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend><:tiptap_spip:cfg_champs:></legend>
+			<p class="explication"><:tiptap_spip:cfg_champs_explication:></p>
+			[<span class="erreur_message">(#ENV*{erreurs/champs})</span>]
+			<div class="editer-groupe">
+				<BOUCLE_objets(DATA){source tableau, #ENV{_objets}}>
+				<div class="editer editer_champs_#CLE[ (#ENV*{erreurs/champs}|oui)erreur]" role="group" aria-labelledby="tts_cfg_objet_#CLE">
+					<div class="label" id="tts_cfg_objet_#CLE">#VALEUR{titre}</div>
+					<BOUCLE_champs(DATA){source tableau, #VALEUR{champs}}>
+					<div class="choix">
+						<input type="checkbox" class="checkbox" name="champs\[#_objets:CLE\]\[\]" id="tts_cfg_#_objets:CLE[_(#CLE)]" value="#CLE"[ (#ENV{champs}|table_valeur{#_objets:CLE}|find{#CLE}|oui)checked="checked"] />
+						<label for="tts_cfg_#_objets:CLE[_(#CLE)]">#VALEUR</label>
+					</div>
+					</BOUCLE_champs>
+				</div>
+				</BOUCLE_objets>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend><:tiptap_spip:cfg_edition:></legend>
+			<div class="editer-groupe">
+				<div class="editer editer_mode[ (#ENV*{erreurs/mode}|oui)erreur]" role="radiogroup" aria-labelledby="tts_cfg_mode">
+					<div class="label" id="tts_cfg_mode"><:tiptap_spip:cfg_mode:></div>
+					[<span class="erreur_message">(#ENV*{erreurs/mode})</span>]
+					<div class="choix">
+						<input type="radio" class="radio" name="mode" id="tts_cfg_mode_visual" value="visual"[ (#ENV{mode}|=={source}|non)checked="checked"] />
+						<label for="tts_cfg_mode_visual"><:tiptap_spip:cfg_mode_visuel:></label>
+					</div>
+					<div class="choix">
+						<input type="radio" class="radio" name="mode" id="tts_cfg_mode_source" value="source"[ (#ENV{mode}|=={source}|oui)checked="checked"] />
+						<label for="tts_cfg_mode_source"><:tiptap_spip:cfg_mode_source:></label>
+					</div>
+				</div>
+				<div class="editer editer_niveaux[ (#ENV*{erreurs/niveaux}|oui)erreur]" role="group" aria-labelledby="tts_cfg_niveaux">
+					<div class="label" id="tts_cfg_niveaux"><:tiptap_spip:cfg_niveaux:></div>
+					<p class="explication"><:tiptap_spip:cfg_niveaux_explication:></p>
+					[<span class="erreur_message">(#ENV*{erreurs/niveaux})</span>]
+					<BOUCLE_niveaux(DATA){source tableau, #ENV{_niveaux}}>
+					<div class="choix">
+						<input type="checkbox" class="checkbox" name="niveaux\[\]" id="tts_cfg_niveau_#VALEUR" value="#VALEUR"[ (#ENV{niveaux}|find{#VALEUR}|oui)checked="checked"] />
+						<label for="tts_cfg_niveau_#VALEUR">[(#VALEUR|=={2}|?{<:tiptap_spip:outil_intertitre:>,<:tiptap_spip:outil_titre_niveau{niveau=#VALEUR}:>})]</label>
+					</div>
+					</BOUCLE_niveaux>
+				</div>
+				<B_glossaires>
+				<div class="editer editer_glossaires[ (#ENV*{erreurs/glossaires}|oui)erreur]" role="group" aria-labelledby="tts_cfg_glossaires">
+					<div class="label" id="tts_cfg_glossaires"><:tiptap_spip:cfg_glossaires:></div>
+					<p class="explication"><:tiptap_spip:cfg_glossaires_explication:></p>
+					[<span class="erreur_message">(#ENV*{erreurs/glossaires})</span>]
+					<BOUCLE_glossaires(DATA){source tableau, #ENV{_glossaires}}>
+					<div class="choix">
+						<input type="checkbox" class="checkbox" name="glossaires\[\]" id="tts_cfg_glossaire_#VALEUR" value="#VALEUR"[ (#ENV{glossaires}|find{#VALEUR}|oui)checked="checked"] />
+						<label for="tts_cfg_glossaire_#VALEUR">#VALEUR</label>
+					</div>
+					</BOUCLE_glossaires>
+				</div>
+				</B_glossaires>
+			</div>
+		</fieldset>
+		<p class="boutons"><input type="submit" class="btn submit" value="<:bouton_enregistrer:>" /></p>
+	</div></form>
+	]
+</div>

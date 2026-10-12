@@ -3,6 +3,9 @@ var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
+// src/config.js
+var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
+
 // node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
 var __defProp2 = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {
@@ -27141,7 +27144,8 @@ var CARACTERES = ["\xC0", "\xC9", "\xC8", "\xE6", "\xC6", "\u0153", "\u0152", "\
 var COMPOSANTS = {
   annuler: commande("annuler", "undo", "Mod-z"),
   retablir: commande("retablir", "redo", "Mod-Shift-z"),
-  titre: ({ editor }, { niveaux = [2, 3, 4] }) => {
+  // niveaux : ceux de la barre, sinon ceux de la configuration (page configurer_tiptap_spip)
+  titre: ({ editor }, { niveaux = config().niveaux ?? [2, 3, 4] }) => {
     const schema = niveauxDuSchema(editor);
     const proposes = niveaux.filter((n) => schema.includes(n));
     const menu = menuOutil({
@@ -27436,7 +27440,6 @@ var SELECTOR = [
   "textarea[data-tts-toolbar]"
 ].join(", ");
 var CRAYONS = ".formulaire_crayon textarea.crayon-active";
-var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
 var selecteur = () => config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR;
 var PREFERENCE = "tiptap_spip.mode";
 var lirePreference = () => {
@@ -27453,6 +27456,14 @@ var ecrirePreference = (mode) => {
   }
 };
 var nomDuChamp = (textarea) => textarea.labels?.[0]?.textContent.replace(/\s+/g, " ").trim() || textarea.getAttribute("aria-label") || textarea.title || label("zone_texte");
+function champConfigure(textarea) {
+  const champs = textarea.form?.dataset.ttsChamps;
+  if (champs !== void 0) return champs.split(" ").includes(textarea.name);
+  if (!textarea.matches(CRAYONS)) return true;
+  const { objet, champ } = contexte2(textarea);
+  const retenus = config().champs?.[objet];
+  return !retenus || retenus.includes(champ);
+}
 var MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
 var instances = /* @__PURE__ */ new Set();
 var observer = null;
@@ -27593,7 +27604,7 @@ function tiptap_spip_init(racine = document, { createEditor: createEditor2 = cre
     root.querySelectorAll(sel).forEach((t) => textareas.add(t));
   }
   for (const textarea of textareas) {
-    if (textarea.dataset.ttsMounted || textarea.matches(MARKDOWN_EDITOR)) continue;
+    if (textarea.dataset.ttsMounted || textarea.matches(MARKDOWN_EDITOR) || !champConfigure(textarea)) continue;
     textarea.dataset.ttsMounted = "oui";
     releasePortePlume(textarea);
     try {

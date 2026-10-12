@@ -225,3 +225,45 @@
    - anomalie signalée, corrigée par le popover, source enregistrée ;
    - audit axe (`@axe-core/playwright`) de l'éditeur, d'un popover ouvert et d'un menu ouvert : aucune violation critique (critère 7).
    - Specs 06 §4, §5, §7 et 08, plus le bundle.
+
+## Tâches L5.3
+
+**Constats (site jetable, SPIP 4.4) :**
+- **Champs candidats d'un objet :** champs de `champs_editables` des objets `editable`, dont le traitement (`$table_des_traitements`, clé de la table, sinon `0`) passe par `propre(`.
+  - `article` : `descriptif`, `chapo`, `texte`, `ps` ; `rubrique`, `mot`, `groupe_mots` : `texte`, `descriptif` ;
+  - `auteur` : `bio` ; `site`, `document` : `descriptif`.
+  - `titre`, `soustitre`, `nom_site` passent par `typo` : jamais proposés.
+- **Pas de Saisies sur le site jetable :** formulaire CVT simple, avec ses `charger` / `verifier` / `traiter`. L'autorisation `configurer` est vérifiée par le core pour tout `configurer_*`.
+- **Modèles masqués :** l'interface ne liste aucun modèle tant que le catalogue (`inserer_modeles`, Q3) n'existe pas. L'option est reportée avec lui.
+
+1. **Configuration lue côté PHP** (`tiptap_spip_fonctions.php`) :
+   - `tiptap_spip_config()` : valeurs de la méta `tiptap_spip`, complétées par les défauts :
+     - `public` et `crayons` : `non` ;
+     - `mode` : `visual` ;
+     - `niveaux` : `[2, 3, 4]` ;
+     - `champs` : absent (tous les candidats) ;
+     - `glossaires` : absent (tous).
+   - `tiptap_spip_champs_candidats()`, puis `tiptap_spip_champs($objet)` lu dans la config (un objet absent de la config : tous ses candidats) ;
+   - `tiptap_spip_glossaires_proposes()` : glossaires nommés retenus, parmi ceux qui existent. L'opération `glossaire` les renvoie ; elle accepte toujours tous les glossaires du site.
+   - `formulaire_fond` pose `data-tts-champs="texte chapo"` sur le `<form>` des `editer_*`, même sans champ équipé (attribut vide : rien n'est équipé).
+   - Config JS : `mode`, `niveaux`, `champs` (objet → champs).
+2. **Page CFG :**
+   - `formulaires/configurer_tiptap_spip.{html,php}` :
+     - activation publique et crayons ;
+     - une case par champ candidat, groupés par objet ;
+     - mode par défaut ;
+     - niveaux d'intertitres (2 à 6, au moins un) ;
+     - glossaires nommés.
+   - `verifier` rejette les valeurs hors liste ; `traiter` écrit la méta `tiptap_spip`.
+   - `prive/squelettes/contenu/configurer_tiptap_spip.html` ; entrée de menu `configurer_tiptap_spip` sous Configuration.
+3. **JS :**
+   - un textarea d'un formulaire `[data-tts-champs]` n'est équipé que si son `name` y figure ;
+   - un crayon dont l'objet est dans `config().champs` n'est équipé que si son champ y figure ;
+   - le composant `titre` prend `niveaux` de ses options, sinon de la config, sinon `[2, 3, 4]`.
+   - e2e : configuration enregistrée par la page, puis effet sur `editer_article` (champ décoché laissé au porte-plume, mode source par défaut, niveaux du menu Titre).
+4. **Contrôle i18n** (Vitest) : chaque clé de `DEFAUTS` (`labels.js`) est dans `lang/tiptap_spip_fr.php` et dans `09_tiptap_spip_config.js.html` ; aucune clé de la config JS n'est inconnue de `DEFAUTS`.
+5. **Popovers et axe :**
+   - le popover devient un `<div role="dialog">` qui contient le `<form>` (violation `aria-allowed-role` : un `form` ne peut pas porter `role="dialog"`) ;
+   - l'audit axe n'accepte plus aucune violation.
+6. **Critère 6 :** e2e Chromium, parse + montage d'un texte de 50 000 caractères en moins de 150 ms (médiane de 5 montages après un premier de chauffe). Les parcours complets du document à chaque transaction sont optimisés si la mesure l'exige.
+7. **Critère 8 :** projets Playwright `firefox` et `webkit` (navigateurs installés par `npx playwright install`). Specs 02, 06, 08 et 09 mises à jour, bundle reconstruit.

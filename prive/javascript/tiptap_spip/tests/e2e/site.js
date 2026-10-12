@@ -17,6 +17,7 @@ export const inserer = (table, champs) => Number(php(['inserer', table, JSON.str
 export const activer = (...prefixes) => php(['activer', ...prefixes]);
 export const publier = (id) => php(['publier', String(id)]);
 export const configurer = (cle, valeur) => php(['config', cle, valeur]);
+export const effacerConfig = (cle) => php(['effacer_config', cle]);
 
 /** Fins de ligne telles que le navigateur les soumet. */
 export const crlf = (s) => s.replace(/\r?\n/g, '\r\n');
@@ -25,19 +26,19 @@ export const configure = (test) => test.skip(!process.env.TTS_SITE || !process.e
 
 /**
  * Crée un article, ouvre une session et charge sa page d'édition.
- * @param {{ sansEditeur?: boolean, avant?: (id: number) => void, titre?: string, auteur?: number }} options
- *        sansEditeur : bundle bloqué, textarea natif ; avant : préparation après la création de
+ * @param {{ sansEditeur?: boolean, source?: boolean, avant?: (id: number) => void, titre?: string, auteur?: number }} options
+ *        sansEditeur : bundle bloqué, textarea natif ; source : éditeur attendu en mode source ; avant : préparation après la création de
  *        l'article (document lié…) ; titre : titre de l'article (défaut « Test tiptap_spip ») ;
  *        auteur : auteur de l'article et de la session (1, l'administrateur, par défaut)
  */
-export async function editer(page, source, { sansEditeur = false, avant, titre = 'Test tiptap_spip', auteur = 1 } = {}) {
+export async function editer(page, source, { sansEditeur = false, source: modeSource = false, avant, titre = 'Test tiptap_spip', auteur = 1 } = {}) {
 	const { id_article: id, cookie } = JSON.parse(php(['preparer', 'tts-e2e', titre, String(auteur)], source));
 	avant?.(id);
 	const url = new URL(process.env.TTS_URL);
 	await page.context().addCookies([{ name: 'spip_session', value: cookie, domain: url.hostname, path: '/' }]);
 	if (sansEditeur) await page.route(/tiptap_spip(\.min)?\.js/, (route) => route.abort());
 	await page.goto(`/ecrire/?exec=article_edit&id_article=${id}`);
-	if (!sansEditeur) await expect(page.locator('.tts-editor .ProseMirror')).toBeVisible();
+	if (!sansEditeur) await expect(page.locator(modeSource ? '.tts-editor textarea' : '.tts-editor .ProseMirror')).toBeVisible();
 	return id;
 }
 

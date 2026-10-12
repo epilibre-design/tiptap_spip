@@ -115,7 +115,7 @@ function formulaires_tiptap_spip_traiter_dist($objet = '', $id_objet = 0, $champ
 		'rechercher' => tiptap_spip_rechercher(trim((string) _request('q')), tiptap_spip_liste(_request('objets'), 10, 30)),
 		'glossaire' => [
 			'url' => _request('raccourci') ? tiptap_spip_url_glossaire((string) _request('raccourci'), (string) $objet, intval($id_objet)) : null,
-			'glossaires' => tiptap_spip_glossaires(),
+			'glossaires' => tiptap_spip_glossaires_proposes(),
 		],
 		'idiomes' => tiptap_spip_traduire_idiomes(tiptap_spip_liste(_request('cles'), 50, 100), (string) $objet, intval($id_objet)),
 	};

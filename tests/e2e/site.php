@@ -30,8 +30,8 @@
 
 $root = rtrim((string) getenv('SPIP_ROOT'), '/');
 $commande = $argv[1] ?? '';
-if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'modifier', 'document', 'auteur', 'inserer', 'publier', 'activer', 'config'], true)) {
-	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | modifier <id_article> [champ] | document <id_article> | auteur <statut> | inserer <table> <champs JSON> | publier <id_article> | activer <préfixe>… | config <clé> <valeur>\n");
+if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'modifier', 'document', 'auteur', 'inserer', 'publier', 'activer', 'config', 'effacer_config'], true)) {
+	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | modifier <id_article> [champ] | document <id_article> | auteur <statut> | inserer <table> <champs JSON> | publier <id_article> | activer <préfixe>… | config <clé> <valeur> | effacer_config <clé>\n");
 	exit(2);
 }
 
@@ -71,6 +71,12 @@ if ($commande === 'activer') {
 if ($commande === 'config') {
 	include_spip('inc/config');
 	ecrire_config((string) ($argv[2] ?? ''), (string) ($argv[3] ?? ''));
+	exit(0);
+}
+
+if ($commande === 'effacer_config') {
+	include_spip('inc/config');
+	effacer_config((string) ($argv[2] ?? ''));
 	exit(0);
 }
 

@@ -21,6 +21,23 @@ function test_reset_globals(): void {
 	$GLOBALS['_test_chemins'] = [];
 	$GLOBALS['_test_config'] = [];
 	$GLOBALS['_test_pipelines'] = [];
+	$GLOBALS['_test_request'] = [];
+	// objets éditoriaux et traitements, comme SPIP 4.4 les déclare (extrait)
+	$GLOBALS['_test_objets'] = [
+		'spip_articles' => ['type' => 'article', 'table_objet' => 'articles', 'editable' => 'oui', 'champs_editables' => ['surtitre', 'titre', 'descriptif', 'chapo', 'texte', 'ps']],
+		'spip_auteurs' => ['type' => 'auteur', 'table_objet' => 'auteurs', 'editable' => 'oui', 'champs_editables' => ['nom', 'bio', 'nom_site']],
+		'spip_forum' => ['type' => 'forum', 'table_objet' => 'forums', 'editable' => false, 'champs_editables' => ['titre', 'texte']],
+		'spip_syndic_articles' => ['type' => 'syndic_article', 'table_objet' => 'syndic_articles', 'editable' => 'oui', 'champs_editables' => ['titre', 'descriptif']],
+	];
+	$GLOBALS['table_des_traitements'] = [
+		'TEXTE' => [0 => 'propre(%s, $connect, $Pile[0])', 'forums' => 'safehtml(propre(%s))'],
+		'CHAPO' => ['propre(%s, $connect, $Pile[0])'],
+		'PS' => ['propre(%s, $connect, $Pile[0])'],
+		'DESCRIPTIF' => [0 => 'propre(%s, $connect, $Pile[0])', 'syndic_articles' => 'safehtml(%s)'],
+		'BIO' => ['safehtml(propre(%s, $connect, $Pile[0]))'],
+		'TITRE' => ['supprimer_numero(typo(%s, "TYPO", $connect, $Pile[0]))'],
+		'NOM_SITE' => ['typo(%s, "TYPO", $connect, $Pile[0])'],
+	];
 }
 
 test_reset_globals();
@@ -53,6 +70,38 @@ if (!function_exists('pipeline')) {
 	}
 }
 
+if (!function_exists('ecrire_config')) {
+	function ecrire_config(string $cle, $valeur): bool {
+		$GLOBALS['_test_config'][$cle] = $valeur;
+		return true;
+	}
+}
+
+if (!function_exists('_request')) {
+	function _request(string $nom) {
+		return $GLOBALS['_test_request'][$nom] ?? null;
+	}
+}
+
+if (!function_exists('_T')) {
+	/** Simulation : la clé, suivie des arguments. */
+	function _T(string $cle, array $args = []): string {
+		return $cle . ($args ? ' ' . json_encode($args) : '');
+	}
+}
+
+if (!function_exists('objet_info')) {
+	function objet_info(string $objet, string $info) {
+		return $info === 'texte_objets' ? 'public:' . $objet . 's' : null;
+	}
+}
+
+if (!function_exists('lister_tables_objets_sql')) {
+	function lister_tables_objets_sql(): array {
+		return $GLOBALS['_test_objets'];
+	}
+}
+
 if (!function_exists('find_in_path')) {
 	function find_in_path(string $fichier) {
 		return $GLOBALS['_test_chemins'][$fichier] ?? false;
@@ -76,3 +125,6 @@ if (!function_exists('protocole_implicite')) {
 		return preg_replace(',^https?:,', '', $url);
 	}
 }
+
+// configuration du plugin : incluse par include_spip() dans SPIP, simulée ici
+require_once dirname(__DIR__) . '/inc/tiptap_spip_config.php';

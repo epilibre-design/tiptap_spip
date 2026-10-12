@@ -56,7 +56,7 @@ final class PipelinesTest extends TestCase
 			return 'window.spipConfig ??= {};';
 		};
 		$GLOBALS['_test_chemins']['css/tiptap_spip_contenu.css'] = 'plugins/tiptap_spip/css/tiptap_spip_contenu.css';
-		$GLOBALS['_test_config']['tiptap_spip/public'] = 'oui';
+		$GLOBALS['_test_config']['tiptap_spip'] = ['public' => 'oui'];
 
 		$prive = tiptap_spip_header_prive('');
 		tiptap_spip_insert_head('');
@@ -68,7 +68,7 @@ final class PipelinesTest extends TestCase
 	public function testSitePublicSeulementSiActive(): void {
 		$this->assertSame('<head>', tiptap_spip_insert_head('<head>'));
 
-		$GLOBALS['_test_config']['tiptap_spip/public'] = 'oui';
+		$GLOBALS['_test_config']['tiptap_spip'] = ['public' => 'oui'];
 		$this->assertStringContainsString('tiptap_spip_init();', tiptap_spip_insert_head('<head>'));
 	}
 

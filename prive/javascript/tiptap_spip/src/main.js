@@ -1,3 +1,4 @@
+import { config } from './config.js';
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
@@ -26,7 +27,6 @@ const SELECTOR = [
 /** Textareas des crayons (plugin Crayons), équipés si la configuration l'active (tiptap_spip/crayons). */
 const CRAYONS = '.formulaire_crayon textarea.crayon-active';
 
-const config = () => globalThis.spipConfig?.tiptap_spip ?? {};
 const selecteur = () => (config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR);
 
 /** Mode choisi par l'auteur (spec 06 §3), gardé par le navigateur ; stockage indisponible : ignoré. */
@@ -51,6 +51,20 @@ const nomDuChamp = (textarea) => textarea.labels?.[0]?.textContent.replace(/\s+/
 	|| textarea.getAttribute('aria-label')
 	|| textarea.title
 	|| label('zone_texte');
+
+/**
+ * Champ retenu par la configuration (page configurer_tiptap_spip) : dans un formulaire d'objet, ceux
+ * de son attribut data-tts-champs (posé par formulaire_fond) ; pour un crayon d'un objet connu, ceux
+ * de config().champs. Les autres textareas sont toujours retenus.
+ */
+function champConfigure(textarea) {
+	const champs = textarea.form?.dataset.ttsChamps;
+	if (champs !== undefined) return champs.split(' ').includes(textarea.name);
+	if (!textarea.matches(CRAYONS)) return true;
+	const { objet, champ } = contexteHote(textarea);
+	const retenus = config().champs?.[objet];
+	return !retenus || retenus.includes(champ);
+}
 
 /** Textareas pris par markdown_editor : jamais touchés. */
 const MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
@@ -240,7 +254,7 @@ export function tiptap_spip_init(racine = document, { createEditor = defaultCrea
 		root.querySelectorAll(sel).forEach((t) => textareas.add(t));
 	}
 	for (const textarea of textareas) {
-		if (textarea.dataset.ttsMounted || textarea.matches(MARKDOWN_EDITOR)) continue;
+		if (textarea.dataset.ttsMounted || textarea.matches(MARKDOWN_EDITOR) || !champConfigure(textarea)) continue;
 		textarea.dataset.ttsMounted = 'oui';
 		releasePortePlume(textarea);
 		try {

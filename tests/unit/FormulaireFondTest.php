@@ -23,9 +23,10 @@ final class FormulaireFondTest extends TestCase
 	}
 
 	public function testServicesApresLeFormulaireAvecLeMemeIdentifiantDInstance(): void {
+		$GLOBALS['_test_config']['tiptap_spip'] = ['champs' => ['article' => ['texte']]];
 		$data = tiptap_spip_formulaire_fond(self::flux('editer_article', ['type' => 'article', 'id' => 12]))['data'];
 
-		$this->assertMatchesRegularExpression('/^<div><form data-tts-instance="(tts-[0-9a-f]{12})" action="x">/', $data);
+		$this->assertMatchesRegularExpression('/^<div><form data-tts-instance="(tts-[0-9a-f]{12})" data-tts-champs="texte" action="x">/', $data);
 		preg_match('/data-tts-instance="(tts-[0-9a-f]{12})"/', $data, $m);
 		$apres = substr($data, strpos($data, '</form></div>') + strlen('</form></div>'));
 		$this->assertStringStartsWith('<div class="tts-services" hidden data-tts-instance="' . $m[1] . '" data-tts-objet="article" data-tts-id="12" data-tts-champ="texte">', $apres);
@@ -52,11 +53,40 @@ final class FormulaireFondTest extends TestCase
 		$this->assertSame($flux, tiptap_spip_formulaire_fond($flux));
 	}
 
-	public function testSansServicesRendusRienNeChange(): void {
+	public function testUnServiceParChampEquipe(): void {
+		$data = tiptap_spip_formulaire_fond(self::flux('editer_article', ['type' => 'article', 'id' => 12]))['data'];
+
+		$this->assertStringContainsString('<form data-tts-instance="tts-', $data);
+		$this->assertStringContainsString(' data-tts-champs="descriptif chapo texte ps" action="x">', $data);
+		preg_match_all('/data-tts-champ="(\w+)"/', $data, $m);
+		$this->assertSame(['descriptif', 'chapo', 'texte', 'ps'], $m[1]);
+	}
+
+	public function testSansServicesRendusSeulementLesChampsEquipes(): void {
 		$GLOBALS['_test_fonds']['inclure/tiptap_spip_services'] = '  ';
 		$flux = self::flux('editer_article', ['type' => 'article', 'id' => 12]);
 
-		$this->assertSame($flux, tiptap_spip_formulaire_fond($flux));
+		$this->assertSame(
+			'<div><form data-tts-champs="descriptif chapo texte ps" action="x"><textarea name="texte"></textarea></form></div>',
+			tiptap_spip_formulaire_fond($flux)['data']
+		);
+	}
+
+	public function testObjetSansChampEquipe(): void {
+		$GLOBALS['_test_config']['tiptap_spip'] = ['champs' => ['article' => []]];
+		$flux = self::flux('editer_article', ['type' => 'article', 'id' => 12]);
+
+		$this->assertSame(
+			'<div><form data-tts-champs="" action="x"><textarea name="texte"></textarea></form></div>',
+			tiptap_spip_formulaire_fond($flux)['data']
+		);
+	}
+
+	public function testObjetNonEditableOuInconnuInchange(): void {
+		foreach (['editer_forum' => 'forum', 'editer_logo' => 'logo'] as $form => $objet) {
+			$flux = self::flux($form, ['type' => $objet, 'id' => 3]);
+			$this->assertSame($flux, tiptap_spip_formulaire_fond($flux), $form);
+		}
 	}
 
 	private static function fluxCvt(string $form, array $args, string $html): array {
