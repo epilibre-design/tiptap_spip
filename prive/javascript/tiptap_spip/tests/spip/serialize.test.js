@@ -110,6 +110,9 @@ describe('serializeInline', () => {
 	it('saut autobr suivi d\'un autre saut : écrit forcé (\\n\\n ferait une ligne vide)', () => {
 		const auto = { type: 'hardBreak', attrs: { syntax: 'autobr' } };
 		expect(serializeInline([text('a'), auto, auto, text('b')])).toBe('a\n_ \nb');
+		expect(serializeInline([text('a'), auto, { type: 'hardBreak', attrs: { syntax: 'manual' } }, text('b')])).toBe('a\n_ \n_ b');
+		// une mark se ferme entre les deux : pas de ligne vide, les deux restent simples
+		expect(serializeInline([text('a'), { ...auto, marks: [I] }, auto, text('b')])).toBe('a{\n}\nb');
 	});
 
 	it('code : backticks, doubles backticks ou <code>', () => {
@@ -141,6 +144,10 @@ describe('< brut d\'une balise incomplète', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
+	it('chevrons comptés : le contenu d\'un bloc verbatim (<math>) ne compte pas', () => {
+		expect(serialize(parse('<doc<math>-></math>&gt;'), { conservative: false })).toBe('<doc<math>-></math>&gt;');
+	});
+
 	it('chevrons comptés : un idiome (<:m:c:>) ne referme pas le < ouvert avant lui', () => {
 		const doc = node('doc', null, [p(raw('<'), text('doc'), node('spipIdiome', { module: 'mod', cle: 'cle' }), text('>'))]);
 		expect(serialize(doc)).toBe('<doc<:mod:cle:>&gt;');
@@ -168,6 +175,18 @@ describe('< brut d\'une balise incomplète', () => {
 });
 
 describe('-> après un [ resté ouvert', () => {
+	it('-> après un [ ouvert dans le même texte, même avec un [] entre : -&gt; (lien [&#91;[]->…])', () => {
+		const doc = node('doc', null, [p(text('[[[]->')), p(text('[[a]]a'))]);
+		expect(serialize(doc)).toBe('[&#91;[]-&gt;\n\n[&#91;a]&#93;a');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
+	it('] qui fermerait un [ resté ouvert plus haut : &#93; ; une paire [x] du même texte reste', () => {
+		const doc = node('doc', null, [node('spipRaw', { source: '-** [?' }), p(text('] et [x]'))]);
+		expect(serialize(doc)).toBe('-** [?\n\n&#93; et [x]');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('-> du texte en entité quand un [ reste ouvert avant lui (il fermerait un lien) ; sinon tel quel', () => {
 		const abbr = { type: 'spipAbbr', attrs: { title: 'x' } };
 		const note = (content) => node('spipNote', { content });
@@ -202,9 +221,9 @@ describe('accolades contre un fragment brut', () => {
 });
 
 describe('marqueur de début de ligne brut', () => {
-	it('* # ou - en tête du texte qui suit un - brut : échappé (-* serait une liste, ---- un filet)', () => {
-		for (const [t, attendu] of [['*', '-\\*'], ['#', '-\\#'], ['--', '-\\--']]) {
-			const doc = node('doc', null, [p(raw('-'), text(t))]);
+	it('* # - ou _ en tête du texte qui suit un marqueur brut (-, ----, ____) : échappé (-* serait une liste, ---- un filet)', () => {
+		for (const [marqueur, t, attendu] of [['-', '*', '-\\*'], ['-', '#', '-\\#'], ['-', '--', '-\\--'], ['----', '----', '----\\----'], ['____', '_', '____\\_']]) {
+			const doc = node('doc', null, [p(raw(marqueur), text(t))]);
 			expect(serialize(doc)).toBe(attendu);
 			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 		}
@@ -244,9 +263,14 @@ describe('escapeText', () => {
 		}
 	});
 
-	it('[ final : \\[, ou entité devant une note ou un fragment brut', () => {
-		expect(escapeText('a [', false)).toBe('a \\[');
-		expect(escapeText('a [', false, { avantCrochets: true })).toBe('a &#91;');
+	it('[ final : entité (\\[ ne protège ni une note ni une ancre, qui peuvent suivre)', () => {
+		expect(escapeText('a [', false)).toBe('a &#91;');
+		// ancre à travers les lignes d'une liste : [ en fin d'élément, <-] dans le suivant
+		const doc = node('doc', null, [node('bulletList', null, [
+			node('listItem', null, [p(text('['))]),
+			node('listItem', null, [p(text('<-]a'))]),
+		])]);
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
 	it('début de ligne : - _ | échappés', () => {

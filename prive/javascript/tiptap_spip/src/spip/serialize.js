@@ -44,9 +44,9 @@ export function serialize(doc, { conservative = true, regles } = {}) {
  * Contexte de la sérialisation en cours : conservative (forme canonique ou non, transmise au
  * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer) ; multi
  * (partie d'un multi : un [xx] s'écrit en entité) ; ouvert (nombre de < restés ouverts avant ce bloc) ;
- * crochets (nombre de [ restés ouverts avant ce bloc).
+ * crochets (nombre de [ restés ouverts avant ce bloc) ; crochetsNote (ceux qu'ouvre la note englobante).
  */
-let contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0 };
+let contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0, crochetsNote: 0 };
 
 /**
  * Chevrons < restés ouverts à la fin de ce texte, en partant de ceux d'avant : le modèle du core
@@ -64,9 +64,9 @@ function chevronsOuverts(texte, avant = 0) {
 	return n;
 }
 
-/** Code en backticks ou <code> : masqué par le core avant les raccourcis, il ne compte pas. */
-const sansCode = (texte) => (texte.includes('`') || /<code/i.test(texte)
-	? texte.replace(/(`+)[\s\S]*?\1|<code\b[^>]*>[\s\S]*?<\/code>/gi, '')
+/** Code en backticks et blocs verbatim (<code>, <math>…) : masqués par le core, ils ne comptent pas. */
+const sansCode = (texte) => (texte.includes('`') || /<(?:code|cadre|frame|html|math)\b/i.test(texte)
+	? texte.replace(/(`+)[\s\S]*?\1|<(code|cadre|frame|html|math)\b[^>]*>[\s\S]*?<\/\2>/gi, '')
 	: texte);
 
 /** Crochets [ restés ouverts à la fin de ce texte, en partant de ceux d'avant (un lien les ferme par ->). */
@@ -311,15 +311,6 @@ function marksAtomiques(nodes) {
 }
 const HTML = { bold: ['<strong>', '</strong>'], italic: ['<i>', '</i>'] };
 
-/** Marks écrites entre crochets. */
-const MARKS_CROCHET = ['spipLink', 'spipGlossary', 'spipAbbr'];
-
-/**
- * Le nœud suivant s'écrit-il en commençant par [ ? Note, fragment brut, lien sans texte, ancre, ou
- * texte qui ouvre un lien, un glossaire ou une abréviation : un [ final devant lui ferait [[ (note).
- */
-const ecritAvecCrochet = (suivant, n) => ['spipNote', 'spipRawInline', 'spipLinkAuto', 'spipAnchor'].includes(suivant?.type)
-	|| (suivant?.marks ?? []).some((m) => MARKS_CROCHET.includes(m.type) && !(n.marks ?? []).some((x) => sameMark(x, m)));
 
 /** Source d'un fragment brut, '' pour un autre nœud (un texte a ses accolades échappées). */
 const brut = (n) => (n?.type === 'spipRawInline' ? n.attrs.source : '');
@@ -410,21 +401,41 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			const code = n.marks?.find((m) => m.type === 'code');
 			const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
 			// texte d'un glossaire ou d'une abréviation : validé par marksAtomiques, écrit tel quel
-			// un [ final devant une note ou un fragment brut s'écrit en entité (\[[[n]] serait une note)
-			const avantCrochets = ecritAvecCrochet(nodes[i + 1], n);
-			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
+			const texte = code ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, cellule });
 			chevron = chevronsOuverts(out.slice(lu), chevron);
 			crochets = crochetsOuverts(out.slice(lu), crochets);
 			let ecrit = chevron > 0 && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
-			// un [ resté ouvert : -> en ferait un lien, <-] une ancre
-			if (crochets > 0 && !code && !inLink && !atomique) ecrit = ecrit.replace(/->/g, '-&gt;').replace(/<-/g, '&lt;-');
+			if (!code && !inLink && !atomique) {
+				// [ ouverts à chaque position, ceux du texte compris ([&#91;[]-> : le motif des liens admet
+				// des groupes [xx] dans le texte) : un -> ou un <- y ferait un lien ou une ancre
+				let ouverts = crochets;
+				ecrit = ecrit.replace(/->|<-|[[\]]/g, (x) => {
+					if (x === '[') ouverts++;
+					else if (x === ']') ouverts = Math.max(0, ouverts - 1);
+					else if (ouverts > 0) return x === '->' ? '-&gt;' : '&lt;-';
+					return x;
+				});
+			}
+			if (crochets > 0 && !code && !inLink && !atomique) {
+				// un [ resté ouvert plus haut : un ] qui ne ferme pas un [ de ce texte le fermerait. Le ]] d'une
+				// note est traité à part (règles de la note) : seuls les [ ouverts en plus comptent
+				if (crochets > contexte.crochetsNote) {
+					let local = 0;
+					ecrit = ecrit.replace(/[[\]]/g, (c) => {
+						if (c === '[') local++;
+						else if (local > 0) local--;
+						else return '&#93;';
+						return c;
+					});
+				}
+			}
 			// dans une note, un ] de tête derrière un ] ferait ]] et la fermerait
 			if (contexte.note && !code && out.endsWith(']')) ecrit = ecrit.replace(/^\]/, '&#93;');
 			// > après un modèle dans ce contenu : ses paramètres admettent des balises (<doc|<sup>>) et
 			// le prolongeraient
 			if (!code && modeleVu) ecrit = ecrit.replace(/>/g, '&gt;');
-			// après un marqueur de début de ligne brut (- ou --) : -* ferait une liste, ---- un filet
-			if (/^--?$/.test(brut(nodes[i - 1]))) ecrit = ecrit.replace(/^[*#-]/, '\\$&');
+			// après un marqueur de début de ligne brut (-, --, ----, ____) : -* ferait une liste, ---- un filet
+			if (/^(?:--?|-{4,}|_{4,})$/.test(brut(nodes[i - 1]))) ecrit = ecrit.replace(/^[*#_-]/, '\\$&');
 			if (!code) {
 				crochets = crochetsOuverts(ecrit, crochets);
 				chevron = chevronsOuverts(ecrit, chevron);
@@ -433,9 +444,12 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			lu = out.length;
 			atLineStart = false;
 		} else if (n.type === 'hardBreak') {
-			// deux \n de suite feraient une ligne vide : un saut suivi d'un autre s'écrit forcé, sauf dans un
-			// lien (masqué avant le découpage en segments, il peut contenir une ligne vide)
-			const autobr = n.attrs?.syntax === 'autobr' && (nodes[i + 1]?.type !== 'hardBreak' || inLink);
+			// suivi d'un autre saut sans mark qui s'ouvre ou se ferme entre eux, \n puis \n (ou \n_ ) ferait
+			// une ligne vide : ce saut s'écrit forcé, sauf dans un lien (masqué avant le découpage en
+			// segments, il peut contenir une ligne vide)
+			const suivant = nodes[i + 1];
+			const colle = suivant?.type === 'hardBreak' && JSON.stringify(marksOf(suivant)) === JSON.stringify(marksOf(n));
+			const autobr = n.attrs?.syntax === 'autobr' && (!colle || inLink);
 			// contenu d'une seule ligne (cellule, intertitre) : un saut de ligne le couperait
 			out += uneLigne ? '<br />' : autobr ? '\n' : '\n_ ';
 			atLineStart = autobr;
@@ -484,7 +498,7 @@ const noteDe = (raccourci) => protect(raccourci).regions.find((r) => r.kind === 
  */
 function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) {
 	const avant = contexte;
-	contexte = { ...contexte, note: true, crochets: contexte.crochets + 2 };
+	contexte = { ...contexte, note: true, crochets: contexte.crochets + 2, crochetsNote: contexte.crochets + 2 };
 	try {
 		const doc = { type: 'doc', attrs: { spipLead, spipTrail }, content: content?.length ? content : [node('paragraph')] };
 		const nom = name == null ? '' : `<${name}>`;
@@ -508,8 +522,11 @@ function serializeNote({ name = null, content, spipLead = '', spipTrail = '' }) 
 		// (<[^>'"]*>) chercherait son > plus loin dans le texte, au-delà de la note ; cherché dans le
 		// texte masqué, où le core a déjà remplacé liens, modèles et glossaire
 		const masque = name == null ? protect(texte).masked : '';
-		// (s'arrête au premier ' ou " : une balise à attributs n'est pas concernée)
-		if (name == null && /^[ \t\n\v\f\r]*<[^>'"]*$/.test(masque)) {
+		// (s'arrête au premier ' ou " : une balise à attributs n'est pas concernée ; un < brut, lu tel quel
+		// dans la source, est restitué tel quel)
+		const premier = content?.[0]?.content?.find((x) => x.type !== 'text' || x.marks?.length || x.text.trim() !== '');
+		const brutEnTete = premier?.type === 'spipRawInline' && premier.attrs.source.startsWith('<');
+		if (name == null && !brutEnTete && /^[ \t\n\v\f\r]*<[^>'"]*$/.test(masque)) {
 			const blancs = texte.match(/^[ \t\n\v\f\r]*/)[0];
 			texte = `${blancs}&lt;${texte.slice(blancs.length + 1)}`;
 		}
@@ -556,7 +573,7 @@ function serializeCode(code) {
  * Dans le texte d'un lien, le collecteur de liens passe avant les échappements : [ ] | et ->
  * s'écrivent en entités.
  */
-export function escapeText(value, atLineStart, { link = false, avantCrochets = false, cellule = false } = {}) {
+export function escapeText(value, atLineStart, { link = false, cellule = false } = {}) {
 	let s = value
 		.replace(/\\/g, '\\\\')
 		.replace(/[{}`~]/g, (c) => `\\${c}`)
@@ -572,7 +589,9 @@ export function escapeText(value, atLineStart, { link = false, avantCrochets = f
 	if (!link) {
 		// \[ protège un lien ou une abréviation, comme dans SPIP ; pas une ancre (pre_liens) : entité
 		s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, '&#91;')
-			.replace(/\[$/, avantCrochets ? '&#91;' : '\\[')
+			// [ final : ce qui suit (note, raccourci, ligne suivante d'une liste) peut former [[ ou une
+			// ancre [ … <-], que \[ ne protège pas : entité
+			.replace(/\[$/, '&#91;')
 			// [ sans ] dans ce texte : le ], le ->, le | ou le <- peuvent venir dans un nœud suivant ; l'entité
 			// protège de tous les raccourcis (\[ ne protège pas une ancre)
 			.replace(/\[(?![^\]]*\])(?=[\s\S])/g, '&#91;')

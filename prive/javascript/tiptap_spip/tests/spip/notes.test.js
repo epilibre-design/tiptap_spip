@@ -192,6 +192,11 @@ describe('sérialisation des notes', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
+	it('note qui commence par un < brut (lu dans la source) : restitué tel quel', () => {
+		const doc = parse('[[<doc]]');
+		expect(serialize(doc, { conservative: false })).toBe('[[<doc]]');
+	});
+
 	it('texte de note qui commence par une balise à attributs : intacte (le nom s\'arrête au premier " ou \')', () => {
 		const doc = node('doc', null, [p(text('x'), note([p(raw('<div class="text-center">'))]))]);
 		expect(serialize(doc)).toBe('x[[<div class="text-center">]]');

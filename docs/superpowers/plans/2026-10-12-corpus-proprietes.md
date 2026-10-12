@@ -65,4 +65,11 @@
 - **Hors plan, constaté** : l'équivalence de rendu sur 143 sources aléatoires dont la forme canonique diffère
   donne 7 écarts (oracle 4.4), dont des lectures du parseur à revoir (`\<` devant une balise, `<strong>`
   refermé par `}}`). À traiter dans un lot suivant.
+- **Tri de la revue** (critère choisi par l'utilisateur : 20 graines consécutives propres) : chaque
+  contre-exemple réduit, qualifié avec l'oracle SPIP 4.4 (JSON relu et rendu), puis corrigé avec un test
+  unitaire ou borné par une limite écrite (spec 04 §5). Critère atteint sur les graines 20261089 à
+  20261108 (10 000 tirages sur la source, 3 000 sur le JSON par graine).
+- **Changement de comportement à signaler** : une première ligne de tableau entièrement vide est un
+  en-tête pour SPIP (`<thead>`) ; un tableau inséré vide se relit donc avec un en-tête vide, jusqu'à ce
+  qu'une cellule de sa première ligne reçoive du texte.
 - **Corpus réel** : non exporté (accord de l'utilisateur requis pour lire une base).

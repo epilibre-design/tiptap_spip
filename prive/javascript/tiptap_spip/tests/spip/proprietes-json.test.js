@@ -75,7 +75,8 @@ const atome = fc.oneof(
  * - aucune autre mark à l'intérieur d'un glossaire ou d'une abréviation (spec 03 §3) : des textes
  *   voisins sous la même de ces marks ne gardent que leurs marks communes, puis fusionnent ;
  * - pas de saut de ligne au bord (SPIP ne l'affiche pas en tête, affiche _ en fin : non écrit) ;
- * - un saut autobr suivi d'un autre saut est forcé (\n\n ferait une ligne vide) ;
+ * - un saut suivi d'un autre saut, sans mark qui s'ouvre ou se ferme entre eux, est forcé (\n\n
+ *   ferait une ligne vide) ;
  * - pas de blanc en tête de ligne après un saut (SPIP le retire, le navigateur ne l'affiche pas) ;
  * - un contenu fait seulement d'espaces sans mark est vide (le parseur et SPIP n'en gardent rien : [[ ]]
  *   est une note vide) ; l'espace insécable (~) et les espaces marqués ({{ }}) se relisent.
@@ -94,7 +95,9 @@ function formeNormaleUneFois(nodes) {
 	while (out[0]?.type === 'hardBreak') out.shift();
 	while (out.at(-1)?.type === 'hardBreak') out.pop();
 	for (let k = 0; k + 1 < out.length; k++) {
-		if (out[k].type === 'hardBreak' && out[k + 1].type === 'hardBreak') out[k] = { type: 'hardBreak', attrs: { syntax: 'manual' } };
+		if (out[k].type === 'hardBreak' && out[k + 1].type === 'hardBreak' && JSON.stringify(out[k].marks ?? []) === JSON.stringify(out[k + 1].marks ?? [])) {
+			out[k] = { ...out[k], attrs: { syntax: 'manual' } };
+		}
 		if (out[k].type === 'hardBreak' && out[k + 1].type === 'text') out[k + 1] = { ...out[k + 1], text: out[k + 1].text.replace(/^\s+/, '') };
 	}
 	for (let i = 0; i < out.length;) {
@@ -145,7 +148,8 @@ const note = fc.record({
 	name: fc.constantFrom(null, 'n', ''),
 	content: fc.array(paragraphe(false), { minLength: 1, maxLength: 2 }),
 }).filter(({ name, content }) => {
-	const premier = content[0].content?.[0];
+	// le nom du core admet des blancs avant lui ([[ <sup>…) : premier nœud non blanc
+	const premier = content[0].content?.find((n) => n.type !== 'text' || n.marks?.length || n.text.trim() !== '');
 	return name !== null || !(premier?.type === 'spipIdiome' || (premier?.marks ?? []).some((m) => EN_HTML.includes(m.type)));
 })
 	.map((attrs) => ({ type: 'spipNote', attrs }));

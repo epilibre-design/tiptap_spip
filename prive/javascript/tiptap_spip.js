@@ -18105,20 +18105,21 @@ function serialize(doc4, { conservative = true, regles } = {}) {
     contexte = avant;
   }
 }
-var contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0 };
+var contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0, crochetsNote: 0 };
 function chevronsOuverts(texte2, avant = 0) {
   if (!texte2.includes("<") && !texte2.includes(">")) return avant;
   let n = avant;
-  for (const c of texte2.replace(/->|<-/g, "")) {
+  for (const c of sansCode(texte2).replace(/->|<-/g, "")) {
     if (c === "<") n++;
     else if (c === ">" && n > 0) n--;
   }
   return n;
 }
+var sansCode = (texte2) => texte2.includes("`") || /<(?:code|cadre|frame|html|math)\b/i.test(texte2) ? texte2.replace(/(`+)[\s\S]*?\1|<(code|cadre|frame|html|math)\b[^>]*>[\s\S]*?<\/\2>/gi, "") : texte2;
 function crochetsOuverts(texte2, avant = 0) {
   if (!texte2.includes("[") && !texte2.includes("]")) return avant;
   let n = avant;
-  for (const c of texte2) {
+  for (const c of sansCode(texte2)) {
     if (c === "[") n++;
     else if (c === "]" && n > 0) n--;
   }
@@ -18270,7 +18271,9 @@ function serializeTable(table) {
       else if (inline === "^") inline = "&#94;";
       return x.type === "tableHeader" && inline !== "" ? `{{${inline}}}` : inline;
     });
-    lines.push(`|${cells.join("|")}|`);
+    let ligne = `|${cells.join("|")}|`;
+    if (!lines.length && /^\|\|([^|]*)(?:\|([\s\S]*))?$/.test(ligne.slice(0, -1).replace(/\|+$/, ""))) ligne = `| ${ligne.slice(1)}`;
+    lines.push(ligne);
   }
   return lines.join("\n");
 }
@@ -18328,8 +18331,6 @@ function marksAtomiques(nodes) {
   return out;
 }
 var HTML = { bold: ["<strong>", "</strong>"], italic: ["<i>", "</i>"] };
-var MARKS_CROCHET = ["spipLink", "spipGlossary", "spipAbbr"];
-var ecritAvecCrochet = (suivant, n) => ["spipNote", "spipRawInline", "spipLinkAuto", "spipAnchor"].includes(suivant?.type) || (suivant?.marks ?? []).some((m) => MARKS_CROCHET.includes(m.type) && !(n.marks ?? []).some((x) => sameMark(x, m)));
 var brut = (n) => n?.type === "spipRawInline" ? n.attrs.source : "";
 var accoladeContre = (nodes, i2, run2) => /[{}]$/.test(brut(nodes[i2 - 1])) || /^[{}]/.test(brut(nodes[i2])) || /[{}]$/.test(brut(nodes[i2 + run2 - 1])) || /^[{}]/.test(brut(nodes[i2 + run2]));
 function serializeInline(nodes = [], { lineStart = false, html = false, cellule = false, uneLigne = false, bords = true } = {}) {
@@ -18344,6 +18345,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
   let atLineStart = lineStart;
   let chevron = contexte.ouvert;
   let crochets = contexte.crochets;
+  let modeleVu = false;
   let lu = 0;
   const closeTo = (k) => {
     while (stack.length > k) out += stack.pop().close;
@@ -18380,22 +18382,44 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
     } else if (n.type === "text") {
       const code2 = n.marks?.find((m) => m.type === "code");
       const atomique = stack.some((s) => ATOMIQUES.includes(s.mark.type));
-      const avantCrochets = ecritAvecCrochet(nodes[i2 + 1], n);
-      const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, avantCrochets, cellule });
+      const texte2 = code2 ? serializeCode(n.text) : atomique ? n.text : escapeText(n.text, atLineStart, { link: inLink, cellule });
       chevron = chevronsOuverts(out.slice(lu), chevron);
       crochets = crochetsOuverts(out.slice(lu), crochets);
       let ecrit = chevron > 0 && !code2 ? texte2.replace(/>/g, "&gt;").replace(/(?<!\\)\|/g, "\\|") : texte2;
-      if (crochets > 0 && !code2 && !inLink && !atomique) ecrit = ecrit.replace(/->/g, "-&gt;");
+      if (!code2 && !inLink && !atomique) {
+        let ouverts = crochets;
+        ecrit = ecrit.replace(/->|<-|[[\]]/g, (x) => {
+          if (x === "[") ouverts++;
+          else if (x === "]") ouverts = Math.max(0, ouverts - 1);
+          else if (ouverts > 0) return x === "->" ? "-&gt;" : "&lt;-";
+          return x;
+        });
+      }
+      if (crochets > 0 && !code2 && !inLink && !atomique) {
+        if (crochets > contexte.crochetsNote) {
+          let local = 0;
+          ecrit = ecrit.replace(/[[\]]/g, (c) => {
+            if (c === "[") local++;
+            else if (local > 0) local--;
+            else return "&#93;";
+            return c;
+          });
+        }
+      }
       if (contexte.note && !code2 && out.endsWith("]")) ecrit = ecrit.replace(/^\]/, "&#93;");
-      if (nodes[i2 - 1]?.type === "spipModel") ecrit = ecrit.replace(/^>/, "&gt;");
-      if (/^--?$/.test(brut(nodes[i2 - 1]))) ecrit = ecrit.replace(/^[*#-]/, "\\$&");
-      crochets = crochetsOuverts(ecrit, crochets);
-      chevron = chevronsOuverts(ecrit, chevron);
+      if (!code2 && modeleVu) ecrit = ecrit.replace(/>/g, "&gt;");
+      if (/^(?:--?|-{4,}|_{4,})$/.test(brut(nodes[i2 - 1]))) ecrit = ecrit.replace(/^[*#_-]/, "\\$&");
+      if (!code2) {
+        crochets = crochetsOuverts(ecrit, crochets);
+        chevron = chevronsOuverts(ecrit, chevron);
+      }
       out += ecrit;
       lu = out.length;
       atLineStart = false;
     } else if (n.type === "hardBreak") {
-      const autobr = n.attrs?.syntax === "autobr" && (nodes[i2 + 1]?.type !== "hardBreak" || inLink);
+      const suivant = nodes[i2 + 1];
+      const colle = suivant?.type === "hardBreak" && JSON.stringify(marksOf(suivant)) === JSON.stringify(marksOf(n));
+      const autobr = n.attrs?.syntax === "autobr" && (!colle || inLink);
       out += uneLigne ? "<br />" : autobr ? "\n" : "\n_ ";
       atLineStart = autobr;
     } else if (n.type === "spipRawInline") {
@@ -18409,6 +18433,7 @@ function serializeInline(nodes = [], { lineStart = false, html = false, cellule 
       atLineStart = false;
     } else if (n.type === "spipModel") {
       out += serializeModel(n.attrs.model);
+      modeleVu = true;
       atLineStart = false;
     } else if (n.type === "spipNote") {
       out += serializeNote(n.attrs);
@@ -18430,7 +18455,7 @@ var RE_NOM_NOTE = /^([ \t\n\v\f\r]*)<[^>'"]*>/;
 var noteDe = (raccourci) => protect(raccourci).regions.find((r) => r.kind === "note" && r.start === 0 && r.end === raccourci.length);
 function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) {
   const avant = contexte;
-  contexte = { ...contexte, note: true, crochets: contexte.crochets + 2 };
+  contexte = { ...contexte, note: true, crochets: contexte.crochets + 2, crochetsNote: contexte.crochets + 2 };
   try {
     const doc4 = { type: "doc", attrs: { spipLead, spipTrail }, content: content?.length ? content : [node("paragraph")] };
     const nom = name == null ? "" : `<${name}>`;
@@ -18444,7 +18469,9 @@ function serializeNote({ name = null, content, spipLead = "", spipTrail = "" }) 
       else break;
     }
     const masque = name == null ? protect(texte2).masked : "";
-    if (name == null && /^[ \t\n\v\f\r]*<[^>'"]*$/.test(masque)) {
+    const premier = content?.[0]?.content?.find((x) => x.type !== "text" || x.marks?.length || x.text.trim() !== "");
+    const brutEnTete = premier?.type === "spipRawInline" && premier.attrs.source.startsWith("<");
+    if (name == null && !brutEnTete && /^[ \t\n\v\f\r]*<[^>'"]*$/.test(masque)) {
       const blancs = texte2.match(/^[ \t\n\v\f\r]*/)[0];
       texte2 = `${blancs}&lt;${texte2.slice(blancs.length + 1)}`;
     }
@@ -18475,11 +18502,11 @@ function serializeCode(code2) {
   if (!backtick) return `<code>${encodeCode(code2)}</code>`;
   return code2.includes("`") ? `\`\`${code2}\`\`` : `\`${code2}\``;
 }
-function escapeText(value, atLineStart, { link = false, avantCrochets = false, cellule = false } = {}) {
+function escapeText(value, atLineStart, { link = false, cellule = false } = {}) {
   let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:]|[_-][a-z_-]{2})/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");
   if (contexte.multi) s = s.replace(RE_AVANT_LANGUE, "&#91;");
   if (!link) {
-    s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, avantCrochets ? "&#91;" : "\\[").replace(/\[(?![^\]]*\])(?=[\s\S])/g, "&#91;").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
+    s = s.replace(/\[(?=#|[^\]]*?<-[^\]]*\])/g, "&#91;").replace(/\[$/, "&#91;").replace(/\[(?![^\]]*\])(?=[\s\S])/g, "&#91;").replace(/\[(?=[^\]]*?(?:->|\|)[^\]]*\])/g, "\\[");
   } else {
     s = s.replace(/\[/g, "&#91;").replace(/\]/g, "&#93;").replace(/\|/g, "&#124;").replace(/->/g, "-&gt;");
   }
@@ -19073,7 +19100,7 @@ function tableBlock(src, msk, regions) {
     return { s, e, t: msk.slice(s, e) };
   };
   const RE_TH = /^\{\{[^{}]+\}\}$/;
-  const headerRow = rows[0].every((c) => ["", "<"].includes(trimmed(c).t) || RE_TH.test(trimmed(c).t)) && rows[0].some((c) => RE_TH.test(trimmed(c).t));
+  const headerRow = rows[0].every((c) => ["", "<"].includes(trimmed(c).t) || RE_TH.test(trimmed(c).t));
   const grid = [];
   const tableRows = rows.map((cells, r) => {
     const isHeader = r === 0 && headerRow;
