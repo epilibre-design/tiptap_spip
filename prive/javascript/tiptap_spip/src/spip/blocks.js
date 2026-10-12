@@ -154,6 +154,9 @@ function heading(line) {
 function runBlocks(src, msk, regions) {
 	const lines = linesOf(msk);
 	const L = (k) => msk.slice(lines[k].start, lines[k].end);
+	// textwheel (spip-tableaux.json) fait un tableau de toute ligne qui commence et finit par |, même
+	// dans un paragraphe : un segment que tableBlock() n'a pas lu reste brut
+	if (lines.some((_, k) => L(k).startsWith('|'))) throw new Fallback();
 	const out = [];
 	let k = 0;
 	while (k < lines.length) {

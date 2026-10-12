@@ -63,6 +63,15 @@ describe('listes', () => {
 	});
 });
 
+describe('lignes commençant par |', () => {
+	it('tableau mal formé pour le parseur, mais tableau pour SPIP : bloc brut', () => {
+		// textwheel (spip-tableaux.json) fait un tableau de toute ligne qui commence et finit par |
+		for (const source of ['|a|b\n|c|d|', 'texte\n|a|\nsuite', '|a|\ntexte', '-* a\n|b|']) {
+			expect(parseContent(source)).toEqual([node('spipRaw', { source })]);
+		}
+	});
+});
+
 describe('conteneurs', () => {
 	it('<quote>, <poesie>, <div class="text-…">', () => {
 		expect(parseContent('<quote>\na\n\nb\n</quote>')).toEqual([node('blockquote', null, [p(text('a')), p(text('b'))])]);
