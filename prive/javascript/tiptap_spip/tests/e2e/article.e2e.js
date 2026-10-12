@@ -41,11 +41,11 @@ test('une modification ne réécrit que son paragraphe', async ({ page }) => {
 
 test('mode source : la saisie dans le textarea est reprise par l\'éditeur', async ({ page }) => {
 	const id = await editer(page, 'Avant');
-	await page.locator('.tts-mode').click();
+	await page.locator('.tts-outil--source').click();
 	const textarea = page.locator('textarea[name=texte]');
 	await expect(textarea).toBeVisible();
 	await textarea.fill('{{Après}}');
-	await page.locator('.tts-mode').click();
+	await page.locator('.tts-outil--source').click();
 	await expect(page.locator('.ProseMirror strong')).toHaveText('Après');
 	await enregistrer(page);
 	expect(texte(id)).toBe('{{Après}}');

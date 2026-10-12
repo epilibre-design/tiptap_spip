@@ -23,13 +23,48 @@ garde son `name`, ses classes et sa place dans le formulaire.
 ## 2. Barre d'outils
 
 Déclarative, décrite côté PHP par le pipeline `tiptap_spip_toolbars` et rendue par le registre de
-composants repris de markdown_editor (`Toolbar.registerComponent`). Barres fournies :
+composants repris de markdown_editor (`Toolbar.registerComponent`).
+
+**Réalisation (lot L5.1)** :
+- **Une seule déclaration**, `src/ui/barres.json`, importée par le bundle et lue par PHP
+  (`tiptap_spip_barres()`), qui la passe au pipeline `tiptap_spip_toolbars` (`flux['data']`) puis à la
+  configuration JS (`spipConfig.tiptap_spip.toolbars`). Le JS prend celle de la configuration, sinon celle du
+  bundle.
+- **Forme d'une barre :** liste de noms de composants (`'|'` : séparateur), ou d'objets
+  `{ "composant": nom, …options }` (ex. `{ "composant": "titre", "niveaux": [2, 3] }`). Pas de libellé dans la
+  déclaration : chaque composant prend les siens dans `labels.js`. Un nom inconnu est ignoré (avertissement en
+  console).
+- **Composant :** fabrique `(ctx, options) => { element, cible?, maj?(), source? }`, avec
+  `ctx = { editor, ui, instance }`. `maj()` est appelée à chaque transaction et à chaque changement de mode.
+  En mode source, seuls les composants `source: true` (Source, Plein écran) restent actifs.
+- **Composants du cœur :**
+  - `annuler`, `retablir` ;
+  - `titre` : menu Paragraphe, Intertitre, Titre de niveau 3, 4…, selon l'option `niveaux` (par défaut 2 à 4) ;
+  - `liste` : puces, numérotée, indenter, désindenter ;
+  - `citation`, `poesie`, `cadre` (`codeBlock`, ```` ``` ```` comme le porte-plume) ;
+  - `gras`, `italique`, `barre`, `exposant`, `indice`, `code` (mark, `` ` ``) ;
+  - `lien`, `note`, `glossaire`, `abbr`, `modele`, `multi`, `langues` ;
+  - `alignement` : gauche, centre, droite, justifié, sans ;
+  - `tableau` : insérer (trois lignes de trois cellules, sans en-tête), ligne d'en-tête, lignes et colonnes
+    avant ou après, suppression, fusion et scission de cellules, suppression du tableau ;
+  - `guillemets` : doubles et simples selon la langue de l'objet, comme le porte-plume (fr eo cpf ar es :
+    « » et “ ” ; bg de pl hr src : „ “ et ‚ ‘ ; autres : “ ” et ‘ ’), sans espace ajoutée (la typographie de
+    SPIP pose l'espace insécable) ;
+  - `caracteres` : À É È æ Æ œ Œ Ç, majuscules, minuscules ;
+  - `source`, `pleinEcran`.
+- **Icônes :** SVG de Remix Icon (Apache-2.0) extraits par `npm run icones` dans `src/ui/icones.js`. La police
+  de markdown_editor n'a ni exposant, ni tableau, ni alignement, et son préfixe `sp-icone_` entrerait en
+  conflit. Le libellé traduit est porté par `aria-label` et la bulle (avec le raccourci).
+- La barre minimale du lot L2.3 (Lien, Modèle, Source) devient celle du tableau ci-dessous.
+- La barre contextuelle (bubble menu) n'est pas livrée.
+
+Barres fournies :
 
 | Barre | Contenu |
 |-------|---------|
-| `edition` | tout le porte-plume par défaut (tableau ci-dessous) + annuler/rétablir, titres 3–6, alignement, exposant/indice, **glossaire**, **modèle**, multi, tableau (menu contextuel lignes/colonnes/fusions), bascule source, plein écran |
-| `forum` | gras, italique, lien, citation, liste, code ; pas de modèles ni de notes par défaut |
-| `minimale` | gras, italique, lien (pour `descriptif`, `chapo`…) |
+| `edition` | tout le porte-plume par défaut (tableau ci-dessous) + annuler/rétablir, titres (niveaux configurés, 2 à 4 par défaut), alignement, exposant/indice, **glossaire**, **modèle**, multi, tableau (menu contextuel lignes/colonnes/fusions), bascule source, plein écran |
+| `forum` | gras, italique, lien, citation, liste, code, source ; pas de modèles ni de notes par défaut |
+| `minimale` | gras, italique, lien, source (pour `descriptif`, `ps`…) |
 
 Correspondance avec la barre `edition` du porte-plume SPIP 4.4 (`porte_plume/barre_outils/edition.php`) :
 
@@ -49,8 +84,9 @@ Correspondance avec la barre `edition` du porte-plume SPIP 4.4 (`porte_plume/bar
 `espace_si_accolade` (porte-plume) ajoute des espaces quand la sélection touche une accolade ; le sérialiseur
 traite le même cas par ses séparateurs de sécurité ([04](04-parseur-serialiseur.md) §3).
 
-Le choix de la barre suit la classe du textarea (`inserer_barre_edition`, `inserer_barre_forum`) ou
-`data-tts-toolbar="nom"`.
+Le choix de la barre suit `data-tts-toolbar="nom"`, sinon la classe du textarea (`inserer_barre_edition`,
+`inserer_barre_forum`), sinon l'hôte ([02](02-architecture.md) §6 : `forum` dans un formulaire de forum,
+`edition` pour `texte` et `chapo`, `minimale` pour les autres champs). Une barre inconnue donne `minimale`.
 
 Barre contextuelle (bubble menu, optionnelle) sur sélection de texte : gras, italique, lien, note, glossaire.
 
@@ -60,8 +96,13 @@ Barre contextuelle (bubble menu, optionnelle) sur sélection de texte : gras, it
   (avec le porte-plume si présent, cf. Q4) et l'éditeur masqué. La bascule fait un flush de sérialisation
   ou un re-parse ([02](02-architecture.md) §4). La position du curseur est conservée au mieux
   (correspondance bloc ↔ plage de source via `spipSrc`).
-- **Plein écran** : repris de markdown_editor ; les modalbox (modèles) et popovers s'affichent au-dessus.
-- Le mode choisi est mémorisé par auteur (préférence `localStorage` + option de config par défaut).
+- **Plein écran** : les modalbox (modèles) et popovers s'affichent au-dessus. Lot L5.1 : par CSS
+  (`.tts-editor--plein-ecran`, position fixe, `html.tts-plein-ecran` sans défilement), et non par l'API
+  Fullscreen de markdown_editor : celle-ci n'affiche que l'élément en plein écran, une modalbox posée dans
+  `body` serait cachée.
+- Le mode choisi est mémorisé (préférence `localStorage` `tiptap_spip.mode`, lue et écrite sous try/catch,
+  sinon option `spipConfig.tiptap_spip.mode`, sinon WYSIWYG). La préférence est celle du navigateur, pas de
+  l'auteur.
 
 ## 4. Popovers et dialogues
 
@@ -100,12 +141,20 @@ Les nœuds bruts légitimes (HTML inconnu volontaire) ne sont pas signalés comm
 | Intertitre niveau 2 à 6 / paragraphe | `Mod-Alt-2` … `Mod-Alt-6` / `Mod-Alt-0` |
 | Bascule source | `Mod-Shift-E` |
 | Plein écran | `F11` dans l'éditeur, `Échap` pour sortir |
+| Annuler / rétablir | `Mod-Z` / `Mod-Shift-Z` |
+| Exposant / indice / code | `Mod-.` / `Mod-,` / `Mod-E` |
 
 Lot L2.3 : barre minimale (Lien, Modèle, Source ; Lien et Modèle désactivés en mode source) et `Mod-K`.
 Lot L3.2 : boutons Note, Glossaire, Abréviation, désactivés en mode source comme Lien et Modèle ;
 `Mod-Alt-N`, `Mod-Alt-G` ; règles de saisie `[[` et `[?x]` ; panneau des notes sous l'éditeur, masqué
 sans note et en mode source. Lot L4.2 : bouton Multilingue et sélecteur de la langue affichée
 (masqué sans multi), désactivés en mode source.
+Lot L5.1 : barres déclarées (§2), `Mod-Alt-M`, `Mod-Shift-E` (depuis l'éditeur comme depuis le textarea),
+`F11` et `Échap` (écoutés en capture sur `.tts-editor` : `Échap` ne quitte le plein écran que si aucun
+popover ni menu de l'instance n'est ouvert, car ProseMirror empêche l'action par défaut de toute touche
+`Échap`). Les intertitres `Mod-Alt-2` … `Mod-Alt-6` et `Mod-Alt-0` sont ceux de Tiptap.
+Une commande lancée depuis la barre rend le focus à l'éditeur tout de suite (`view.focus()`, la commande
+`focus` de Tiptap attend l'image suivante).
 ProseMirror lit la sélection du navigateur sur `selectionchange`, asynchrone dans Chromium : une commande
 clavier qui suit de près `Maj+flèches` verrait l'ancienne sélection. Le popover de lien force donc cette
 lecture avant d'agir.
@@ -120,6 +169,16 @@ bloc, `-* ` / `-# ` en début de ligne, `----`, `[[`, `[?x]`, `<doc12>` etc.
 - Zone éditable avec `aria-label` = label du champ SPIP, `aria-multiline="true"`.
 - Nœuds atomiques (notes, modèles) annoncés (`aria-label="Note 2 : …"`, `"Modèle doc 12"`).
 - Popovers : `role="dialog"`, piège de focus, retour de focus.
+
+Lot L5.1 :
+- **Barre :** `role="toolbar"` et `aria-label`, roving tabindex (un seul élément tabulable ; `←` `→` `Début`
+  `Fin` ; éléments désactivés ou masqués sautés), `aria-pressed` sur les bascules.
+- **Menus** (pattern « menu button ») : bouton `aria-haspopup="menu"`, `aria-expanded`, `aria-controls` ; liste
+  `role="menu"`, éléments `menuitem`, `menuitemradio` (choix exclusifs : titre, alignement) ou
+  `menuitemcheckbox` (types de liste), avec `aria-checked`. `↓` ou `Entrée` ouvre, `↑` `↓` `Début` `Fin`
+  parcourent, `Échap` ferme et rend le focus au bouton, `Tab` ou un clic ailleurs ferme. Un choix coché
+  reste atteignable même sans effet. Un seul menu ouvert à la fois.
+- Piège de focus des popovers, nœuds atomiques annoncés, audit axe : lot L5.2.
 
 ## 8. Internationalisation
 

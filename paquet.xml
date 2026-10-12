@@ -10,6 +10,7 @@
 	<!-- Éditeur visuel Tiptap qui lit et écrit les raccourcis SPIP -->
 
 	<credit lien="https://tiptap.dev">Tiptap</credit>
+	<credit lien="https://remixicon.com">Remix Icon (Apache-2.0)</credit>
 	<licence lien="http://www.gnu.org/licenses/gpl-3.0.html">GPL 3</licence>
 
 	<utilise nom="porte_plume" />
@@ -21,6 +22,8 @@
 	<pipeline nom="autoriser" inclure="tiptap_spip_pipelines.php" />
 	<!-- pipeline propre : contextes des formulaires qui embarquent l'éditeur (spec 02 §6) -->
 	<pipeline nom="tiptap_spip_contextes" action="" />
+	<!-- pipeline propre : barres d'outils de l'éditeur (spec 06 §2) -->
+	<pipeline nom="tiptap_spip_toolbars" action="" />
 
 	<chemin path="" />
 	<chemin path="prive" />

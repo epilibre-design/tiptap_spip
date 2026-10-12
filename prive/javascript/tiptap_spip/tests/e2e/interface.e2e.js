@@ -57,7 +57,7 @@ test('bouton Modèle : raccourci inséré en bloc, prévisualisé, enregistré',
 	await page.keyboard.press('End');
 	await selectionStable(page);
 	await page.keyboard.press('Enter');
-	await page.locator('.tts-toolbar .tts-modele').click();
+	await page.locator('.tts-toolbar .tts-outil--modele').click();
 	await page.locator('.tts-popover input[name=raccourci]').fill(`<doc${doc}|center>`);
 	await page.keyboard.press('Enter');
 	await expect(page.locator('.tts-model-block img')).toBeVisible();
@@ -147,7 +147,7 @@ test('glossaire et abréviation : posés depuis l\'interface, définition ouvert
 	await finDuTexte(page);
 	for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowLeft');
 	await selectionStable(page);
-	await page.locator('.tts-toolbar .tts-bouton-abbr').click();
+	await page.locator('.tts-toolbar .tts-outil--abbr').click();
 	await popover.locator('input[name=explication]').fill('Content Management System');
 	await page.keyboard.press('Enter');
 	await expect(page.locator('.ProseMirror abbr')).toHaveText('CMS');
@@ -162,12 +162,12 @@ test('glossaire et abréviation : posés depuis l\'interface, définition ouvert
 test('multilinguisme : multi inséré sur une sélection, multi bloc et ses langues, idiome traduit ; source enregistrée', async ({ page }) => {
 	const id = await editer(page, 'Un chat\n\n<multi>[fr]Un\n\nDeux[en]One\n\nTwo</multi>\n\nVoir <:info_titre:>');
 	await expect(page.locator('.ProseMirror .tts-idiome')).toHaveText('Titre :');
-	await expect(page.locator('.tts-langues')).toBeVisible();
+	await expect(page.locator('.tts-outil--langues')).toBeVisible();
 	// « chat » sélectionné, bouton Multi : deux parties, la première dans la langue de l'interface
 	await finDuTexte(page);
 	for (let i = 0; i < 4; i++) await page.keyboard.press('Shift+ArrowLeft');
 	await selectionStable(page);
-	await page.locator('.tts-toolbar .tts-bouton-multi').click();
+	await page.locator('.tts-toolbar .tts-outil--multi').click();
 	const popover = page.locator('.tts-popover--multi');
 	const langues = popover.locator('input[name=langue]');
 	// langue de l'interface (<html lang>, celle de l'auteur : anglais dans Playwright)
@@ -178,17 +178,75 @@ test('multilinguisme : multi inséré sur une sélection, multi bloc et ses lang
 	await page.keyboard.type('cat');
 	await popover.locator('button[name=appliquer]').click();
 	// langue affichée choisie dans la barre
-	await page.locator('.tts-langues').selectOption('fr');
+	await page.locator('.tts-outil--langues').selectOption('fr');
 	await expect(page.locator('.ProseMirror .tts-multi')).toHaveText('chat');
-	await page.locator('.tts-langues').selectOption('en');
+	await page.locator('.tts-outil--langues').selectOption('en');
 	await expect(page.locator('.ProseMirror .tts-multi')).toHaveText('cat');
 	// multi bloc : langue ajoutée
 	await page.locator('.ProseMirror .tts-multi-block p', { hasText: 'One' }).click();
-	await page.locator('.tts-toolbar .tts-bouton-multi').click();
+	await page.locator('.tts-toolbar .tts-outil--multi').click();
 	await page.locator('.tts-popover button[name=ajouter_langue]').click();
 	await page.locator('.tts-popover input[name=langue]').nth(2).fill('de');
 	await page.keyboard.press('Enter');
 	await expect(page.locator('.ProseMirror .tts-lang')).toHaveCount(3);
 	await enregistrer(page);
 	expect(texte(id)).toBe(crlf('Un <multi>[fr]chat[en]cat</multi>\n\n<multi>[fr]Un\n\nDeux[en]One\n\nTwo[de]</multi>\n\nVoir <:info_titre:>'));
+});
+
+/** Flèche droite dans la barre jusqu'à l'élément de libellé `libelle`. */
+const allerA = async (page, libelle) => {
+	for (let i = 0; i < 40 && (await page.evaluate(() => document.activeElement.getAttribute('aria-label'))) !== libelle; i++) {
+		await page.keyboard.press('ArrowRight');
+	}
+	await expect(page.locator(`.tts-toolbar .tts-outil[aria-label="${libelle}"]`)).toBeFocused();
+};
+
+test('barre au clavier seul (critère 7) : Maj+Tab depuis le texte, flèches jusqu\'à Gras, Entrée', async ({ page }) => {
+	const id = await editer(page, 'Titre\n\nUn mot');
+	// barres transmises par la configuration PHP (pipeline tiptap_spip_toolbars)
+	expect(await page.evaluate(() => window.spipConfig.tiptap_spip.toolbars.edition)).toContain('gras');
+	await page.locator('.ProseMirror p').nth(1).click();
+	await page.keyboard.press('End');
+	await selectionStable(page);
+	for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowLeft');
+	await selectionStable(page);
+	// la barre n'a qu'un élément tabulable : Maj+Tab y mène depuis le texte
+	await page.keyboard.press('Shift+Tab');
+	await expect(page.locator('.tts-toolbar [tabindex="0"]')).toBeFocused();
+	await allerA(page, 'Gras');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('.ProseMirror strong')).toHaveText('mot');
+	await expect(page.locator('.tts-outil--gras')).toHaveAttribute('aria-pressed', 'true');
+	// menu Titre : ↓ ouvre, Entrée choisit l'intertitre (pour le paragraphe du dessus)
+	await page.keyboard.press('ArrowUp');
+	await selectionStable(page);
+	await page.keyboard.press('Shift+Tab');
+	// Annuler est maintenant actif : Début y mène
+	await page.keyboard.press('Home');
+	await expect(page.locator('.tts-outil--annuler')).toBeFocused();
+	await allerA(page, 'Titre');
+	await page.keyboard.press('ArrowDown');
+	await expect(page.locator('.tts-menu--titre [role=menuitemradio]')).toHaveText(['Paragraphe', 'Intertitre', 'Titre de niveau 3', 'Titre de niveau 4']);
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('.ProseMirror h2')).toHaveText('Titre');
+	await enregistrer(page);
+	expect(texte(id)).toBe(crlf('{{{Titre}}}\n\nUn {{mot}}'));
+});
+
+test('plein écran : F11, popover au-dessus, Échap ferme le popover puis le plein écran', async ({ page }) => {
+	await editer(page, 'Texte');
+	await finDuTexte(page);
+	await page.keyboard.press('F11');
+	const editeur = page.locator('.tts-editor');
+	await expect(editeur).toHaveClass(/tts-editor--plein-ecran/);
+	const taille = page.viewportSize();
+	expect(await editeur.boundingBox()).toEqual({ x: 0, y: 0, width: taille.width, height: taille.height });
+	await page.keyboard.press('ControlOrMeta+k');
+	await expect(page.locator('.tts-popover input[name=cible]')).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.tts-popover')).toHaveCount(0);
+	await expect(editeur).toHaveClass(/tts-editor--plein-ecran/);
+	await page.keyboard.press('Escape');
+	await expect(editeur).not.toHaveClass(/tts-editor--plein-ecran/);
 });

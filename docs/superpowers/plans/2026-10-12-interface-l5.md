@@ -183,7 +183,7 @@
 - **e2e (`tests/e2e/interface.e2e.js`) :**
   - barre `edition` sur `editer_article` ;
   - gras au clavier seul : `Tab` jusqu'à la barre, flèches, `Entrée` ; texte enregistré `{{…}}` ;
-  - plein écran puis prévisualisation d'un modèle au-dessus.
+  - plein écran : `F11`, popover au-dessus, `Échap` ferme le popover puis le plein écran. La modalbox des modèles n'existe pas encore (Q3), donc pas de test « modalbox au-dessus ».
 - **Specs :**
   - 06 §2, §3, §6 et §7 ;
   - 02 (pipeline `tiptap_spip_toolbars`, `barres.json`) ;

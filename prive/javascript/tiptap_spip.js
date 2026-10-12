@@ -1,12 +1,16 @@
-// node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
 var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
+// node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
+var __defProp2 = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {
   let target = {};
-  for (var name in all) __defProp(target, name, {
+  for (var name in all) __defProp2(target, name, {
     get: all[name],
     enumerable: true
   });
-  if (!no_symbols) __defProp(target, Symbol.toStringTag, { value: "Module" });
+  if (!no_symbols) __defProp2(target, Symbol.toStringTag, { value: "Module" });
   return target;
 };
 
@@ -610,8 +614,8 @@ var Mark = class _Mark {
     let type = schema.marks[json.type];
     if (!type)
       throw new RangeError(`There is no mark type ${json.type} in this schema`);
-    let mark = type.create(json.attrs);
-    return mark;
+    let mark2 = type.create(json.attrs);
+    return mark2;
   }
   /**
   Test whether two sets of marks are identical.
@@ -1531,9 +1535,9 @@ var Node2 = class _Node {
     checkAttrs(this.type.attrs, this.attrs, "node", this.type.name);
     let copy2 = Mark.none;
     for (let i2 = 0; i2 < this.marks.length; i2++) {
-      let mark = this.marks[i2];
-      checkAttrs(mark.type.attrs, mark.attrs, "mark", mark.type.name);
-      copy2 = mark.addToSet(copy2);
+      let mark2 = this.marks[i2];
+      checkAttrs(mark2.type.attrs, mark2.attrs, "mark", mark2.type.name);
+      copy2 = mark2.addToSet(copy2);
     }
     if (!Mark.sameSet(copy2, this.marks))
       throw new RangeError(`Invalid collection of marks for node ${this.type.name}: ${this.marks.map((m) => m.type.name)}`);
@@ -2436,14 +2440,14 @@ var Schema = class {
 function gatherMarks(schema, marks) {
   let found2 = [];
   for (let i2 = 0; i2 < marks.length; i2++) {
-    let name = marks[i2], mark = schema.marks[name], ok = mark;
-    if (mark) {
-      found2.push(mark);
+    let name = marks[i2], mark2 = schema.marks[name], ok = mark2;
+    if (mark2) {
+      found2.push(mark2);
     } else {
       for (let prop in schema.marks) {
-        let mark2 = schema.marks[prop];
-        if (name == "_" || mark2.spec.group && mark2.spec.group.split(" ").indexOf(name) > -1)
-          found2.push(ok = mark2);
+        let mark3 = schema.marks[prop];
+        if (name == "_" || mark3.spec.group && mark3.spec.group.split(" ").indexOf(name) > -1)
+          found2.push(ok = mark3);
       }
     }
     if (!ok)
@@ -3213,9 +3217,9 @@ var DOMSerializer = class _DOMSerializer {
   /**
   @internal
   */
-  serializeMark(mark, inline, options = {}) {
-    let toDOM = this.marks[mark.type.name];
-    return toDOM && renderSpec(doc(options), toDOM(mark, inline), null, mark.attrs);
+  serializeMark(mark2, inline, options = {}) {
+    let toDOM = this.marks[mark2.type.name];
+    return toDOM && renderSpec(doc(options), toDOM(mark2, inline), null, mark2.attrs);
   }
   static renderSpec(doc4, structure, xmlNS = null, blockArraysIn) {
     if (typeof structure == "string")
@@ -3720,11 +3724,11 @@ var AddMarkStep = class _AddMarkStep extends Step {
   /**
   Create a mark step.
   */
-  constructor(from2, to, mark) {
+  constructor(from2, to, mark2) {
     super();
     this.from = from2;
     this.to = to;
-    this.mark = mark;
+    this.mark = mark2;
   }
   apply(doc4) {
     let oldSlice = doc4.slice(this.from, this.to), $from = doc4.resolve(this.from);
@@ -3772,11 +3776,11 @@ var RemoveMarkStep = class _RemoveMarkStep extends Step {
   /**
   Create a mark-removing step.
   */
-  constructor(from2, to, mark) {
+  constructor(from2, to, mark2) {
     super();
     this.from = from2;
     this.to = to;
-    this.mark = mark;
+    this.mark = mark2;
   }
   apply(doc4) {
     let oldSlice = doc4.slice(this.from, this.to);
@@ -3821,10 +3825,10 @@ var AddNodeMarkStep = class _AddNodeMarkStep extends Step {
   /**
   Create a node mark step.
   */
-  constructor(pos, mark) {
+  constructor(pos, mark2) {
     super();
     this.pos = pos;
-    this.mark = mark;
+    this.mark = mark2;
   }
   apply(doc4) {
     let node2 = doc4.nodeAt(this.pos);
@@ -3867,10 +3871,10 @@ var RemoveNodeMarkStep = class _RemoveNodeMarkStep extends Step {
   /**
   Create a mark-removing step.
   */
-  constructor(pos, mark) {
+  constructor(pos, mark2) {
     super();
     this.pos = pos;
-    this.mark = mark;
+    this.mark = mark2;
   }
   apply(doc4) {
     let node2 = doc4.nodeAt(this.pos);
@@ -4061,16 +4065,16 @@ function contentBetween(doc4, from2, to) {
   }
   return false;
 }
-function addMark(tr, from2, to, mark) {
+function addMark(tr, from2, to, mark2) {
   let removed = [], added = [];
   let removing, adding;
   tr.doc.nodesBetween(from2, to, (node2, pos, parent) => {
     if (!node2.isInline)
       return;
     let marks = node2.marks;
-    if (!mark.isInSet(marks) && parent.type.allowsMarkType(mark.type)) {
+    if (!mark2.isInSet(marks) && parent.type.allowsMarkType(mark2.type)) {
       let start = Math.max(pos, from2), end = Math.min(pos + node2.nodeSize, to);
-      let newSet = mark.addToSet(marks);
+      let newSet = mark2.addToSet(marks);
       for (let i2 = 0; i2 < marks.length; i2++) {
         if (!marks[i2].isInSet(newSet)) {
           if (removing && removing.to == start && removing.mark.eq(marks[i2]))
@@ -4082,28 +4086,28 @@ function addMark(tr, from2, to, mark) {
       if (adding && adding.to == start)
         adding.to = end;
       else
-        added.push(adding = new AddMarkStep(start, end, mark));
+        added.push(adding = new AddMarkStep(start, end, mark2));
     }
   });
   removed.forEach((s) => tr.step(s));
   added.forEach((s) => tr.step(s));
 }
-function removeMark(tr, from2, to, mark) {
+function removeMark(tr, from2, to, mark2) {
   let matched = [], step = 0;
   tr.doc.nodesBetween(from2, to, (node2, pos) => {
     if (!node2.isInline)
       return;
     step++;
     let toRemove = null;
-    if (mark instanceof MarkType) {
+    if (mark2 instanceof MarkType) {
       let set = node2.marks, found2;
-      while (found2 = mark.isInSet(set)) {
+      while (found2 = mark2.isInSet(set)) {
         (toRemove || (toRemove = [])).push(found2);
         set = found2.removeFromSet(set);
       }
-    } else if (mark) {
-      if (mark.isInSet(node2.marks))
-        toRemove = [mark];
+    } else if (mark2) {
+      if (mark2.isInSet(node2.marks))
+        toRemove = [mark2];
     } else {
       toRemove = node2.marks;
     }
@@ -5144,24 +5148,24 @@ var Transform = class {
   /**
   Add a mark to the node at position `pos`.
   */
-  addNodeMark(pos, mark) {
-    this.step(new AddNodeMarkStep(pos, mark));
+  addNodeMark(pos, mark2) {
+    this.step(new AddNodeMarkStep(pos, mark2));
     return this;
   }
   /**
   Remove a mark (or all marks of the given type) from the node at
   position `pos`.
   */
-  removeNodeMark(pos, mark) {
+  removeNodeMark(pos, mark2) {
     let node2 = this.doc.nodeAt(pos);
     if (!node2)
       throw new RangeError("No node at position " + pos);
-    if (mark instanceof Mark) {
-      if (mark.isInSet(node2.marks))
-        this.step(new RemoveNodeMarkStep(pos, mark));
+    if (mark2 instanceof Mark) {
+      if (mark2.isInSet(node2.marks))
+        this.step(new RemoveNodeMarkStep(pos, mark2));
     } else {
       let set = node2.marks, found2, steps = [];
-      while (found2 = mark.isInSet(set)) {
+      while (found2 = mark2.isInSet(set)) {
         steps.push(new RemoveNodeMarkStep(pos, found2));
         set = found2.removeFromSet(set);
       }
@@ -5184,8 +5188,8 @@ var Transform = class {
   /**
   Add the given mark to the inline content between `from` and `to`.
   */
-  addMark(from2, to, mark) {
-    addMark(this, from2, to, mark);
+  addMark(from2, to, mark2) {
+    addMark(this, from2, to, mark2);
     return this;
   }
   /**
@@ -5194,8 +5198,8 @@ var Transform = class {
   a mark type, remove all marks of that type. When it is null,
   remove all marks of any type.
   */
-  removeMark(from2, to, mark) {
-    removeMark(this, from2, to, mark);
+  removeMark(from2, to, mark2) {
+    removeMark(this, from2, to, mark2);
     return this;
   }
   /**
@@ -5719,14 +5723,14 @@ var Transaction = class extends Transform {
   /**
   Add a mark to the set of stored marks.
   */
-  addStoredMark(mark) {
-    return this.ensureMarks(mark.addToSet(this.storedMarks || this.selection.$head.marks()));
+  addStoredMark(mark2) {
+    return this.ensureMarks(mark2.addToSet(this.storedMarks || this.selection.$head.marks()));
   }
   /**
   Remove a mark or mark type from the set of stored marks.
   */
-  removeStoredMark(mark) {
-    return this.ensureMarks(mark.removeFromSet(this.storedMarks || this.selection.$head.marks()));
+  removeStoredMark(mark2) {
+    return this.ensureMarks(mark2.removeFromSet(this.storedMarks || this.selection.$head.marks()));
   }
   /**
   Whether the stored marks were explicitly set for this transaction.
@@ -7194,11 +7198,11 @@ function posFromCaret(view, node2, offset, coords) {
   }
   return outsideBlock > -1 ? outsideBlock : view.docView.posFromDOM(node2, offset, -1);
 }
-function elementFromPoint(element, coords, box) {
-  let len = element.childNodes.length;
+function elementFromPoint(element2, coords, box) {
+  let len = element2.childNodes.length;
   if (len && box.top < box.bottom) {
     for (let startI = Math.max(0, Math.min(len - 1, Math.floor(len * (coords.top - box.top) / (box.bottom - box.top)) - 2)), i2 = startI; ; ) {
-      let child = element.childNodes[i2];
+      let child = element2.childNodes[i2];
       if (isElt(child)) {
         let rects = child.getClientRects();
         for (let j = 0; j < rects.length; j++) {
@@ -7211,7 +7215,7 @@ function elementFromPoint(element, coords, box) {
         break;
     }
   }
-  return element;
+  return element2;
 }
 function posAtCoords(view, coords) {
   let doc4 = view.dom.ownerDocument, node2, offset = 0;
@@ -7447,7 +7451,7 @@ var ViewDesc = class {
   matchesWidget(widget) {
     return false;
   }
-  matchesMark(mark) {
+  matchesMark(mark2) {
     return false;
   }
   matchesNode(node2, outerDeco, innerDeco) {
@@ -7893,25 +7897,25 @@ var CompositionViewDesc = class extends ViewDesc {
   }
 };
 var MarkViewDesc = class _MarkViewDesc extends ViewDesc {
-  constructor(parent, mark, dom, contentDOM, spec) {
+  constructor(parent, mark2, dom, contentDOM, spec) {
     super(parent, [], dom, contentDOM);
-    this.mark = mark;
+    this.mark = mark2;
     this.spec = spec;
   }
-  static create(parent, mark, inline, view) {
-    let custom = view.nodeViews[mark.type.name];
-    let spec = custom && custom(mark, view, inline);
+  static create(parent, mark2, inline, view) {
+    let custom = view.nodeViews[mark2.type.name];
+    let spec = custom && custom(mark2, view, inline);
     if (!spec || !spec.dom)
-      spec = DOMSerializer.renderSpec(document, mark.type.spec.toDOM(mark, inline), null, mark.attrs);
-    return new _MarkViewDesc(parent, mark, spec.dom, spec.contentDOM || spec.dom, spec);
+      spec = DOMSerializer.renderSpec(document, mark2.type.spec.toDOM(mark2, inline), null, mark2.attrs);
+    return new _MarkViewDesc(parent, mark2, spec.dom, spec.contentDOM || spec.dom, spec);
   }
   parseRule() {
     if (this.dirty & NODE_DIRTY || this.mark.type.spec.reparseInView)
       return null;
     return { mark: this.mark.type.name, attrs: this.mark.attrs, contentElement: this.contentDOM };
   }
-  matchesMark(mark) {
-    return this.dirty != NODE_DIRTY && this.mark.eq(mark);
+  matchesMark(mark2) {
+    return this.dirty != NODE_DIRTY && this.mark.eq(mark2);
   }
   markDirty(from2, to) {
     super.markDirty(from2, to);
@@ -8901,19 +8905,19 @@ function temporarilyEditableNear(view, pos) {
       return setEditable(before);
   }
 }
-function setEditable(element) {
-  element.contentEditable = "true";
-  if (safari && element.draggable) {
-    element.draggable = false;
-    element.wasDraggable = true;
+function setEditable(element2) {
+  element2.contentEditable = "true";
+  if (safari && element2.draggable) {
+    element2.draggable = false;
+    element2.wasDraggable = true;
   }
-  return element;
+  return element2;
 }
-function resetEditable(element) {
-  element.contentEditable = "false";
-  if (element.wasDraggable) {
-    element.draggable = true;
-    element.wasDraggable = null;
+function resetEditable(element2) {
+  element2.contentEditable = "false";
+  if (element2.wasDraggable) {
+    element2.draggable = true;
+    element2.wasDraggable = null;
   }
 }
 function removeClassOnSelectionChange(view) {
@@ -11518,19 +11522,19 @@ function resolveSelection(view, doc4, parsedSel) {
 }
 function isMarkChange(cur, prev) {
   let curMarks = cur.firstChild.marks, prevMarks = prev.firstChild.marks;
-  let added = curMarks, removed = prevMarks, type, mark, update;
+  let added = curMarks, removed = prevMarks, type, mark2, update;
   for (let i2 = 0; i2 < prevMarks.length; i2++)
     added = prevMarks[i2].removeFromSet(added);
   for (let i2 = 0; i2 < curMarks.length; i2++)
     removed = curMarks[i2].removeFromSet(removed);
   if (added.length == 1 && removed.length == 0) {
-    mark = added[0];
+    mark2 = added[0];
     type = "add";
-    update = (node2) => node2.mark(mark.addToSet(node2.marks));
+    update = (node2) => node2.mark(mark2.addToSet(node2.marks));
   } else if (added.length == 0 && removed.length == 1) {
-    mark = removed[0];
+    mark2 = removed[0];
     type = "remove";
-    update = (node2) => node2.mark(mark.removeFromSet(node2.marks));
+    update = (node2) => node2.mark(mark2.removeFromSet(node2.marks));
   } else {
     return null;
   }
@@ -11538,7 +11542,7 @@ function isMarkChange(cur, prev) {
   for (let i2 = 0; i2 < prev.childCount; i2++)
     updated.push(update(prev.child(i2)));
   if (Fragment.from(updated).eq(cur))
-    return { mark, type };
+    return { mark: mark2, type };
 }
 function looksLikeBackspace(old, start, end, $newStart, $newEnd) {
   if (
@@ -13155,10 +13159,10 @@ function isMarkInSet(marks, type, attributes = {}) {
 function getMarkRange($pos, type, attributes) {
   if (!$pos || !type) return;
   let start = $pos.parent.childAfter($pos.parentOffset);
-  if (!start.node || !start.node.marks.some((mark) => mark.type === type)) start = $pos.parent.childBefore($pos.parentOffset);
-  if (!start.node || !start.node.marks.some((mark) => mark.type === type)) return;
+  if (!start.node || !start.node.marks.some((mark2) => mark2.type === type)) start = $pos.parent.childBefore($pos.parentOffset);
+  if (!start.node || !start.node.marks.some((mark2) => mark2.type === type)) return;
   if (!attributes) {
-    const firstMark = start.node.marks.find((mark) => mark.type === type);
+    const firstMark = start.node.marks.find((mark2) => mark2.type === type);
     if (firstMark) attributes = firstMark.attrs;
   }
   if (!findMarkInSet([...start.node.marks], type, attributes)) return;
@@ -13653,10 +13657,10 @@ var resetAttributes = (typeOrName, attributes) => ({ tr, state, dispatch }) => {
         canReset = true;
         if (dispatch) tr.setNodeMarkup(pos, void 0, deleteProps(node2.attrs, attributes));
       }
-      if (markType && node2.marks.length) node2.marks.forEach((mark) => {
-        if (markType === mark.type) {
+      if (markType && node2.marks.length) node2.marks.forEach((mark2) => {
+        if (markType === mark2.type) {
           canReset = true;
-          if (dispatch) tr.addMark(pos, pos + node2.nodeSize, markType.create(deleteProps(mark.attrs, attributes)));
+          if (dispatch) tr.addMark(pos, pos + node2.nodeSize, markType.create(deleteProps(mark2.attrs, attributes)));
         }
       });
     });
@@ -13725,9 +13729,9 @@ function getMarkAttributes(state, typeOrName) {
   } else state.doc.nodesBetween(from2, to, (node2) => {
     marks.push(...node2.marks);
   });
-  const mark = marks.find((markItem) => markItem.type.name === type.name);
-  if (!mark) return {};
-  return { ...mark.attrs };
+  const mark2 = marks.find((markItem) => markItem.type.name === type.name);
+  if (!mark2) return {};
+  return { ...mark2.attrs };
 }
 function combineTransactionSteps(oldDoc, transactions) {
   const transform = new Transform(oldDoc);
@@ -14071,9 +14075,9 @@ function getSchemaByResolvedExtensions(extensions, editor) {
     const parseHTML = callOrReturn(getExtensionField(extension, "parseHTML", context));
     if (parseHTML) schema.parseDOM = parseHTML.map((parseRule) => injectExtensionAttributesToParseRule(parseRule, extensionAttributes));
     const renderHTML = getExtensionField(extension, "renderHTML", context);
-    if (renderHTML) schema.toDOM = (mark) => renderHTML({
-      mark,
-      HTMLAttributes: getRenderedAttributes(mark, extensionAttributes)
+    if (renderHTML) schema.toDOM = (mark2) => renderHTML({
+      mark: mark2,
+      HTMLAttributes: getRenderedAttributes(mark2, extensionAttributes)
     });
     return [extension.name, schema];
   }));
@@ -14210,20 +14214,20 @@ function getChangedRanges(transform) {
 }
 function getMarksBetween(from2, to, doc4) {
   const marks = [];
-  if (from2 === to) doc4.resolve(from2).marks().forEach((mark) => {
-    const range = getMarkRange(doc4.resolve(from2), mark.type);
+  if (from2 === to) doc4.resolve(from2).marks().forEach((mark2) => {
+    const range = getMarkRange(doc4.resolve(from2), mark2.type);
     if (!range) return;
     marks.push({
-      mark,
+      mark: mark2,
       ...range
     });
   });
   else doc4.nodesBetween(from2, to, (node2, pos) => {
     if (!node2 || (node2 === null || node2 === void 0 ? void 0 : node2.nodeSize) === void 0) return;
-    marks.push(...node2.marks.map((mark) => ({
+    marks.push(...node2.marks.map((mark2) => ({
       from: pos,
       to: pos + node2.nodeSize,
-      mark
+      mark: mark2
     })));
   });
   return marks;
@@ -14276,10 +14280,10 @@ var getTextContentFromNodes = ($from, maxMatch = 500) => {
 function isMarkActive(state, typeOrName, attributes = {}) {
   const { empty: empty2, ranges } = state.selection;
   const type = typeOrName ? getMarkType(typeOrName, state.schema) : null;
-  if (empty2) return !!(state.storedMarks || state.selection.$from.marks()).filter((mark) => {
+  if (empty2) return !!(state.storedMarks || state.selection.$from.marks()).filter((mark2) => {
     if (!type) return true;
-    return type.name === mark.type.name;
-  }).find((mark) => objectIncludes(mark.attrs, attributes, { strict: false }));
+    return type.name === mark2.type.name;
+  }).find((mark2) => objectIncludes(mark2.attrs, attributes, { strict: false }));
   let selectionRange = 0;
   const markRanges = [];
   ranges.forEach(({ $from, $to }) => {
@@ -14292,8 +14296,8 @@ function isMarkActive(state, typeOrName, attributes = {}) {
       const relativeTo = Math.min(to, pos + node2.nodeSize);
       const range = relativeTo - relativeFrom;
       selectionRange += range;
-      markRanges.push(...node2.marks.map((mark) => ({
-        mark,
+      markRanges.push(...node2.marks.map((mark2) => ({
+        mark: mark2,
         from: relativeFrom,
         to: relativeTo
       })));
@@ -14413,7 +14417,7 @@ function canSetMark(state, tr, newMarkType) {
   if (cursor) {
     var _state$storedMarks;
     const currentMarks = (_state$storedMarks = state.storedMarks) !== null && _state$storedMarks !== void 0 ? _state$storedMarks : cursor.marks();
-    return cursor.parent.type.allowsMarkType(newMarkType) && (!!newMarkType.isInSet(currentMarks) || !currentMarks.some((mark) => mark.type.excludes(newMarkType)));
+    return cursor.parent.type.allowsMarkType(newMarkType) && (!!newMarkType.isInSet(currentMarks) || !currentMarks.some((mark2) => mark2.type.excludes(newMarkType)));
   }
   const { ranges } = selection;
   return ranges.some(({ $from, $to }) => {
@@ -14447,9 +14451,9 @@ var setMark = (typeOrName, attributes = {}) => ({ tr, state, dispatch }) => {
       state.doc.nodesBetween(from2, to, (node2, pos) => {
         const trimmedFrom = Math.max(pos, from2);
         const trimmedTo = Math.min(pos + node2.nodeSize, to);
-        if (node2.marks.find((mark) => mark.type === type)) node2.marks.forEach((mark) => {
-          if (type === mark.type) tr.addMark(trimmedFrom, trimmedTo, type.create({
-            ...mark.attrs,
+        if (node2.marks.find((mark2) => mark2.type === type)) node2.marks.forEach((mark2) => {
+          if (type === mark2.type) tr.addMark(trimmedFrom, trimmedTo, type.create({
+            ...mark2.attrs,
             ...attributes
           }));
         });
@@ -14539,7 +14543,7 @@ var sinkListItem$1 = (typeOrName) => ({ state, dispatch }) => {
 function ensureMarks(state, splittableMarks) {
   const marks = state.storedMarks || state.selection.$to.parentOffset && state.selection.$from.marks();
   if (marks) {
-    const filteredMarks = marks.filter((mark) => splittableMarks === null || splittableMarks === void 0 ? void 0 : splittableMarks.includes(mark.type.name));
+    const filteredMarks = marks.filter((mark2) => splittableMarks === null || splittableMarks === void 0 ? void 0 : splittableMarks.includes(mark2.type.name));
     state.tr.ensureMarks(filteredMarks);
   }
 }
@@ -14658,7 +14662,7 @@ var splitListItem = (typeOrName, overrideAttrs = {}) => ({ tr, state, dispatch, 
     tr.split($from.pos, 2, types).scrollIntoView();
     if (splitsAtStartOfItem) tr.setNodeMarkup(itemStart, void 0, newTypeAttributes);
     if (!marks || !dispatch) return true;
-    const filteredMarks = marks.filter((mark) => splittableMarks.includes(mark.type.name));
+    const filteredMarks = marks.filter((mark2) => splittableMarks.includes(mark2.type.name));
     tr.ensureMarks(filteredMarks);
   }
   return true;
@@ -14742,7 +14746,7 @@ var toggleList = (listTypeOrName, itemTypeOrName, keepMarks, attributes = {}) =>
   }).wrapInList(listType, attributes).command(() => joinListBackwards(tr, listType)).command(() => joinListForwards(tr, listType)).run();
   return chain().command(() => {
     const canWrapInList = can().wrapInList(listType, attributes);
-    const filteredMarks = marks.filter((mark) => splittableMarks.includes(mark.type.name));
+    const filteredMarks = marks.filter((mark2) => splittableMarks.includes(mark2.type.name));
     tr.ensureMarks(filteredMarks);
     if (canWrapInList) return true;
     return commands.clearNodes();
@@ -14814,7 +14818,7 @@ var unsetMark = (typeOrName, options = {}) => ({ tr, state, dispatch }) => {
   if (empty2 && extendEmptyMarkRange) {
     var _$from$marks$find;
     let { from: from2, to } = selection;
-    const range = getMarkRange($from, type, (_$from$marks$find = $from.marks().find((mark) => mark.type === type)) === null || _$from$marks$find === void 0 ? void 0 : _$from$marks$find.attrs);
+    const range = getMarkRange($from, type, (_$from$marks$find = $from.marks().find((mark2) => mark2.type === type)) === null || _$from$marks$find === void 0 ? void 0 : _$from$marks$find.attrs);
     if (range) {
       from2 = range.from;
       to = range.to;
@@ -14888,14 +14892,14 @@ var updateAttributes = (typeOrName, attributes = {}) => ({ tr, state, dispatch }
             ...attributes
           });
         }
-        if (markType && node2.marks.length) node2.marks.forEach((mark) => {
-          if (markType === mark.type) {
+        if (markType && node2.marks.length) node2.marks.forEach((mark2) => {
+          if (markType === mark2.type) {
             canUpdate = true;
             if (dispatch) {
               const trimmedFrom2 = Math.max(pos, from2);
               const trimmedTo2 = Math.min(pos + node2.nodeSize, to);
               tr.addMark(trimmedFrom2, trimmedTo2, markType.create({
-                ...mark.attrs,
+                ...mark2.attrs,
                 ...attributes
               }));
             }
@@ -14908,9 +14912,9 @@ var updateAttributes = (typeOrName, attributes = {}) => ({ tr, state, dispatch }
         ...lastNode.attrs,
         ...attributes
       });
-      if (markType && lastNode.marks.length) lastNode.marks.forEach((mark) => {
-        if (markType === mark.type && dispatch) tr.addMark(trimmedFrom, trimmedTo, markType.create({
-          ...mark.attrs,
+      if (markType && lastNode.marks.length) lastNode.marks.forEach((mark2) => {
+        if (markType === mark2.type && dispatch) tr.addMark(trimmedFrom, trimmedTo, markType.create({
+          ...mark2.attrs,
           ...attributes
         }));
       });
@@ -15635,9 +15639,9 @@ function updateMarkViewAttributes(checkMark, editor, attrs = {}) {
     const from2 = tr.mapping.map(pos);
     const to = tr.mapping.map(pos) + node2.nodeSize;
     let foundMark = null;
-    node2.marks.forEach((mark) => {
-      if (mark !== thisMark) return false;
-      foundMark = mark;
+    node2.marks.forEach((mark2) => {
+      if (mark2 !== thisMark) return false;
+      foundMark = mark2;
     });
     if (!foundMark) return;
     let needsUpdate = false;
@@ -15751,7 +15755,7 @@ function run$1(config2) {
   const { view } = editor;
   if (view.composing) return false;
   const $from = view.state.doc.resolve(from2);
-  if ($from.parent.type.spec.code || !!((_ref = $from.nodeBefore || $from.nodeAfter) === null || _ref === void 0 ? void 0 : _ref.marks.find((mark) => mark.type.spec.code))) return false;
+  if ($from.parent.type.spec.code || !!((_ref = $from.nodeBefore || $from.nodeAfter) === null || _ref === void 0 ? void 0 : _ref.marks.find((mark2) => mark2.type.spec.code))) return false;
   const textBefore = getTextContentFromNodes($from) + text2;
   for (const rule of rules) {
     const match = inputRuleMatcherHandler(textBefore, rule.find);
@@ -15900,13 +15904,13 @@ var Mark2 = class Mark3 extends Extendable {
     const resolvedConfig = typeof config2 === "function" ? config2() : config2;
     return new Mark3(resolvedConfig);
   }
-  static handleExit({ editor, mark }) {
+  static handleExit({ editor, mark: mark2 }) {
     const { tr } = editor.state;
     const currentPos = editor.state.selection.$from;
     if (currentPos.pos === currentPos.end()) {
       const currentMarks = currentPos.marks();
-      if (!!!currentMarks.find((m) => (m === null || m === void 0 ? void 0 : m.type.name) === mark.name)) return false;
-      const removeMark2 = currentMarks.find((m) => (m === null || m === void 0 ? void 0 : m.type.name) === mark.name);
+      if (!!!currentMarks.find((m) => (m === null || m === void 0 ? void 0 : m.type.name) === mark2.name)) return false;
+      const removeMark2 = currentMarks.find((m) => (m === null || m === void 0 ? void 0 : m.type.name) === mark2.name);
       if (removeMark2) tr.removeStoredMark(removeMark2);
       tr.insertText(" ", currentPos.pos);
       editor.view.dispatch(tr);
@@ -16338,17 +16342,17 @@ var ExtensionManager = class {
         type: getMarkType(extension.name, this.schema)
       });
       if (!addMarkView) return [];
-      const markView = (mark, view, inline) => {
-        const HTMLAttributes = getRenderedAttributes(mark, extensionAttributes);
+      const markView = (mark2, view, inline) => {
+        const HTMLAttributes = getRenderedAttributes(mark2, extensionAttributes);
         return addMarkView()({
-          mark,
+          mark: mark2,
           view,
           inline,
           editor,
           extension,
           HTMLAttributes,
           updateAttributes: (attrs) => {
-            updateMarkViewAttributes(mark, editor, attrs);
+            updateMarkViewAttributes(mark2, editor, attrs);
           }
         });
       };
@@ -16517,8 +16521,8 @@ var Delete = Extension.create({
           const newEnd = mapping.slice(index).map(step.to);
           const oldStart = mapping.invert().map(newStart, -1);
           const oldEnd = mapping.invert().map(newEnd);
-          const foundBeforeMark = newStart > 0 ? (_nextTransaction$doc$ = nextTransaction.doc.nodeAt(newStart - 1)) === null || _nextTransaction$doc$ === void 0 ? void 0 : _nextTransaction$doc$.marks.some((mark) => mark.eq(step.mark)) : false;
-          const foundAfterMark = (_nextTransaction$doc$2 = nextTransaction.doc.nodeAt(newEnd)) === null || _nextTransaction$doc$2 === void 0 ? void 0 : _nextTransaction$doc$2.marks.some((mark) => mark.eq(step.mark));
+          const foundBeforeMark = newStart > 0 ? (_nextTransaction$doc$ = nextTransaction.doc.nodeAt(newStart - 1)) === null || _nextTransaction$doc$ === void 0 ? void 0 : _nextTransaction$doc$.marks.some((mark2) => mark2.eq(step.mark)) : false;
+          const foundAfterMark = (_nextTransaction$doc$2 = nextTransaction.doc.nodeAt(newEnd)) === null || _nextTransaction$doc$2 === void 0 ? void 0 : _nextTransaction$doc$2.marks.some((mark2) => mark2.eq(step.mark));
           this.editor.emit("delete", {
             type: "mark",
             mark: step.mark,
@@ -16722,8 +16726,8 @@ var TextDirection = Extension.create({
       types: nodeExtensions.filter((extension) => extension.name !== "text").map((extension) => extension.name),
       attributes: { dir: {
         default: this.options.direction,
-        parseHTML: (element) => {
-          const dir = element.getAttribute("dir");
+        parseHTML: (element2) => {
+          const dir = element2.getAttribute("dir");
           if (dir && (dir === "ltr" || dir === "rtl" || dir === "auto")) return dir;
           return this.options.direction;
         },
@@ -17323,13 +17327,13 @@ var Editor = class extends EventEmitter {
   /**
   * Creates a ProseMirror view.
   */
-  createView(element) {
+  createView(element2) {
     const { editorProps, enableExtensionDispatchTransaction } = this.options;
     const baseDispatch = editorProps.dispatchTransaction || this.dispatchTransaction.bind(this);
     const dispatch = enableExtensionDispatchTransaction ? this.extensionManager.dispatchTransaction(baseDispatch) : baseDispatch;
     const baseTransformPastedHTML = editorProps.transformPastedHTML;
     const transformPastedHTML = this.extensionManager.transformPastedHTML(baseTransformPastedHTML);
-    this.editorView = new EditorView(element, {
+    this.editorView = new EditorView(element2, {
       ...editorProps,
       attributes: this.getEditorViewAttributes(),
       dispatchTransaction: dispatch,
@@ -17586,7 +17590,7 @@ function wrappingInputRule(config2) {
         const { splittableMarks } = config2.editor.extensionManager;
         const marks = storedMarks || selection.$to.parentOffset && selection.$from.marks();
         if (marks) {
-          const filteredMarks = marks.filter((mark) => splittableMarks.includes(mark.type.name));
+          const filteredMarks = marks.filter((mark2) => splittableMarks.includes(mark2.type.name));
           tr.ensureMarks(filteredMarks);
         }
       }
@@ -18077,21 +18081,21 @@ function serializeTable(table) {
   return lines.join("\n");
 }
 var OPEN = { bold: ["{{", "}}"], italic: ["{", "}"], strike: ["<del>", "</del>"], superscript: ["<sup>", "</sup>"], subscript: ["<sub>", "</sub>"] };
-var delimiters = (mark) => {
-  if (mark.type === "spipLink") return ["[", linkEnd(mark.attrs)];
-  if (mark.type === "spipGlossary") return ["[?", serializeGlossary("", mark.attrs).slice(2)];
-  if (mark.type === "spipAbbr") return ["[", serializeAbbr("", mark.attrs).slice(1)];
-  return OPEN[mark.type];
+var delimiters = (mark2) => {
+  if (mark2.type === "spipLink") return ["[", linkEnd(mark2.attrs)];
+  if (mark2.type === "spipGlossary") return ["[?", serializeGlossary("", mark2.attrs).slice(2)];
+  if (mark2.type === "spipAbbr") return ["[", serializeAbbr("", mark2.attrs).slice(1)];
+  return OPEN[mark2.type];
 };
 var ATOMIQUES = ["spipGlossary", "spipAbbr"];
 var avecMarks = (n, marks) => {
   const { marks: _, ...rest } = n;
   return marks.length ? { ...rest, marks } : rest;
 };
-function seRelit(n, mark) {
-  const [open, close2] = delimiters(mark);
+function seRelit(n, mark2) {
+  const [open, close2] = delimiters(mark2);
   const relu = parse(open + n.text + close2).content;
-  return canon(relu) === canon([node("paragraph", null, [text(n.text, [mark])])]);
+  return canon(relu) === canon([node("paragraph", null, [text(n.text, [mark2])])]);
 }
 function marksAtomiques(nodes) {
   let out = nodes.map((n) => {
@@ -18104,22 +18108,22 @@ function marksAtomiques(nodes) {
   for (const type of ATOMIQUES) {
     const res = [];
     for (let i2 = 0; i2 < out.length; ) {
-      const mark = out[i2].marks?.find((m) => m.type === type);
-      if (!mark) {
+      const mark2 = out[i2].marks?.find((m) => m.type === type);
+      if (!mark2) {
         res.push(out[i2++]);
         continue;
       }
       let j = i2;
-      while (j < out.length && out[j].marks?.some((m) => sameMark(m, mark))) j++;
+      while (j < out.length && out[j].marks?.some((m) => sameMark(m, mark2))) j++;
       const run2 = out.slice(i2, j);
       let fusion = null;
       if (run2.every((n) => n.type === "text")) {
         const communes = run2[0].marks.filter((m) => run2.every((n) => n.marks.some((x) => sameMark(x, m))));
         const candidat = text(run2.map((n) => n.text).join(""), communes);
-        if (seRelit(candidat, mark)) fusion = candidat;
+        if (seRelit(candidat, mark2)) fusion = candidat;
       }
       if (fusion) res.push(fusion);
-      else res.push(...run2.map((n) => avecMarks(n, n.marks.filter((m) => !sameMark(m, mark)))));
+      else res.push(...run2.map((n) => avecMarks(n, n.marks.filter((m) => !sameMark(m, mark2)))));
       i2 = j;
     }
     out = res;
@@ -18136,9 +18140,9 @@ function serializeInline(nodes = [], { lineStart = false, html = false } = {}) {
     while (stack.length > k) out += stack.pop().close;
   };
   const marksOf = (n) => (n.marks ?? []).filter((m) => m.type !== "code");
-  const runLength = (i2, mark) => {
+  const runLength = (i2, mark2) => {
     let j = i2;
-    while (j < nodes.length && marksOf(nodes[j]).some((m) => sameMark(m, mark))) j++;
+    while (j < nodes.length && marksOf(nodes[j]).some((m) => sameMark(m, mark2))) j++;
     return j - i2;
   };
   nodes.forEach((n, i2) => {
@@ -18681,7 +18685,7 @@ function tableBlock(src, msk, regions) {
   if (!lines.every((_, k) => /^\|.*\|$/.test(L(k)))) return null;
   const attrs = {};
   let rowLines = lines.map((_, k) => k);
-  const cm = L(0).match(/^\|\|([^|]*)(?:\|([^|]*))?\|\|$/);
+  const cm = L(0).slice(0, -1).replace(/\|+$/, "").match(/^\|\|([^|]*)(?:\|([\s\S]*))?$/);
   if (cm) {
     if (cm[0].includes(FILL)) throw new Fallback();
     attrs.caption = cm[1];
@@ -18788,9 +18792,9 @@ var toEditorJSON = (source, schema) => schemaJSON(parse(source), schema);
 var jsxElements = /* @__PURE__ */ new WeakSet();
 var jsxFragments = /* @__PURE__ */ new WeakSet();
 function createJSXElement(spec) {
-  const element = spec;
-  jsxElements.add(element);
-  return element;
+  const element2 = spec;
+  jsxElements.add(element2);
+  return element2;
 }
 function isJSXElement(value) {
   return Array.isArray(value) && jsxElements.has(value);
@@ -18949,7 +18953,7 @@ var Bold = Mark2.create({
       },
       {
         style: "font-weight=400",
-        clearMark: (mark) => mark.type.name === this.name
+        clearMark: (mark2) => mark2.type.name === this.name
       },
       {
         style: "font-weight",
@@ -19135,11 +19139,11 @@ var CodeBlock = Node3.create({
   addAttributes() {
     return { language: {
       default: this.options.defaultLanguage,
-      parseHTML: (element) => {
+      parseHTML: (element2) => {
         var _element$firstElement;
         const { languageClassPrefix } = this.options;
         if (!languageClassPrefix) return null;
-        const language = [...((_element$firstElement = element.firstElementChild) === null || _element$firstElement === void 0 ? void 0 : _element$firstElement.classList) || []].filter((className) => className.startsWith(languageClassPrefix)).map((className) => className.replace(languageClassPrefix, ""))[0];
+        const language = [...((_element$firstElement = element2.firstElementChild) === null || _element$firstElement === void 0 ? void 0 : _element$firstElement.classList) || []].filter((className) => className.startsWith(languageClassPrefix)).map((className) => className.replace(languageClassPrefix, ""))[0];
         if (!language) return null;
         return language;
       },
@@ -19392,7 +19396,7 @@ var HardBreak = Node3.create({
         const marks = storedMarks || selection.$to.parentOffset && selection.$from.marks();
         return chain().insertContent({ type: this.name }).command(({ tr, dispatch }) => {
           if (dispatch && marks && keepMarks) {
-            const filteredMarks = marks.filter((mark) => splittableMarks.includes(mark.type.name));
+            const filteredMarks = marks.filter((mark2) => splittableMarks.includes(mark2.type.name));
             tr.ensureMarks(filteredMarks);
           }
           return true;
@@ -19568,7 +19572,7 @@ var Italic = Mark2.create({
       },
       {
         style: "font-style=normal",
-        clearMark: (mark) => mark.type.name === this.name
+        clearMark: (mark2) => mark2.type.name === this.name
       },
       { style: "font-style=italic" }
     ];
@@ -20438,21 +20442,21 @@ var OrderedList = Node3.create({
     return {
       start: {
         default: 1,
-        parseHTML: (element) => {
-          return element.hasAttribute("start") ? parseInt(element.getAttribute("start") || "", 10) : 1;
+        parseHTML: (element2) => {
+          return element2.hasAttribute("start") ? parseInt(element2.getAttribute("start") || "", 10) : 1;
         }
       },
       type: {
         default: null,
-        parseHTML: (element) => {
-          const htmlType = element.getAttribute("type");
+        parseHTML: (element2) => {
+          const htmlType = element2.getAttribute("type");
           if (htmlType) return htmlType;
-          const style2 = element.getAttribute("style");
+          const style2 = element2.getAttribute("style");
           if (style2) {
             const mappedFromOl = cssListStyleTypeToHtmlType(style2);
             if (mappedFromOl) return mappedFromOl;
           }
-          const firstLi = element.querySelector("li");
+          const firstLi = element2.querySelector("li");
           if (firstLi) {
             const liStyle = firstLi.getAttribute("style");
             if (liStyle) {
@@ -20600,8 +20604,8 @@ var TaskItem = Node3.create({
     return { checked: {
       default: false,
       keepOnSplit: false,
-      parseHTML: (element) => {
-        const dataChecked = element.getAttribute("data-checked");
+      parseHTML: (element2) => {
+        const dataChecked = element2.getAttribute("data-checked");
         return dataChecked === "" || dataChecked === "true";
       },
       renderHTML: (attributes) => ({ "data-checked": attributes.checked })
@@ -20611,9 +20615,9 @@ var TaskItem = Node3.create({
     return [{
       tag: `li[data-type="${this.name}"]`,
       priority: 51,
-      contentElement: (element) => {
+      contentElement: (element2) => {
         var _element$querySelecto;
-        return (_element$querySelecto = element.querySelector("div")) !== null && _element$querySelecto !== void 0 ? _element$querySelecto : element;
+        return (_element$querySelecto = element2.querySelector("div")) !== null && _element$querySelecto !== void 0 ? _element$querySelecto : element2;
       }
     }];
   },
@@ -22798,9 +22802,9 @@ function normalizeTableCellAlign(value) {
   if (value === "left" || value === "right" || value === "center") return value;
   return null;
 }
-function parseAlign(element) {
-  const styleAlign = (element.style.textAlign || "").trim().toLowerCase();
-  const attrAlign = (element.getAttribute("align") || "").trim().toLowerCase();
+function parseAlign(element2) {
+  const styleAlign = (element2.style.textAlign || "").trim().toLowerCase();
+  const attrAlign = (element2.getAttribute("align") || "").trim().toLowerCase();
   return normalizeTableCellAlign(styleAlign || attrAlign);
 }
 function normalizeTableCellAlignFromAttributes(attributes) {
@@ -22809,7 +22813,7 @@ function normalizeTableCellAlignFromAttributes(attributes) {
 function createAlignAttribute() {
   return {
     default: null,
-    parseHTML: (element) => parseAlign(element),
+    parseHTML: (element2) => parseAlign(element2),
     renderHTML: (attributes) => {
       const align = normalizeTableCellAlign(attributes.align);
       if (!isValidCSSStyleValue(align)) return {};
@@ -22817,25 +22821,25 @@ function createAlignAttribute() {
     }
   };
 }
-function parseColgroupWidth(element) {
+function parseColgroupWidth(element2) {
   var _table$querySelectorA;
-  const row = element.parentElement;
-  const table = element.closest("table");
+  const row = element2.parentElement;
+  const table = element2.closest("table");
   if (!row || !table) return null;
-  const cellIndex = Array.from(row.children).indexOf(element);
+  const cellIndex = Array.from(row.children).indexOf(element2);
   const width = (_table$querySelectorA = table.querySelectorAll("colgroup > col")[cellIndex]) === null || _table$querySelectorA === void 0 ? void 0 : _table$querySelectorA.getAttribute("width");
   return width ? [parseInt(width, 10)] : null;
 }
-function parseColwidth(element) {
-  const colwidth = element.getAttribute("colwidth");
+function parseColwidth(element2) {
+  const colwidth = element2.getAttribute("colwidth");
   if (colwidth) return colwidth.split(",").map((width) => parseInt(width, 10));
-  return parseColgroupWidth(element);
+  return parseColgroupWidth(element2);
 }
 var COLLAPSIBLE_WHITESPACE = /[ \t\r\n\f]+/g;
-function isEmptyCellElement(element) {
+function isEmptyCellElement(element2) {
   var _element$textContent;
-  if (element.children.length > 0) return false;
-  return ((_element$textContent = element.textContent) !== null && _element$textContent !== void 0 ? _element$textContent : "").replace(COLLAPSIBLE_WHITESPACE, "") === "";
+  if (element2.children.length > 0) return false;
+  return ((_element$textContent = element2.textContent) !== null && _element$textContent !== void 0 ? _element$textContent : "").replace(COLLAPSIBLE_WHITESPACE, "") === "";
 }
 function fillEmptyCellContent(cellType) {
   const filled = cellType.createAndFill();
@@ -24467,6 +24471,50 @@ var DEFAUTS = {
   idiome_raccourci: "Raccourci (<:module:cle:>)",
   idiome_invalide: "Ce n\u2019est pas un raccourci d\u2019idiome.",
   idiome_retirer: "Supprimer l\u2019idiome",
+  barre_outils: "Barre d\u2019outils",
+  outil_annuler: "Annuler",
+  outil_retablir: "R\xE9tablir",
+  outil_titre: "Titre",
+  outil_paragraphe: "Paragraphe",
+  outil_intertitre: "Intertitre",
+  outil_titre_niveau: "Titre de niveau @niveau@",
+  outil_liste: "Liste",
+  outil_liste_puces: "Liste \xE0 puces",
+  outil_liste_numerotee: "Liste num\xE9rot\xE9e",
+  outil_indenter: "Indenter",
+  outil_desindenter: "D\xE9sindenter",
+  outil_citation: "Citation",
+  outil_poesie: "Po\xE9sie",
+  outil_cadre: "Bloc de code",
+  outil_barre: "Barr\xE9",
+  outil_exposant: "Exposant",
+  outil_indice: "Indice",
+  outil_code: "Code",
+  outil_alignement: "Alignement",
+  outil_align_left: "\xC0 gauche",
+  outil_align_center: "Centr\xE9",
+  outil_align_right: "\xC0 droite",
+  outil_align_justify: "Justifi\xE9",
+  outil_align_aucun: "Sans alignement",
+  outil_tableau: "Tableau",
+  outil_tableau_inserer: "Ins\xE9rer un tableau",
+  outil_tableau_en_tete: "Ligne d\u2019en-t\xEAte",
+  outil_tableau_ligne_avant: "Ins\xE9rer une ligne au-dessus",
+  outil_tableau_ligne_apres: "Ins\xE9rer une ligne en dessous",
+  outil_tableau_colonne_avant: "Ins\xE9rer une colonne \xE0 gauche",
+  outil_tableau_colonne_apres: "Ins\xE9rer une colonne \xE0 droite",
+  outil_tableau_supprimer_ligne: "Supprimer la ligne",
+  outil_tableau_supprimer_colonne: "Supprimer la colonne",
+  outil_tableau_fusionner: "Fusionner les cellules",
+  outil_tableau_scinder: "Scinder la cellule",
+  outil_tableau_supprimer: "Supprimer le tableau",
+  outil_guillemets: "Guillemets",
+  outil_guillemets_simples: "Guillemets internes",
+  outil_caracteres: "Caract\xE8res sp\xE9ciaux",
+  outil_majuscules: "Majuscules",
+  outil_minuscules: "Minuscules",
+  outil_plein_ecran: "Plein \xE9cran",
+  outil_plein_ecran_sortir: "Quitter le plein \xE9cran",
   appliquer: "Appliquer",
   annuler: "Annuler"
 };
@@ -24683,6 +24731,155 @@ var idiomeView = (ui) => ({ node: node2 }) => {
     ignoreMutation: () => true
   };
 };
+
+// src/editor/edition.js
+var ALIGNEMENTS = ["left", "center", "right", "justify"];
+function alignementCourant(state) {
+  const { selection } = state;
+  if (selection.node?.type.name === "spipAlign") return { node: selection.node, pos: selection.from };
+  const { $from } = selection;
+  if ($from.depth < 1) return null;
+  const node2 = $from.node(1);
+  return node2.type.name === "spipAlign" ? { node: node2, pos: $from.before(1) } : null;
+}
+var alignementActif = (state) => alignementCourant(state)?.node.attrs.align ?? null;
+var PARENTS_POESIE = ["doc", "spipAlign"];
+var deballer = (tr, pos, node2) => tr.replaceWith(pos, pos + node2.nodeSize, node2.content);
+function paragrapheUnique(cellules, schema) {
+  const morceaux = [];
+  cellules.flatMap((c) => c.content.content).forEach((bloc) => {
+    if (bloc.content.size === 0) return;
+    if (morceaux.length) morceaux.push(schema.text(" "));
+    bloc.content.forEach((n) => morceaux.push(n));
+  });
+  return schema.nodes.paragraph.create(null, Fragment.from(morceaux));
+}
+var SpipEdition = Extension.create({
+  name: "spipEdition",
+  addCommands: () => ({
+    /** Aligne les blocs de premier niveau de la sélection ; null retire l'alignement. */
+    setAlignement: (align) => ({ state, tr, dispatch }) => {
+      const courant = alignementCourant(state);
+      if (courant) {
+        if (dispatch) {
+          if (align) tr.setNodeMarkup(courant.pos, null, { ...courant.node.attrs, align });
+          else deballer(tr, courant.pos, courant.node);
+        }
+        return true;
+      }
+      if (!align) return false;
+      const { $from, $to } = state.selection;
+      const range = $from.blockRange($to, (n) => n.type.name === "doc");
+      const wrapping = range && findWrapping(range, state.schema.nodes.spipAlign, { align });
+      if (!wrapping) return false;
+      if (dispatch) tr.wrap(range, wrapping);
+      return true;
+    },
+    /** Met les paragraphes de la sélection en poésie, ou retire la poésie qui la contient. */
+    togglePoesie: () => ({ state, tr, dispatch }) => {
+      const { $from, $to } = state.selection;
+      for (let d = $from.depth; d > 0; d--) {
+        if ($from.node(d).type.name === "spipPoesie") {
+          if (dispatch) deballer(tr, $from.before(d), $from.node(d));
+          return true;
+        }
+      }
+      const range = $from.blockRange($to, (n) => PARENTS_POESIE.includes(n.type.name));
+      if (!range) return false;
+      for (let i2 = range.startIndex; i2 < range.endIndex; i2++) {
+        if (range.parent.child(i2).type.name !== "paragraph") return false;
+      }
+      if (dispatch) tr.wrap(range, [{ type: state.schema.nodes.spipPoesie }]);
+      return true;
+    },
+    /** Entoure la sélection (d'un même bloc) de `ouvrant` et `fermant`, avec les marks de ses bords. */
+    entourer: (ouvrant, fermant) => ({ state, tr, dispatch }) => {
+      const { $from, $to, from: from2, to } = state.selection;
+      if (!$from.sameParent($to) || !$from.parent.isTextblock) return false;
+      if (dispatch) {
+        const marques = (noeud) => noeud?.marks ?? $from.marks();
+        tr.insert(to, state.schema.text(fermant, marques($to.nodeBefore)));
+        tr.insert(from2, state.schema.text(ouvrant, marques($from.nodeAfter)));
+        tr.setSelection(TextSelection.create(tr.doc, from2 + ouvrant.length, to + ouvrant.length));
+      }
+      return true;
+    },
+    /** Passe le texte sélectionné en majuscules ou en minuscules, marks gardées. */
+    changerCasse: (sens) => ({ state, tr, dispatch }) => {
+      const { from: from2, to, empty: empty2 } = state.selection;
+      if (empty2) return false;
+      if (dispatch) {
+        state.doc.nodesBetween(from2, to, (node2, pos) => {
+          if (!node2.isText) return;
+          const debut = Math.max(from2, pos);
+          const fin = Math.min(to, pos + node2.nodeSize);
+          const texte2 = node2.text.slice(debut - pos, fin - pos);
+          const nouveau = sens === "majuscules" ? texte2.toLocaleUpperCase() : texte2.toLocaleLowerCase();
+          if (nouveau !== texte2) {
+            tr.replaceWith(tr.mapping.map(debut), tr.mapping.map(fin), state.schema.text(nouveau, node2.marks));
+          }
+        });
+        tr.setSelection(TextSelection.create(tr.doc, tr.mapping.map(from2, -1), tr.mapping.map(to)));
+      }
+      return true;
+    },
+    /**
+     * Fusionne les cellules sélectionnées. mergeCells met bout à bout leurs paragraphes, qu'une cellule
+     * SPIP n'admet pas (un seul paragraphe) : leurs textes sont d'abord réunis dans la première.
+     */
+    fusionnerCellules: () => ({ state, tr, dispatch }) => {
+      const { selection } = state;
+      if (!(selection instanceof CellSelection) || !mergeCells(state)) return false;
+      if (!dispatch) return true;
+      const cellules = [];
+      selection.forEachCell((node2, pos) => cellules.push({ node: node2, pos }));
+      const reunies = paragrapheUnique(cellules.map((c) => c.node), state.schema);
+      cellules.forEach(({ node: node2, pos }, i2) => {
+        const p = tr.mapping.map(pos);
+        tr.replaceWith(p + 1, p + node2.nodeSize - 1, i2 === 0 ? reunies : state.schema.nodes.paragraph.create());
+      });
+      let fusion = null;
+      const cellulesPreparees = CellSelection.create(tr.doc, tr.mapping.map(selection.$anchorCell.pos), tr.mapping.map(selection.$headCell.pos));
+      mergeCells(EditorState.create({ doc: tr.doc, selection: cellulesPreparees }), (t) => {
+        fusion = t;
+      });
+      fusion.steps.forEach((step) => tr.step(step));
+      tr.setSelection(Selection.fromJSON(tr.doc, fusion.selection.toJSON()));
+      return true;
+    },
+    /** Tableau de trois lignes de trois cellules, sans en-tête (« Ligne d'en-tête » l'ajoute). */
+    insererTableau: () => ({ commands }) => commands.insertTable({ rows: 3, cols: 3, withHeaderRow: false })
+  }),
+  addProseMirrorPlugins: () => [new Plugin({
+    key: new PluginKey("spipTableaux"),
+    // ce qu'un tableau SPIP sait écrire (src/spip/blocks.js) :
+    // - des en-têtes seulement en première ligne, toute la ligne : une ligne ajoutée sous les
+    //   en-têtes, une colonne ajoutée à côté prennent le bon type de cellule ;
+    // - un seul paragraphe par cellule : les cellules fusionnées (mergeCells met bout à bout leurs
+    //   paragraphes) ou un collage gardent leurs textes, séparés par une espace
+    appendTransaction: (transactions, ancien, state) => {
+      if (!transactions.some((t) => t.docChanged)) return null;
+      const { tableCell, tableHeader } = state.schema.nodes;
+      let tr = null;
+      state.doc.descendants((node2, pos) => {
+        if (node2.type.name !== "table") return node2.isBlock && !node2.isTextblock;
+        node2.forEach((ligne, decalage, r) => {
+          const enTete = r === 0 && ligne.content.content.some((c) => c.type === tableHeader);
+          ligne.forEach((cellule, o) => {
+            const type = enTete ? tableHeader : tableCell;
+            const p = pos + 2 + decalage + o;
+            if (cellule.type !== type) (tr ?? (tr = state.tr)).setNodeMarkup(p, type, cellule.attrs);
+            if (cellule.childCount > 1) {
+              (tr ?? (tr = state.tr)).replaceWith(p + 1, p + cellule.nodeSize - 1, paragrapheUnique([cellule], state.schema));
+            }
+          });
+        });
+        return false;
+      });
+      return tr;
+    }
+  })]
+});
 
 // src/editor/extensions.js
 var hidden = (fallback = null, keepOnSplit = true) => ({ default: fallback, rendered: false, keepOnSplit });
@@ -25158,6 +25355,7 @@ var SpipUi = Extension.create({
       "Mod-k": ouvrir("openLink"),
       "Mod-Alt-n": ouvrir("editNote"),
       "Mod-Alt-g": ouvrir("openGlossary"),
+      "Mod-Alt-m": ouvrir("editModel"),
       // Entrée sur un atome sélectionné (note, multi, idiome) : son popover (spec 05 §1, §5)
       Enter: ({ editor }) => {
         const { selection } = editor.state;
@@ -25242,6 +25440,7 @@ function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null } = {}) {
     Dropcursor,
     Gapcursor,
     UndoRedo,
+    SpipEdition,
     SpipUi.configure({ ui })
   ];
 }
@@ -25255,10 +25454,10 @@ function partieExtensions({ ui = null } = {}) {
 }
 
 // src/editor/createEditor.js
-function createEditor({ element, source, ui = null, extensions = coreExtensions({ ui }), editorProps = {} }) {
+function createEditor({ element: element2, source, ui = null, extensions = coreExtensions({ ui }), editorProps = {} }) {
   const content = toEditorJSON(source, getSchema(extensions));
   return new Editor({
-    element,
+    element: element2,
     extensions,
     content,
     editorProps,
@@ -25498,6 +25697,12 @@ function contexte2(textarea) {
   }
   return { objet: "", id: 0, champ: textarea.name };
 }
+function barreDuTextarea(textarea) {
+  if (textarea.dataset.ttsToolbar) return textarea.dataset.ttsToolbar;
+  if (textarea.classList.contains("inserer_barre_edition")) return "edition";
+  if (textarea.classList.contains("inserer_barre_forum") || textarea.closest(".formulaire_forum")) return "forum";
+  return ["texte", "chapo"].includes(contexte2(textarea).champ) ? "edition" : "minimale";
+}
 
 // src/services/cache.js
 var disponibles = (services) => Promise.resolve(services).then((s) => {
@@ -25731,19 +25936,19 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
   const { state } = editor;
   const { selection } = state;
   const auto = selection instanceof NodeSelection && selection.node.type.name === "spipLinkAuto" ? selection : null;
-  const mark = !auto && editor.isActive("spipLink");
-  const attrs = auto ? auto.node.attrs : mark ? editor.getAttributes("spipLink") : VIDE;
-  const existant = Boolean(auto || mark);
-  const popover = new Popover({ editor, wrapper, parent, titre: label("lien"), className: "tts-popover--lien", onSubmit: () => appliquer() });
-  const cible = popover.input(label("lien_cible"), { value: attrs.href, name: "cible" });
+  const mark2 = !auto && editor.isActive("spipLink");
+  const attrs = auto ? auto.node.attrs : mark2 ? editor.getAttributes("spipLink") : VIDE;
+  const existant = Boolean(auto || mark2);
+  const popover2 = new Popover({ editor, wrapper, parent, titre: label("lien"), className: "tts-popover--lien", onSubmit: () => appliquer() });
+  const cible = popover2.input(label("lien_cible"), { value: attrs.href, name: "cible" });
   const suggestions = document.createElement("ul");
   suggestions.className = "tts-popover__suggestions";
   suggestions.setAttribute("role", "listbox");
   suggestions.setAttribute("aria-label", label("lien_rechercher"));
   cible.after(suggestions);
-  const bulle = popover.input(label("lien_bulle"), { value: attrs.bulle ?? "", name: "bulle" });
-  const langue = popover.input(label("lien_langue"), { value: attrs.hreflang ?? "", name: "langue" });
-  const fenetre = popover.input(label("lien_nouvelle_fenetre"), { value: attrs.newWindow, type: "checkbox", name: "nouvelle_fenetre" });
+  const bulle = popover2.input(label("lien_bulle"), { value: attrs.bulle ?? "", name: "bulle" });
+  const langue = popover2.input(label("lien_langue"), { value: attrs.hreflang ?? "", name: "langue" });
+  const fenetre = popover2.input(label("lien_nouvelle_fenetre"), { value: attrs.newWindow, type: "checkbox", name: "nouvelle_fenetre" });
   const valeurs = () => ({
     href: cible.value.trim(),
     bulle: bulle.value === "" ? null : bulle.value,
@@ -25753,11 +25958,11 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
   const appliquer = () => {
     const nouveaux = valeurs();
     if (!nouveaux.href) {
-      popover.error(label("lien_cible_obligatoire"));
+      popover2.error(label("lien_cible_obligatoire"));
       return false;
     }
     if (!seRelitInline([text("x", [{ type: "spipLink", attrs: nouveaux }])])) {
-      popover.error(label("lien_invalide"));
+      popover2.error(label("lien_invalide"));
       return false;
     }
     const chain = editor.chain().focus();
@@ -25766,7 +25971,7 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
         tr.setNodeMarkup(auto.from, void 0, nouveaux);
         return true;
       });
-    } else if (mark) {
+    } else if (mark2) {
       chain.extendMarkRange("spipLink").setMark("spipLink", nouveaux);
     } else if (selection.empty) {
       chain.insertContent({ type: "spipLinkAuto", attrs: nouveaux });
@@ -25776,14 +25981,14 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
     chain.run();
     return true;
   };
-  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
   if (existant) {
-    popover.button(label("lien_retirer"), () => {
+    popover2.button(label("lien_retirer"), () => {
       if (auto) editor.chain().focus().deleteSelection().run();
       else editor.chain().focus().extendMarkRange("spipLink").unsetMark("spipLink").run();
     }, { name: "retirer" });
     if (titles) {
-      const ouvrir = popover.button(label("lien_ouvrir"), () => {
+      const ouvrir = popover2.button(label("lien_ouvrir"), () => {
         titles.get(attrs.href).then((r) => r?.url && globalThis.open?.(r.url, "_blank", "noopener"), () => {
         });
         return false;
@@ -25792,7 +25997,7 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
     }
   }
   if (auto && titles) {
-    popover.button(label("lien_figer"), () => {
+    popover2.button(label("lien_figer"), () => {
       const { href } = auto.node.attrs;
       const attrsLien = valeurs();
       const suivi = suivrePosition(editor, auto.from);
@@ -25808,7 +26013,7 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
       }, () => suivi.fin());
     }, { name: "figer" });
   }
-  popover.button(label("annuler"), () => {
+  popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
   let attente = null;
   let derniere = "";
@@ -25843,8 +26048,8 @@ function openLinkPopover({ editor, wrapper, parent, services, titles }) {
     clearTimeout(attente);
     attente = setTimeout(rechercher, 250);
   });
-  popover.open(cible);
-  return popover;
+  popover2.open(cible);
+  return popover2;
 }
 
 // src/ui/MarkPopover.js
@@ -25867,21 +26072,21 @@ function openMarkPopover({ editor, wrapper, parent }, desc) {
     return texte2;
   };
   const insertion = !existante && selection.empty;
-  const popover = new Popover({ editor, wrapper, parent, titre: desc.titre, className: desc.className, onSubmit: () => appliquer() });
-  const terme = insertion ? popover.input(label("terme"), { name: "terme" }) : null;
-  const champs = desc.champs.map((c) => ({ ...c, input: popover.input(c.label, { value: attrs[c.attr] ?? "", name: c.name }) }));
+  const popover2 = new Popover({ editor, wrapper, parent, titre: desc.titre, className: desc.className, onSubmit: () => appliquer() });
+  const terme = insertion ? popover2.input(label("terme"), { name: "terme" }) : null;
+  const champs = desc.champs.map((c) => ({ ...c, input: popover2.input(c.label, { value: attrs[c.attr] ?? "", name: c.name }) }));
   const valeurs = () => ({
     terme: terme ? terme.value : existante ? state.doc.textBetween(existante.from, existante.to) : state.doc.textBetween(selection.from, selection.to),
     attrs: Object.fromEntries(champs.map((c) => [c.attr, (c.lire ?? ouNull)(c.input.value)]))
   });
   const appliquer = () => {
     if (!existante && !insertion && !surTexte()) {
-      popover.error(label("selection_invalide"));
+      popover2.error(label("selection_invalide"));
       return false;
     }
     const v = valeurs();
     if (!v.terme || !seRelitInline([text(v.terme, [{ type: desc.type, attrs: v.attrs }])])) {
-      popover.error(desc.invalide);
+      popover2.error(desc.invalide);
       return false;
     }
     const chain = editor.chain().focus();
@@ -25891,17 +26096,17 @@ function openMarkPopover({ editor, wrapper, parent }, desc) {
     chain.run();
     return true;
   };
-  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
   if (existante) {
-    popover.button(desc.retirer, () => {
+    popover2.button(desc.retirer, () => {
       editor.chain().focus().setTextSelection(existante).unsetMark(desc.type).run();
     }, { name: "retirer" });
   }
-  desc.avecPopover?.(popover, valeurs);
-  popover.button(label("annuler"), () => {
+  desc.avecPopover?.(popover2, valeurs);
+  popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover.open(terme ?? champs[0].input);
-  return popover;
+  popover2.open(terme ?? champs[0].input);
+  return popover2;
 }
 var glossaire = (services, raccourci) => Promise.resolve(services).then((s) => s?.available ? s.call("glossaire", raccourci ? { raccourci } : {}) : null).catch(() => null);
 function openGlossaryPopover(contexte3) {
@@ -25918,9 +26123,9 @@ function openGlossaryPopover(contexte3) {
       { name: "bulle", label: label("bulle"), attr: "bulle", lire: (v) => v === "" ? null : v },
       { name: "langue", label: label("langue"), attr: "hreflang" }
     ],
-    avecPopover: (popover, valeurs) => {
+    avecPopover: (popover2, valeurs) => {
       if (!services) return;
-      const nom = popover.form.querySelector("[name=glossaire]");
+      const nom = popover2.form.querySelector("[name=glossaire]");
       const liste = document.createElement("datalist");
       liste.id = idUnique("tts-glossaires");
       nom.setAttribute("list", liste.id);
@@ -25928,7 +26133,7 @@ function openGlossaryPopover(contexte3) {
       glossaire(services, null).then((r) => {
         liste.replaceChildren(...(r?.glossaires ?? []).map((g) => Object.assign(document.createElement("option"), { value: g })));
       });
-      const voir = popover.button(label("glossaire_definition"), () => {
+      const voir = popover2.button(label("glossaire_definition"), () => {
         const { terme, attrs } = valeurs();
         const raccourci = serializeGlossary(terme, attrs);
         glossaire(services, raccourci).then((r) => r?.url && globalThis.open?.(r.url, "_blank", "noopener"));
@@ -25957,12 +26162,12 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
   if (pos !== null) editor.commands.setNodeSelection(pos);
   const { selection } = editor.state;
   const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
-  const popover = new Popover({ editor, wrapper, parent, titre: label("modele"), className: "tts-popover--modele", onSubmit: () => appliquer() });
-  const raccourci = popover.input(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci" });
+  const popover2 = new Popover({ editor, wrapper, parent, titre: label("modele"), className: "tts-popover--modele", onSubmit: () => appliquer() });
+  const raccourci = popover2.input(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci" });
   const appliquer = () => {
     const model = parseModel(raccourci.value.trim());
     if (!model) {
-      popover.error(label("modele_invalide"));
+      popover2.error(label("modele_invalide"));
       return false;
     }
     if (courant) {
@@ -25984,11 +26189,11 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
     }
     return true;
   };
-  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
-  popover.button(label("annuler"), () => {
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover.open(raccourci);
-  return popover;
+  popover2.open(raccourci);
+  return popover2;
 }
 
 // src/ui/MultiPopover.js
@@ -26015,7 +26220,7 @@ function multiEnLigne(contexte3, existant) {
   const suivi = suivrePosition(editor, existant ? existant.from : morceau ? selection.from : selection.to);
   const fin = existant ? null : suivrePosition(editor, selection.to);
   const lignes = [];
-  const popover = new Popover({
+  const popover2 = new Popover({
     editor,
     wrapper,
     titre: label("multi"),
@@ -26029,7 +26234,7 @@ function multiEnLigne(contexte3, existant) {
   });
   const liste = document.createElement("div");
   liste.className = "tts-multi__parties";
-  popover.actions.before(liste);
+  popover2.actions.before(liste);
   const schema = getSchema(partieExtensions());
   const ajouter = (lang, origine) => {
     const ligne = document.createElement("div");
@@ -26052,8 +26257,8 @@ function multiEnLigne(contexte3, existant) {
     const sousUi = {
       previews: contexte3.previews ?? null,
       titles: contexte3.titles ?? null,
-      openLink: () => openLinkPopover({ ...contexte3, editor: l.sous, parent: popover }),
-      openGlossary: () => openGlossaryPopover({ ...contexte3, editor: l.sous, parent: popover })
+      openLink: () => openLinkPopover({ ...contexte3, editor: l.sous, parent: popover2 }),
+      openGlossary: () => openGlossaryPopover({ ...contexte3, editor: l.sous, parent: popover2 })
     };
     const sous = new Editor({
       element: zone,
@@ -26085,11 +26290,11 @@ function multiEnLigne(contexte3, existant) {
       content: l.modifie || !l.origine ? l.sous.getJSON().content?.[0]?.content ?? [] : l.origine
     })).filter((p2) => p2.lang || p2.content.length);
     if (!parts.length) {
-      popover.error(label("multi_vide"));
+      popover2.error(label("multi_vide"));
       return false;
     }
     if (!languesValides(parts.map((p2) => p2.lang)) || !multiSeRelit(parts)) {
-      popover.error(label("multi_invalide"));
+      popover2.error(label("multi_invalide"));
       return false;
     }
     const p = suivi.pos();
@@ -26106,13 +26311,13 @@ function multiEnLigne(contexte3, existant) {
     }
     return true;
   };
-  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
-  popover.button(label("multi_ajouter"), () => {
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("multi_ajouter"), () => {
     ajouter("", null).langue.focus();
     return false;
   }, { name: "ajouter_langue" });
   if (existant) {
-    popover.button(label("multi_supprimer"), () => {
+    popover2.button(label("multi_supprimer"), () => {
       const p = suivi.pos();
       const node2 = p === null ? null : editor.state.doc.nodeAt(p);
       if (node2?.type.name !== "spipMultiInline") return;
@@ -26120,15 +26325,15 @@ function multiEnLigne(contexte3, existant) {
       editor.chain().focus().insertContentAt({ from: p, to: p + node2.nodeSize }, garde).run();
     }, { name: "supprimer" });
   }
-  popover.button(label("annuler"), () => {
+  popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover.open(lignes[0]?.langue);
-  return popover;
+  popover2.open(lignes[0]?.langue);
+  return popover2;
 }
 var paragrapheVide = (node2) => node2?.type.name === "paragraph" && node2.content.size === 0;
 function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   const suivi = suivrePosition(editor, pos);
-  const popover = new Popover({
+  const popover2 = new Popover({
     editor,
     wrapper,
     titre: label("multi_langues"),
@@ -26139,7 +26344,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   const lignes = [];
   const liste = document.createElement("div");
   liste.className = "tts-multi__parties";
-  popover.actions.before(liste);
+  popover2.actions.before(liste);
   const ajouter = (lang, partie) => {
     const ligne = document.createElement("div");
     ligne.className = "tts-multi__partie";
@@ -26172,11 +26377,11 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   const appliquer = () => {
     const langues = lignes.map((l) => l.langue.value.trim() || null);
     if (!lignes.length) {
-      popover.error(label("multi_vide"));
+      popover2.error(label("multi_vide"));
       return false;
     }
     if (!languesValides(langues)) {
-      popover.error(label("multi_invalide"));
+      popover2.error(label("multi_invalide"));
       return false;
     }
     const c = courant();
@@ -26193,13 +26398,13 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
     }).run();
     return true;
   };
-  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
-  popover.button(label("multi_ajouter"), () => {
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("multi_ajouter"), () => {
     ajouter("", null).langue.focus();
     return false;
   }, { name: "ajouter_langue" });
   if (!nouveau) {
-    popover.button(label("multi_supprimer"), () => {
+    popover2.button(label("multi_supprimer"), () => {
       const c = courant();
       if (!c) return;
       const parties = [];
@@ -26211,10 +26416,10 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
       }).run();
     }, { name: "supprimer" });
   }
-  popover.button(label("annuler"), () => {
+  popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover.open(lignes[0]?.langue);
-  return popover;
+  popover2.open(lignes[0]?.langue);
+  return popover2;
 }
 function openIdiomePopover({ editor, wrapper }, pos = null) {
   if (pos !== null) editor.commands.setNodeSelection(pos);
@@ -26222,7 +26427,7 @@ function openIdiomePopover({ editor, wrapper }, pos = null) {
   if (!(selection instanceof NodeSelection) || selection.node.type.name !== "spipIdiome") return null;
   const suivi = suivrePosition(editor, selection.from);
   const { module, cle } = selection.node.attrs;
-  const popover = new Popover({
+  const popover2 = new Popover({
     editor,
     wrapper,
     titre: label("idiome"),
@@ -26230,7 +26435,7 @@ function openIdiomePopover({ editor, wrapper }, pos = null) {
     onSubmit: () => appliquer(),
     onClose: () => suivi.fin()
   });
-  const raccourci = popover.input(label("idiome_raccourci"), { value: `<:${module ? `${module}:` : ""}${cle}:>`, name: "raccourci" });
+  const raccourci = popover2.input(label("idiome_raccourci"), { value: `<:${module ? `${module}:` : ""}${cle}:>`, name: "raccourci" });
   const idiome = () => {
     const p = suivi.pos();
     return p !== null && editor.state.doc.nodeAt(p)?.type.name === "spipIdiome" ? p : null;
@@ -26238,7 +26443,7 @@ function openIdiomePopover({ editor, wrapper }, pos = null) {
   const appliquer = () => {
     const attrs = parseIdiome(raccourci.value.trim());
     if (!attrs) {
-      popover.error(label("idiome_invalide"));
+      popover2.error(label("idiome_invalide"));
       return false;
     }
     const p = idiome();
@@ -26250,15 +26455,15 @@ function openIdiomePopover({ editor, wrapper }, pos = null) {
     }
     return true;
   };
-  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
-  popover.button(label("idiome_retirer"), () => {
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("idiome_retirer"), () => {
     const p = idiome();
     if (p !== null) editor.chain().focus().deleteRange({ from: p, to: p + 1 }).run();
   }, { name: "retirer" });
-  popover.button(label("annuler"), () => {
+  popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover.open(raccourci);
-  return popover;
+  popover2.open(raccourci);
+  return popover2;
 }
 
 // src/ui/NotePopover.js
@@ -26286,7 +26491,7 @@ function openNotePopover(contexte3, pos = null) {
     const p = suivi?.pos();
     return p != null && editor.state.doc.nodeAt(p)?.type.name === "spipNote" ? p : null;
   };
-  const popover = new Popover({
+  const popover2 = new Popover({
     editor,
     wrapper,
     titre: label("note"),
@@ -26299,8 +26504,8 @@ function openNotePopover(contexte3, pos = null) {
       sous?.destroy();
     }
   });
-  const nom = popover.input(label("note_nom"), { value: name ?? "", name: "nom" });
-  const sansAppel = popover.input(label("note_sans_appel"), { value: name === "", type: "checkbox", name: "sans_appel" });
+  const nom = popover2.input(label("note_nom"), { value: name ?? "", name: "nom" });
+  const sansAppel = popover2.input(label("note_sans_appel"), { value: name === "", type: "checkbox", name: "sans_appel" });
   const majNom = () => {
     nom.disabled = sansAppel.checked;
   };
@@ -26318,8 +26523,8 @@ function openNotePopover(contexte3, pos = null) {
   const zone = document.createElement("div");
   zone.className = "tts-note__texte";
   bloc.append(titre, barre, zone);
-  popover.actions.before(bloc);
-  const enfant = () => ({ ...contexte3, editor: sous, parent: popover });
+  popover2.actions.before(bloc);
+  const enfant = () => ({ ...contexte3, editor: sous, parent: popover2 });
   const sousUi = {
     previews: contexte3.previews ?? null,
     titles: contexte3.titles ?? null,
@@ -26344,7 +26549,7 @@ function openNotePopover(contexte3, pos = null) {
     content,
     editorProps: { attributes: { class: "tts-prosemirror", "aria-labelledby": titre.id, "aria-multiline": "true" } }
   });
-  popover.sous = sous;
+  popover2.sous = sous;
   let modifie = false;
   sous.on("update", () => {
     modifie = true;
@@ -26367,11 +26572,11 @@ function openNotePopover(contexte3, pos = null) {
     const nouveau = sansAppel.checked ? "" : nom.value.trim() || null;
     const texte2 = modifie || !origine ? sous.getJSON().content : origine;
     if (vide(texte2)) {
-      popover.error(label("note_vide"));
+      popover2.error(label("note_vide"));
       return false;
     }
     if (!noteSeRelit({ name: nouveau, content: texte2 })) {
-      popover.error(label("note_invalide"));
+      popover2.error(label("note_invalide"));
       return false;
     }
     if (existante) {
@@ -26384,18 +26589,18 @@ function openNotePopover(contexte3, pos = null) {
     }
     return true;
   };
-  popover.button(label("appliquer"), null, { submit: true, name: "appliquer" });
+  popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
   if (existante) {
-    popover.button(label("note_retirer"), () => {
+    popover2.button(label("note_retirer"), () => {
       const p = note();
       if (p !== null) editor.chain().focus().setNodeSelection(p).removeSpipNote().run();
     }, { name: "retirer" });
   }
-  popover.button(label("annuler"), () => {
+  popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover.open(zone.querySelector("[contenteditable]") ?? nom);
+  popover2.open(zone.querySelector("[contenteditable]") ?? nom);
   sous.commands.focus("end");
-  return popover;
+  return popover2;
 }
 
 // src/ui/interface.js
@@ -26415,6 +26620,510 @@ function creerInterface({ editor, wrapper, services }) {
   };
   return ui;
 }
+
+// src/ui/barres.json
+var barres_default = {
+  edition: [
+    "annuler",
+    "retablir",
+    "|",
+    "titre",
+    "liste",
+    "citation",
+    "poesie",
+    "cadre",
+    "|",
+    "gras",
+    "italique",
+    "barre",
+    "exposant",
+    "indice",
+    "code",
+    "|",
+    "lien",
+    "note",
+    "glossaire",
+    "abbr",
+    "modele",
+    "|",
+    "alignement",
+    "tableau",
+    "guillemets",
+    "caracteres",
+    "|",
+    "multi",
+    "langues",
+    "|",
+    "source",
+    "pleinEcran"
+  ],
+  forum: ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
+  minimale: ["gras", "italique", "lien", "|", "source"]
+};
+
+// src/ui/icones.js
+var ICONES = {
+  annuler: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.82843 6.99955L8.36396 9.53509L6.94975 10.9493L2 5.99955L6.94975 1.0498L8.36396 2.46402L5.82843 4.99955H13C17.4183 4.99955 21 8.58127 21 12.9996C21 17.4178 17.4183 20.9996 13 20.9996H4V18.9996H13C16.3137 18.9996 19 16.3133 19 12.9996C19 9.68584 16.3137 6.99955 13 6.99955H5.82843Z"/></svg>',
+  retablir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.1716 6.99955H11C7.68629 6.99955 5 9.68584 5 12.9996C5 16.3133 7.68629 18.9996 11 18.9996H20V20.9996H11C6.58172 20.9996 3 17.4178 3 12.9996C3 8.58127 6.58172 4.99955 11 4.99955H18.1716L15.636 2.46402L17.0503 1.0498L22 5.99955L17.0503 10.9493L15.636 9.53509L18.1716 6.99955Z"/></svg>',
+  titre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17 11V4H19V21H17V13H7V21H5V4H7V11H17Z"/></svg>',
+  paragraphe: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6V21H10V16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4H20V6H17V21H15V6H12ZM10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14V6Z"/></svg>',
+  liste: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 4H21V6H8V4ZM4.5 6.5C3.67157 6.5 3 5.82843 3 5C3 4.17157 3.67157 3.5 4.5 3.5C5.32843 3.5 6 4.17157 6 5C6 5.82843 5.32843 6.5 4.5 6.5ZM4.5 13.5C3.67157 13.5 3 12.8284 3 12C3 11.1716 3.67157 10.5 4.5 10.5C5.32843 10.5 6 11.1716 6 12C6 12.8284 5.32843 13.5 4.5 13.5ZM4.5 20.4C3.67157 20.4 3 19.7284 3 18.9C3 18.0716 3.67157 17.4 4.5 17.4C5.32843 17.4 6 18.0716 6 18.9C6 19.7284 5.32843 20.4 4.5 20.4ZM8 11H21V13H8V11ZM8 18H21V20H8V18Z"/></svg>',
+  listeNumerotee: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.75024 3.5H4.71733L3.25 3.89317V5.44582L4.25002 5.17782L4.25018 8.5H3V10H7V8.5H5.75024V3.5ZM10 4H21V6H10V4ZM10 11H21V13H10V11ZM10 18H21V20H10V18ZM2.875 15.625C2.875 14.4514 3.82639 13.5 5 13.5C6.17361 13.5 7.125 14.4514 7.125 15.625C7.125 16.1106 6.96183 16.5587 6.68747 16.9167L6.68271 16.9229L5.31587 18.5H7V20H3.00012L2.99959 18.8786L5.4717 16.035C5.5673 15.9252 5.625 15.7821 5.625 15.625C5.625 15.2798 5.34518 15 5 15C4.67378 15 4.40573 15.2501 4.37747 15.5688L4.3651 15.875H2.875V15.625Z"/></svg>',
+  indenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM7 12.5L3 16V9L7 12.5Z"/></svg>',
+  desindenter: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM11 14H21V16H11V14ZM11 9H21V11H11V9ZM3 12.5L7 9V16L3 12.5Z"/></svg>',
+  citation: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M4.58341 17.3211C3.55316 16.2274 3 15 3 13.0103C3 9.51086 5.45651 6.37366 9.03059 4.82318L9.92328 6.20079C6.58804 8.00539 5.93618 10.346 5.67564 11.822C6.21263 11.5443 6.91558 11.4466 7.60471 11.5105C9.40908 11.6778 10.8312 13.159 10.8312 15C10.8312 16.933 9.26416 18.5 7.33116 18.5C6.2581 18.5 5.23196 18.0095 4.58341 17.3211ZM14.5834 17.3211C13.5532 16.2274 13 15 13 13.0103C13 9.51086 15.4565 6.37366 19.0306 4.82318L19.9233 6.20079C16.588 8.00539 15.9362 10.346 15.6756 11.822C16.2126 11.5443 16.9156 11.4466 17.6047 11.5105C19.4091 11.6778 20.8312 13.159 20.8312 15C20.8312 16.933 19.2642 18.5 17.3312 18.5C16.2581 18.5 15.232 18.0095 14.5834 17.3211Z"/></svg>',
+  poesie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M6.93912 14.0328C6.7072 14.6563 6.51032 15.2331 6.33421 15.8155C7.29345 15.1189 8.43544 14.6767 9.75193 14.5121C12.2652 14.198 14.4976 12.5385 15.6279 10.4537L14.1721 8.99888L15.5848 7.58417C15.9185 7.25004 16.2521 6.91614 16.5858 6.58248C17.0151 6.15312 17.5 5.35849 18.0129 4.2149C12.4197 5.08182 8.99484 8.50647 6.93912 14.0328ZM17 8.99739L18 9.99669C17 12.9967 14 15.9967 10 16.4967C7.33146 16.8303 5.66421 18.6636 4.99824 21.9967H3C4 15.9967 6 1.99669 21 1.99669C20.0009 4.99402 19.0018 6.99313 18.0027 7.99402C17.6662 8.33049 17.3331 8.66382 17 8.99739Z"/></svg>',
+  cadre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3.41436 5.99995L5.70726 3.70706L4.29304 2.29285L0.585938 5.99995L4.29304 9.70706L5.70726 8.29285L3.41436 5.99995ZM9.58594 5.99995L7.29304 3.70706L8.70726 2.29285L12.4144 5.99995L8.70726 9.70706L7.29304 8.29285L9.58594 5.99995ZM14.0002 2.99995H21.0002C21.5524 2.99995 22.0002 3.44767 22.0002 3.99995V20C22.0002 20.5522 21.5524 21 21.0002 21H3.00015C2.44787 21 2.00015 20.5522 2.00015 20V12H4.00015V19H20.0002V4.99995H14.0002V2.99995Z"/></svg>',
+  gras: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 11H12.5C13.8807 11 15 9.88071 15 8.5C15 7.11929 13.8807 6 12.5 6H8V11ZM18 15.5C18 17.9853 15.9853 20 13.5 20H6V4H12.5C14.9853 4 17 6.01472 17 8.5C17 9.70431 16.5269 10.7981 15.7564 11.6058C17.0979 12.3847 18 13.837 18 15.5ZM8 13V18H13.5C14.8807 18 16 16.8807 16 15.5C16 14.1193 14.8807 13 13.5 13H8Z"/></svg>',
+  italique: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M15 20H7V18H9.92661L12.0425 6H9V4H17V6H14.0734L11.9575 18H15V20Z"/></svg>',
+  barre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17.1538 14C17.3846 14.5161 17.5 15.0893 17.5 15.7196C17.5 17.0625 16.9762 18.1116 15.9286 18.867C14.8809 19.6223 13.4335 20 11.5862 20C9.94674 20 8.32335 19.6185 6.71592 18.8555V16.6009C8.23538 17.4783 9.7908 17.917 11.3822 17.917C13.9333 17.917 15.2128 17.1846 15.2208 15.7196C15.2208 15.0939 15.0049 14.5598 14.5731 14.1173C14.5339 14.0772 14.4939 14.0381 14.4531 14H3V12H21V14H17.1538ZM13.076 11H7.62908C7.4566 10.8433 7.29616 10.6692 7.14776 10.4778C6.71592 9.92084 6.5 9.24559 6.5 8.45207C6.5 7.21602 6.96583 6.165 7.89749 5.299C8.82916 4.43299 10.2706 4 12.2219 4C13.6934 4 15.1009 4.32808 16.4444 4.98426V7.13591C15.2448 6.44921 13.9293 6.10587 12.4978 6.10587C10.0187 6.10587 8.77917 6.88793 8.77917 8.45207C8.77917 8.87172 8.99709 9.23796 9.43293 9.55079C9.86878 9.86362 10.4066 10.1135 11.0463 10.3004C11.6665 10.4816 12.3431 10.7148 13.076 11H13.076Z"/></svg>',
+  exposant: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 5L10.5 10.9283L15.4043 5H18L11.7978 12.4971L18 19.9943V20H15.4091L10.5 14.0659L5.59092 20H3V19.9943L9.20216 12.4971L3 5H5.59567ZM21.5507 6.5803C21.7042 6.43453 21.8 6.22845 21.8 6C21.8 5.55817 21.4418 5.2 21 5.2C20.5582 5.2 20.2 5.55817 20.2 6C20.2 6.07624 20.2107 6.14999 20.2306 6.21983L19.0765 6.54958C19.0267 6.37497 19 6.1906 19 6C19 4.89543 19.8954 4 21 4C22.1046 4 23 4.89543 23 6C23 6.57273 22.7593 7.08923 22.3735 7.45384L20.7441 9H23V10H19V9L21.5507 6.5803V6.5803Z"/></svg>',
+  indice: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M5.59567 4L10.5 9.92831L15.4043 4H18L11.7978 11.4971L18 18.9943V19H15.4091L10.5 13.0659L5.59092 19H3V18.9943L9.20216 11.4971L3 4H5.59567ZM21.8 16C21.8 15.5582 21.4418 15.2 21 15.2C20.5582 15.2 20.2 15.5582 20.2 16C20.2 16.0762 20.2107 16.15 20.2306 16.2198L19.0765 16.5496C19.0267 16.375 19 16.1906 19 16C19 14.8954 19.8954 14 21 14C22.1046 14 23 14.8954 23 16C23 16.5727 22.7593 17.0892 22.3735 17.4538L20.7441 19H23V20H19V19L21.5507 16.5803C21.7042 16.4345 21.8 16.2284 21.8 16Z"/></svg>',
+  code: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12L15.9289 19.0711L14.5147 17.6569L20.1716 12L14.5147 6.34317L15.9289 4.92896L23 12ZM3.82843 12L9.48528 17.6569L8.07107 19.0711L1 12L8.07107 4.92896L9.48528 6.34317L3.82843 12Z"/></svg>',
+  lien: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3638 15.5355L16.9496 14.1213L18.3638 12.7071C20.3164 10.7545 20.3164 7.58866 18.3638 5.63604C16.4112 3.68341 13.2453 3.68341 11.2927 5.63604L9.87849 7.05025L8.46428 5.63604L9.87849 4.22182C12.6122 1.48815 17.0443 1.48815 19.778 4.22182C22.5117 6.95549 22.5117 11.3876 19.778 14.1213L18.3638 15.5355ZM15.5353 18.364L14.1211 19.7782C11.3875 22.5118 6.95531 22.5118 4.22164 19.7782C1.48797 17.0445 1.48797 12.6123 4.22164 9.87868L5.63585 8.46446L7.05007 9.87868L5.63585 11.2929C3.68323 13.2455 3.68323 16.4113 5.63585 18.364C7.58847 20.3166 10.7543 20.3166 12.7069 18.364L14.1211 16.9497L15.5353 18.364ZM14.8282 7.75736L16.2425 9.17157L9.17139 16.2426L7.75717 14.8284L14.8282 7.75736Z"/></svg>',
+  note: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M12.9998 3L12.9996 10.267L19.294 6.63397L20.294 8.36602L14.0006 11.999L20.294 15.634L19.294 17.366L12.9996 13.732L12.9998 21H10.9998L10.9996 13.732L4.70557 17.366L3.70557 15.634L9.99857 12L3.70557 8.36602L4.70557 6.63397L10.9996 10.267L10.9998 3H12.9998Z"/></svg>',
+  glossaire: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18H6C5.44772 18 5 18.4477 5 19C5 19.5523 5.44772 20 6 20H21V22H6C4.34315 22 3 20.6569 3 19V4C3 2.89543 3.89543 2 5 2H21V18ZM5 16.05C5.16156 16.0172 5.32877 16 5.5 16H19V4H5V16.05ZM16 9H8V7H16V9Z"/></svg>',
+  abbr: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM7 8H17V11H15V10H13V14H14.5V16H9.5V14H11V10H9V11H7V8Z"/></svg>',
+  modele: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5C7 2.79086 8.79086 1 11 1C13.2091 1 15 2.79086 15 5H18C18.5523 5 19 5.44772 19 6V9C21.2091 9 23 10.7909 23 13C23 15.2091 21.2091 17 19 17V20C19 20.5523 18.5523 21 18 21H4C3.44772 21 3 20.5523 3 20V6C3 5.44772 3.44772 5 4 5H7ZM11 3C9.89543 3 9 3.89543 9 5C9 5.23554 9.0403 5.45952 9.11355 5.66675C9.22172 5.97282 9.17461 6.31235 8.98718 6.57739C8.79974 6.84243 8.49532 7 8.17071 7H5V19H17V15.8293C17 15.5047 17.1576 15.2003 17.4226 15.0128C17.6877 14.8254 18.0272 14.7783 18.3332 14.8865C18.5405 14.9597 18.7645 15 19 15C20.1046 15 21 14.1046 21 13C21 11.8954 20.1046 11 19 11C18.7645 11 18.5405 11.0403 18.3332 11.1135C18.0272 11.2217 17.6877 11.1746 17.4226 10.9872C17.1576 10.7997 17 10.4953 17 10.1707V7H13.8293C13.5047 7 13.2003 6.84243 13.0128 6.57739C12.8254 6.31235 12.7783 5.97282 12.8865 5.66675C12.9597 5.45952 13 5.23555 13 5C13 3.89543 12.1046 3 11 3Z"/></svg>',
+  multi: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 10L22.9 21H20.745L19.544 18H15.454L14.255 21H12.101L16.5 10H18.5ZM10 2V4H16V6L14.0322 6.0006C13.2425 8.36616 11.9988 10.5057 10.4115 12.301C11.1344 12.9457 11.917 13.5176 12.7475 14.0079L11.9969 15.8855C10.9237 15.2781 9.91944 14.5524 8.99961 13.7249C7.21403 15.332 5.10914 16.5553 2.79891 17.2734L2.26257 15.3442C4.2385 14.7203 6.04543 13.6737 7.59042 12.3021C6.46277 11.0281 5.50873 9.57985 4.76742 8.00028L7.00684 8.00037C7.57018 9.03885 8.23979 10.0033 8.99967 10.877C10.2283 9.46508 11.2205 7.81616 11.9095 6.00101L2 6V4H8V2H10ZM17.5 12.8852L16.253 16H18.745L17.5 12.8852Z"/></svg>',
+  alignement: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
+  alignGauche: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
+  alignCentre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM5 19H19V21H5V19ZM3 14H21V16H3V14ZM5 9H19V11H5V9Z"/></svg>',
+  alignDroite: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM7 19H21V21H7V19ZM3 14H21V16H3V14ZM7 9H21V11H7V9Z"/></svg>',
+  alignJustifie: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H21V21H3V19ZM3 14H21V16H3V14ZM3 9H21V11H3V9Z"/></svg>',
+  tableau: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V14H19V10H13ZM11 10H5V14H11V10ZM13 19H19V16H13V19ZM11 19V16H5V19H11ZM13 5V8H19V5H13ZM11 5H5V8H11V5ZM4 3H20C20.5523 3 21 3.44772 21 4V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3Z"/></svg>',
+  guillemets: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4167 6.67891C20.4469 7.77257 21.0001 9 21.0001 10.9897C21.0001 14.4891 18.5436 17.6263 14.9695 19.1768L14.0768 17.7992C17.4121 15.9946 18.0639 13.6539 18.3245 12.178C17.7875 12.4557 17.0845 12.5533 16.3954 12.4895C14.591 12.3222 13.1689 10.8409 13.1689 9C13.1689 7.067 14.7359 5.5 16.6689 5.5C17.742 5.5 18.7681 5.99045 19.4167 6.67891ZM9.41669 6.67891C10.4469 7.77257 11.0001 9 11.0001 10.9897C11.0001 14.4891 8.54359 17.6263 4.96951 19.1768L4.07682 17.7992C7.41206 15.9946 8.06392 13.6539 8.32447 12.178C7.78747 12.4557 7.08452 12.5533 6.39539 12.4895C4.59102 12.3222 3.16895 10.8409 3.16895 9C3.16895 7.067 4.73595 5.5 6.66895 5.5C7.742 5.5 8.76814 5.99045 9.41669 6.67891Z"/></svg>',
+  caracteres: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M14 20V17.8432C15.8631 16.6512 17.5 13.9677 17.5 10.8844C17.5 7.8107 15.5 4.85516 12 4.85516C8.5 4.85516 6.5 7.8107 6.5 10.8844C6.5 13.9677 8.13687 16.6512 10 17.8432V20H3V18H7.7597C5.66635 16.5054 4 13.9889 4 10.8844C4 6.24653 7.5 3 12 3C16.5 3 20 6.24653 20 10.8844C20 13.9889 18.3336 16.5054 16.2403 18H21V20H14Z"/></svg>',
+  source: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M16.95 8.46451L18.3642 7.05029L23.3139 12L18.3642 16.9498L16.95 15.5356L20.4855 12L16.95 8.46451ZM7.05048 8.46451L3.51495 12L7.05048 15.5356L5.63627 16.9498L0.686523 12L5.63627 7.05029L7.05048 8.46451Z"/></svg>',
+  pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
+  pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
+};
+
+// src/ui/boutons.js
+var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
+function raccourciLisible(raccourci) {
+  const touches = raccourci.split("-").map((t) => t.length === 1 ? t.toUpperCase() : t);
+  if (MAC) return touches.map((t) => ({ Mod: "\u2318", Alt: "\u2325", Shift: "\u21E7" })[t] ?? t).join("");
+  return touches.map((t) => t === "Mod" ? "Ctrl" : t).join("+");
+}
+function habiller(bouton, { icone, libelle, raccourci }) {
+  bouton.setAttribute("aria-label", libelle);
+  bouton.title = raccourci ? `${libelle} (${raccourciLisible(raccourci)})` : libelle;
+  if (ICONES[icone]) bouton.innerHTML = ICONES[icone];
+  else bouton.textContent = libelle;
+}
+function boutonOutil({ nom, icone = nom, libelle, raccourci, bascule: bascule2 = false, action }) {
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  bouton.className = `tts-outil tts-outil--${nom}`;
+  habiller(bouton, { icone, libelle, raccourci });
+  if (bascule2) bouton.setAttribute("aria-pressed", "false");
+  bouton.addEventListener("click", () => action());
+  return bouton;
+}
+var ouvert = null;
+function menuOutil({ nom, icone = nom, libelle, elements }) {
+  const element2 = document.createElement("div");
+  element2.className = `tts-menu tts-menu--${nom}`;
+  const liste = document.createElement("div");
+  liste.className = "tts-menu__liste";
+  liste.setAttribute("role", "menu");
+  liste.setAttribute("aria-label", libelle);
+  liste.id = idUnique("tts-menu");
+  liste.hidden = true;
+  const bouton = boutonOutil({ nom, icone, libelle, action: () => liste.hidden ? ouvrir() : fermer() });
+  bouton.setAttribute("aria-haspopup", "menu");
+  bouton.setAttribute("aria-expanded", "false");
+  bouton.setAttribute("aria-controls", liste.id);
+  element2.append(bouton, liste);
+  const items = () => [...liste.querySelectorAll("[role^=menuitem]:not(:disabled)")];
+  const dehors = (event) => {
+    if (!element2.contains(event.target)) fermer();
+  };
+  function construire(el) {
+    if (el.separateur) {
+      const s = document.createElement("div");
+      s.setAttribute("role", "separator");
+      return s;
+    }
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tts-menu__element";
+    b.tabIndex = -1;
+    b.setAttribute("role", { radio: "menuitemradio", case: "menuitemcheckbox" }[el.coche] ?? "menuitem");
+    if (el.coche) b.setAttribute("aria-checked", String(Boolean(el.actif?.())));
+    if (el.ariaLabel) b.setAttribute("aria-label", el.ariaLabel);
+    if (ICONES[el.icone]) b.insertAdjacentHTML("afterbegin", ICONES[el.icone]);
+    const texte2 = document.createElement("span");
+    texte2.textContent = el.libelle;
+    b.append(texte2);
+    b.disabled = el.possible ? !(el.possible() || el.coche && el.actif?.()) : false;
+    b.addEventListener("click", () => {
+      fermer();
+      el.action();
+    });
+    return b;
+  }
+  function ouvrir(dernier = false) {
+    if (ouvert && ouvert !== menu) ouvert.fermer();
+    liste.replaceChildren(...elements().map(construire));
+    liste.hidden = false;
+    bouton.setAttribute("aria-expanded", "true");
+    ouvert = menu;
+    document.addEventListener("pointerdown", dehors, true);
+    const premiers = items();
+    (dernier ? premiers.at(-1) : premiers[0])?.focus();
+  }
+  function fermer({ focus: focus2 = false } = {}) {
+    if (liste.hidden) return;
+    liste.hidden = true;
+    bouton.setAttribute("aria-expanded", "false");
+    if (ouvert === menu) ouvert = null;
+    document.removeEventListener("pointerdown", dehors, true);
+    if (focus2) bouton.focus();
+  }
+  bouton.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    ouvrir(event.key === "ArrowUp");
+  });
+  liste.addEventListener("keydown", (event) => {
+    const tous = items();
+    const i2 = tous.indexOf(event.target);
+    const suivant = {
+      ArrowDown: tous[(i2 + 1) % tous.length],
+      ArrowUp: tous[(i2 - 1 + tous.length) % tous.length],
+      Home: tous[0],
+      End: tous.at(-1)
+    }[event.key];
+    if (suivant) {
+      event.preventDefault();
+      suivant.focus();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      fermer({ focus: true });
+    } else if (event.key === "Tab") {
+      fermer();
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") event.stopPropagation();
+  });
+  const menu = { element: element2, cible: bouton, fermer };
+  return menu;
+}
+
+// src/ui/Toolbar.js
+var _Toolbar = class _Toolbar {
+  /** Ajoute (ou remplace) un composant au registre. */
+  static registerComponent(nom, fabrique) {
+    _Toolbar.registre.set(nom, fabrique);
+  }
+  /**
+   * @param {{ ctx: { editor: import('@tiptap/core').Editor, ui: object, instance: object },
+   *           barre: (string|object)[], element: HTMLElement }} options
+   */
+  constructor({ ctx, barre, element: element2 }) {
+    this.ctx = ctx;
+    this.element = element2;
+    this.element.setAttribute("role", "toolbar");
+    this.element.setAttribute("aria-label", label("barre_outils"));
+    this.composants = [];
+    for (const item of barre) {
+      if (item === "|") {
+        const separateur = document.createElement("span");
+        separateur.className = "tts-separateur";
+        separateur.setAttribute("role", "separator");
+        this.element.append(separateur);
+        continue;
+      }
+      const { composant: nom, ...options } = typeof item === "string" ? { composant: item } : item;
+      const fabrique = _Toolbar.registre.get(nom);
+      if (!fabrique) {
+        console.warn(`tiptap_spip : composant de barre inconnu \xAB ${nom} \xBB`);
+        continue;
+      }
+      const composant = fabrique(ctx, options);
+      composant.cible ?? (composant.cible = composant.element);
+      this.composants.push(composant);
+      this.element.append(composant.element);
+    }
+    this.courant = null;
+    this.element.addEventListener("keydown", (event) => this.naviguer(event));
+    this.element.addEventListener("focusin", (event) => {
+      const cible = this.cibles().find((c) => c === event.target);
+      if (cible) this.activer(cible);
+    });
+    this.maj();
+  }
+  /** État des composants ; en mode source, seuls ceux marqués `source` restent actifs. */
+  maj() {
+    const source = this.ctx.instance?.mode?.() === "source";
+    for (const c of this.composants) {
+      c.cible.disabled = false;
+      c.maj?.();
+      if (source && !c.source) c.cible.disabled = true;
+    }
+    this.activer(this.cibles().includes(this.courant) ? this.courant : this.cibles()[0] ?? null);
+  }
+  /** Éléments atteignables aux flèches : ni désactivés, ni masqués. */
+  cibles() {
+    return this.composants.filter((c) => !c.element.hidden && !c.cible.hidden && !c.cible.disabled).map((c) => c.cible);
+  }
+  /** Seul `cible` est tabulable. */
+  activer(cible) {
+    this.courant = cible;
+    for (const c of this.composants) c.cible.tabIndex = c.cible === cible ? 0 : -1;
+  }
+  naviguer(event) {
+    const cibles = this.cibles();
+    const i2 = cibles.indexOf(event.target);
+    if (i2 < 0) return;
+    const suivant = {
+      ArrowRight: cibles[(i2 + 1) % cibles.length],
+      ArrowLeft: cibles[(i2 - 1 + cibles.length) % cibles.length],
+      Home: cibles[0],
+      End: cibles.at(-1)
+    }[event.key];
+    if (!suivant) return;
+    event.preventDefault();
+    this.activer(suivant);
+    suivant.focus();
+  }
+};
+/** @type {Map<string, (ctx: object, options: object) => object>} */
+__publicField(_Toolbar, "registre", /* @__PURE__ */ new Map());
+var Toolbar = _Toolbar;
+
+// src/ui/composants.js
+var lancer = (editor, commande2) => {
+  const fait = commande2(editor.chain().focus()).run();
+  editor.view.focus();
+  return fait;
+};
+var bascule = ({ nom, cle = `outil_${nom}`, raccourci, commande: commande2, actif, possible }) => ({ editor }) => {
+  const element2 = boutonOutil({ nom, libelle: label(cle), raccourci, bascule: true, action: () => lancer(editor, commande2) });
+  return {
+    element: element2,
+    maj() {
+      element2.setAttribute("aria-pressed", String(actif(editor)));
+      element2.disabled = !possible(editor);
+    }
+  };
+};
+var mark = (nom, type, raccourci, cle) => bascule({
+  nom,
+  cle,
+  raccourci,
+  commande: (c) => c.toggleMark(type),
+  actif: (editor) => editor.isActive(type),
+  possible: (editor) => editor.can().toggleMark(type)
+});
+var popover = (nom, action, { cle = nom, raccourci, possible } = {}) => ({ editor, ui }) => {
+  const element2 = boutonOutil({ nom, libelle: label(cle), raccourci, action: () => ui[action](null) });
+  return { element: element2, maj: possible ? () => {
+    element2.disabled = !possible(editor);
+  } : void 0 };
+};
+var commande = (nom, cmd, raccourci) => ({ editor }) => {
+  const element2 = boutonOutil({ nom, libelle: label(`outil_${nom}`), raccourci, action: () => lancer(editor, (c) => c[cmd]()) });
+  return { element: element2, maj: () => {
+    element2.disabled = !editor.can()[cmd]();
+  } };
+};
+var element = (editor, cle, cmd, extra = {}) => ({
+  libelle: label(cle),
+  action: () => lancer(editor, cmd),
+  possible: () => cmd(editor.can()),
+  ...extra
+});
+var niveauxDuSchema = (editor) => editor.extensionManager.extensions.find((e) => e.name === "heading")?.options.levels ?? [];
+var GUILLEMETS = [
+  { langues: ["fr", "eo", "cpf", "ar", "es"], paires: [["\xAB", "\xBB"], ["\u201C", "\u201D"]] },
+  { langues: ["bg", "de", "pl", "hr", "src"], paires: [["\u201E", "\u201C"], ["\u201A", "\u2018"]] }
+];
+var GUILLEMETS_AUTRES = [["\u201C", "\u201D"], ["\u2018", "\u2019"]];
+var guillemetsDe = (langue) => {
+  const code2 = (langue ?? "").toLowerCase().split(/[_-]/)[0];
+  return GUILLEMETS.find((g) => g.langues.includes(code2))?.paires ?? GUILLEMETS_AUTRES;
+};
+var CARACTERES = ["\xC0", "\xC9", "\xC8", "\xE6", "\xC6", "\u0153", "\u0152", "\xC7"];
+var COMPOSANTS = {
+  annuler: commande("annuler", "undo", "Mod-z"),
+  retablir: commande("retablir", "redo", "Mod-Shift-z"),
+  titre: ({ editor }, { niveaux = [2, 3, 4] }) => {
+    const schema = niveauxDuSchema(editor);
+    const proposes = niveaux.filter((n) => schema.includes(n));
+    const menu = menuOutil({
+      nom: "titre",
+      libelle: label("outil_titre"),
+      elements: () => [
+        element(editor, "outil_paragraphe", (c) => c.setParagraph(), { coche: "radio", icone: "paragraphe", actif: () => editor.isActive("paragraph") }),
+        ...proposes.map((level) => ({
+          ...element(editor, "outil_titre", (c) => c.setHeading({ level }), { coche: "radio", actif: () => editor.isActive("heading", { level }) }),
+          libelle: level === 2 ? label("outil_intertitre") : label("outil_titre_niveau").replace("@niveau@", level)
+        }))
+      ]
+    });
+    return { ...menu, maj: () => menu.cible.classList.toggle("tts-outil--actif", editor.isActive("heading")) };
+  },
+  liste: ({ editor }) => menuOutil({
+    nom: "liste",
+    libelle: label("outil_liste"),
+    elements: () => [
+      element(editor, "outil_liste_puces", (c) => c.toggleBulletList(), { coche: "case", icone: "liste", actif: () => editor.isActive("bulletList") }),
+      element(editor, "outil_liste_numerotee", (c) => c.toggleOrderedList(), { coche: "case", icone: "listeNumerotee", actif: () => editor.isActive("orderedList") }),
+      { separateur: true },
+      element(editor, "outil_indenter", (c) => c.sinkListItem("listItem"), { icone: "indenter" }),
+      element(editor, "outil_desindenter", (c) => c.liftListItem("listItem"), { icone: "desindenter" })
+    ]
+  }),
+  citation: bascule({
+    nom: "citation",
+    commande: (c) => c.toggleBlockquote(),
+    actif: (editor) => editor.isActive("blockquote"),
+    possible: (editor) => editor.can().toggleBlockquote()
+  }),
+  poesie: bascule({
+    nom: "poesie",
+    commande: (c) => c.togglePoesie(),
+    actif: (editor) => editor.isActive("spipPoesie"),
+    possible: (editor) => editor.can().togglePoesie()
+  }),
+  cadre: bascule({
+    nom: "cadre",
+    commande: (c) => c.toggleCodeBlock(),
+    actif: (editor) => editor.isActive("codeBlock"),
+    possible: (editor) => editor.can().toggleCodeBlock()
+  }),
+  gras: mark("gras", "bold", "Mod-b", "gras"),
+  italique: mark("italique", "italic", "Mod-i", "italique"),
+  barre: mark("barre", "strike", "Mod-Shift-s"),
+  exposant: mark("exposant", "superscript", "Mod-."),
+  indice: mark("indice", "subscript", "Mod-,"),
+  code: mark("code", "code", "Mod-e"),
+  lien: popover("lien", "openLink", { raccourci: "Mod-k" }),
+  note: popover("note", "editNote", { raccourci: "Mod-Alt-n" }),
+  // pas de [ ] < > dans un terme de glossaire (spec 05 §2) : désactivé sur une telle sélection
+  glossaire: popover("glossaire", "openGlossary", {
+    raccourci: "Mod-Alt-g",
+    possible: (editor) => {
+      const { from: from2, to } = editor.state.selection;
+      return !/[[\]<>]/.test(editor.state.doc.textBetween(from2, to, " "));
+    }
+  }),
+  abbr: popover("abbr", "openAbbr"),
+  modele: popover("modele", "editModel", { raccourci: "Mod-Alt-m" }),
+  multi: popover("multi", "editMulti"),
+  // langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis
+  langues: ({ editor }) => {
+    const select = document.createElement("select");
+    select.className = "tts-outil tts-outil--langues";
+    select.setAttribute("aria-label", label("langue_affichee"));
+    select.addEventListener("change", () => editor.commands.setLangueAffichee(select.value));
+    let doc4 = null;
+    return {
+      element: select,
+      maj() {
+        const affichee = langueAffichee(editor.state);
+        if (editor.state.doc !== doc4) {
+          doc4 = editor.state.doc;
+          const langues = languesDuDocument(doc4);
+          const options = [.../* @__PURE__ */ new Set([...affichee ? [affichee] : [], ...langues])];
+          select.replaceChildren(...options.map((l) => Object.assign(document.createElement("option"), { value: l, textContent: l })));
+          select.hidden = langues.length === 0;
+        }
+        select.value = affichee;
+      }
+    };
+  },
+  alignement: ({ editor }) => {
+    const menu = menuOutil({
+      nom: "alignement",
+      libelle: label("outil_alignement"),
+      elements: () => [
+        ...ALIGNEMENTS.map((a, i2) => element(editor, `outil_align_${a}`, (c) => c.setAlignement(a), {
+          coche: "radio",
+          icone: ["alignGauche", "alignCentre", "alignDroite", "alignJustifie"][i2],
+          actif: () => alignementActif(editor.state) === a
+        })),
+        element(editor, "outil_align_aucun", (c) => c.setAlignement(null), {
+          coche: "radio",
+          actif: () => alignementActif(editor.state) === null,
+          possible: () => alignementActif(editor.state) !== null
+        })
+      ]
+    });
+    return { ...menu, maj: () => menu.cible.classList.toggle("tts-outil--actif", alignementActif(editor.state) !== null) };
+  },
+  tableau: ({ editor }) => {
+    const t = (cle, cmd) => element(editor, `outil_tableau_${cle}`, cmd);
+    return menuOutil({
+      nom: "tableau",
+      libelle: label("outil_tableau"),
+      elements: () => [
+        { ...t("inserer", (c) => c.insererTableau()), possible: () => !editor.isActive("table") && editor.can().insererTableau() },
+        t("en_tete", (c) => c.toggleHeaderRow()),
+        { separateur: true },
+        t("ligne_avant", (c) => c.addRowBefore()),
+        t("ligne_apres", (c) => c.addRowAfter()),
+        t("colonne_avant", (c) => c.addColumnBefore()),
+        t("colonne_apres", (c) => c.addColumnAfter()),
+        t("supprimer_ligne", (c) => c.deleteRow()),
+        t("supprimer_colonne", (c) => c.deleteColumn()),
+        { separateur: true },
+        t("fusionner", (c) => c.fusionnerCellules()),
+        t("scinder", (c) => c.splitCell()),
+        t("supprimer", (c) => c.deleteTable())
+      ]
+    });
+  },
+  guillemets: ({ editor, instance }) => menuOutil({
+    nom: "guillemets",
+    libelle: label("outil_guillemets"),
+    elements: () => guillemetsDe(instance?.langue?.()).map(([o, f], i2) => ({
+      libelle: `${o}\u2026${f}`,
+      ariaLabel: `${label(i2 === 0 ? "outil_guillemets" : "outil_guillemets_simples")} ${o}\u2026${f}`,
+      action: () => lancer(editor, (c) => c.entourer(o, f)),
+      possible: () => editor.can().entourer(o, f)
+    }))
+  }),
+  caracteres: ({ editor }) => menuOutil({
+    nom: "caracteres",
+    libelle: label("outil_caracteres"),
+    elements: () => [
+      ...CARACTERES.map((car) => ({ libelle: car, action: () => lancer(editor, (c) => c.insertContent(car)) })),
+      { separateur: true },
+      element(editor, "outil_majuscules", (c) => c.changerCasse("majuscules")),
+      element(editor, "outil_minuscules", (c) => c.changerCasse("minuscules"))
+    ]
+  }),
+  source: ({ instance }) => {
+    const element2 = boutonOutil({ nom: "source", libelle: label("mode_source"), raccourci: "Mod-Shift-e", bascule: true, action: () => instance.toggleMode() });
+    return {
+      element: element2,
+      source: true,
+      maj: () => {
+        element2.setAttribute("aria-pressed", String(instance.mode() === "source"));
+      }
+    };
+  },
+  pleinEcran: ({ instance }) => {
+    const element2 = boutonOutil({ nom: "pleinEcran", libelle: label("outil_plein_ecran"), raccourci: "F11", bascule: true, action: () => instance.togglePleinEcran() });
+    let etat = null;
+    return {
+      element: element2,
+      source: true,
+      maj: () => {
+        const plein = instance.pleinEcran();
+        if (plein === etat) return;
+        etat = plein;
+        element2.setAttribute("aria-pressed", String(plein));
+        habiller(element2, plein ? { icone: "pleinEcranSortir", libelle: label("outil_plein_ecran_sortir"), raccourci: "Esc" } : { icone: "pleinEcran", libelle: label("outil_plein_ecran"), raccourci: "F11" });
+      }
+    };
+  }
+};
+for (const [nom, fabrique] of Object.entries(COMPOSANTS)) Toolbar.registerComponent(nom, fabrique);
 
 // src/ui/NotesPanel.js
 var NotesPanel = class {
@@ -26481,6 +27190,20 @@ var SELECTOR = [
 var CRAYONS = ".formulaire_crayon textarea.crayon-active";
 var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
 var selecteur = () => config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR;
+var PREFERENCE = "tiptap_spip.mode";
+var lirePreference = () => {
+  try {
+    return globalThis.localStorage?.getItem(PREFERENCE) ?? null;
+  } catch {
+    return null;
+  }
+};
+var ecrirePreference = (mode) => {
+  try {
+    globalThis.localStorage?.setItem(PREFERENCE, mode);
+  } catch {
+  }
+};
 var MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
 var instances = /* @__PURE__ */ new Set();
 var observer = null;
@@ -26506,40 +27229,11 @@ var Instance = class {
     this.wrapper.className = "tts-editor";
     const styles = textarea.dataset.ttsStyles ?? (config().prive ? "contenu" : "site");
     if (styles === "contenu") this.wrapper.classList.add("tts-styles-contenu");
-    const toolbar = document.createElement("div");
-    toolbar.className = "tts-toolbar";
-    const bouton = (className, texte2, onClick) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = className;
-      b.textContent = texte2;
-      b.addEventListener("click", onClick);
-      toolbar.append(b);
-      return b;
-    };
-    this.visualButtons = [
-      bouton("tts-lien", label("lien"), () => this.ui.openLink()),
-      bouton("tts-bouton-note", label("note"), () => this.ui.editNote(null)),
-      bouton("tts-bouton-glossaire", label("glossaire"), () => this.ui.openGlossary()),
-      bouton("tts-bouton-abbr", label("abbr"), () => this.ui.openAbbr()),
-      bouton("tts-modele", label("modele"), () => this.ui.editModel(null)),
-      bouton("tts-bouton-multi", label("multi"), () => this.ui.editMulti(null))
-    ];
-    const [linkButton, noteButton, glossaryButton] = this.visualButtons;
-    this.glossaryButton = glossaryButton;
-    linkButton.title = `${label("lien")} (Ctrl+K)`;
-    noteButton.title = `${label("note")} (Ctrl+Alt+N)`;
-    glossaryButton.title = `${label("glossaire")} (Ctrl+Alt+G)`;
-    this.langues = document.createElement("select");
-    this.langues.className = "tts-langues";
-    this.langues.setAttribute("aria-label", label("langue_affichee"));
-    this.langues.addEventListener("change", () => this.editor.commands.setLangueAffichee(this.langues.value));
-    toolbar.append(this.langues);
-    this.modeButton = bouton("tts-mode", label("mode_source"), () => this.toggleMode());
-    this.modeButton.setAttribute("aria-pressed", "false");
+    this.toolbarElement = document.createElement("div");
+    this.toolbarElement.className = "tts-toolbar";
     this.content = document.createElement("div");
     this.content.className = "tts-content";
-    this.wrapper.append(toolbar, this.content);
+    this.wrapper.append(this.toolbarElement, this.content);
     this.services = Services.forTextarea(textarea);
     this.chargement = this.services ? null : new AbortController();
     this.servicesPrets = this.services ? Promise.resolve(this.services) : servicesALaDemande(textarea, contexte2(textarea), { signal: this.chargement.signal });
@@ -26555,45 +27249,76 @@ var Instance = class {
     });
     this.bridge = new TextareaBridge({ textarea, editor: this.editor });
     this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
-    this.majGlossaire = () => {
-      const { from: from2, to } = this.editor.state.selection;
-      this.glossaryButton.disabled = this.bridge.mode === "source" || /[[\]<>]/.test(this.editor.state.doc.textBetween(from2, to, " "));
-    };
-    this.editor.on("selectionUpdate", this.majGlossaire);
-    this.majLangues = ({ transaction } = {}) => {
-      if (transaction && !transaction.docChanged) return;
-      const langues = languesDuDocument(this.editor.state.doc);
-      const affichee = langueAffichee(this.editor.state);
-      const options = [.../* @__PURE__ */ new Set([...affichee ? [affichee] : [], ...langues])];
-      this.langues.replaceChildren(...options.map((l) => Object.assign(document.createElement("option"), { value: l, textContent: l })));
-      this.langues.value = affichee;
-      this.langues.hidden = langues.length === 0;
-    };
-    this.editor.on("transaction", this.majLangues);
-    this.majLangues();
+    const barres = config().toolbars ?? barres_default;
+    this.toolbar = new Toolbar({
+      ctx: { editor: this.editor, ui: this.ui, instance: this },
+      barre: barres[barreDuTextarea(textarea)] ?? barres.minimale ?? barres_default.minimale,
+      element: this.toolbarElement
+    });
+    this.majBarre = () => this.toolbar.maj();
+    this.editor.on("transaction", this.majBarre);
     this.content.after(this.notes.element);
     textarea.before(this.wrapper);
     this.wrapper.append(textarea);
     textarea.hidden = true;
+    this.wrapper.addEventListener("keydown", (event) => this.raccourci(event), true);
+    if ((lirePreference() ?? config().mode) === "source") this.toggleMode({ focus: false });
   }
-  toggleMode() {
+  /** Mode affiché : visual ou source. */
+  mode() {
+    return this.bridge.mode;
+  }
+  /** Langue de l'objet édité (guillemets) : attribut lang le plus proche, sinon celle de la page. */
+  langue() {
+    return this.textarea.closest("[lang]")?.lang || document.documentElement.lang;
+  }
+  pleinEcran() {
+    return this.wrapper.classList.contains("tts-editor--plein-ecran");
+  }
+  /**
+   * Plein écran (spec 06 §3) par CSS, pas par l'API Fullscreen : celle-ci n'affiche que l'élément en
+   * plein écran, la modalbox des modèles (posée dans body) serait cachée.
+   */
+  togglePleinEcran(plein = !this.pleinEcran()) {
+    this.wrapper.classList.toggle("tts-editor--plein-ecran", plein);
+    document.documentElement.classList.toggle("tts-plein-ecran", plein);
+    this.toolbar.maj();
+  }
+  /** Mod-Shift-E : bascule source ; F11 : plein écran ; Échap : sortie du plein écran. */
+  raccourci(event) {
+    const mod = event.ctrlKey || event.metaKey;
+    if (mod && event.shiftKey && !event.altKey && event.key.toLowerCase() === "e") {
+      event.preventDefault();
+      this.toggleMode();
+    } else if (event.key === "F11" && !mod && !event.altKey && !event.shiftKey) {
+      event.preventDefault();
+      this.togglePleinEcran();
+    } else if (event.key === "Escape" && this.pleinEcran()) {
+      const ouvert2 = Popover.current?.wrapper === this.wrapper || this.toolbarElement.querySelector('[aria-expanded="true"]');
+      if (ouvert2) return;
+      event.preventDefault();
+      this.togglePleinEcran(false);
+    }
+  }
+  /** @param {{ focus?: boolean }} options  focus : donner le focus à la zone affichée */
+  toggleMode({ focus: focus2 = true } = {}) {
     const mode = this.bridge.mode === "visual" ? "source" : "visual";
     if (!this.bridge.setMode(mode)) return;
     const source = mode === "source";
     this.textarea.hidden = !source;
     this.content.hidden = source;
     this.notes.setMode(source);
-    for (const b of this.visualButtons) b.disabled = source;
-    this.langues.disabled = source;
-    this.majGlossaire();
-    this.modeButton.setAttribute("aria-pressed", String(source));
-    (source ? this.textarea : this.editor).focus?.();
+    this.toolbar.maj();
+    ecrirePreference(mode);
+    if (focus2) (source ? this.textarea : this.editor).focus?.();
   }
   /** @param {{ restore?: boolean }} options  restore : remettre le textarea à sa place */
   destroy({ restore = true } = {}) {
     instances.delete(this);
     while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
     this.notes.destroy();
+    this.editor.off("transaction", this.majBarre);
+    if (this.pleinEcran()) this.togglePleinEcran(false);
     this.bridge.destroy();
     if (this.chargement) {
       this.chargement.abort();

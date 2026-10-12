@@ -10,6 +10,8 @@ const page = (html) => {
 afterEach(() => {
 	for (const instance of [...instances]) instance.destroy();
 	document.body.innerHTML = '';
+	localStorage.clear();
+	delete globalThis.spipConfig;
 });
 
 describe('tiptap_spip_init', () => {
@@ -56,7 +58,7 @@ describe('tiptap_spip_init', () => {
 		tiptap_spip_init();
 		const textarea = document.querySelector('textarea');
 		const content = document.querySelector('.tts-content');
-		const button = document.querySelector('.tts-mode');
+		const button = document.querySelector('.tts-outil--source');
 		button.click();
 		expect(textarea.hidden).toBe(false);
 		expect(content.hidden).toBe(true);
@@ -70,18 +72,18 @@ describe('tiptap_spip_init', () => {
 	it('barre : lien, note, glossaire, abréviation, modèle, désactivés en mode source ; panneau des notes', () => {
 		page('<textarea class="inserer_barre_edition">a[[une note]] b</textarea>');
 		tiptap_spip_init();
-		const visuels = ['.tts-lien', '.tts-bouton-note', '.tts-bouton-glossaire', '.tts-bouton-abbr', '.tts-modele'].map((s) => document.querySelector(`.tts-toolbar ${s}`));
+		const visuels = ['lien', 'note', 'glossaire', 'abbr', 'modele'].map((s) => document.querySelector(`.tts-toolbar .tts-outil--${s}`));
 		expect(visuels.every((b) => b && !b.disabled)).toBe(true);
 		const panneau = document.querySelector('.tts-notes');
 		expect(panneau.hidden).toBe(false);
 		expect(panneau.querySelector('summary').textContent).toBe('Notes (1)');
 		expect(panneau.previousElementSibling.classList.contains('tts-content')).toBe(true);
-		document.querySelector('.tts-mode').click();
+		document.querySelector('.tts-outil--source').click();
 		expect(visuels.every((b) => b.disabled)).toBe(true);
 		expect(panneau.hidden).toBe(true);
-		document.querySelector('.tts-mode').click();
+		document.querySelector('.tts-outil--source').click();
 		expect(panneau.hidden).toBe(false);
-		document.querySelector('.tts-bouton-note').click();
+		document.querySelector('.tts-outil--note').click();
 		expect(document.querySelector('.tts-popover--note')).not.toBeNull();
 		const { sous } = Popover.current;
 		[...instances][0].destroy();
@@ -93,7 +95,7 @@ describe('tiptap_spip_init', () => {
 		page('<textarea class="inserer_barre_edition">un a&lt;b mot</textarea>');
 		tiptap_spip_init();
 		const { editor } = [...instances][0];
-		const bouton = document.querySelector('.tts-bouton-glossaire');
+		const bouton = document.querySelector('.tts-outil--glossaire');
 		editor.commands.setTextSelection({ from: 1, to: 6 });
 		expect(bouton.disabled).toBe(true);
 		editor.commands.setTextSelection({ from: 8, to: 11 });
@@ -105,16 +107,16 @@ describe('tiptap_spip_init', () => {
 		document.documentElement.lang = 'fr';
 		try {
 			tiptap_spip_init();
-			const select = document.querySelector('.tts-toolbar .tts-langues');
+			const select = document.querySelector('.tts-toolbar .tts-outil--langues');
 			expect(select.hidden).toBe(false);
 			expect([...select.options].map((o) => o.value)).toEqual(['fr', 'en', 'de']);
 			select.value = 'de';
 			select.dispatchEvent(new Event('change'));
 			expect(document.querySelector('.tts-multi').textContent).toBe('Katze');
-			expect(document.querySelector('.tts-bouton-multi').disabled).toBe(false);
-			document.querySelector('.tts-mode').click();
+			expect(document.querySelector('.tts-outil--multi').disabled).toBe(false);
+			document.querySelector('.tts-outil--source').click();
 			expect(select.disabled).toBe(true);
-			expect(document.querySelector('.tts-bouton-multi').disabled).toBe(true);
+			expect(document.querySelector('.tts-outil--multi').disabled).toBe(true);
 		} finally {
 			document.documentElement.lang = '';
 		}
@@ -123,7 +125,7 @@ describe('tiptap_spip_init', () => {
 	it('sélecteur de langue masqué sans multi', () => {
 		page('<textarea class="inserer_barre_edition">rien</textarea>');
 		tiptap_spip_init();
-		expect(document.querySelector('.tts-langues').hidden).toBe(true);
+		expect(document.querySelector('.tts-outil--langues').hidden).toBe(true);
 	});
 
 	it('panneau des notes recalculé au retour du mode source', () => {
@@ -131,18 +133,101 @@ describe('tiptap_spip_init', () => {
 		tiptap_spip_init();
 		const textarea = document.querySelector('textarea');
 		const panneau = document.querySelector('.tts-notes');
-		document.querySelector('.tts-mode').click();
+		document.querySelector('.tts-outil--source').click();
 		const saisir = (valeur) => {
 			textarea.value = valeur;
 			textarea.dispatchEvent(new Event('input'));
 		};
 		saisir('a b[[deux]] c[[trois]] d[[quatre]]');
-		document.querySelector('.tts-mode').click();
+		document.querySelector('.tts-outil--source').click();
 		expect(panneau.querySelector('summary').textContent).toBe('Notes (3)');
-		document.querySelector('.tts-mode').click();
+		document.querySelector('.tts-outil--source').click();
 		saisir('plus de note');
-		document.querySelector('.tts-mode').click();
+		document.querySelector('.tts-outil--source').click();
 		expect(panneau.hidden).toBe(true);
+	});
+
+	it('barre selon l\'hôte : attribut, classe, champ, forum ; inconnue : minimale', () => {
+		page(`<form>
+			<textarea data-tts-toolbar="forum" class="inserer_barre_edition" name="a">a</textarea>
+			<textarea class="inserer_barre_forum" name="b">b</textarea>
+			<textarea data-tts-toolbar="nulle" name="c">c</textarea>
+		</form>
+		<form class="formulaire_spip"><textarea name="texte">d</textarea></form>
+		<div class="formulaire_spip formulaire_forum"><form><textarea name="texte">e</textarea></form></div>`);
+		tiptap_spip_init();
+		const barre = (i) => [...document.querySelectorAll('.tts-toolbar')][i];
+		const a = (i, nom) => Boolean(barre(i).querySelector(`.tts-outil--${nom}`));
+		expect([0, 1, 2, 3, 4].map((i) => [a(i, 'note'), a(i, 'citation')])).toEqual([
+			[false, true], [false, true], [false, false], [true, true], [false, true],
+		]);
+	});
+
+	it('barre déclarée par la configuration (pipeline tiptap_spip_toolbars)', () => {
+		globalThis.spipConfig = { tiptap_spip: { toolbars: { edition: ['gras', 'note'] } } };
+		page('<textarea class="inserer_barre_edition">a</textarea>');
+		tiptap_spip_init();
+		expect([...document.querySelectorAll('.tts-toolbar .tts-outil')].map((b) => b.getAttribute('aria-label'))).toEqual(['Gras', 'Note']);
+	});
+
+	it('mode mémorisé : rouvert en source ; stockage indisponible : mode visuel', () => {
+		page('<textarea class="inserer_barre_edition">a</textarea>');
+		tiptap_spip_init();
+		document.querySelector('.tts-outil--source').click();
+		expect(localStorage.getItem('tiptap_spip.mode')).toBe('source');
+		for (const instance of [...instances]) instance.destroy();
+		page('<textarea class="inserer_barre_edition">a</textarea>');
+		tiptap_spip_init();
+		expect([...instances][0].mode()).toBe('source');
+		expect(document.querySelector('textarea').hidden).toBe(false);
+		for (const instance of [...instances]) instance.destroy();
+		const lire = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+			throw new Error('bloqué');
+		});
+		page('<textarea class="inserer_barre_edition">a</textarea>');
+		tiptap_spip_init();
+		expect([...instances][0].mode()).toBe('visual');
+		lire.mockRestore();
+	});
+
+	it('mode par défaut de la configuration', () => {
+		globalThis.spipConfig = { tiptap_spip: { mode: 'source' } };
+		page('<textarea class="inserer_barre_edition">a</textarea>');
+		tiptap_spip_init();
+		expect([...instances][0].mode()).toBe('source');
+	});
+
+	it('raccourcis : Mod-Shift-E bascule le mode, F11 le plein écran, Échap en sort sauf popover ouvert', () => {
+		page('<textarea class="inserer_barre_edition">a</textarea>');
+		tiptap_spip_init();
+		const instance = [...instances][0];
+		const touche = (cible, key, options = {}) => {
+			const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...options });
+			cible.dispatchEvent(event);
+			return event;
+		};
+		touche(instance.editor.view.dom, 'E', { ctrlKey: true, shiftKey: true });
+		expect(instance.mode()).toBe('source');
+		touche(instance.textarea, 'E', { ctrlKey: true, shiftKey: true });
+		expect(instance.mode()).toBe('visual');
+		expect(touche(instance.editor.view.dom, 'F11').defaultPrevented).toBe(true);
+		expect(instance.wrapper.classList.contains('tts-editor--plein-ecran')).toBe(true);
+		expect(document.documentElement.classList.contains('tts-plein-ecran')).toBe(true);
+		expect(document.querySelector('.tts-outil--pleinEcran').getAttribute('aria-pressed')).toBe('true');
+		instance.ui.openLink();
+		touche(document.querySelector('.tts-popover input'), 'Escape');
+		expect(Popover.current).toBeNull();
+		expect(instance.pleinEcran()).toBe(true);
+		document.querySelector('.tts-outil--titre').click();
+		touche(document.querySelector('.tts-menu__element'), 'Escape');
+		expect(instance.pleinEcran()).toBe(true);
+		// ProseMirror empêche l'action par défaut de toute touche Échap
+		instance.editor.view.dom.addEventListener('keydown', (e) => e.preventDefault(), { once: true });
+		touche(instance.editor.view.dom, 'Escape');
+		expect(instance.pleinEcran()).toBe(false);
+		touche(instance.editor.view.dom, 'F11');
+		instance.destroy();
+		expect(document.documentElement.classList.contains('tts-plein-ecran')).toBe(false);
 	});
 
 	it('ne monte rien si la source n\'est pas représentable', () => {

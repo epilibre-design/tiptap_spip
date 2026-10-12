@@ -7,15 +7,147 @@
 }
 
 .tts-toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
 	display: flex;
-	justify-content: flex-end;
-	gap: 4px;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 2px;
 	padding: 4px;
 	border-bottom: 1px solid #ccc;
+	background: #f7f7f7;
 }
 
-.tts-mode[aria-pressed="true"] {
-	font-weight: bold;
+/* Barre d'outils (lot L5.1) : boutons à icône, menus, séparateurs. */
+.tts-outil {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2em;
+	height: 2em;
+	padding: 0 0.3em;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background: transparent;
+	color: #333;
+	font: inherit;
+	cursor: pointer;
+}
+
+.tts-outil svg,
+.tts-menu__element svg {
+	width: 1.2em;
+	height: 1.2em;
+}
+
+.tts-outil:hover:not(:disabled),
+.tts-outil:focus-visible {
+	border-color: #aaa;
+	background: #fff;
+}
+
+.tts-outil[aria-pressed="true"],
+.tts-outil--actif,
+.tts-outil[aria-expanded="true"] {
+	border-color: #999;
+	background: #e2e8f0;
+}
+
+.tts-outil:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+select.tts-outil {
+	padding: 0 0.2em;
+	border-color: #ccc;
+	background: #fff;
+}
+
+.tts-separateur {
+	width: 1px;
+	height: 1.5em;
+	margin: 0 4px;
+	background: #ccc;
+}
+
+.tts-menu {
+	position: relative;
+}
+
+.tts-menu__liste {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: 20;
+	min-width: 14em;
+	padding: 4px 0;
+	background: #fff;
+	border: 1px solid #aaa;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tts-menu__liste[hidden] {
+	display: none;
+}
+
+.tts-menu__liste [role="separator"] {
+	margin: 4px 0;
+	border-top: 1px solid #ddd;
+}
+
+.tts-menu__element {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	width: 100%;
+	padding: 0.3em 0.8em 0.3em 1.8em;
+	border: 0;
+	background: transparent;
+	color: #333;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	position: relative;
+}
+
+.tts-menu__element:hover:not(:disabled),
+.tts-menu__element:focus {
+	background: #e2e8f0;
+	outline: none;
+}
+
+.tts-menu__element:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.tts-menu__element[aria-checked="true"]::before {
+	content: "✓";
+	position: absolute;
+	left: 0.5em;
+}
+
+/* Plein écran (spec 06 §3) : par CSS, sous la modalbox des modèles (z-index de mediabox plus grand). */
+html.tts-plein-ecran {
+	overflow: hidden;
+}
+
+.tts-editor.tts-editor--plein-ecran {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	border-radius: 0;
+}
+
+.tts-editor--plein-ecran > .tts-content,
+.tts-editor--plein-ecran > textarea {
+	flex: 1;
+	overflow: auto;
 }
 
 .tts-content .tts-prosemirror {
@@ -117,11 +249,6 @@
 	margin: 0.5em 0;
 	padding: 0.5em;
 	border: 1px dashed #9ab;
-}
-
-/* Barre : boutons de l'éditeur à gauche, bascule de mode à droite. */
-.tts-toolbar .tts-mode {
-	margin-left: auto;
 }
 
 /* Modèles prévisualisés (lot L2.3) : rendu calculé par SPIP, inerte. */
@@ -377,6 +504,6 @@
 	background: #fff;
 }
 
-.tts-langues[hidden] {
+.tts-outil--langues[hidden] {
 	display: none;
 }

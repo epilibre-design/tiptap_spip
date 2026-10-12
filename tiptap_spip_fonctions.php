@@ -21,6 +21,29 @@ function tiptap_spip_json($valeur): string {
 	return empty($valeur) ? '' : (string) json_encode($valeur, TIPTAP_SPIP_JSON);
 }
 
+/**
+ * Barres d'outils de l'éditeur (spec 06 §2) : celles de src/ui/barres.json, la déclaration que le
+ * bundle embarque aussi, modifiables par le pipeline tiptap_spip_toolbars (flux['data'] : nom de la
+ * barre → liste de composants, '|' pour un séparateur).
+ *
+ * @return array<string, array>
+ */
+function tiptap_spip_barres(): array {
+	$fichier = find_in_path('prive/javascript/tiptap_spip/src/ui/barres.json');
+	$barres = $fichier ? json_decode((string) file_get_contents($fichier), true) : null;
+	$barres = is_array($barres) ? $barres : [];
+	$flux = pipeline('tiptap_spip_toolbars', ['args' => [], 'data' => $barres]);
+	return is_array($flux['data'] ?? null) ? $flux['data'] : $barres;
+}
+
+/**
+ * Filtre pour la configuration JS : barres d'outils en JSON insérable dans un <script>, `null` si
+ * aucune (le bundle prend alors les siennes). La valeur filtrée est ignorée.
+ */
+function tiptap_spip_barres_json($valeur = null): string {
+	return (string) json_encode(tiptap_spip_barres() ?: null, TIPTAP_SPIP_JSON);
+}
+
 /** Opérations du formulaire de services. */
 function tiptap_spip_operations(): array {
 	return ['previsu_modele', 'titre_lien', 'rechercher', 'glossaire', 'idiomes'];

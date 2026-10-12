@@ -59,7 +59,7 @@ tiptap_spip/
 | Pipeline / mécanisme | Rôle |
 |----------------------|------|
 | `importmap` (SPIP 5) / `header_prive` (SPIP 4) | Charger le bundle et la config (repris de markdown_editor) |
-| `tiptap_spip_toolbars` (nouveau) | Déclarer/modifier les barres d'outils (`edition`, `forum`, …) |
+| `tiptap_spip_toolbars` (nouveau) | Déclarer/modifier les barres d'outils (`edition`, `forum`, …) : `flux['data']`, barres de `src/ui/barres.json` (lot L5.1, [06](06-interface.md) §2) |
 | `tiptap_spip_contextes` (nouveau) | Déclarer le contexte (objet, id, champ) des CVT de plugins qui embarquent l'éditeur (§6) |
 | `tiptap_spip_extensions` (nouveau) | Déclarer des extensions JS tierces à charger (cf. [07](07-extensibilite.md)) |
 | `autoriser` | `tiptapspipmodele_previsualiser`, `tiptapspip_utiliser` |

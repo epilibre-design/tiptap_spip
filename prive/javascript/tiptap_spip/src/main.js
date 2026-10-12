@@ -1,13 +1,14 @@
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
-import { langueAffichee, languesDuDocument } from './editor/extensions.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
-import { contexte as contexteHote } from './hosts/contexte.js';
+import { barreDuTextarea, contexte as contexteHote } from './hosts/contexte.js';
 import { Services } from './services/cvt.js';
 import { creerInterface } from './ui/interface.js';
-import { label } from './ui/labels.js';
+import BARRES from './ui/barres.json';
+import './ui/composants.js';
 import { NotesPanel } from './ui/NotesPanel.js';
 import { Popover } from './ui/popover.js';
+import { Toolbar } from './ui/Toolbar.js';
 
 /**
  * Textareas équipés (spec 02 §6) : ceux du porte-plume (classes, et champ texte des formulaires
@@ -25,6 +26,23 @@ const CRAYONS = '.formulaire_crayon textarea.crayon-active';
 
 const config = () => globalThis.spipConfig?.tiptap_spip ?? {};
 const selecteur = () => (config().crayons ? `${SELECTOR}, ${CRAYONS}` : SELECTOR);
+
+/** Mode choisi par l'auteur (spec 06 §3), gardé par le navigateur ; stockage indisponible : ignoré. */
+const PREFERENCE = 'tiptap_spip.mode';
+const lirePreference = () => {
+	try {
+		return globalThis.localStorage?.getItem(PREFERENCE) ?? null;
+	} catch {
+		return null;
+	}
+};
+const ecrirePreference = (mode) => {
+	try {
+		globalThis.localStorage?.setItem(PREFERENCE, mode);
+	} catch {
+		// navigation privée, stockage bloqué : préférence non gardée
+	}
+};
 
 /** Textareas pris par markdown_editor : jamais touchés. */
 const MARKDOWN_EDITOR = '[class*="inserer_md_barre"], [data-md-editor-toolbar]';
@@ -62,42 +80,11 @@ class Instance {
 		// styles de contenu de l'éditeur : espace privé ; dans le site public, ceux du site (spec 02 §6)
 		const styles = textarea.dataset.ttsStyles ?? (config().prive ? 'contenu' : 'site');
 		if (styles === 'contenu') this.wrapper.classList.add('tts-styles-contenu');
-		const toolbar = document.createElement('div');
-		toolbar.className = 'tts-toolbar';
-		const bouton = (className, texte, onClick) => {
-			const b = document.createElement('button');
-			b.type = 'button';
-			b.className = className;
-			b.textContent = texte;
-			b.addEventListener('click', onClick);
-			toolbar.append(b);
-			return b;
-		};
-		// boutons de l'édition visuelle, désactivés en mode source
-		this.visualButtons = [
-			bouton('tts-lien', label('lien'), () => this.ui.openLink()),
-			bouton('tts-bouton-note', label('note'), () => this.ui.editNote(null)),
-			bouton('tts-bouton-glossaire', label('glossaire'), () => this.ui.openGlossary()),
-			bouton('tts-bouton-abbr', label('abbr'), () => this.ui.openAbbr()),
-			bouton('tts-modele', label('modele'), () => this.ui.editModel(null)),
-			bouton('tts-bouton-multi', label('multi'), () => this.ui.editMulti(null)),
-		];
-		const [linkButton, noteButton, glossaryButton] = this.visualButtons;
-		this.glossaryButton = glossaryButton;
-		linkButton.title = `${label('lien')} (Ctrl+K)`;
-		noteButton.title = `${label('note')} (Ctrl+Alt+N)`;
-		glossaryButton.title = `${label('glossaire')} (Ctrl+Alt+G)`;
-		// langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis
-		this.langues = document.createElement('select');
-		this.langues.className = 'tts-langues';
-		this.langues.setAttribute('aria-label', label('langue_affichee'));
-		this.langues.addEventListener('change', () => this.editor.commands.setLangueAffichee(this.langues.value));
-		toolbar.append(this.langues);
-		this.modeButton = bouton('tts-mode', label('mode_source'), () => this.toggleMode());
-		this.modeButton.setAttribute('aria-pressed', 'false');
+		this.toolbarElement = document.createElement('div');
+		this.toolbarElement.className = 'tts-toolbar';
 		this.content = document.createElement('div');
 		this.content.className = 'tts-content';
-		this.wrapper.append(toolbar, this.content);
+		this.wrapper.append(this.toolbarElement, this.content);
 
 		// formulaire de services du champ : rendu après le formulaire hôte (formulaire_fond), sinon
 		// chargé à la demande pour le contexte du textarea ; null : mode dégradé. Le formulaire chargé
@@ -123,42 +110,83 @@ class Instance {
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
 		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
-		// pas de [ ] < > dans un terme de glossaire (spec 05 §2) : bouton désactivé sur une telle sélection
-		this.majGlossaire = () => {
-			const { from, to } = this.editor.state.selection;
-			this.glossaryButton.disabled = this.bridge.mode === 'source' || /[[\]<>]/.test(this.editor.state.doc.textBetween(from, to, ' '));
-		};
-		this.editor.on('selectionUpdate', this.majGlossaire);
-		this.majLangues = ({ transaction } = {}) => {
-			if (transaction && !transaction.docChanged) return;
-			const langues = languesDuDocument(this.editor.state.doc);
-			const affichee = langueAffichee(this.editor.state);
-			const options = [...new Set([...(affichee ? [affichee] : []), ...langues])];
-			this.langues.replaceChildren(...options.map((l) => Object.assign(document.createElement('option'), { value: l, textContent: l })));
-			this.langues.value = affichee;
-			this.langues.hidden = langues.length === 0;
-		};
-		this.editor.on('transaction', this.majLangues);
-		this.majLangues();
+		// barre d'outils déclarée (spec 06 §2) : celle de la configuration (pipeline tiptap_spip_toolbars),
+		// sinon celle du bundle ; une barre inconnue donne la barre minimale
+		const barres = config().toolbars ?? BARRES;
+		this.toolbar = new Toolbar({
+			ctx: { editor: this.editor, ui: this.ui, instance: this },
+			barre: barres[barreDuTextarea(textarea)] ?? barres.minimale ?? BARRES.minimale,
+			element: this.toolbarElement,
+		});
+		this.majBarre = () => this.toolbar.maj();
+		this.editor.on('transaction', this.majBarre);
 		this.content.after(this.notes.element);
 
 		textarea.before(this.wrapper);
 		this.wrapper.append(textarea);
 		textarea.hidden = true;
+
+		// raccourcis de l'instance (spec 06 §6), depuis l'éditeur comme depuis le textarea ; en capture :
+		// Échap doit voir si un popover ou un menu est ouvert avant que celui-ci ne se ferme
+		this.wrapper.addEventListener('keydown', (event) => this.raccourci(event), true);
+		// mode mémorisé (spec 06 §3) : préférence du navigateur, sinon mode par défaut de la configuration
+		if ((lirePreference() ?? config().mode) === 'source') this.toggleMode({ focus: false });
 	}
 
-	toggleMode() {
+	/** Mode affiché : visual ou source. */
+	mode() {
+		return this.bridge.mode;
+	}
+
+	/** Langue de l'objet édité (guillemets) : attribut lang le plus proche, sinon celle de la page. */
+	langue() {
+		return this.textarea.closest('[lang]')?.lang || document.documentElement.lang;
+	}
+
+	pleinEcran() {
+		return this.wrapper.classList.contains('tts-editor--plein-ecran');
+	}
+
+	/**
+	 * Plein écran (spec 06 §3) par CSS, pas par l'API Fullscreen : celle-ci n'affiche que l'élément en
+	 * plein écran, la modalbox des modèles (posée dans body) serait cachée.
+	 */
+	togglePleinEcran(plein = !this.pleinEcran()) {
+		this.wrapper.classList.toggle('tts-editor--plein-ecran', plein);
+		document.documentElement.classList.toggle('tts-plein-ecran', plein);
+		this.toolbar.maj();
+	}
+
+	/** Mod-Shift-E : bascule source ; F11 : plein écran ; Échap : sortie du plein écran. */
+	raccourci(event) {
+		const mod = event.ctrlKey || event.metaKey;
+		if (mod && event.shiftKey && !event.altKey && event.key.toLowerCase() === 'e') {
+			event.preventDefault();
+			this.toggleMode();
+		} else if (event.key === 'F11' && !mod && !event.altKey && !event.shiftKey) {
+			event.preventDefault();
+			this.togglePleinEcran();
+		} else if (event.key === 'Escape' && this.pleinEcran()) {
+			// un popover ou un menu ouvert se ferme d'abord (ProseMirror empêche l'action par défaut de
+			// toute touche Échap : defaultPrevented ne dit rien)
+			const ouvert = Popover.current?.wrapper === this.wrapper || this.toolbarElement.querySelector('[aria-expanded="true"]');
+			if (ouvert) return;
+			event.preventDefault();
+			this.togglePleinEcran(false);
+		}
+	}
+
+	/** @param {{ focus?: boolean }} options  focus : donner le focus à la zone affichée */
+	toggleMode({ focus = true } = {}) {
 		const mode = this.bridge.mode === 'visual' ? 'source' : 'visual';
 		if (!this.bridge.setMode(mode)) return;
 		const source = mode === 'source';
 		this.textarea.hidden = !source;
 		this.content.hidden = source;
 		this.notes.setMode(source);
-		for (const b of this.visualButtons) b.disabled = source;
-		this.langues.disabled = source;
-		this.majGlossaire();
-		this.modeButton.setAttribute('aria-pressed', String(source));
-		(source ? this.textarea : this.editor).focus?.();
+		this.toolbar.maj();
+		ecrirePreference(mode);
+		if (focus) (source ? this.textarea : this.editor).focus?.();
 	}
 
 	/** @param {{ restore?: boolean }} options  restore : remettre le textarea à sa place */
@@ -167,6 +195,8 @@ class Instance {
 		// popovers de l'instance (et sous-éditeur d'une note) fermés
 		while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
 		this.notes.destroy();
+		this.editor.off('transaction', this.majBarre);
+		if (this.pleinEcran()) this.togglePleinEcran(false);
 		this.bridge.destroy();
 		if (this.chargement) {
 			this.chargement.abort();

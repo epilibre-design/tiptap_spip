@@ -100,5 +100,25 @@ final class FonctionsTest extends TestCase
 		$this->assertCount(2, tiptap_spip_fusionner_recents([$source()], 2));
 		$this->assertLessThanOrEqual(3, $lus);
 	}
-}
 
+	public function testBarresDuFichierDuBundleModifieesParLePipeline(): void {
+		test_reset_globals();
+		$GLOBALS['_test_chemins']['prive/javascript/tiptap_spip/src/ui/barres.json'] = dirname(__DIR__, 2) . '/prive/javascript/tiptap_spip/src/ui/barres.json';
+		$barres = tiptap_spip_barres();
+		$this->assertSame(['edition', 'forum', 'minimale'], array_keys($barres));
+		$this->assertContains('note', $barres['edition']);
+
+		$GLOBALS['_test_pipelines']['tiptap_spip_toolbars'] = static function (array $flux): array {
+			$flux['data']['edition'][] = ['composant' => 'faq', 'titre' => '<b>'];
+			return $flux;
+		};
+		$edition = tiptap_spip_barres()['edition'];
+		$this->assertSame(['composant' => 'faq', 'titre' => '<b>'], end($edition));
+		$this->assertStringNotContainsString('<', tiptap_spip_barres_json());
+	}
+
+	public function testSansFichierDeBarresNull(): void {
+		test_reset_globals();
+		$this->assertSame('null', tiptap_spip_barres_json());
+	}
+}

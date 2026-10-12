@@ -87,7 +87,14 @@ utilise une pile : une paire bien formée produit `bold`/`italic` ; une accolade
 
 ### Tableaux
 
-- 1re ligne de la forme `||légende|résumé||` → attributs `caption`/`summary` de `table`.
+- 1re ligne de la forme `||légende|résumé||` → attributs `caption`/`summary` de `table`. Comme textwheel
+  (`traiter_tableau()`), la légende se cherche sur la ligne privée de son `|` final puis de tous les `|` de
+  fin : `||x|` est une légende, `||||` une ligne de cellules vides, et un résumé peut contenir des `|`
+  (`||l|r|s||` → résumé `r|s`).
+- Lot L5.1 : une cellule ne contient qu'un paragraphe et les en-têtes n'existent qu'en première ligne, toute
+  la ligne. L'éditeur maintient ces deux règles après une fusion, un ajout de ligne ou de colonne, un
+  collage (plugin `spipTableaux`, `src/editor/edition.js`) : textes réunis séparés par une espace, types de
+  cellule corrigés.
 - 1re ligne de données dont **toutes** les cellules sont en `{{…}}` → ligne de `tableHeader`
   (le gras est retiré du contenu : il est implicite).
 - `|<|` : la cellule fusionne avec sa voisine de gauche (→ `colspan` +1 de la voisine).
