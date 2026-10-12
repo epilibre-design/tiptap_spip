@@ -195,8 +195,8 @@ const tableau = fc.integer({ min: 1, max: 3 }).chain((colonnes) => fc.record({
 	caption: option(fc.constantFrom('Légende', 'L')),
 	summary: option(fc.constantFrom('Résumé')),
 	// un résumé sans légende s'écrit ||légende vide|résumé|| : légende '' (forme normale)
-	// première ligne de cellules toutes en gras : relue en-tête, exclue (forme ambiguë)
-})).filter(({ entete, lignes }) => entete || !lignes[0].every(toutEnGras))
+	// première ligne de cellules toutes en gras ou toutes vides : relue en-tête (comme SPIP), exclue
+})).filter(({ entete, lignes }) => entete || !lignes[0].every((c) => toutEnGras(c) || !c.content[0].content?.length))
 	.map(({ entete, lignes, titres, caption, summary }) => node('table', { caption: summary !== null && caption === null ? '' : caption, summary },
 	[...(entete ? [titres] : []), ...lignes].map((cells) => node('tableRow', null, cells))));
 

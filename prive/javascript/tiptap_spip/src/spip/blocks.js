@@ -304,8 +304,9 @@ function tableBlock(src, msk, regions) {
 		return { s, e, t: msk.slice(s, e) };
 	};
 	const RE_TH = /^\{\{[^{}]+\}\}$/;
-	const headerRow = rows[0].every((c) => ['', '<'].includes(trimmed(c).t) || RE_TH.test(trimmed(c).t))
-		&& rows[0].some((c) => RE_TH.test(trimmed(c).t));
+	// comme traiter_tableau() (_RACCOURCI_TH_SPAN, gras facultatif) : cellules vides, < ou {{…}}, même
+	// toutes vides (|||| : ligne d'en-têtes vides)
+	const headerRow = rows[0].every((c) => ['', '<'].includes(trimmed(c).t) || RE_TH.test(trimmed(c).t));
 
 	const grid = [];
 	const tableRows = rows.map((cells, r) => {

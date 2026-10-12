@@ -167,6 +167,14 @@ describe('tableaux', () => {
 		expect(parseContent('||||\n|a|b|c|')[0].content).toHaveLength(2);
 	});
 
+	it('première ligne de cellules toutes vides : ligne d\'en-tête, comme SPIP (_RACCOURCI_TH_SPAN, gras facultatif)', () => {
+		const [t] = parseContent('||\n|a|');
+		expect(t.content[0].content[0].type).toBe('tableHeader');
+		expect(t.content[1].content[0].type).toBe('tableCell');
+		const [u] = parseContent('||||\n|a|b|c|');
+		expect(u.content[0].content.map((c) => c.type)).toEqual(['tableHeader', 'tableHeader', 'tableHeader']);
+	});
+
 	it('lignes de longueurs différentes ou fusion incohérente : bloc brut', () => {
 		expect(parseContent('|a|b|\n|c|')[0].type).toBe('spipRaw');
 		expect(parseContent('|a|b|\n|3|<|\n|^|4|')[0].type).toBe('spipRaw');

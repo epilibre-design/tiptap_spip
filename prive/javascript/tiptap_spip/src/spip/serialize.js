@@ -56,19 +56,24 @@ let contexte = { conservative: true, note: false, multi: false, ouvert: 0, croch
 function chevronsOuverts(texte, avant = 0) {
 	if (!texte.includes('<') && !texte.includes('>')) return avant;
 	let n = avant;
-	// -> et <- des liens et des ancres : masqués avant la recherche des balises, ils ne comptent pas
-	for (const c of texte.replace(/->|<-/g, '')) {
+	// -> et <- des liens et des ancres, et le code : masqués avant la recherche des balises
+	for (const c of sansCode(texte).replace(/->|<-/g, '')) {
 		if (c === '<') n++;
 		else if (c === '>' && n > 0) n--;
 	}
 	return n;
 }
 
+/** Code en backticks ou <code> : masqué par le core avant les raccourcis, il ne compte pas. */
+const sansCode = (texte) => (texte.includes('`') || /<code/i.test(texte)
+	? texte.replace(/(`+)[\s\S]*?\1|<code\b[^>]*>[\s\S]*?<\/code>/gi, '')
+	: texte);
+
 /** Crochets [ restés ouverts à la fin de ce texte, en partant de ceux d'avant (un lien les ferme par ->). */
 function crochetsOuverts(texte, avant = 0) {
 	if (!texte.includes('[') && !texte.includes(']')) return avant;
 	let n = avant;
-	for (const c of texte) {
+	for (const c of sansCode(texte)) {
 		if (c === '[') n++;
 		else if (c === ']' && n > 0) n--;
 	}
@@ -229,7 +234,11 @@ function serializeTable(table) {
 			else if (inline === '^') inline = '&#94;';
 			return x.type === 'tableHeader' && inline !== '' ? `{{${inline}}}` : inline;
 		});
-		lines.push(`|${cells.join('|')}|`);
+		let ligne = `|${cells.join('|')}|`;
+		// première ligne sans légende qui se lirait légende (||texte|, comme traiter_tableau()) : sa
+		// première cellule, vide, s'écrit avec une espace
+		if (!lines.length && /^\|\|([^|]*)(?:\|([\s\S]*))?$/.test(ligne.slice(0, -1).replace(/\|+$/, ''))) ligne = `| ${ligne.slice(1)}`;
+		lines.push(ligne);
 	}
 	return lines.join('\n');
 }
@@ -350,6 +359,8 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 	let chevron = contexte.ouvert;
 	// un [ resté ouvert (ici, plus haut, ou le [[ d'une note) : un -> du texte fermerait un lien
 	let crochets = contexte.crochets;
+	// un modèle déjà écrit dans ce contenu : un > du texte prolongerait ses paramètres
+	let modeleVu = false;
 	let lu = 0;
 	const closeTo = (k) => {
 		while (stack.length > k) out += stack.pop().close;
@@ -405,15 +416,19 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			chevron = chevronsOuverts(out.slice(lu), chevron);
 			crochets = crochetsOuverts(out.slice(lu), crochets);
 			let ecrit = chevron > 0 && !code ? texte.replace(/>/g, '&gt;').replace(/(?<!\\)\|/g, '\\|') : texte;
-			if (crochets > 0 && !code && !inLink && !atomique) ecrit = ecrit.replace(/->/g, '-&gt;');
+			// un [ resté ouvert : -> en ferait un lien, <-] une ancre
+			if (crochets > 0 && !code && !inLink && !atomique) ecrit = ecrit.replace(/->/g, '-&gt;').replace(/<-/g, '&lt;-');
 			// dans une note, un ] de tête derrière un ] ferait ]] et la fermerait
 			if (contexte.note && !code && out.endsWith(']')) ecrit = ecrit.replace(/^\]/, '&#93;');
-			// > juste après un modèle : ses paramètres admettent des balises (<doc|<sup>>)
-			if (nodes[i - 1]?.type === 'spipModel') ecrit = ecrit.replace(/^>/, '&gt;');
+			// > après un modèle dans ce contenu : ses paramètres admettent des balises (<doc|<sup>>) et
+			// le prolongeraient
+			if (!code && modeleVu) ecrit = ecrit.replace(/>/g, '&gt;');
 			// après un marqueur de début de ligne brut (- ou --) : -* ferait une liste, ---- un filet
 			if (/^--?$/.test(brut(nodes[i - 1]))) ecrit = ecrit.replace(/^[*#-]/, '\\$&');
-			crochets = crochetsOuverts(ecrit, crochets);
-			chevron = chevronsOuverts(ecrit, chevron);
+			if (!code) {
+				crochets = crochetsOuverts(ecrit, crochets);
+				chevron = chevronsOuverts(ecrit, chevron);
+			}
 			out += ecrit;
 			lu = out.length;
 			atLineStart = false;
@@ -435,6 +450,7 @@ export function serializeInline(nodes = [], { lineStart = false, html = false, c
 			atLineStart = false;
 		} else if (n.type === 'spipModel') {
 			out += serializeModel(n.attrs.model);
+			modeleVu = true;
 			atLineStart = false;
 		} else if (n.type === 'spipNote') {
 			out += serializeNote(n.attrs);

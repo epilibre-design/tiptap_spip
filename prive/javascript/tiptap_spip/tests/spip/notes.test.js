@@ -198,6 +198,20 @@ describe('sérialisation des notes', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
+	it('crochets du code ignorés dans le compte ; <- après un [ ouvert : &lt;- (ancre)', () => {
+		const C = { type: 'code' };
+		const L = { type: 'spipLink', attrs: { href: 'art12', newWindow: false } };
+		for (const n of [
+			// le ]] du code ne referme pas le [[ de la note : le -> du second paragraphe reste échappé
+			note([p(text(']]', [C])), p(text('[[]->')), p(text('a', [L]))], 'n'),
+			// [ ouvert dans le texte, <- plus loin : ancre [ … <-]
+			note([p(text('[[]', [{ type: 'superscript' }]), text('<-]a', [{ type: 'italic' }])), p(text('a', [L]))], 'n'),
+		]) {
+			const doc = node('doc', null, [p(n), p(text('[?a] et [a->art12]'))]);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(stripTech(doc.content));
+		}
+	});
+
 	it('note saisie sans contenu', () => {
 		expect(serialize(node('doc', null, [p(text('x'), node('spipNote', { name: null, content: null }))]))).toBe('x[[]]');
 	});

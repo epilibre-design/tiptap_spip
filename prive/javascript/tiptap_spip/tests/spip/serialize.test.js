@@ -134,6 +134,13 @@ describe('< brut d\'une balise incomplète', () => {
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});
 
+	it('> après un modèle, même séparé par un fragment brut : &gt; (il prolongerait ses paramètres)', () => {
+		const model = { name: 'doc', id: '', params: [{ key: null, value: '<-' }], source: '<doc|<->' };
+		const doc = node('doc', null, [p(node('spipModel', { model }), raw('{'), text('>'))]);
+		expect(serialize(doc)).toBe('<doc|<->{&gt;');
+		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+	});
+
 	it('chevrons comptés : un idiome (<:m:c:>) ne referme pas le < ouvert avant lui', () => {
 		const doc = node('doc', null, [p(raw('<'), text('doc'), node('spipIdiome', { module: 'mod', cle: 'cle' }), text('>'))]);
 		expect(serialize(doc)).toBe('<doc<:mod:cle:>&gt;');
@@ -313,6 +320,19 @@ describe('serializeBlock', () => {
 	it('cellule dont le texte est < ou ^ : entité (marqueur de fusion sinon)', () => {
 		for (const [t, attendu] of [['<', '|&lt;|'], ['^', '|&#94;|'], [' ^ ', '|&#94;|']]) {
 			const doc = node('doc', null, [node('table', null, [node('tableRow', null, [node('tableCell', { colspan: 1, rowspan: 1 }, [p(text(t.trim()))])])])]);
+			expect(serialize(doc)).toBe(attendu);
+			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
+		}
+	});
+
+	it('première cellule vide : une espace (|| en tête de première ligne serait une légende)', () => {
+		const vide = (type) => node(type, { colspan: 1, rowspan: 1 }, [node('paragraph')]);
+		const cell = (type, v) => node(type, { colspan: 1, rowspan: 1 }, [p(text(v))]);
+		for (const [lignes, attendu] of [
+			[[[vide('tableHeader'), cell('tableHeader', 't')]], '| |{{t}}|'],
+			[[[vide('tableCell'), cell('tableCell', 't')]], '| |t|'],
+		]) {
+			const doc = node('doc', null, [node('table', null, lignes.map((c) => node('tableRow', null, c)))]);
 			expect(serialize(doc)).toBe(attendu);
 			expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 		}
