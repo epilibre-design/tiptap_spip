@@ -163,6 +163,17 @@ function tiptap_spip_glossaires_proposes(?array $fonctions = null): array {
 }
 
 /**
+ * SPIP 5 : raccourcis de liens traités par le pipeline pre_liens, dont l'écouteur du glossaire, comme
+ * le fait expanser_liens() (traiter_raccourci_glossaire() n'y est plus qu'un bouchon qui rend le
+ * texte ; pipeline('pre_liens', $texte) passerait un tableau aux fonctions des plugins).
+ */
+function tiptap_spip_pre_liens(string $texte): string {
+	$evenement = new \Spip\Framework\Pipeline\Event\PreLiensEvent($texte);
+	pipeline($evenement);
+	return $evenement->getText();
+}
+
+/**
  * URL de la définition d'un terme (raccourci valide), telle que SPIP la calcule au rendu de l'objet :
  * dans sa langue (le glossaire par défaut en dépend : @lang@.wikipedia.org), sinon celle du site.
  */
@@ -172,7 +183,8 @@ function tiptap_spip_url_glossaire(string $raccourci, string $objet = '', int $i
 	include_spip('inc/lang');
 	$lang = $objet !== '' && $id_objet > 0 ? tiptap_spip_lang_objet($objet, $id_objet) : '';
 	lang_select($lang ?: ($GLOBALS['meta']['langue_site'] ?? 'fr'));
-	$url = extraire_attribut(traiter_raccourci_glossaire($raccourci), 'href');
+	$lien = tiptap_spip_spip5() ? tiptap_spip_pre_liens($raccourci) : traiter_raccourci_glossaire($raccourci);
+	$url = extraire_attribut((string) $lien, 'href');
 	lang_select();
 	return is_string($url) && $url !== '' ? $url : null;
 }
