@@ -1,7 +1,4 @@
-/**
- * Placement d'une liste de menu près de son bouton, dans les bornes visibles : un ancêtre peut la couper
- * (`.cadre-formulaire-editer .formulaire_spip` a `overflow: hidden` dans l'espace privé).
- */
+/** Placement d'une liste près de son bouton : fenêtre pour un popover, ancêtres qui coupent en repli. */
 
 /** Écart gardé entre la liste et le bord qui la couperait. */
 const MARGE = 8;
@@ -46,8 +43,27 @@ export function bornes(element) {
  * @param {HTMLElement} liste  liste du menu, enfant du conteneur du bouton
  */
 export function placerMenu(liste) {
+	const positionDefilement = liste.scrollTop;
 	Object.assign(liste.style, { left: '', right: '', top: '', bottom: '', maxHeight: '', overflowY: '' });
 	if (liste.hidden) return;
+	// La couche supérieure échappe aux ancêtres qui coupent : seule la fenêtre limite le menu.
+	if (liste.popover === 'manual' && liste.matches(':popover-open')) {
+		const bouton = liste.parentElement.getBoundingClientRect();
+		const rect = liste.getBoundingClientRect();
+		const largeur = document.documentElement.clientWidth;
+		const dessous = Math.max(0, window.innerHeight - MARGE - bouton.bottom);
+		const dessus = Math.max(0, bouton.top - MARGE);
+		const versHaut = rect.height > dessous && dessus > dessous;
+		const hauteurVisible = versHaut ? dessus : dessous;
+		liste.style.left = `${Math.max(MARGE, Math.min(bouton.left, largeur - MARGE - rect.width))}px`;
+		liste.style.top = `${versHaut ? Math.max(MARGE, bouton.top - Math.min(rect.height, dessus)) : bouton.bottom}px`;
+		if (rect.height > hauteurVisible) {
+			liste.style.maxHeight = `${hauteurVisible}px`;
+			liste.style.overflowY = 'auto';
+		}
+		liste.scrollTop = positionDefilement;
+		return;
+	}
 	const limites = bornes(liste);
 	let rect = liste.getBoundingClientRect();
 	if (rect.right > limites.right - MARGE) {

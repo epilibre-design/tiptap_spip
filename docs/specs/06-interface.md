@@ -218,16 +218,13 @@ Lot L5.1 :
   `menuitemcheckbox` (types de liste), avec `aria-checked`. `↓` ou `Entrée` ouvre, `↑` `↓` `Début` `Fin`
   parcourent, `Échap` ferme et rend le focus au bouton, `Tab` ou un clic ailleurs ferme. Un choix coché
   reste atteignable même sans effet. Un seul menu ouvert à la fois.
-  Placement (signalé par l'utilisateur, 2026-10-13) : un ancêtre peut couper la liste
-  (`.cadre-formulaire-editer .formulaire_spip` est en `overflow: hidden` dans l'espace privé). À
-  l'ouverture, et au redimensionnement tant qu'elle est ouverte, la liste est placée dans les bornes
-  visibles (`src/ui/placement.js`) : alignée sur le bord droit du bouton si elle dépasse à droite, décalée
-  si elle dépasse alors à gauche ; si elle dépasse en bas, ouverte au-dessus du bouton quand il y a plus de
-  place, sinon limitée à la place disponible (bordure comprise, `box-sizing: border-box`), avec
-  défilement. La fenêtre ne compte qu'en largeur (la page défile), sauf sous un ancêtre en position fixe
-  (éditeur plein écran) : ses ancêtres ne coupent plus, la fenêtre borne aussi en hauteur. Le CSS du cœur
-  n'est pas modifié. e2e : `menus.e2e.js` (à 640 et 1440 px, le menu Modèle dépassait à droite du
-  formulaire ; en plein écran, les menus étaient réduits à tort par le formulaire masqué sous l'éditeur).
+  Placement : la liste utilise un `popover="manual"` dans la couche supérieure pour échapper au
+  formulaire qui coupe ce qui dépasse. Elle suit son bouton à l'ouverture, au défilement et au
+  redimensionnement ; sa largeur et sa hauteur restent dans la fenêtre. Si elle ne tient pas sous le
+  bouton, elle s'ouvre au-dessus quand l'espace y est plus grand, sinon elle défile. Le défilement
+  interne est conservé lors d'un repositionnement. Si l'API Popover manque, le placement précédent
+  (`src/ui/placement.js`) utilise les bornes des ancêtres qui coupent. e2e : `menus.e2e.js`, y compris
+  lorsque le bas du formulaire est proche de la barre collante.
 
 Lot L5.2 :
 - **Zone éditable :** `aria-label` = libellé du champ (son `<label>`, sinon son `aria-label` ou sa bulle, sinon
@@ -257,3 +254,10 @@ markdown_editor : bouton « Modifier », « Liste »…).
 - CSS du contenu (`css/tiptap_spip_contenu.css`) surchargeable par le squelette, pour approcher le
   rendu public dans l'espace privé ; dans le site public (Crayons, CVT publics), l'éditeur hérite des styles
   du site ([02](02-architecture.md) §6).
+- Barre d'outils collante (`position: sticky; top: 0`) : visible en haut de la fenêtre quand on fait
+  défiler un long texte (demande de l'utilisateur, 2026-10-13). `.cadre-formulaire-editer .formulaire_spip`
+  est en `overflow: hidden` dans l'espace privé, ce qui fait du formulaire le conteneur de défilement de la
+  barre : le formulaire qui contient un éditeur passe en `overflow: clip` (`:has(.tts-toolbar)`), qui masque
+  toujours ce qui dépasse sans créer de conteneur de défilement. Mise en page inchangée (vérifié en e2e :
+  mêmes positions et hauteur qu'avec `hidden` ; la bordure du formulaire empêche le débordement des marges
+  que `hidden` évitait). Pas de bandeau fixe dans l'espace privé : `top: 0`. e2e : `barre.e2e.js`.

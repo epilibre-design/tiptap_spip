@@ -6,6 +6,13 @@
 	background: #fff;
 }
 
+/* .cadre-formulaire-editer .formulaire_spip est en overflow: hidden dans l'espace privé : le formulaire
+   devient le conteneur de défilement de la barre collante, qui part avec la page. clip masque toujours ce
+   qui dépasse sans créer de conteneur de défilement : la barre colle à la fenêtre */
+.cadre-formulaire-editer .formulaire_spip:has(.tts-toolbar) {
+	overflow: clip;
+}
+
 .tts-toolbar {
 	position: sticky;
 	top: 0;
@@ -89,6 +96,14 @@ select.tts-outil {
 	border: 1px solid #aaa;
 	border-radius: 4px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tts-menu__liste:popover-open {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	min-width: min(14em, calc(100vw - 16px));
+	max-width: calc(100vw - 16px);
 }
 
 .tts-menu__liste[hidden] {

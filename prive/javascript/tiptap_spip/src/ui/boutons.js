@@ -58,6 +58,8 @@ export function menuOutil({ nom, icone = nom, libelle, elements }) {
 	liste.setAttribute('aria-label', libelle);
 	liste.id = idUnique('tts-menu');
 	liste.hidden = true;
+	const popover = typeof liste.showPopover === 'function';
+	if (popover) liste.popover = 'manual';
 	const bouton = boutonOutil({ nom, icone, libelle, action: () => (liste.hidden ? ouvrir() : fermer()) });
 	bouton.setAttribute('aria-haspopup', 'menu');
 	bouton.setAttribute('aria-expanded', 'false');
@@ -68,9 +70,19 @@ export function menuOutil({ nom, icone = nom, libelle, elements }) {
 	const dehors = (event) => {
 		if (!element.contains(event.target)) fermer();
 	};
-	// un ancêtre peut couper la liste (formulaire de l'espace privé en overflow: hidden) : placée dans
-	// les bornes visibles à l'ouverture, et tant qu'elle est ouverte si la fenêtre change
+	// En popover, la liste échappe au formulaire qui la couperait ; le placement suit son bouton.
 	const replacer = () => placerMenu(liste);
+	let prochainPlacement = 0;
+	const auDefilement = (event) => {
+		if (liste.contains(event.target) || prochainPlacement) return;
+		prochainPlacement = requestAnimationFrame(() => {
+			prochainPlacement = 0;
+			if (liste.hidden) return;
+			const rect = bouton.getBoundingClientRect();
+			if (rect.bottom <= 0 || rect.top >= window.innerHeight) fermer();
+			else replacer();
+		});
+	};
 
 	function construire(el) {
 		if (el.separateur) {
@@ -102,22 +114,28 @@ export function menuOutil({ nom, icone = nom, libelle, elements }) {
 		if (ouvert && ouvert !== menu) ouvert.fermer();
 		liste.replaceChildren(...elements().map(construire));
 		liste.hidden = false;
+		if (popover) liste.showPopover();
 		replacer();
 		bouton.setAttribute('aria-expanded', 'true');
 		ouvert = menu;
 		document.addEventListener('pointerdown', dehors, true);
 		window.addEventListener('resize', replacer);
+		if (popover) window.addEventListener('scroll', auDefilement, true);
 		const premiers = items();
 		(dernier ? premiers.at(-1) : premiers[0])?.focus();
 	}
 
 	function fermer({ focus = false } = {}) {
 		if (liste.hidden) return;
+		if (prochainPlacement) cancelAnimationFrame(prochainPlacement);
+		prochainPlacement = 0;
+		if (popover) liste.hidePopover();
 		liste.hidden = true;
 		bouton.setAttribute('aria-expanded', 'false');
 		if (ouvert === menu) ouvert = null;
 		document.removeEventListener('pointerdown', dehors, true);
 		window.removeEventListener('resize', replacer);
+		if (popover) window.removeEventListener('scroll', auDefilement, true);
 		if (focus) bouton.focus();
 	}
 
