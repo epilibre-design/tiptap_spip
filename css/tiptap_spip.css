@@ -336,6 +336,16 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 }
 
 /* Popovers (lien, modèle, note, glossaire, abréviation). */
+.tts-popover-dialogue:popover-open {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	width: max-content;
+	max-width: calc(100vw - 16px);
+}
+
 .tts-popover {
 	position: absolute;
 	z-index: 10;
@@ -346,6 +356,10 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	border: 1px solid #aaa;
 	border-radius: 4px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tts-popover-dialogue:popover-open > .tts-popover {
+	position: static;
 }
 
 .tts-popover__champ {

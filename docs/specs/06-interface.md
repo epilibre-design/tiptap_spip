@@ -135,6 +135,10 @@ Lot L5.2, nœud brut :
   sous-éditeurs (note, partie de multi).
 
 Tous les popovers : fermeture par `Échap`, focus rendu à l'éditeur, validation par `Entrée`.
+Le dialogue utilise la couche supérieure du navigateur pour rester visible même si le formulaire coupe
+son contenu. Il se place près de la sélection, s'ouvre au-dessus si la place manque en dessous, et
+défile dans la hauteur disponible si nécessaire. Sa position suit le défilement, le redimensionnement
+de la fenêtre et l'agrandissement du sous-éditeur d'une note.
 
 Lot L3.2 : un popover peut en ouvrir un autre (lien ou glossaire depuis le sous-éditeur d'une note) :
 l'enfant s'ouvre sans fermer son parent, rend le focus au sous-éditeur, et se ferme avec lui. Le focus
