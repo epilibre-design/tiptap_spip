@@ -5,9 +5,6 @@
 
 ## Limites connues
 
-- **Fins de ligne Mac OS 9** : un retour chariot seul (`\r` non suivi de `\n`) n'est pas géré. Le
-  paragraphe qui en contient reste en source brute, modifiable seulement en mode source. Les fins de ligne
-  Windows (`\r\n`) et Unix (`\n`) sont gérées.
 - **Code contenant un marqueur de langue dans un multi** : dans un `<multi>`, du code qui contient
   `[xx]` (par exemple `` `[mot]` ``) est lu par SPIP comme un marqueur de langue, et le code n'a pas
   d'échappement. À la relecture, ce multi devient un bloc brut, modifiable seulement en mode source.
