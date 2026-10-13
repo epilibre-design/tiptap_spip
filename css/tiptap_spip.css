@@ -52,6 +52,7 @@
 .tts-outil:focus-visible {
 	border-color: #aaa;
 	background: #fff;
+	color: #333;
 }
 
 .tts-outil[aria-pressed="true"],
