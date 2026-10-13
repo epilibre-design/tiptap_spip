@@ -257,3 +257,10 @@ markdown_editor : bouton « Modifier », « Liste »…).
 - CSS du contenu (`css/tiptap_spip_contenu.css`) surchargeable par le squelette, pour approcher le
   rendu public dans l'espace privé ; dans le site public (Crayons, CVT publics), l'éditeur hérite des styles
   du site ([02](02-architecture.md) §6).
+- Barre d'outils collante (`position: sticky; top: 0`) : visible en haut de la fenêtre quand on fait
+  défiler un long texte (demande de l'utilisateur, 2026-10-13). `.cadre-formulaire-editer .formulaire_spip`
+  est en `overflow: hidden` dans l'espace privé, ce qui fait du formulaire le conteneur de défilement de la
+  barre : le formulaire qui contient un éditeur passe en `overflow: clip` (`:has(.tts-toolbar)`), qui masque
+  toujours ce qui dépasse sans créer de conteneur de défilement. Mise en page inchangée (vérifié en e2e :
+  mêmes positions et hauteur qu'avec `hidden` ; la bordure du formulaire empêche le débordement des marges
+  que `hidden` évitait). Pas de bandeau fixe dans l'espace privé : `top: 0`. e2e : `barre.e2e.js`.

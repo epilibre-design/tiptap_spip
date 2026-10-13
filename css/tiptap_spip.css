@@ -6,6 +6,13 @@
 	background: #fff;
 }
 
+/* .cadre-formulaire-editer .formulaire_spip est en overflow: hidden dans l'espace privé : le formulaire
+   devient le conteneur de défilement de la barre collante, qui part avec la page. clip masque toujours ce
+   qui dépasse sans créer de conteneur de défilement : la barre colle à la fenêtre */
+.cadre-formulaire-editer .formulaire_spip:has(.tts-toolbar) {
+	overflow: clip;
+}
+
 .tts-toolbar {
 	position: sticky;
 	top: 0;
