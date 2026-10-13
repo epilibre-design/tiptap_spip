@@ -26147,6 +26147,50 @@ function lireSelection(editor) {
 }
 var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
 
+// src/ui/placement.js
+var MARGE = 8;
+var intersection = (a, b) => ({
+  left: Math.max(a.left, b.left),
+  top: Math.max(a.top, b.top),
+  right: Math.min(a.right, b.right),
+  bottom: Math.min(a.bottom, b.bottom)
+});
+function bornes(element2) {
+  let limites = { left: 0, top: -Infinity, right: document.documentElement.clientWidth, bottom: Infinity };
+  for (let ancetre = element2.parentElement; ancetre && ancetre !== document.body; ancetre = ancetre.parentElement) {
+    const style2 = getComputedStyle(ancetre);
+    if (style2.overflowX !== "visible" || style2.overflowY !== "visible") {
+      limites = intersection(limites, ancetre.getBoundingClientRect());
+    }
+    if (style2.position === "fixed") return intersection(limites, { left: 0, top: 0, right: Infinity, bottom: window.innerHeight });
+  }
+  return limites;
+}
+function placerMenu(liste) {
+  Object.assign(liste.style, { left: "", right: "", top: "", bottom: "", maxHeight: "", overflowY: "" });
+  if (liste.hidden) return;
+  const limites = bornes(liste);
+  let rect = liste.getBoundingClientRect();
+  if (rect.right > limites.right - MARGE) {
+    liste.style.left = "auto";
+    liste.style.right = "0px";
+    rect = liste.getBoundingClientRect();
+    if (rect.left < limites.left + MARGE) liste.style.right = `${rect.left - (limites.left + MARGE)}px`;
+  }
+  rect = liste.getBoundingClientRect();
+  if (rect.bottom <= limites.bottom - MARGE) return;
+  const bouton = liste.parentElement.getBoundingClientRect();
+  const dessous = limites.bottom - MARGE - rect.top;
+  const dessus = bouton.top - (limites.top + MARGE);
+  if (dessus > dessous) {
+    liste.style.top = "auto";
+    liste.style.bottom = "100%";
+    if (rect.height <= dessus) return;
+  }
+  liste.style.maxHeight = `${Math.max(0, dessus > dessous ? dessus : dessous)}px`;
+  liste.style.overflowY = "auto";
+}
+
 // src/ui/boutons.js
 var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
 function raccourciLisible(raccourci) {
@@ -26188,6 +26232,7 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
   const dehors = (event) => {
     if (!element2.contains(event.target)) fermer();
   };
+  const replacer = () => placerMenu(liste);
   function construire(el) {
     if (el.separateur) {
       const s = document.createElement("div");
@@ -26216,9 +26261,11 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
     if (ouvert && ouvert !== menu) ouvert.fermer();
     liste.replaceChildren(...elements().map(construire));
     liste.hidden = false;
+    replacer();
     bouton.setAttribute("aria-expanded", "true");
     ouvert = menu;
     document.addEventListener("pointerdown", dehors, true);
+    window.addEventListener("resize", replacer);
     const premiers = items();
     (dernier ? premiers.at(-1) : premiers[0])?.focus();
   }
@@ -26228,6 +26275,7 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
     bouton.setAttribute("aria-expanded", "false");
     if (ouvert === menu) ouvert = null;
     document.removeEventListener("pointerdown", dehors, true);
+    window.removeEventListener("resize", replacer);
     if (focus2) bouton.focus();
   }
   bouton.addEventListener("keydown", (event) => {

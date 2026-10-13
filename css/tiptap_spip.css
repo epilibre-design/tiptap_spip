@@ -81,6 +81,8 @@ select.tts-outil {
 	top: 100%;
 	left: 0;
 	z-index: 20;
+	/* hauteur limitée par placerMenu() : bordure et marges comprises */
+	box-sizing: border-box;
 	min-width: 14em;
 	padding: 4px 0;
 	background: #fff;
