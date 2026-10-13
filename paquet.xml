@@ -1,8 +1,8 @@
 <paquet
 	prefix="tiptap_spip"
 	categorie="edition"
-	version="0.1.0"
-	etat="dev"
+	version="1.0.0"
+	etat="test"
 	compatibilite="[4.2.0;5.*]"
 	logo="images/tiptap-spip-xx.svg"
 	documentation="https://epilibre-design.github.io/tiptap_spip/"
