@@ -15,7 +15,7 @@
 	<licence lien="https://spdx.org/licenses/GPL-3.0-or-later.html">GPL-3.0-or-later</licence>
 
 	<utilise nom="porte_plume" />
-	<!-- catalogue des modèles : formulaires YAML en modalbox (spec 05 §3, Q3) -->
+	<!-- catalogue des modèles : formulaires YAML en modalbox -->
 	<utilise nom="inserer_modeles" />
 
 	<pipeline nom="header_prive" inclure="tiptap_spip_pipelines.php" />
@@ -23,15 +23,15 @@
 	<pipeline nom="importmap" inclure="tiptap_spip_pipelines.php" />
 	<pipeline nom="formulaire_fond" inclure="tiptap_spip_pipelines.php" />
 	<pipeline nom="autoriser" inclure="tiptap_spip_pipelines.php" />
-	<!-- pipeline propre : contextes des formulaires qui embarquent l'éditeur (spec 02 §6) -->
+	<!-- pipeline propre : contextes des formulaires qui embarquent l'éditeur -->
 	<pipeline nom="tiptap_spip_contextes" action="" />
-	<!-- pipeline propre : barres d'outils de l'éditeur (spec 06 §2) -->
+	<!-- pipeline propre : barres d'outils de l'éditeur -->
 	<pipeline nom="tiptap_spip_toolbars" action="" />
 	<!-- pipelines propres : scripts et chaînes de langue des extensions tierces (spec 07 §3) -->
 	<pipeline nom="tiptap_spip_extensions" action="" />
 	<pipeline nom="tiptap_spip_i18n" action="" />
 
-	<menu nom="configurer_tiptap_spip" titre="tiptap_spip:cfg_titre" parent="menu_configuration" />
+	<menu nom="configurer_tiptap_spip" titre="tiptap_spip:cfg_titre" parent="menu_configuration" icone="images/tiptap-spip-xx.svg"/>
 
 	<chemin path="" />
 	<chemin path="prive" />
