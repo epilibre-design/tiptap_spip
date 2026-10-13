@@ -2,7 +2,7 @@
 	prefix="tiptap_spip"
 	categorie="edition"
 	version="1.0.0"
-	etat="dev"
+	etat="test"
 	compatibilite="[4.2.0;5.*]"
 	logo="images/tiptap-spip-xx.svg"
 	documentation="https://epilibre-design.github.io/tiptap_spip/"
