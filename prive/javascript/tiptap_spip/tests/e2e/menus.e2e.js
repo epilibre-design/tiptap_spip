@@ -1,6 +1,5 @@
 // Menus de la barre dans le formulaire d'édition de l'espace privé, sur un site SPIP JETABLE :
-// .cadre-formulaire-editer .formulaire_spip est en overflow: hidden, un menu ouvert ne doit pas en
-// dépasser (signalé par l'utilisateur : menus coupés à droite, menu Tableau coupé en bas).
+// Le formulaire coupe ce qui dépasse ; le menu doit rester affiché, même près de son bord inférieur.
 // Oracle indépendant du code testé : le menu amené dans la vue, ses coins et son dernier élément
 // doivent être ceux que le navigateur affiche à ces points (elementFromPoint).
 // Usage et serveur : cf. article.e2e.js.
@@ -74,3 +73,44 @@ for (const hauteur of [420, 220]) {
 		await chaqueMenu(page, { pleinEcran: true });
 	});
 }
+
+test('menu Tableau près du bas du formulaire : ses actions restent affichées', async ({ page }) => {
+	await page.setViewportSize({ width: 1200, height: 700 });
+	const long = Array.from({ length: 80 }, (_, k) => `Paragraphe ${k + 1} d'un texte assez long pour faire défiler la page.`).join('\n\n');
+	await editer(page, long);
+	await page.evaluate(() => {
+		const formulaire = document.querySelector('.cadre-formulaire-editer .formulaire_spip:has(.tts-toolbar)');
+		const suite = document.createElement('div');
+		suite.style.height = '3000px';
+		formulaire.closest('.cadre-formulaire-editer').after(suite);
+		window.scrollTo(0, formulaire.getBoundingClientRect().bottom + window.scrollY - 550);
+	});
+	const bouton = page.locator('.tts-toolbar button[aria-label="Tableau"][aria-haspopup="menu"]');
+	await bouton.click();
+	await page.evaluate(() => {
+		const formulaire = document.querySelector('.cadre-formulaire-editer .formulaire_spip:has(.tts-toolbar)');
+		window.scrollTo(0, formulaire.getBoundingClientRect().bottom + window.scrollY - 120);
+	});
+	const liste = page.locator('.tts-menu__liste:not([hidden])');
+	const derniereVisible = () => liste.evaluate((l) => {
+		const dernier = [...l.querySelectorAll('[role^=menuitem]')].at(-1);
+		const rect = dernier.getBoundingClientRect();
+		return l.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
+	});
+	await expect.poll(derniereVisible).toBe(true);
+	await page.keyboard.press('Escape');
+	await bouton.click();
+	await expect.poll(derniereVisible).toBe(true);
+});
+
+test('redimensionnement : le défilement interne du menu est conservé', async ({ page }) => {
+	await page.setViewportSize({ width: 1000, height: 220 });
+	await editer(page, 'Texte');
+	await page.locator('.ProseMirror').click();
+	await page.keyboard.press('F11');
+	await page.locator('.tts-toolbar button[aria-label="Tableau"][aria-haspopup="menu"]').click();
+	const liste = page.locator('.tts-menu__liste:not([hidden])');
+	await liste.evaluate((l) => { l.scrollTop = 100; });
+	await page.setViewportSize({ width: 999, height: 220 });
+	expect(await liste.evaluate((l) => l.scrollTop)).toBe(100);
+});

@@ -26167,8 +26167,26 @@ function bornes(element2) {
   return limites;
 }
 function placerMenu(liste) {
+  const positionDefilement = liste.scrollTop;
   Object.assign(liste.style, { left: "", right: "", top: "", bottom: "", maxHeight: "", overflowY: "" });
   if (liste.hidden) return;
+  if (liste.popover === "manual" && liste.matches(":popover-open")) {
+    const bouton2 = liste.parentElement.getBoundingClientRect();
+    const rect2 = liste.getBoundingClientRect();
+    const largeur = document.documentElement.clientWidth;
+    const dessous2 = Math.max(0, window.innerHeight - MARGE - bouton2.bottom);
+    const dessus2 = Math.max(0, bouton2.top - MARGE);
+    const versHaut = rect2.height > dessous2 && dessus2 > dessous2;
+    const hauteurVisible = versHaut ? dessus2 : dessous2;
+    liste.style.left = `${Math.max(MARGE, Math.min(bouton2.left, largeur - MARGE - rect2.width))}px`;
+    liste.style.top = `${versHaut ? Math.max(MARGE, bouton2.top - Math.min(rect2.height, dessus2)) : bouton2.bottom}px`;
+    if (rect2.height > hauteurVisible) {
+      liste.style.maxHeight = `${hauteurVisible}px`;
+      liste.style.overflowY = "auto";
+    }
+    liste.scrollTop = positionDefilement;
+    return;
+  }
   const limites = bornes(liste);
   let rect = liste.getBoundingClientRect();
   if (rect.right > limites.right - MARGE) {
@@ -26223,6 +26241,8 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
   liste.setAttribute("aria-label", libelle);
   liste.id = idUnique("tts-menu");
   liste.hidden = true;
+  const popover2 = typeof liste.showPopover === "function";
+  if (popover2) liste.popover = "manual";
   const bouton = boutonOutil({ nom, icone, libelle, action: () => liste.hidden ? ouvrir() : fermer() });
   bouton.setAttribute("aria-haspopup", "menu");
   bouton.setAttribute("aria-expanded", "false");
@@ -26233,6 +26253,17 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
     if (!element2.contains(event.target)) fermer();
   };
   const replacer = () => placerMenu(liste);
+  let prochainPlacement = 0;
+  const auDefilement = (event) => {
+    if (liste.contains(event.target) || prochainPlacement) return;
+    prochainPlacement = requestAnimationFrame(() => {
+      prochainPlacement = 0;
+      if (liste.hidden) return;
+      const rect = bouton.getBoundingClientRect();
+      if (rect.bottom <= 0 || rect.top >= window.innerHeight) fermer();
+      else replacer();
+    });
+  };
   function construire(el) {
     if (el.separateur) {
       const s = document.createElement("div");
@@ -26261,21 +26292,27 @@ function menuOutil({ nom, icone = nom, libelle, elements }) {
     if (ouvert && ouvert !== menu) ouvert.fermer();
     liste.replaceChildren(...elements().map(construire));
     liste.hidden = false;
+    if (popover2) liste.showPopover();
     replacer();
     bouton.setAttribute("aria-expanded", "true");
     ouvert = menu;
     document.addEventListener("pointerdown", dehors, true);
     window.addEventListener("resize", replacer);
+    if (popover2) window.addEventListener("scroll", auDefilement, true);
     const premiers = items();
     (dernier ? premiers.at(-1) : premiers[0])?.focus();
   }
   function fermer({ focus: focus2 = false } = {}) {
     if (liste.hidden) return;
+    if (prochainPlacement) cancelAnimationFrame(prochainPlacement);
+    prochainPlacement = 0;
+    if (popover2) liste.hidePopover();
     liste.hidden = true;
     bouton.setAttribute("aria-expanded", "false");
     if (ouvert === menu) ouvert = null;
     document.removeEventListener("pointerdown", dehors, true);
     window.removeEventListener("resize", replacer);
+    if (popover2) window.removeEventListener("scroll", auDefilement, true);
     if (focus2) bouton.focus();
   }
   bouton.addEventListener("keydown", (event) => {

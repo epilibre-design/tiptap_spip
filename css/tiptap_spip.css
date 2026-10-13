@@ -98,6 +98,14 @@ select.tts-outil {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+.tts-menu__liste:popover-open {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	min-width: min(14em, calc(100vw - 16px));
+	max-width: calc(100vw - 16px);
+}
+
 .tts-menu__liste[hidden] {
 	display: none;
 }
