@@ -5,7 +5,14 @@
 `[[note]]`, `[?glossaire]`, `<doc12|center>`…). Il remplace le porte-plume sur les champs en syntaxe SPIP,
 comme le plugin [markdown_editor](../plugins/markdown_editor) le fait pour les champs en Markdown.
 
-Le projet en est au stade des spécifications.
+## Documentation
+
+Le [guide utilisateur](https://epilibre-design.github.io/tiptap_spip/) explique l'installation par ZIP ou
+FTP, la prise en main, les réglages et l'utilisation de l'éditeur. Une page dédiée montre comment
+créer une extension à partir du plugin FAQ fourni dans `exemples/`.
+
+Les sources du site MkDocs sont dans `docs/site/`. Pour le construire localement, voir
+[Maintenir cette documentation](docs/site/developper/documentation.md).
 
 ## Spécifications
 
