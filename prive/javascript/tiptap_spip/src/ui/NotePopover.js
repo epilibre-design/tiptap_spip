@@ -122,6 +122,7 @@ export function openNotePopover(contexte, pos = null) {
 	let modifie = false;
 	sous.on('update', () => {
 		modifie = true;
+		if (popover.flottant) popover.replacer();
 	});
 
 	for (const [texte, action] of [

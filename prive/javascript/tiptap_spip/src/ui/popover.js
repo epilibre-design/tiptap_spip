@@ -24,6 +24,19 @@ export class Popover {
 		this.element.className = 'tts-popover-dialogue';
 		this.element.setAttribute('role', 'dialog');
 		this.element.setAttribute('aria-label', titre);
+		this.flottant = typeof this.element.showPopover === 'function';
+		if (this.flottant) this.element.popover = 'manual';
+		this.placementEnAttente = 0;
+		this.replacer = () => {
+			if (this.placementEnAttente) return;
+			this.placementEnAttente = requestAnimationFrame(() => {
+				this.placementEnAttente = 0;
+				if (this.ouvert) this.place();
+			});
+		};
+		this.auDefilement = (event) => {
+			if (!this.element.contains(event.target)) this.replacer();
+		};
 		this.form = document.createElement('form');
 		this.form.className = `tts-popover ${className ?? ''}`.trim();
 		this.element.append(this.form);
@@ -118,15 +131,45 @@ export class Popover {
 		Popover.current = this;
 		this.ouvert = true;
 		this.wrapper.append(this.element);
+		if (this.flottant) this.element.showPopover();
 		this.place();
+		if (this.flottant) {
+			window.addEventListener('resize', this.replacer);
+			window.addEventListener('scroll', this.auDefilement, true);
+		}
 		(focus ?? this.form.querySelector('input, button'))?.focus();
 	}
 
-	/** Sous la sélection, dans le repère de .tts-editor (sans effet sans moteur de mise en page). */
+	/** Près de la sélection, dans la fenêtre si la couche supérieure est disponible. */
 	place() {
 		try {
 			const { from } = this.editor.state.selection;
 			const coords = this.editor.view.coordsAtPos(from);
+			if (this.flottant) {
+				const marge = 8;
+				const ecart = 4;
+				const defilement = this.element.scrollTop;
+				Object.assign(this.element.style, { left: '0px', top: '0px', maxHeight: '', overflowY: '' });
+				const rect = this.element.getBoundingClientRect();
+				const barre = this.wrapper.querySelector('.tts-toolbar')?.getBoundingClientRect();
+				const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + marge;
+				const bas = window.innerHeight - marge;
+				const dessous = Math.max(0, bas - Math.max(haut, coords.bottom + ecart));
+				const dessus = Math.max(0, Math.min(coords.top - ecart, bas) - haut);
+				const versHaut = rect.height > dessous && dessus > dessous;
+				const hauteur = versHaut ? dessus : dessous;
+				const gauche = Math.max(marge, Math.min(coords.left, document.documentElement.clientWidth - marge - rect.width));
+				this.element.style.left = `${gauche}px`;
+				const hauteurAffichee = Math.min(rect.height, hauteur);
+				const position = versHaut ? coords.top - ecart - hauteurAffichee : coords.bottom + ecart;
+				this.element.style.top = `${Math.max(haut, Math.min(position, bas - hauteurAffichee))}px`;
+				if (rect.height > hauteur) {
+					this.element.style.maxHeight = `${hauteur}px`;
+					this.element.style.overflowY = 'auto';
+				}
+				this.element.scrollTop = defilement;
+				return;
+			}
 			const box = this.wrapper.getBoundingClientRect();
 			this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
 			this.form.style.top = `${coords.bottom - box.top + 4}px`;
@@ -141,6 +184,13 @@ export class Popover {
 		this.enfant?.close({ refocus: false });
 		if (Popover.current === this) Popover.current = this.parent;
 		if (this.parent?.enfant === this) this.parent.enfant = null;
+		if (this.flottant) {
+			window.removeEventListener('resize', this.replacer);
+			window.removeEventListener('scroll', this.auDefilement, true);
+			if (this.placementEnAttente) cancelAnimationFrame(this.placementEnAttente);
+			this.placementEnAttente = 0;
+			this.element.hidePopover();
+		}
 		this.element.remove();
 		// focus rendu tout de suite (la commande focus de Tiptap attend l'image suivante) : une touche
 		// pressée juste après agit dans l'éditeur, sur la sélection gardée

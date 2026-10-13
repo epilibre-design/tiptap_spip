@@ -90,6 +90,60 @@ test('notes : appels numérotés comme SPIP, renumérotés après suppression, e
 	expect(texte(id)).toBe('Un deux[[<A>nommée]] trois[[seconde]] quatre[[<>cachée]].');
 });
 
+test('note en fin de contenu : le dialogue et ses actions restent visibles', async ({ page }) => {
+	await page.setViewportSize({ width: 1200, height: 700 });
+	const texteLong = Array.from({ length: 22 }, (_, k) => `Paragraphe ${k + 1} d'un article.`).join('\n\n');
+	await editer(page, `${texteLong}\n\nDernière ligne[[texte de la note]].`);
+	const appel = page.locator('.ProseMirror .tts-note').last();
+	await appel.scrollIntoViewIfNeeded();
+	await appel.click();
+	const visible = await page.locator('.tts-popover--note').evaluate((pop) => {
+		const affiche = (el) => {
+			const rect = el.getBoundingClientRect();
+			return el.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
+		};
+		return {
+			appliquer: affiche(pop.querySelector('button[name=appliquer]')),
+			annuler: affiche(pop.querySelector('button[name=annuler]')),
+		};
+	});
+	expect(visible).toEqual({ appliquer: true, annuler: true });
+});
+
+test('dialogue enfant d’une note : il reste devant et rend le focus à la note', async ({ page }) => {
+	await editer(page, 'Texte[[une note avec un lien]]');
+	await page.locator('.ProseMirror .tts-note').click();
+	const note = page.locator('.tts-popover--note');
+	await note.locator('.tts-note__texte .ProseMirror').click();
+	await page.keyboard.press('ControlOrMeta+a');
+	await note.locator('.tts-note__barre button').filter({ hasText: 'Lien' }).click();
+	const lien = page.locator('.tts-popover--lien');
+	await expect(lien).toBeVisible();
+	const devant = await lien.locator('input').first().evaluate((input) => {
+		const rect = input.getBoundingClientRect();
+		return input === document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+	});
+	expect(devant).toBe(true);
+	await page.keyboard.press('Escape');
+	await expect(lien).toHaveCount(0);
+	await expect(note).toBeVisible();
+	await expect(note.locator('.tts-note__texte .ProseMirror')).toBeFocused();
+});
+
+test('note agrandie : le dialogue reste dans la fenêtre', async ({ page }) => {
+	await page.setViewportSize({ width: 1200, height: 700 });
+	const texteLong = Array.from({ length: 22 }, (_, k) => `Paragraphe ${k + 1} d'un article.`).join('\n\n');
+	await editer(page, `${texteLong}\n\nDernière ligne[[note courte]].`);
+	const appel = page.locator('.ProseMirror .tts-note').last();
+	await appel.scrollIntoViewIfNeeded();
+	await appel.click();
+	await page.locator('.tts-popover--note .tts-note__texte .ProseMirror').click();
+	for (let i = 0; i < 14; i++) await page.keyboard.press('Enter');
+	const dialogue = page.locator('.tts-popover-dialogue:has(.tts-popover--note)');
+	const dansLaFenetre = () => dialogue.evaluate((el) => el.getBoundingClientRect().bottom <= window.innerHeight - 8);
+	await expect.poll(dansLaFenetre).toBe(true);
+});
+
 /** Curseur en fin du premier paragraphe de l'éditeur. */
 const finDuTexte = async (page) => {
 	await page.locator('.ProseMirror p').first().click();
