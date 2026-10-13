@@ -1,0 +1,105 @@
+site_name: Éditeur visuel pour SPIP
+site_url: https://epilibre-design.github.io/tiptap_spip/
+site_description: Installer et utiliser l'éditeur visuel Tiptap avec les raccourcis natifs de SPIP.
+site_author: epilibre-design
+repo_url: https://github.com/epilibre-design/tiptap_spip
+repo_name: epilibre-design/tiptap_spip
+docs_dir: docs/site
+site_dir: site
+
+theme:
+  name: material
+  language: fr
+  font: false
+  icon:
+    logo: material/text-box-edit-outline
+    repo: fontawesome/brands/github
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Passer au thème sombre
+    - scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Passer au thème clair
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search:
+      lang: fr
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: false
+      languages:
+        - locale: fr
+          name: Français
+          default: true
+          build: true
+        # Activer cette langue lorsque les fichiers *.en.md seront prêts.
+        - locale: en
+          name: English
+          build: false
+          site_description: Install and use the Tiptap visual editor with native SPIP syntax.
+          nav_translations:
+            Accueil: Home
+            Installer: Install
+            Premiers pas: Getting started
+            Utiliser: Use the editor
+            Mettre en forme: Format text
+            Contenus SPIP: SPIP content
+            Configurer: Configure
+            Résoudre un problème: Troubleshoot
+            Comprendre: Understand
+            Principes: Principles
+            Développer: Develop
+            Créer une extension FAQ: Build a FAQ extension
+            Maintenir cette documentation: Maintain this documentation
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+  links:
+    not_found: warn
+    unrecognized_links: warn
+    anchors: warn
+    absolute_links: warn
+
+extra:
+  generator: false
+
+nav:
+  - Accueil: index.md
+  - Installer: installer.md
+  - Premiers pas: premiers-pas.md
+  - Utiliser:
+      - Mettre en forme: utiliser/mise-en-forme.md
+      - Contenus SPIP: utiliser/contenus-spip.md
+  - Configurer: configurer.md
+  - Résoudre un problème: problemes.md
+  - Comprendre:
+      - Principes: comprendre.md
+  - Développer:
+      - Créer une extension FAQ: developper/faq.md
+      - Maintenir cette documentation: developper/documentation.md

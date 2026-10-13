@@ -5,7 +5,7 @@
 	etat="dev"
 	compatibilite="[4.2.0;5.*]"
 	logo="images/tiptap-spip-xx.svg"
-	documentation=""
+	documentation="https://epilibre-design.github.io/tiptap_spip/"
 >
 	<nom>Éditeur visuel pour SPIP</nom>
 	<!-- Éditeur visuel Tiptap qui lit et écrit les raccourcis SPIP -->
