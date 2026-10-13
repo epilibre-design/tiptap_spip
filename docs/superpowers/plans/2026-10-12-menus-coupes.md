@@ -48,3 +48,21 @@
 - **Non reproduit** : la coupure en bas du menu Tableau (formulaire assez haut sur les sites jetables) ;
   couverte par le test unitaire de `placerMenu`.
 - Vitest 1337/1337 ; `menus.e2e.js` vert sur SPIP 4.2, 4.4 et 5, sous Chromium, Firefox et WebKit.
+
+## Après revue
+
+- **Codex** :
+  - hauteur minimale de 120 px qui pouvait dépasser la place disponible : retirée ; quand il manque de
+    place en bas et qu'il y en a plus au-dessus, la liste s'ouvre au-dessus du bouton ;
+  - `max-height` sans bordure ni marges : `box-sizing: border-box` sur la liste. L'espace privé l'impose
+    déjà (règle plus spécifique, vérifié : l'e2e passe sans la règle du plugin) ; elle vaut pour le site
+    public et les crayons ;
+  - oracle de l'e2e relevé avant le défilement : remplacé par un oracle indépendant du code testé (coins
+    et dernier élément affichés, par `elementFromPoint`, après défilement).
+- **Revue de spec** : en plein écran, `bornes()` comptait le formulaire masqué sous l'éditeur fixe et
+  réduisait les menus à tort (reproduit en e2e à 420 et 220 px de haut). Le parcours s'arrête à un
+  ancêtre en position fixe, et la fenêtre borne alors en hauteur (la page ne défile plus).
+- **Revue de standards** : oracle recopié retiré de l'e2e ; noms explicites ; `replacer()` aussi à
+  l'ouverture.
+- `menus.e2e.js` (4 cas) vert sur SPIP 4.2, 4.4 et 5, sous Chromium, Firefox et WebKit (un échec isolé sur
+  SPIP 5, passé trois fois de suite ensuite). Vitest 1339/1339.

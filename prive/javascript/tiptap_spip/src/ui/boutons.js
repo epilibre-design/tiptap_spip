@@ -102,7 +102,7 @@ export function menuOutil({ nom, icone = nom, libelle, elements }) {
 		if (ouvert && ouvert !== menu) ouvert.fermer();
 		liste.replaceChildren(...elements().map(construire));
 		liste.hidden = false;
-		placerMenu(liste);
+		replacer();
 		bouton.setAttribute('aria-expanded', 'true');
 		ouvert = menu;
 		document.addEventListener('pointerdown', dehors, true);

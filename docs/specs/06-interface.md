@@ -222,9 +222,12 @@ Lot L5.1 :
   (`.cadre-formulaire-editer .formulaire_spip` est en `overflow: hidden` dans l'espace privé). À
   l'ouverture, et au redimensionnement tant qu'elle est ouverte, la liste est placée dans les bornes
   visibles (`src/ui/placement.js`) : alignée sur le bord droit du bouton si elle dépasse à droite, décalée
-  si elle dépasse alors à gauche, hauteur limitée avec défilement si un ancêtre la coupe en bas. La fenêtre
-  ne compte qu'en largeur (la page défile). Le CSS du cœur n'est pas modifié. e2e : `menus.e2e.js` (à 640
-  et 1440 px, le menu Modèle dépassait à droite du formulaire).
+  si elle dépasse alors à gauche ; si elle dépasse en bas, ouverte au-dessus du bouton quand il y a plus de
+  place, sinon limitée à la place disponible (bordure comprise, `box-sizing: border-box`), avec
+  défilement. La fenêtre ne compte qu'en largeur (la page défile), sauf sous un ancêtre en position fixe
+  (éditeur plein écran) : ses ancêtres ne coupent plus, la fenêtre borne aussi en hauteur. Le CSS du cœur
+  n'est pas modifié. e2e : `menus.e2e.js` (à 640 et 1440 px, le menu Modèle dépassait à droite du
+  formulaire ; en plein écran, les menus étaient réduits à tort par le formulaire masqué sous l'éditeur).
 
 Lot L5.2 :
 - **Zone éditable :** `aria-label` = libellé du champ (son `<label>`, sinon son `aria-label` ou sa bulle, sinon
