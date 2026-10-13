@@ -4,24 +4,32 @@ Le plugin fonctionne avec **SPIP 4.2, 4.3, 4.4 et 5**. Il faut un accès de webm
 installer un plugin et l’activer dans la gestion des plugins de SPIP. Si vous n’avez pas cet accès,
 transmettez cette page à la personne qui administre le site.
 
-Pour une installation durable, récupérez l’archive ZIP de la
-[dernière version publiée](https://github.com/epilibre-design/tiptap_spip/releases/latest)
-sur la page **Releases** du projet. La première version est en préparation. En attendant, ou pour
-essayer les changements récents, l’archive ZIP de la branche `main` est disponible à cette adresse :
+Pour installer une version dont le contenu ne change pas, ouvrez la
+[liste des versions (tags)](https://github.com/epilibre-design/tiptap_spip/tags) et choisissez
+le ZIP du tag le plus récent. La première version publiée, `1.0.0`, est disponible directement :
+
+```text
+https://github.com/epilibre-design/tiptap_spip/archive/refs/tags/1.0.0.zip
+```
+
+GitHub marque actuellement cette première release comme **préversion** : son contenu est figé,
+mais elle n’est pas annoncée comme stable. Si vous souhaitez essayer les changements les plus
+récents, utilisez plutôt l’archive de la branche `main` :
 
 ```text
 https://github.com/epilibre-design/tiptap_spip/archive/refs/heads/main.zip
 ```
 
-Cette archive suit les changements de `main` ; son contenu peut donc changer. Une archive de
-release identifiée par un numéro de version est préférable pour un site en production.
+L’archive de `main` suit les changements du projet ; son contenu peut donc varier. Pour retrouver
+la même version plus tard, conservez le numéro du tag que vous avez installé.
 
 ## Méthode 1 : installer depuis l’URL dans SPIP
 
 1. Connectez-vous à l’espace privé en tant que webmestre.
 2. Ouvrez **Configuration → Gestion des plugins → Ajouter des plugins**.
 3. Dans **Télécharger un plugin depuis son archive**, collez l’URL directe du ZIP choisi dans
-   **URL de l’archive**. Pour un essai avant la première release, utilisez l’URL ci-dessus.
+   **URL de l’archive** : par exemple celle du tag `1.0.0` ci-dessus. Pour une version plus récente,
+   ouvrez la page des tags et copiez l’adresse de son ZIP.
 4. Lancez le téléchargement, puis activez **Éditeur visuel pour SPIP** dans la gestion des plugins.
    SPIP peut demander votre mot de passe de webmestre.
 
@@ -30,7 +38,7 @@ décrit l’installation manuelle par SVP et les droits nécessaires.
 
 ## Méthode 2 : envoyer les fichiers par FTP
 
-1. Téléchargez l’archive ZIP de la release choisie, ou celle de `main` pour un essai, puis
+1. Téléchargez l’archive ZIP du tag choisi, ou celle de `main` pour un essai, puis
    décompressez-la sur votre ordinateur.
 2. Renommez le dossier obtenu en `tiptap_spip`.
 3. Envoyez **ce dossier** dans le répertoire `plugins/` à la racine de votre site SPIP.
