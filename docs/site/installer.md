@@ -50,6 +50,9 @@ La méthode FTP ne met pas les fichiers à jour automatiquement. Pour une mise �
 une nouvelle archive, sauvegardez d’abord le site, remplacez les fichiers du plugin, puis vérifiez
 qu’il reste actif. Consultez aussi la [documentation de SPIP sur le FTP](https://www.spip.net/fr_article6841.html#Methodes-alternatives-pour-gerer-les-plugins).
 
+**Porte-plume** et **Insérer modèles** peuvent compléter l’éditeur. Consultez la page
+[Plugins complémentaires](installer/plugins-complementaires.md) pour savoir ce qu’ils apportent.
+
 ## Vérifier l’installation
 
 Ouvrez la modification d’un article contenant un champ **Texte** : une barre d’outils et une zone

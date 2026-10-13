@@ -91,7 +91,9 @@ extra:
 
 nav:
   - Accueil: index.md
-  - Installer: installer.md
+  - Installer:
+      - Installer le plugin: installer.md
+      - Plugins complémentaires: installer/plugins-complementaires.md
   - Premiers pas: premiers-pas.md
   - Utiliser:
       - Mettre en forme: utiliser/mise-en-forme.md
