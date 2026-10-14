@@ -9,6 +9,7 @@
 >
 	<nom>Éditeur visuel pour SPIP</nom>
 	<!-- Éditeur visuel Tiptap qui lit et écrit les raccourcis SPIP -->
+	<auteur>Gilles VINCENT</auteur>
 
 	<credit lien="https://tiptap.dev">Tiptap</credit>
 	<credit lien="https://remixicon.com">Remix Icon (Apache-2.0)</credit>
