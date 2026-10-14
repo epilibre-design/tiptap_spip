@@ -69,6 +69,7 @@ plugins:
             Principes: Principles
             Développer: Develop
             Créer une extension FAQ: Build a FAQ extension
+            Réaliser les tests: Run the tests
             Maintenir cette documentation: Maintain this documentation
 
 markdown_extensions:
@@ -110,4 +111,5 @@ nav:
       - Principes: comprendre.md
   - Développer:
       - Créer une extension FAQ: developper/faq.md
+      - Réaliser les tests: developper/tests.md
       - Maintenir cette documentation: developper/documentation.md
