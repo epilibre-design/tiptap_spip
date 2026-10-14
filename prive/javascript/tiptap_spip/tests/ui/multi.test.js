@@ -7,7 +7,14 @@ import { apres, champ, cliquer, demonter, editor, erreur, fakeServices, monter, 
 afterEach(() => {
 	demonter();
 	document.documentElement.lang = '';
+	delete globalThis.spipConfig;
 });
+
+/** Langues activées dans la configuration du multilinguisme. */
+const activer = (...codes) => {
+	globalThis.spipConfig = { tiptap_spip: { langues: codes.map((code) => ({ code, nom: { fr: 'français', en: 'English', de: 'Deutsch' }[code] ?? code })) } };
+};
+const options = (select) => [...select.options].map((o) => [o.value, o.textContent]);
 
 /** Lignes du popover de multi : champ langue et sous-éditeur. */
 const lignes = () => [...wrapper.querySelectorAll('.tts-multi__partie')].map((l) => ({
@@ -23,7 +30,8 @@ const multiPos = () => {
 };
 
 describe('multi en ligne', () => {
-	it('texte sélectionné : première partie dans la langue de l\'interface, deuxième ajoutée', () => {
+	it('texte sélectionné : première partie dans la langue de l\'interface, deuxième dans la langue activée suivante', () => {
+		activer('en', 'fr', 'de');
 		document.documentElement.lang = 'fr';
 		const { ui } = monter('Un chat ici');
 		editor.commands.setTextSelection({ from: apres('Un '), to: apres('chat') });
@@ -31,10 +39,46 @@ describe('multi en ligne', () => {
 		const [fr, autre] = lignes();
 		expect(fr.langue.value).toBe('fr');
 		expect(fr.sous.getText()).toBe('chat');
-		autre.langue.value = 'en';
+		expect(autre.langue.value).toBe('en');
 		autre.sous.commands.setContent('<p>cat</p>', { emitUpdate: true });
 		valider();
 		expect(source()).toBe('Un <multi>[fr]chat[en]cat</multi> ici');
+	});
+
+	it('sélecteur de langue : langues activées seulement, et « Sans langue »', () => {
+		activer('fr', 'en');
+		const { ui } = monter('x');
+		ui.editMulti(null);
+		expect(lignes()[0].langue.tagName).toBe('SELECT');
+		expect(options(lignes()[0].langue)).toEqual([['fr', 'français (fr)'], ['en', 'English (en)'], ['', 'Sans langue']]);
+	});
+
+	it('langue de l\'interface non activée : première langue activée ; langues toutes prises : sans langue', () => {
+		activer('de', 'fr');
+		document.documentElement.lang = 'en';
+		const { ui } = monter('x');
+		ui.editMulti(null);
+		expect(lignes().map((l) => l.langue.value)).toEqual(['de', 'fr']);
+		cliquer('ajouter_langue');
+		expect(lignes()[2].langue.value).toBe('');
+	});
+
+	it('multi existant : une langue non activée reste proposée pour sa partie', () => {
+		activer('fr', 'en');
+		const { ui } = monter('x <multi>[fr]a[it]b</multi>');
+		ui.editMulti(multiPos());
+		expect(lignes().map((l) => l.langue.value)).toEqual(['fr', 'it']);
+		expect(options(lignes()[0].langue).map(([v]) => v)).toEqual(['fr', 'en', '']);
+		expect(options(lignes()[1].langue).map(([v]) => v)).toEqual(['fr', 'en', 'it', '']);
+		valider();
+		expect(source()).toBe('x <multi>[fr]a[it]b</multi>');
+	});
+
+	it('sans configuration : la langue de l\'interface', () => {
+		document.documentElement.lang = 'fr';
+		const { ui } = monter('x');
+		ui.editMulti(null);
+		expect(options(lignes()[0].langue)).toEqual([['fr', 'fr'], ['', 'Sans langue']]);
 	});
 
 	it('clic sur un multi : ses parties ; modification, partie retirée', () => {
@@ -54,12 +98,9 @@ describe('multi en ligne', () => {
 		expect(source()).toBe('x <multi> [fr]a  b[en]c</multi> y');
 	});
 
-	it('code de langue invalide ou deux parties sans langue : erreur', () => {
+	it('deux parties sans langue : erreur', () => {
 		const { ui } = monter('x <multi>[fr]a[en]b</multi>');
 		ui.editMulti(multiPos());
-		lignes()[1].langue.value = 'anglais';
-		valider();
-		expect(erreur().hidden).toBe(false);
 		lignes()[0].langue.value = '';
 		lignes()[1].langue.value = '';
 		valider();
@@ -100,6 +141,7 @@ describe('multi en ligne', () => {
 
 describe('multi bloc', () => {
 	it('paragraphe vide : nouveau multi bloc, langues ajoutées', () => {
+		activer('fr', 'en');
 		document.documentElement.lang = 'fr';
 		const { ui } = monter('Avant');
 		editor.commands.setTextSelection(apres('Avant'));
@@ -109,7 +151,7 @@ describe('multi bloc', () => {
 		expect(editor.state.doc.child(1).type.name).toBe('paragraph');
 		expect(wrapper.querySelector('[name=supprimer]')).toBeNull();
 		cliquer('ajouter_langue');
-		lignes()[1].langue.value = 'en';
+		expect(lignes()[1].langue.value).toBe('en');
 		valider();
 		expect(editor.state.doc.child(1).type.name).toBe('spipMultiBlock');
 		editor.commands.insertContent('Bonjour');
@@ -131,6 +173,7 @@ describe('multi bloc', () => {
 	});
 
 	it('curseur dans un multi bloc : langues modifiées, partie retirée, puis multi supprimé', () => {
+		activer('fr', 'fr_fem', 'en', 'de');
 		document.documentElement.lang = 'en';
 		const { ui } = monter('<multi>[fr]Un\n\nDeux[en]One\n\nTwo[de]Eins</multi>');
 		editor.commands.setTextSelection(apres('On'));

@@ -40,6 +40,10 @@ rédaction. La source SPIP conserve le raccourci `<multi>…</multi>`.
 Le bouton n’apparaît que si plusieurs langues sont activées dans **Configuration → Multilinguisme**,
 ou si le texte contient déjà un multi.
 
+Dans la fenêtre du multi, choisissez la langue de chaque version dans la liste. Elle propose les
+langues activées dans cette configuration ; une langue déjà présente dans le multi reste
+proposée. **Sans langue** correspond à la version affichée quand aucune autre ne convient.
+
 ## Si un passage s’affiche comme du code
 
 Un raccourci mal formé ou une syntaxe ajoutée par un autre plugin peut rester sous forme brute.

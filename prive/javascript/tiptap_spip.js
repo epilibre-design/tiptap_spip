@@ -24866,6 +24866,7 @@ var DEFAUTS = {
   multi_texte: "Texte dans cette langue",
   multi_ajouter: "Ajouter une langue",
   multi_retirer_langue: "Retirer",
+  multi_sans_langue: "Sans langue",
   multi_supprimer: "Supprimer le multi",
   multi_langues: "Langues du multi",
   multi_invalide: "Ce multi ne peut pas s\u2019\xE9crire tel quel (code de langue, langue sans code en double, texte).",
@@ -27582,7 +27583,35 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
 }
 
 // src/ui/MultiPopover.js
-var langueParDefaut = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || "").replace("-", "_");
+var langueCourante = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || "").replace("-", "_");
+var languesProposees = (editor) => {
+  const langues = config().langues ?? [];
+  if (langues.length) return langues;
+  const courante = langueCourante(editor);
+  return courante ? [{ code: courante, nom: courante }] : [];
+};
+var languePremiere = (editor) => {
+  const codes = languesProposees(editor).map((l) => l.code);
+  const courante = langueCourante(editor);
+  return codes.includes(courante) ? courante : codes[0] ?? "";
+};
+var langueSuivante = (editor, lignes) => {
+  const prises = lignes.map((l) => l.langue.value);
+  return languesProposees(editor).map((l) => l.code).find((c) => !prises.includes(c)) ?? "";
+};
+var selecteurLangue = (editor, lang) => {
+  const langues = [...languesProposees(editor)];
+  if (lang && !langues.some((l) => l.code === lang)) langues.push({ code: lang, nom: lang });
+  const select = document.createElement("select");
+  select.name = "langue";
+  select.setAttribute("aria-label", label("langue"));
+  select.append(
+    ...langues.map((l) => new Option(l.nom && l.nom !== l.code ? `${l.nom} (${l.code})` : l.code, l.code)),
+    new Option(label("multi_sans_langue"), "")
+  );
+  select.value = lang ?? "";
+  return select;
+};
 var languesValides = (langues) => langues.every((l) => l === null || RE_CODE_LANGUE.test(l)) && langues.filter((l) => l === null).length <= 1;
 function openMultiPopover(contexte3, pos = null) {
   const { editor } = contexte3;
@@ -27625,11 +27654,7 @@ function multiEnLigne(contexte3, existant) {
   const ajouter = (lang, origine) => {
     const ligne = document.createElement("div");
     ligne.className = "tts-multi__partie";
-    const langue = document.createElement("input");
-    langue.name = "langue";
-    langue.size = 6;
-    langue.value = lang ?? "";
-    langue.setAttribute("aria-label", label("langue"));
+    const langue = selecteurLangue(editor, lang);
     const zone = document.createElement("div");
     zone.className = "tts-multi__texte";
     const retirer = document.createElement("button");
@@ -27669,12 +27694,12 @@ function multiEnLigne(contexte3, existant) {
   if (existant) {
     for (const p of existant.node.attrs.parts ?? []) ajouter(p.lang, p.content);
   } else {
-    ajouter(langueParDefaut(editor), morceau);
-    ajouter("", null);
+    ajouter(languePremiere(editor), morceau);
+    ajouter(langueSuivante(editor, lignes), null);
   }
   const appliquer = () => {
     const parts = lignes.map((l) => ({
-      lang: l.langue.value.trim() || null,
+      lang: l.langue.value || null,
       content: l.modifie || !l.origine ? l.sous.getJSON().content?.[0]?.content ?? [] : l.origine
     })).filter((p2) => p2.lang || p2.content.length);
     if (!parts.length) {
@@ -27701,7 +27726,7 @@ function multiEnLigne(contexte3, existant) {
   };
   popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
   popover2.button(label("multi_ajouter"), () => {
-    ajouter("", null).langue.focus();
+    ajouter(langueSuivante(editor, lignes), null).langue.focus();
     return false;
   }, { name: "ajouter_langue" });
   if (existant) {
@@ -27736,11 +27761,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   const ajouter = (lang, partie) => {
     const ligne = document.createElement("div");
     ligne.className = "tts-multi__partie";
-    const langue = document.createElement("input");
-    langue.name = "langue";
-    langue.size = 6;
-    langue.value = lang ?? "";
-    langue.setAttribute("aria-label", label("langue"));
+    const langue = selecteurLangue(editor, lang);
     const retirer = document.createElement("button");
     retirer.type = "button";
     retirer.name = "retirer_langue";
@@ -27755,7 +27776,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
     lignes.push(l);
     return l;
   };
-  if (nouveau) ajouter(langueParDefaut(editor), null);
+  if (nouveau) ajouter(languePremiere(editor), null);
   else editor.state.doc.nodeAt(pos).forEach((partie) => ajouter(partie.attrs.lang, partie));
   const courant = () => {
     const p = suivi.pos();
@@ -27763,7 +27784,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
     return (nouveau ? paragrapheVide(node2) : node2?.type.name === "spipMultiBlock") ? { p, node: node2 } : null;
   };
   const appliquer = () => {
-    const langues = lignes.map((l) => l.langue.value.trim() || null);
+    const langues = lignes.map((l) => l.langue.value || null);
     if (!lignes.length) {
       popover2.error(label("multi_vide"));
       return false;
@@ -27788,7 +27809,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   };
   popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
   popover2.button(label("multi_ajouter"), () => {
-    ajouter("", null).langue.focus();
+    ajouter(langueSuivante(editor, lignes), null).langue.focus();
     return false;
   }, { name: "ajouter_langue" });
   if (!nouveau) {

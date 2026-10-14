@@ -55,7 +55,7 @@ final class ConfigTest extends TestCase
 		$GLOBALS['_test_config']['tiptap_spip'] = ['crayons' => 'oui', 'mode' => 'source', 'niveaux' => [2, 5], 'champs' => ['auteur' => []]];
 
 		$this->assertSame(
-			'{"public":false,"crayons":true,"mode":"source","niveaux":[2,5],"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]},"multilingue":false}',
+			'{"public":false,"crayons":true,"mode":"source","niveaux":[2,5],"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]},"multilingue":false,"langues":[]}',
 			tiptap_spip_config_js()
 		);
 	}
@@ -70,5 +70,16 @@ final class ConfigTest extends TestCase
 		$GLOBALS['meta']['langues_multilingue'] = 'fr,en';
 		$this->assertTrue(tiptap_spip_multilingue());
 		unset($GLOBALS['meta']['langues_multilingue']);
+	}
+
+	public function testLanguesActiveesSinonLangueDuSite(): void {
+		$GLOBALS['meta']['langue_site'] = 'fr';
+		$this->assertSame([['code' => 'fr', 'nom' => 'français']], tiptap_spip_langues());
+		$GLOBALS['meta']['langues_multilingue'] = 'en, fr,en,xx';
+		$this->assertSame(
+			[['code' => 'en', 'nom' => 'English'], ['code' => 'fr', 'nom' => 'français'], ['code' => 'xx', 'nom' => 'xx']],
+			tiptap_spip_langues()
+		);
+		unset($GLOBALS['meta']['langues_multilingue'], $GLOBALS['meta']['langue_site']);
 	}
 }

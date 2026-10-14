@@ -4,6 +4,8 @@
 
 - Le bouton **Multi** n'apparaît plus sur un site monolingue (une seule langue dans la
   configuration du multilinguisme), sauf si le texte contient déjà un multi (#1).
+- Fenêtre du multi : la langue de chaque version se choisit dans une liste des langues activées
+  dans la configuration du multilinguisme, au lieu d'un code à saisir (#2).
 
 ### Corrigé
 

@@ -38,6 +38,10 @@ source retains the `<multi>…</multi>` shortcut.
 The button only appears when several languages are enabled in **Configuration → Multilingual**,
 or when the text already contains a multi.
 
+In the multi window, choose the language of each version from the list. It offers the languages
+enabled in that configuration; a language already present in the multi is still offered.
+**No language** is the version shown when no other one matches.
+
 ## If a passage appears as code
 
 A malformed shortcut or syntax added by another plugin may remain as raw source. Click it to

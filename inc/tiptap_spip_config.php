@@ -123,6 +123,7 @@ function tiptap_spip_config_js($valeur = null): string {
 		'niveaux' => $config['niveaux'],
 		'champs' => (object) tiptap_spip_champs_par_objet(),
 		'multilingue' => tiptap_spip_multilingue(),
+		'langues' => tiptap_spip_langues(),
 	], TIPTAP_SPIP_JSON);
 }
 
@@ -131,6 +132,24 @@ function tiptap_spip_config_js($valeur = null): string {
  * (méta langues_multilingue).
  */
 function tiptap_spip_multilingue(): bool {
-	$langues = array_filter(explode(',', $GLOBALS['meta']['langues_multilingue'] ?? ''));
-	return count(array_unique($langues)) > 1;
+	return count(tiptap_spip_langues()) > 1;
+}
+
+/**
+ * Langues proposées dans le popover des multis : celles cochées dans la configuration du
+ * multilinguisme, sinon la langue du site. Code et nom de chaque langue.
+ *
+ * @return list<array{code: string, nom: string}>
+ */
+function tiptap_spip_langues(): array {
+	$codes = array_values(array_unique(array_filter(array_map('trim', explode(',', $GLOBALS['meta']['langues_multilingue'] ?? '')))));
+	if (!$codes && !empty($GLOBALS['meta']['langue_site'])) {
+		$codes = [$GLOBALS['meta']['langue_site']];
+	}
+	include_spip('inc/lang');
+	// traduire_nom_langue() rend des entités (fran&#231;ais) : texte brut pour le navigateur
+	return array_map(
+		fn($code) => ['code' => $code, 'nom' => html_entity_decode((string) traduire_nom_langue($code), ENT_QUOTES | ENT_HTML5, 'UTF-8')],
+		$codes
+	);
 }
