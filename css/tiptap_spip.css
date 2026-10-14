@@ -192,6 +192,11 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	position: relative;
 }
 
+/* Bloc coloré avec le thème de Coloration Code (fond et couleur posés par l'éditeur). */
+.tts-editor pre.spip_code_block.hljs {
+	text-shadow: none;
+}
+
 /* Constructions conservées telles quelles : affichées comme du code. */
 .tts-raw,
 .tts-raw-inline {

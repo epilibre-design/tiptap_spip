@@ -2,6 +2,8 @@
 
 ### Ajouté
 
+- Coloration syntaxique des blocs de code pendant la saisie, uniquement quand le plugin
+  Coloration Code est actif : mêmes langages et même thème que sur le site public.
 - Version anglaise du guide utilisateur, accessible sous `/en/`.
 - Documentation des plugins complémentaires Porte-plume et Insérer modèles.
 

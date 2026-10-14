@@ -17,6 +17,8 @@
 	<utilise nom="porte_plume" />
 	<!-- catalogue des modèles : formulaires YAML en modalbox -->
 	<utilise nom="inserer_modeles" />
+	<!-- coloration syntaxique des blocs de code : highlight.js et thème du plugin -->
+	<utilise nom="coloration_code" />
 
 	<pipeline nom="header_prive" inclure="tiptap_spip_pipelines.php" />
 	<pipeline nom="insert_head" inclure="tiptap_spip_pipelines.php" />

@@ -22,6 +22,7 @@ import { ariaModele, idiomeView, linkAutoView, modelView, multiView } from '../n
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
 import { serializeIdiome } from '../spip/multi.js';
 import { SpipAnomalies } from './anomalies.js';
+import { coloration } from './coloration.js';
 import { SpipEdition } from './edition.js';
 import { apercu, partieAffichee } from './texte.js';
 import { label as libelle } from '../ui/labels.js';
@@ -81,6 +82,9 @@ const SpipCodeBlock = CodeBlock.extend({
 			language: { ...parent.language, rendered: true, renderHTML: (attrs) => (attrs.language ? { 'data-language': attrs.language } : {}) },
 			openTag: hidden(),
 		};
+	},
+	addProseMirrorPlugins() {
+		return [...(this.parent?.() ?? []), ...coloration()];
 	},
 });
 
