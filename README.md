@@ -30,3 +30,4 @@ Les sources du site MkDocs sont dans `docs/site/`. Pour le construire localement
 | 07 | [Extensibilité](docs/specs/07-extensibilite.md) | API pour les plugins tiers |
 | 08 | [Tests et recette](docs/specs/08-tests-recette.md) | Corpus, équivalence de rendu, critères d'acceptation |
 | 09 | [Lots et feuille de route](docs/specs/09-lots-roadmap.md) | Découpage, priorités, questions ouvertes |
+| 10 | [Coller une image](docs/specs/10-coller-images.md) | Collage d'une image : envoi en document SPIP, insertion de `<docN>` |

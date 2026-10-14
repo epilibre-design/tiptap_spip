@@ -251,6 +251,8 @@ Champ `operation` + paramètres, validés dans `verifier()` (liste blanche, tail
 | `rechercher` | `q`, `objets` (liste JSON) | `q` de 2 à 100 caractères, objets parmi `article, rubrique, breve, document, auteur, mot, site` | `[{objet, id, titre, raccourci}]` (`raccourci` = `article12`), filtré par `autoriser('voir')` **avant** de retenir les résultats (des objets invisibles en tête ne masquent pas les suivants), hors poubelle, 20 résultats max, les plus récemment modifiés d'abord (`maj`) tous types confondus : une suite par type, lue par pages de 50, fusionnée par `maj` |
 | `idiomes` | `cles` (liste JSON de `module:cle` ou `cle`) | 1 à 50 clés, ≤ 100 caractères, forme de la regex de `Idiomes::collecter()` | `[{cle, texte}]` : traduction par `inc_traduire` dans la langue de l'objet édité (sinon celle du site), sans balises ; `texte` nul pour une chaîne absente (SPIP laisse alors le raccourci) — **lot L4.2** |
 
+Opération prévue au lot L7.1 : `deposer_image` (collage d'une image), cf. [10](10-coller-images.md) §5.
+
 Réalisé au lot L2.2 (`formulaires/tiptap_spip.php`, `src/services/cvt.js`). Constats sur SPIP 4.4 :
 
 - pour un formulaire d'objet (`editer_article`…), `formulaire_fond` reçoit `args = ['type' => …, 'id' => …]`

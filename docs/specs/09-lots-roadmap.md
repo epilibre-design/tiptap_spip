@@ -14,7 +14,8 @@
 | **L6 — Extensibilité** | (fait) API `registerExtension`, pipelines `tiptap_spip_extensions` et `tiptap_spip_i18n`, ré-export du core (`window.tiptapSpip`), harnais `allerRetour`, exemple de plugin tiers `exemples/tiptap_spip_faq` | Plugin d'exemple fonctionnel sans modifier le cœur |
 | **Compatibilité SPIP 4.2 et 5** (fait) | sites jetables SPIP 4.2.16 et 5.0-dev, lancement commun SPIP 4/5 hors de `_inits/` (configuration et module par `header_prive`/`insert_head`, bundle par l'importmap en SPIP 5), glossaire par `pre_liens` en SPIP 5, chargement du noyau commun aux scripts de test, diff figé propre à une branche de SPIP | Critère 8 |
 | **Catalogue des modèles** (fait) | Q3 tranchée : formulaires YAML du plugin Insérer modèles en modalbox (insertion, « Modifier » prérempli), saisie brute sinon, modèles masqués par sa configuration ; plein écran au-dessus du bandeau de l'espace privé | Insertion et modification d'un modèle par son formulaire |
-| L7 — Ultérieur | glisser-déposer de documents (upload → `<docN>`), aperçu `<math>`, collaboration | — |
+| **L7.1 — Coller une image** | collage d'une image du presse-papiers → document SPIP lié à l'objet → `<docN>`, dans l'éditeur visuel et en mode source ; opération CVT `deposer_image` ([10](10-coller-images.md), demande #4) | Une capture collée dans un article, nouveau ou existant, devient un document lié et un `<docN>` |
+| L7 — Ultérieur | **L7.2** glisser-déposer de documents (même chaîne que L7.1, tous types), aperçu `<math>`, collaboration | — |
 
 État de L0 : chargement SPIP 4 vérifié de bout en bout (site 4.4.21 jetable) ; chargement SPIP 5 repris de
 markdown_editor, non vérifié faute de site SPIP 5 sur le poste (vérifié depuis, et refait : lot Compatibilité
@@ -50,3 +51,4 @@ TDD avec le corpus.
 | Q8 | Noms des classes d'alignement | **Tranché** : `text-left` / `text-center` / `text-right` / `text-justify`, déjà définies par la dist et Bootstrap ; surchargeables par constante |
 | Q9 | Crayons : le crayon d'un champ texte doit-il ouvrir l'éditeur par défaut, ou seulement sur option (comme `porte_plume_partout`) ? | **Tranché** : sur option (`tiptap_spip/crayons`, `non` par défaut), comme `tiptap_spip/public` pour le site public |
 | Q10 | Tableau inséré : une première ligne laissée vide devient un en-tête à la relecture (SPIP la rend en `<thead>`). Faut-il l'éviter ? | Ouvert (lot corpus et propriétés). Pour l'instant, l'insertion reste sans en-tête (un en-tête par défaut mettrait la première ligne en gras pendant la saisie) ; choix d'interface à traiter à part |
+| Q11 | Raccourci inséré pour une image collée : `<docN>` ou `<imgN>` ? | **Tranché (2026-10-14)** : `<docN>`, cohérent avec la boîte « Documents » de SPIP 4/5 ; pas de réglage ([10](10-coller-images.md) §4) |
