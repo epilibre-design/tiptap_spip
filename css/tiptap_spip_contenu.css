@@ -29,6 +29,11 @@
 	padding-left: 1.5em;
 }
 
+.tts-styles-contenu .tts-prosemirror .spip_poesie {
+	padding-left: 1.5em;
+	font-style: italic;
+}
+
 .tts-styles-contenu .tts-prosemirror blockquote.spip {
 	margin-left: 0;
 	padding-left: 1em;
