@@ -59,9 +59,18 @@ presse-papiers, envoi XHR, texte provisoire, remplacement par un gabarit (`![fil
 
 Un module `src/editor/collerImage.js`, commun aux deux modes :
 
-- **Éditeur visuel** : `handlePaste` d'une extension `spipPasteImage`, ajoutée seulement si le service
-  d'envoi est disponible (§5).
+- **Éditeur visuel** : `handlePaste` d'une extension `spipPasteImage`.
 - **Mode source** : écouteur `paste` sur le textarea.
+
+L'extension et l'écouteur sont **toujours installés** ; la disponibilité se décide à chaque collage. Quand le
+formulaire de services est chargé à la demande ([02](02-architecture.md) §6), l'éditeur est créé avant
+qu'il arrive (`servicesPrets` dans `src/main.js`) : une extension ajoutée seulement si le service est déjà
+là resterait absente. Au collage, le module lit les services de l'instance (`this.services`, renseigné à la
+résolution de `servicesPrets`) et la configuration de l'opération qu'ils portent (§6) :
+
+- services présents et `deposer_image` disponible : envoi ;
+- services encore en chargement, absents (mode dégradé) ou opération indisponible : `handlePaste` rend
+  `false` et le collage habituel s'applique, sans attendre ni message. Le collage suivant refait le test.
 
 Arbitrage avec le collage existant ([04](04-parseur-serialiseur.md) §6). Le presse-papiers contient souvent à
 la fois un fichier et du texte : un tableau copié depuis un tableur arrive en HTML **et** en PNG, un
@@ -91,9 +100,21 @@ modèle de l'exemple « upload » de ProseMirror. Conséquences :
 - si le texte autour est supprimé, la position se replie sur le point le plus proche ; si l'éditeur est
   détruit (fermeture d'un crayon, rechargement AJAX), l'envoi en cours est abandonné (`AbortController`).
 
-Tant qu'un envoi est en cours, la soumission du formulaire d'édition est retenue (écouteur `submit`) avec le
-message « Une image est en cours d'envoi » ; elle repart d'elle-même à la fin des envois, ou au clic sur
-« Enregistrer sans attendre », qui abandonne les envois restants.
+Tant qu'un envoi est en cours, la soumission du formulaire d'édition est retenue, avec le message « Une
+image est en cours d'envoi ». En mode source, c'est indispensable : sinon `<!-- envoi… -->` serait
+enregistré ; dans l'éditeur visuel, l'image manquerait au texte enregistré. Deux voies de soumission sont
+couvertes, comme pour la synchronisation du textarea (`TextareaBridge`) :
+
+- **soumission native** : écouteur `submit` (phase de capture), `preventDefault()` ;
+- **soumission AJAX** (CVT en `ajax`, Crayons) : `ajaxSubmit()` de `jquery.form.js` ne déclenche pas
+  l'écouteur natif, mais annonce la sérialisation par l'événement jQuery `form-pre-serialize`
+  (`prive/javascript/jquery.form.js`), dont le troisième argument est un objet de veto : l'écouteur pose
+  `veto.veto = true` et `ajaxSubmit()` s'arrête avant de lire les champs.
+
+Dans les deux cas, le bouton de soumission utilisé est mémorisé. À la fin des envois, la soumission
+repart d'elle-même par `form.requestSubmit(bouton)`, qui reprend la voie d'origine (le `submit` du
+formulaire relance `ajaxSubmit()` pour un formulaire AJAX). « Enregistrer sans attendre » abandonne les envois
+restants, retire les marqueurs du mode source, puis relance la soumission de la même façon.
 
 ### Envoi
 
@@ -130,8 +151,11 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
   accepte cet id négatif quand il vaut l'auteur connecté.
 - **Statut et `vu`** : rien de spécifique. Le document est lié comme par la boîte « Documents » ; à
   l'enregistrement du texte, SPIP marque `vu=oui` les documents cités.
-- **Pas de medias** (plugin désactivé) ou objet hors de `documents_objets` : `charger()` annonce l'opération
-  indisponible (§6), le JS n'ajoute pas la capture.
+- **Disponibilité** : `charger()` annonce l'opération disponible (§6) si et seulement si le plugin medias est
+  actif, la configuration le permet et `autoriser('joindredocument', objet, id_objet_lien)` est vrai. Pas de
+  critère propre sur `documents_objets` : l'autorisation de medias le contient déjà, et accepte les
+  **articles** même s'ils n'y figurent pas (`medias_autoriser.php`). Sans objet (réglage comme
+  `descriptif_site`) : indisponible. Opération indisponible : le collage habituel s'applique (§3).
 - **Forums** : jamais (barre `forum`, comme pour les modèles).
 - **CVT et fichiers** : `_request()` ne lit pas `$_FILES` ; le fichier est lu directement, sous le nom de champ
   fixe `fichier`. À vérifier sur SPIP 4.2, 4.4 et 5 : le traitement AJAX d'un CVT (`var_ajax=form`) avec un
@@ -144,17 +168,18 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
 | `tiptap_spip/coller_images` | `oui` | active la capture du collage d'images |
 
 Le JS reçoit, dans la configuration de l'instance (`data-tts-*` du conteneur `.tts-services` ou réponse de
-`charger()`) : disponibilité de l'opération, liste blanche, taille maximale. Sans ces informations, pas de
-capture : le collage se comporte comme aujourd'hui.
+`charger()`) : disponibilité de l'opération, liste blanche, taille maximale. Ces informations arrivent avec le
+formulaire de services, éventuellement après la création de l'éditeur (§3). Sans elles, pas de capture :
+le collage se comporte comme aujourd'hui.
 
 ## 7. Tests
 
 | Niveau | Cas |
 |--------|-----|
-| Vitest | arbitrage du presse-papiers (§3, chaque ligne du tableau) ; renommage d'un fichier sans nom ; refus avant envoi (type, taille) ; marqueur : position reportée quand on tape avant lui, repli quand on supprime autour, absent de `getJSON()` et du textarea ; remplacement par `<docN>` en une transaction annulable ; échec sans insertion |
+| Vitest | arbitrage du presse-papiers (§3, chaque ligne du tableau) ; renommage d'un fichier sans nom ; refus avant envoi (type, taille) ; collage avant l'arrivée des services → collage habituel, collage suivant envoyé une fois les services là ; marqueur : position reportée quand on tape avant lui, repli quand on supprime autour, absent de `getJSON()` et du textarea ; remplacement par `<docN>` en une transaction annulable ; échec sans insertion |
 | Vitest (CVT) | réponses enregistrées de `deposer_image` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
-| PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur |
-| Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; même chose sur un article **nouveau**, puis enregistrement : document rattaché à l'article créé ; mode source ; soumission pendant l'envoi retenue ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
+| PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur ; disponibilité dans `charger()` : article avec `documents_objets` vide → disponible, objet absent de `documents_objets` → indisponible, sans objet → indisponible |
+| Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; même chose sur un article **nouveau**, puis enregistrement : document rattaché à l'article créé ; mode source ; soumission pendant l'envoi retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX, crayon), puis relancée à la fin de l'envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
 
 ## 8. Hors périmètre et suites
 
