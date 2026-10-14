@@ -16,6 +16,7 @@ The text may contain an incomplete shortcut, unusual HTML, or syntax added by an
 The editor keeps that passage as source to avoid changing it without your knowledge. Click it to
 edit it, or switch to **Source**. A **syntax issue** indicator below the editor flags some
 incomplete shortcuts; click it for an explanation.
+The [Find syntax issues](utiliser/erreurs-de-syntaxe.md) page gives examples.
 
 If your site frequently uses syntax added by another plugin, ask its developer for an
 [editor extension](developper/faq.md), or disable the visual editor for the affected fields.
