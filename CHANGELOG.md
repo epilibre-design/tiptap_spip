@@ -4,6 +4,7 @@
 
 - Guide d’utilisation des passages multilingues, avec captures du formulaire Multi en français et
   en anglais.
+- Nom, slogan et description du plugin dans la liste des plugins (`lang/paquet-tiptap_spip_fr.php`).
 
 ### Modifié
 
