@@ -5,8 +5,8 @@
 return [
 
 	// t
-	'tiptap_spip_description' => 'Tiptap_spip est un éditeur modulaire Wysiwyg pour SPIP',
+	'tiptap_spip_description' => 'Remplace le porte-plume par un éditeur Tiptap. Notes, liens, modèles et multis s’éditent dans des fenêtres dédiées ; le texte reste enregistré en raccourcis SPIP, avec une bascule vers le code source.',
 	'tiptap_spip_nom' => 'Éditeur visuel pour SPIP',
-	'tiptap_spip_slogan' => 'Un éditeur visuel intuitif',
+	'tiptap_spip_slogan' => 'Mettre en forme ses textes sans connaître les raccourcis',
 ];
 
