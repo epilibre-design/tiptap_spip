@@ -10,6 +10,8 @@
 - Code inline dans l'éditeur : espacement, bordure et fond proches du rendu SPIP.
 - Tailles distinctes pour les intertitres `h2` et `h3` dans l'éditeur.
 - Mise en forme des blocs de poésie dans l'éditeur.
+- Langue affichée par les multis : un bouton de menu « [fr] » remplace la liste déroulante,
+  comme les autres menus de la barre d'outils.
 
 ### Corrigé
 
