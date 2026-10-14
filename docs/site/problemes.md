@@ -16,6 +16,7 @@ Le texte peut contenir un raccourci incomplet, du HTML particulier ou une syntax
 autre plugin. L’éditeur garde alors ce passage en source afin d’éviter de le modifier à votre insu.
 Cliquez dessus pour l’éditer, ou passez en **Source**. Une indication d’**anomalie de syntaxe**
 sous l’éditeur signale certains raccourcis incomplets ; cliquez dessus pour voir l’explication.
+La page [Repérer les erreurs de syntaxe](utiliser/erreurs-de-syntaxe.md) donne des exemples.
 
 Si votre site emploie souvent une syntaxe ajoutée par un autre plugin, demandez à son développeur
 une [extension de l’éditeur](developper/faq.md), ou désactivez l’éditeur visuel sur les champs
