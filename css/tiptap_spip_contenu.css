@@ -13,8 +13,15 @@
 
 .tts-styles-contenu .tts-prosemirror h2.spip,
 .tts-styles-contenu .tts-prosemirror h3.spip {
-	font-size: 1.3em;
 	margin-top: 1.25em;
+}
+
+.tts-styles-contenu .tts-prosemirror h2.spip {
+	font-size: 1.5em;
+}
+
+.tts-styles-contenu .tts-prosemirror h3.spip {
+	font-size: 1.25em;
 }
 
 .tts-styles-contenu .tts-prosemirror ul.spip,
