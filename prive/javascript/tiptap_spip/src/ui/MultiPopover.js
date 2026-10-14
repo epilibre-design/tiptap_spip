@@ -18,10 +18,11 @@ const langueCourante = (editor) => (langueAffichee(editor.state) || globalThis.d
 
 /**
  * Langues proposées (spec 05 §5) : celles activées dans la configuration du multilinguisme (config
- * `langues`), sinon la langue courante.
+ * `langues`), sinon la langue courante. Sans les codes que SPIP ne lit pas comme marqueur de multi
+ * (ber_tam_tfng, sh_latn, sh_cyrl : partie de plus de 3 lettres).
  */
 const languesProposees = (editor) => {
-	const langues = config().langues ?? [];
+	const langues = (config().langues ?? []).filter((l) => RE_CODE_LANGUE.test(l.code));
 	if (langues.length) return langues;
 	const courante = langueCourante(editor);
 	return courante ? [{ code: courante, nom: courante }] : [];

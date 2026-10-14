@@ -53,6 +53,13 @@ describe('multi en ligne', () => {
 		expect(options(lignes()[0].langue)).toEqual([['fr', 'français (fr)'], ['en', 'English (en)'], ['', 'Sans langue']]);
 	});
 
+	it('langues activées que SPIP ne lit pas dans un multi (ber_tam_tfng, sh_latn) : non proposées', () => {
+		activer('fr', 'ber_tam_tfng', 'sh_latn', 'pt_br');
+		const { ui } = monter('x');
+		ui.editMulti(null);
+		expect(options(lignes()[0].langue).map(([v]) => v)).toEqual(['fr', 'pt_br', '']);
+	});
+
 	it('langue de l\'interface non activée : première langue activée ; langues toutes prises : sans langue', () => {
 		activer('de', 'fr');
 		document.documentElement.lang = 'en';

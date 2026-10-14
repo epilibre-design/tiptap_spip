@@ -80,6 +80,10 @@ final class ConfigTest extends TestCase
 			[['code' => 'en', 'nom' => 'English'], ['code' => 'fr', 'nom' => 'français'], ['code' => 'xx', 'nom' => 'xx']],
 			tiptap_spip_langues()
 		);
+		// codes que SPIP ne lit pas dans un multi : écartés, et le site reste monolingue
+		$GLOBALS['meta']['langues_multilingue'] = 'fr,sh_latn,ber_tam_tfng';
+		$this->assertSame([['code' => 'fr', 'nom' => 'français']], tiptap_spip_langues());
+		$this->assertFalse(tiptap_spip_multilingue());
 		unset($GLOBALS['meta']['langues_multilingue'], $GLOBALS['meta']['langue_site']);
 	}
 }

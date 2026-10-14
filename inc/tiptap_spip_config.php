@@ -137,12 +137,16 @@ function tiptap_spip_multilingue(): bool {
 
 /**
  * Langues proposées dans le popover des multis : celles cochées dans la configuration du
- * multilinguisme, sinon la langue du site. Code et nom de chaque langue.
+ * multilinguisme, sinon la langue du site. Code et nom de chaque langue. Sans les codes que SPIP
+ * ne lit pas comme marqueur de multi (Collecteur\Multis : ber_tam_tfng, sh_latn, sh_cyrl).
  *
  * @return list<array{code: string, nom: string}>
  */
 function tiptap_spip_langues(): array {
-	$codes = array_values(array_unique(array_filter(array_map('trim', explode(',', $GLOBALS['meta']['langues_multilingue'] ?? '')))));
+	$codes = array_values(array_unique(array_filter(
+		array_map('trim', explode(',', $GLOBALS['meta']['langues_multilingue'] ?? '')),
+		fn($code) => (bool) preg_match('/^[a-z]{2,3}(_[a-z]{2,3})?(_[a-z]{2,3})?$/', $code)
+	)));
 	if (!$codes && !empty($GLOBALS['meta']['langue_site'])) {
 		$codes = [$GLOBALS['meta']['langue_site']];
 	}

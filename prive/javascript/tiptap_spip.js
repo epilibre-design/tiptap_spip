@@ -27585,7 +27585,7 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
 // src/ui/MultiPopover.js
 var langueCourante = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || "").replace("-", "_");
 var languesProposees = (editor) => {
-  const langues = config().langues ?? [];
+  const langues = (config().langues ?? []).filter((l) => RE_CODE_LANGUE.test(l.code));
   if (langues.length) return langues;
   const courante = langueCourante(editor);
   return courante ? [{ code: courante, nom: courante }] : [];
