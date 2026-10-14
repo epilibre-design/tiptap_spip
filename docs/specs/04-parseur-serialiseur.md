@@ -300,4 +300,5 @@ n'a pas d'échappement. À la relecture, ce multi devient un bloc brut, modifiab
 | Interne (éditeur → éditeur) | HTML ProseMirror avec `data-spip-*` : fidélité totale |
 | Texte brut contenant des raccourcis SPIP | Option « coller comme SPIP » (défaut : actif si le texte contient des raccourcis reconnus) → `parse` du fragment |
 | HTML externe (Word, LibreOffice, web) | `parseHTML` des extensions, nettoyé par le schéma ; les styles non représentables sont perdus (comportement normal d'un WYSIWYG) |
+| Image du presse-papiers (capture, image copiée) | envoi en document SPIP puis `<docN>`, cf. [10](10-coller-images.md) ; un fichier accompagné de texte ou de HTML est ignoré au profit du collage habituel |
 | Copie vers l'extérieur | `text/plain` = SPIP sérialisé du fragment ; `text/html` = HTML de l'éditeur |

@@ -66,7 +66,8 @@ concernés, ou fournit une extension ([07](07-extensibilite.md)).
 
 - Remplacer TextWheel ou modifier le rendu public.
 - Édition collaborative temps réel (Tiptap Collaboration / Yjs).
-- Upload de documents par glisser-déposer (lot ultérieur, cf. [09](09-lots-roadmap.md)).
+- Upload de documents par glisser-déposer (lot ultérieur, cf. [09](09-lots-roadmap.md)) ; le collage d'une
+  image est spécifié à part ([10](10-coller-images.md), lot L7.1).
 - Syntaxes ajoutées par des plugins tiers (typoenluminee, Couteau suisse…) : hors de la configuration de
   référence (cf. ci-dessus). Ce qu'elles apportent (titres hiérarchisés, alignements) est couvert par du
   HTML simple.
