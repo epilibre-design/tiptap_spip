@@ -397,6 +397,16 @@ Tiptap n'utilise pas d'iframe : la zone d'édition fait partie du DOM de la page
 - **Cycle de vie** : `onAjaxLoad` peut passer un élément, un objet jQuery ou un tableau d'éléments
   (Crayons : `triggerAjaxLoad(tous.get())`) ; jquery.form (Crayons, CVT en AJAX) envoie sur un
   `.trigger("submit")` jQuery que l'écouteur natif ne voit pas : le pont sérialise sur `form-pre-serialize`.
+  Crayons charge sa propre copie de jQuery, `cQuery` (`crayons.js.html`, `cQuery.noConflict()`), et son
+  `ajaxForm` déclenche `form-pre-serialize` par elle : un écouteur posé avec `jQuery` ne le voit pas. L'écouteur
+  doit être posé aussi avec `globalThis.cQuery` quand il existe. `TextareaBridge` ne le fait pas encore : dans
+  un crayon, il compte sur la synchronisation différée (150 ms après chaque modification), `blur` et le
+  `submit` natif ; une soumission dans ce délai, sans perte de focus, pourrait partir avec l'ancien texte
+  (non vérifié).
   Un crayon enregistré ou annulé quitte le DOM : son éditeur est détruit.
+- **Glisser-déposer avec Crayons** (lot L7.2) : son option expérimentale `crayons/upload` installe déjà un
+  gestionnaire `drop` sur le textarea `article.texte`. En mode visuel, la zone Tiptap reçoit le dépôt à la place
+  du textarea masqué ; en mode source, Tiptap laisse le dépôt à Crayons (textarea de classe `uploader`), pour
+  qu'un fichier ne soit envoyé qu'une fois. Comportement et tests : [10](10-coller-images.md) §8.
 - **Styles** : classe `tts-styles-contenu` sur `.tts-editor` (privé par défaut, ou `data-tts-styles`) ;
   `css/tiptap_spip_contenu.css` est chargée partout mais ne s'applique qu'à cette classe.
