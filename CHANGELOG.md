@@ -1,5 +1,11 @@
 ## [Non publié]
 
+### Corrigé
+
+- Une accolade orpheline (`{` ou `}}` sans partenaire) ne compte plus qu'une anomalie : seule
+  elle reste brute, et le gras ou l'italique correctement fermés du même paragraphe s'affichent
+  normalement (#3).
+
 ## [1.1.0] - 2026-10-14
 
 ### Ajouté

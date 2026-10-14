@@ -168,7 +168,7 @@ describe('< brut d\'une balise incomplète', () => {
 	});
 
 	it('un | du texte qui suit s\'écrit \\| : il formerait un modèle (<doc|x>)', () => {
-		const doc = node('doc', null, [p(raw('<'), text('doc|'), raw('{{'), text('t'), raw('}}'), text('|'), raw('</del>'))]);
+		const doc = node('doc', null, [p(raw('<'), text('doc|'), text('t', [B]), text('|'), raw('</del>'))]);
 		expect(serialize(doc)).toBe('<doc\\|{{t}}\\|</del>');
 		expect(stripTech(parse(serialize(doc)).content)).toEqual(doc.content);
 	});

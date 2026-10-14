@@ -242,19 +242,40 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne, bords) {
 	return tokens;
 }
 
-/** Les marks doivent être correctement imbriquées ; sinon tous leurs délimiteurs restent bruts. */
-function wellNested(tokens) {
-	const stack = [];
+/**
+ * Délimiteurs de marks appariés : un délimiteur sans partenaire (accolade orpheline) reste brut seul,
+ * les paires voisines restent des marks. Des paires croisées ({a {{b} c}}) ou une mark imbriquée
+ * dans elle-même ({a {b} c}) ne s'écrivent pas en marks : tous les délimiteurs restent bruts (vide).
+ *
+ * @returns {Set<object>} jetons open/close qui deviennent des marks
+ */
+function appariement(tokens) {
+	const pile = [];
+	const enfermees = new Set();
+	const paires = new Set();
 	for (const tk of tokens) {
 		if (tk.t === 'open') {
-			if (stack.includes(tk.mark)) return false;
-			stack.push(tk.mark);
+			pile.push(tk);
 		} else if (tk.t === 'close') {
-			if (stack[stack.length - 1] !== tk.mark) return false;
-			stack.pop();
+			const k = pile.findLastIndex((o) => o.mark === tk.mark);
+			// fermeture sans ouverture : orpheline
+			if (k < 0) continue;
+			// ouverture restée dans une paire déjà fermée : croisement
+			if (enfermees.has(pile[k])) return new Set();
+			for (const o of pile.slice(k + 1)) enfermees.add(o);
+			paires.add(pile[k]).add(tk);
+			pile.splice(k, 1);
 		}
 	}
-	return stack.length === 0;
+	// une paire dans une paire de même mark
+	const ouvertes = [];
+	for (const tk of tokens) {
+		if (!paires.has(tk)) continue;
+		if (tk.t === 'close') ouvertes.pop();
+		else if (ouvertes.includes(tk.mark)) return new Set();
+		else ouvertes.push(tk.mark);
+	}
+	return paires;
 }
 
 /**
@@ -276,7 +297,7 @@ function marksVides(tokens) {
 
 function buildNodes(tokens) {
 	tokens = marksVides(tokens);
-	const ok = wellNested(tokens);
+	const paires = appariement(tokens);
 	const open = [];
 	const nodes = [];
 	for (const tk of tokens) {
@@ -284,11 +305,11 @@ function buildNodes(tokens) {
 		const withMarks = (n) => (marks.length ? { ...n, marks } : n);
 		switch (tk.t) {
 			case 'open':
-				if (ok) open.push(tk.mark);
+				if (paires.has(tk)) open.push(tk.mark);
 				else nodes.push(raw(tk.src, marks));
 				break;
 			case 'close':
-				if (ok) open.pop();
+				if (paires.has(tk)) open.pop();
 				else nodes.push(raw(tk.src, marks));
 				break;
 			case 'text':
