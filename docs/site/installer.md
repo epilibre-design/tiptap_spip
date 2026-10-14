@@ -6,14 +6,14 @@ transmettez cette page à la personne qui administre le site.
 
 Pour installer une version dont le contenu ne change pas, ouvrez la
 [liste des versions (tags)](https://github.com/epilibre-design/tiptap_spip/tags) et choisissez
-le ZIP du tag le plus récent. La première version publiée, `1.0.0`, est disponible directement :
+le ZIP du tag le plus récent. La version la plus récente, `1.1.0`, est disponible directement :
 
 ```text
-https://github.com/epilibre-design/tiptap_spip/archive/refs/tags/1.0.0.zip
+https://github.com/epilibre-design/tiptap_spip/archive/refs/tags/1.1.0.zip
 ```
 
-GitHub marque actuellement cette première release comme **préversion** : son contenu est figé,
-mais elle n’est pas annoncée comme stable. Si vous souhaitez essayer les changements les plus
+GitHub marque actuellement les releases comme **préversions** : leur contenu est figé, mais
+elles ne sont pas annoncées comme stables. Si vous souhaitez essayer les changements les plus
 récents, utilisez plutôt l’archive de la branche `main` :
 
 ```text
@@ -28,7 +28,7 @@ la même version plus tard, conservez le numéro du tag que vous avez installé.
 1. Connectez-vous à l’espace privé en tant que webmestre.
 2. Ouvrez **Configuration → Gestion des plugins → Ajouter des plugins**.
 3. Dans **Télécharger un plugin depuis son archive**, collez l’URL directe du ZIP choisi dans
-   **URL de l’archive** : par exemple celle du tag `1.0.0` ci-dessus. Pour une version plus récente,
+   **URL de l’archive** : par exemple celle du tag `1.1.0` ci-dessus. Pour une version plus récente,
    ouvrez la page des tags et copiez l’adresse de son ZIP.
 4. Lancez le téléchargement, puis activez **Éditeur visuel pour SPIP** dans la gestion des plugins.
    SPIP peut demander votre mot de passe de webmestre.
