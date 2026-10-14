@@ -21,7 +21,11 @@ raccourci. Ce lot réduit ce parcours à un `Ctrl+V`.
 5. En cas d'échec, le marqueur disparaît, rien n'est inséré, et la barre d'état
    ([06](06-interface.md) §5) affiche le message du serveur (type refusé, taille, droits, session expirée).
 
-Plusieurs images collées d'un coup sont envoyées une par une, dans l'ordre, chacune avec son marqueur.
+Un collage porte sur **une** image : c'est ce que donnent une capture d'écran ou « Copier l'image ». Si le
+presse-papiers contient plusieurs fichiers (copie depuis l'explorateur de fichiers, selon le navigateur et le
+système), seule la première image est envoyée. Plusieurs collages successifs peuvent en revanche avoir leurs
+envois en cours en même temps, chacun avec son marqueur. L'envoi de plusieurs fichiers d'un seul geste relève
+du glisser-déposer (§8, lot L7.2).
 
 Le même comportement vaut en **mode source** : le marqueur est alors un texte provisoire dans le textarea
 (`<!-- envoi… -->`, à la manière du `progressText` d'InlineAttachment), remplacé par `<docN>` ou retiré.
@@ -78,7 +82,7 @@ paragraphe copié depuis un traitement de texte aussi. Règle :
 
 | Contenu du presse-papiers | Traitement |
 |---------------------------|------------|
-| Fichiers image seuls | envoi |
+| Fichier(s) image seul(s) | envoi de la première image (§1) |
 | Fichier image + `text/html` réduit à une seule `<img>` (copie d'image depuis un navigateur) | envoi du fichier ; le HTML est ignoré |
 | Fichier image + autre `text/html` ou `text/plain` non vide | collage texte/HTML habituel ; le fichier est ignoré |
 | Fichier non image, ou type hors liste blanche | collage habituel (rien n'est envoyé) ; message « type non accepté » |
@@ -186,7 +190,8 @@ le collage se comporte comme aujourd'hui.
 ## 8. Hors périmètre et suites
 
 - **Glisser-déposer** de fichiers : même chaîne (`handleDrop`, même opération), étendue à tous les types de
-  documents → lot L7.2.
+  documents et à **plusieurs fichiers** déposés ensemble, envoyés un par un dans l'ordre, chacun avec son
+  marqueur → lot L7.2.
 - Images référencées par URL dans un HTML collé (`<img src="https://…">`, `data:`) : non rapatriées ; le
   collage HTML les ignore comme aujourd'hui.
 - Retouche (recadrage, redimensionnement) avant envoi.
