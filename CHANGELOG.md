@@ -1,5 +1,10 @@
 ## [Non publié]
 
+### Modifié
+
+- Le bouton **Multi** n'apparaît plus sur un site monolingue (une seule langue dans la
+  configuration du multilinguisme), sauf si le texte contient déjà un multi (#1).
+
 ### Corrigé
 
 - Une accolade orpheline (`{` ou `}}` sans partenaire) ne compte plus qu'une anomalie : seule

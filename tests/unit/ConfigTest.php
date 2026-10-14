@@ -55,8 +55,20 @@ final class ConfigTest extends TestCase
 		$GLOBALS['_test_config']['tiptap_spip'] = ['crayons' => 'oui', 'mode' => 'source', 'niveaux' => [2, 5], 'champs' => ['auteur' => []]];
 
 		$this->assertSame(
-			'{"public":false,"crayons":true,"mode":"source","niveaux":[2,5],"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]}}',
+			'{"public":false,"crayons":true,"mode":"source","niveaux":[2,5],"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]},"multilingue":false}',
 			tiptap_spip_config_js()
 		);
+	}
+
+	public function testMultilingueAPartirDeDeuxLangues(): void {
+		unset($GLOBALS['meta']['langues_multilingue']);
+		$this->assertFalse(tiptap_spip_multilingue());
+		$GLOBALS['meta']['langues_multilingue'] = '';
+		$this->assertFalse(tiptap_spip_multilingue());
+		$GLOBALS['meta']['langues_multilingue'] = 'fr';
+		$this->assertFalse(tiptap_spip_multilingue());
+		$GLOBALS['meta']['langues_multilingue'] = 'fr,en';
+		$this->assertTrue(tiptap_spip_multilingue());
+		unset($GLOBALS['meta']['langues_multilingue']);
 	}
 }

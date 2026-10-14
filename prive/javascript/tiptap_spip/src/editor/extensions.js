@@ -427,6 +427,17 @@ export function languesDuDocument(doc) {
 	return [...langues];
 }
 
+/** Le document contient-il un multi (inline ou bloc) ? */
+export function aDesMultis(doc) {
+	let trouve = false;
+	doc.descendants((node) => {
+		if (trouve) return false;
+		if (node.type.name === 'spipMultiInline' || node.type.name === 'spipMultiBlock') trouve = true;
+		return !trouve;
+	});
+	return trouve;
+}
+
 /** Langue de l'interface : langue affichée par les multis au départ. */
 const langueInitiale = () => globalThis.document?.documentElement?.lang ?? '';
 
