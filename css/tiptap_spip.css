@@ -170,6 +170,11 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	overflow: auto;
 }
 
+/* Texte aligné selon le sens de la langue, même dans une page centrée (formulaire des crayons). */
+.tts-content {
+	text-align: start;
+}
+
 .tts-content .tts-prosemirror {
 	padding: 0.5em 1em;
 	outline: none;
