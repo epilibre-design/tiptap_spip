@@ -34,15 +34,15 @@ Un build local ou une PR ne publie rien : la publication dépend de la fusion su
 paramétrage Pages du dépôt. Le workflow peut aussi être lancé manuellement depuis l’onglet
 **Actions** une fois présent sur `main`.
 
-## Préparer une traduction
+## Maintenir les deux langues
 
 Le français est la langue par défaut, servi à la racine du site. `mkdocs-static-i18n` utilise la
-structure **suffixe** : la traduction de `installer.md` s’appellera `installer.en.md`, à côté de
-la page française. Les titres de navigation anglais sont déjà déclarés dans `mkdocs.yml`.
+structure **suffixe** : la traduction de `installer.md` est `installer.en.md`, à côté de la page
+française. Les pages anglaises sont servies sous `/en/`.
 
-Pour ouvrir la version anglaise, traduisez les pages, passez `build: false` à `build: true` pour
-`en`, puis relancez `mkdocs build --strict`. Le site anglais sera sous `/en/`. Il n’est pas publié
-en première phase afin de ne pas présenter des pages françaises comme des pages traduites.
+Pour modifier une page publiée, mettez à jour les deux langues et vérifiez les liens internes et
+les ancres avec `python -m mkdocs build --strict`. Les titres de navigation anglais sont déclarés
+dans `mkdocs.yml`. Les spécifications de `docs/specs/` restent en français.
 
 Voir la [documentation de MkDocs](https://www.mkdocs.org/) et celle de
 [mkdocs-static-i18n](https://ultrabug.github.io/mkdocs-static-i18n/).

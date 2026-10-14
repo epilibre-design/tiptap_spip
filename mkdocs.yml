@@ -47,14 +47,16 @@ plugins:
           name: Français
           default: true
           build: true
-        # Activer cette langue lorsque les fichiers *.en.md seront prêts.
         - locale: en
           name: English
-          build: false
+          build: true
+          site_name: Visual editor for SPIP
           site_description: Install and use the Tiptap visual editor with native SPIP syntax.
           nav_translations:
             Accueil: Home
             Installer: Install
+            Installer le plugin: Install the plugin
+            Plugins complémentaires: Optional plugins
             Premiers pas: Getting started
             Utiliser: Use the editor
             Mettre en forme: Format text

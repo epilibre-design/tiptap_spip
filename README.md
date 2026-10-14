@@ -11,6 +11,9 @@ Le [guide utilisateur](https://epilibre-design.github.io/tiptap_spip/) explique 
 FTP, la prise en main, les réglages et l'utilisation de l'éditeur. Une page dédiée montre comment
 créer une extension à partir du plugin FAQ fourni dans `exemples/`.
 
+The [English user guide](https://epilibre-design.github.io/tiptap_spip/en/) covers installation,
+getting started, configuration, and using the editor.
+
 Les sources du site MkDocs sont dans `docs/site/`. Pour le construire localement, voir
 [Maintenir cette documentation](docs/site/developper/documentation.md).
 
