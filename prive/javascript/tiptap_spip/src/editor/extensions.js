@@ -22,7 +22,7 @@ import { ariaModele, idiomeView, linkAutoView, modelView, multiView } from '../n
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
 import { serializeIdiome } from '../spip/multi.js';
 import { SpipAnomalies } from './anomalies.js';
-import { coloration } from './coloration.js';
+import { coloration, colorationActive } from './coloration.js';
 import { SpipEdition } from './edition.js';
 import { apercu, partieAffichee } from './texte.js';
 import { label as libelle } from '../ui/labels.js';
@@ -82,6 +82,12 @@ const SpipCodeBlock = CodeBlock.extend({
 			language: { ...parent.language, rendered: true, renderHTML: (attrs) => (attrs.language ? { 'data-language': attrs.language } : {}) },
 			openTag: hidden(),
 		};
+	},
+	// avec Coloration Code, <code class="hljs"> : son script (pre code:not(.hljs)) laisse l'éditeur
+	renderHTML({ node, HTMLAttributes }) {
+		const [pre, attrs, [code, codeAttrs, trou]] = this.parent({ node, HTMLAttributes });
+		const classe = [codeAttrs.class, colorationActive() ? 'hljs' : null].filter(Boolean).join(' ') || null;
+		return [pre, attrs, [code, { ...codeAttrs, class: classe }, trou]];
 	},
 	addProseMirrorPlugins() {
 		return [...(this.parent?.() ?? []), ...coloration()];

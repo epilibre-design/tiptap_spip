@@ -197,6 +197,15 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	text-shadow: none;
 }
 
+/* Le <code class="hljs"> écarte le script de Coloration Code ; le thème s'applique au <pre>. */
+.tts-editor pre.spip_code_block > code.hljs {
+	display: inline;
+	overflow: visible;
+	padding: 0;
+	background: none;
+	color: inherit;
+}
+
 /* Constructions conservées telles quelles : affichées comme du code. */
 .tts-raw,
 .tts-raw-inline {

@@ -11,17 +11,34 @@ import { config } from '../config.js';
 const cle = new PluginKey('coloration');
 
 /**
- * Alias courants → fichier de grammaire de Coloration Code (assets/highlightjs/languages/) ; une fois
- * chargée, la grammaire déclare elle-même ses alias à highlight.js.
+ * Alias → fichier de grammaire de Coloration Code (assets/highlightjs/languages/), repris de sa
+ * table (coloration_code__on_demand.js, version 1.2.1) pour résoudre les mêmes noms que le site.
  */
 const FICHIERS = {
-	js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript', ts: 'typescript', tsx: 'typescript',
-	html: 'xml', xhtml: 'xml', svg: 'xml', rss: 'xml', atom: 'xml', xsl: 'xml', plist: 'xml',
-	sh: 'bash', zsh: 'bash', console: 'shell', shellsession: 'shell', yml: 'yaml', md: 'markdown',
-	py: 'python', rb: 'ruby', rs: 'rust', golang: 'go', kt: 'kotlin', cs: 'csharp',
-	h: 'c', cc: 'cpp', cxx: 'cpp', hpp: 'cpp', 'c++': 'cpp', postgres: 'pgsql', postgresql: 'pgsql',
-	toml: 'ini', ps1: 'powershell', bat: 'dos', cmd: 'dos', patch: 'diff', docker: 'dockerfile',
-	tex: 'latex', mk: 'makefile', pl: 'perl', txt: 'plaintext', text: 'plaintext',
+	as: 'angelscript', apacheconf: 'apache', osascript: 'applescript', ino: 'arduino', arm: 'armasm',
+	adoc: 'asciidoc', mawk: 'awk', nawk: 'awk', gawk: 'awk', 'x++': 'axapta', sh: 'bash',
+	bf: 'brainfuck', capnp: 'capnproto', html: 'xml', xhtml: 'xml', rss: 'xml', atom: 'xml',
+	xjb: 'xml', xsd: 'xml', xsl: 'xml', plist: 'xml', svg: 'xml', clj: 'clojure', 'cmake.in': 'cmake',
+	h: 'c', coffee: 'coffeescript', cson: 'coffeescript', iced: 'coffeescript', cls: 'cos',
+	hpp: 'cpp', cc: 'cpp', hh: 'cpp', 'c++': 'cpp', 'h++': 'cpp', cxx: 'cpp', hxx: 'cpp',
+	crm: 'crmsh', pcmk: 'crmsh', cr: 'crystal', cs: 'csharp', dpr: 'delphi', dfm: 'delphi',
+	pas: 'delphi', pascal: 'delphi', patch: 'diff', jinja: 'django', zone: 'dns', bind: 'dns',
+	docker: 'dockerfile', bat: 'dos', cmd: 'dos', dst: 'dust', erl: 'erlang', xls: 'excel',
+	xlsx: 'excel', f90: 'fortran', f95: 'fortran', fs: 'fsharp', gms: 'gams', gss: 'gauss',
+	nc: 'gcode', gololang: 'golo', golang: 'go', hbs: 'handlebars', 'html.hbs': 'handlebars',
+	'html.handlebars': 'handlebars', hs: 'haskell', hx: 'haxe', https: 'http', hylang: 'hy',
+	i7: 'inform7', toml: 'ini', jsp: 'java', js: 'javascript', jsx: 'javascript', kt: 'kotlin',
+	lassoscript: 'lasso', tex: 'latex', ls: 'livescript', mk: 'makefile', mak: 'makefile',
+	make: 'makefile', md: 'markdown', mkdown: 'markdown', mkd: 'markdown', mma: 'mathematica',
+	wl: 'mathematica', moon: 'moonscript', nginxconf: 'nginx', nimrod: 'nim', mm: 'objectivec',
+	objc: 'objectivec', 'obj-c': 'objectivec', 'obj-c++': 'objectivec', 'objective-c++': 'objectivec',
+	ml: 'sml', scad: 'openscad', pl: 'perl', pm: 'perl', 'pf.conf': 'pf', postgres: 'pgsql',
+	postgresql: 'pgsql', txt: 'plaintext', text: 'plaintext', ps: 'powershell', ps1: 'powershell',
+	pp: 'puppet', py: 'python', gyp: 'python', re: 'reasonml', graph: 'roboconf',
+	instances: 'roboconf', rb: 'ruby', gemspec: 'ruby', podspec: 'ruby', thor: 'ruby', irb: 'ruby',
+	rs: 'rust', sci: 'scilab', console: 'shell', st: 'smalltalk', stanfuncs: 'stan', styl: 'stylus',
+	tk: 'tcl', craftcms: 'twig', ts: 'typescript', tsx: 'typescript', vb: 'vbnet', vbs: 'vbscript',
+	v: 'verilog', tao: 'xl', xpath: 'xquery', xq: 'xquery', yml: 'yaml', zep: 'zephir',
 };
 
 /** Langage d'un bloc : ```php (attribut language) ou <code class="css"> (balise d'origine), en minuscules. */
@@ -94,11 +111,11 @@ function decorations(doc, hljs, demander) {
 	doc.descendants((node, pos) => {
 		if (node.type.name !== 'codeBlock') return node.isBlock;
 		const langage = langageDu(node);
-		const fin = pos + node.nodeSize;
-		if (!langage || !hljs.getLanguage(langage)) {
-			// étiquette comme Coloration Code sur le site : plaintext sans langage
-			decos.push(Decoration.node(pos, fin, { 'data-language': langage ?? 'plaintext' }));
-			if (langage) demander(langage);
+		// thème et étiquette comme Coloration Code sur le site : plaintext sans langage
+		decos.push(Decoration.node(pos, pos + node.nodeSize, { class: 'hljs', 'data-language': langage ?? 'plaintext', style: styleDuTheme() }));
+		if (!langage) return false;
+		if (!hljs.getLanguage(langage)) {
+			demander(langage);
 			return false;
 		}
 		let p = cache.get(node);
@@ -106,17 +123,19 @@ function decorations(doc, hljs, demander) {
 			p = plages(hljs.highlight(node.textContent, { language: langage, ignoreIllegals: true }).value);
 			cache.set(node, p);
 		}
-		decos.push(Decoration.node(pos, fin, { class: 'hljs', 'data-language': langage, style: styleDuTheme() }));
 		for (const [de, a, classes] of p) decos.push(Decoration.inline(pos + 1 + de, pos + 1 + a, { class: classes }));
 		return false;
 	});
 	return DecorationSet.create(doc, decos);
 }
 
-/** Plugins du bloc de code : aucun sans Coloration Code actif ni highlight.js dans la page. */
+/** Coloration Code actif et son highlight.js dans la page. */
+export const colorationActive = () => Boolean(config().coloration_code) && typeof globalThis.hljs?.highlight === 'function';
+
+/** Plugins du bloc de code : aucun sans colorationActive(). */
 export function coloration() {
+	if (!colorationActive()) return [];
 	const hljs = globalThis.hljs;
-	if (!config().coloration_code || typeof hljs?.highlight !== 'function') return [];
 	let vue = null;
 	const demandes = new Set();
 	// grammaire chargée : recoloration ; demandée une seule fois par langage

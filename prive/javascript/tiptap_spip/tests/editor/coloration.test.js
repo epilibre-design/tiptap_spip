@@ -75,13 +75,27 @@ describe('coloration syntaxique avec Coloration Code', () => {
 		expect(spans(pre)).toEqual(['hljs-variable:$c']);
 	});
 
-	it('sans langage : étiquette plaintext, pas de coloration', () => {
+	it('sans langage : thème et étiquette plaintext, pas de coloration', () => {
 		monter('<code>\n$brut\n</code>');
 		const [pre] = pres();
 		expect(pre.getAttribute('data-language')).toBe('plaintext');
-		expect(pre.classList.contains('hljs')).toBe(false);
+		expect(pre.classList.contains('hljs')).toBe(true);
 		expect(spans(pre)).toEqual([]);
 	});
+
+	it('<code class="hljs"> : le script de Coloration Code (pre code:not(.hljs)) ne vise pas l\'éditeur', () => {
+		monter('```php\n$x\n```\n\n<code>\nbrut\n</code>\n\n```absent\ny\n```');
+		expect(document.querySelectorAll('pre code:not(.hljs)')).toHaveLength(0);
+		expect(document.querySelector('pre code').className).toBe('language-php hljs');
+	});
+
+	it.each([['apacheconf', 'apache'], ['make', 'makefile'], ['ps', 'powershell'], ['html', 'xml']])(
+		'alias %s : grammaire %s de Coloration Code',
+		(alias, fichier) => {
+			monter(`\`\`\`${alias}\nx\n\`\`\``);
+			expect(document.head.querySelector(`script[src$="/languages/${fichier}.min.js"]`)).not.toBeNull();
+		},
+	);
 
 	it('grammaire absente : chargée depuis Coloration Code (alias js → javascript), puis coloré', async () => {
 		const grammaires = new Set(['php']);
@@ -113,6 +127,7 @@ describe('sans Coloration Code', () => {
 		expect(php.classList.contains('hljs')).toBe(false);
 		expect(spans(php)).toEqual([]);
 		expect(brut.hasAttribute('data-language')).toBe(false);
+		expect(document.querySelectorAll('pre code.hljs')).toHaveLength(0);
 	});
 
 	it('plugin actif mais highlight.js absent de la page : rien', () => {
