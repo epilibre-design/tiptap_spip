@@ -4,7 +4,7 @@
 	version="1.0.0"
 	etat="test"
 	compatibilite="[4.2.0;5.*]"
-	logo="images/tiptap-spip-xx.svg"
+	logo="prive/themes/spip/images/tiptap-spip-xx.svg"
 	documentation="https://epilibre-design.github.io/tiptap_spip/"
 >
 	<nom>Éditeur visuel pour SPIP</nom>
@@ -31,7 +31,7 @@
 	<pipeline nom="tiptap_spip_extensions" action="" />
 	<pipeline nom="tiptap_spip_i18n" action="" />
 
-	<menu nom="configurer_tiptap_spip" titre="tiptap_spip:cfg_titre" parent="menu_configuration" icone="images/tiptap-spip-xx.svg"/>
+	<menu nom="configurer_tiptap_spip" titre="tiptap_spip:cfg_titre" parent="menu_configuration" icone="images/tiptap-spip-16.png"/>
 
 	<chemin path="" />
 	<chemin path="prive" />
