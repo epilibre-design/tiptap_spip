@@ -108,8 +108,10 @@ couvertes, comme pour la synchronisation du textarea (`TextareaBridge`) :
 - **soumission native** : écouteur `submit` (phase de capture), `preventDefault()` ;
 - **soumission AJAX** (CVT en `ajax`, Crayons) : `ajaxSubmit()` de `jquery.form.js` ne déclenche pas
   l'écouteur natif, mais annonce la sérialisation par l'événement jQuery `form-pre-serialize`
-  (`prive/javascript/jquery.form.js`), dont le troisième argument est un objet de veto : l'écouteur pose
-  `veto.veto = true` et `ajaxSubmit()` s'arrête avant de lire les champs.
+  (`prive/javascript/jquery.form.js`), déclenché par `trigger('form-pre-serialize', [form, options, veto])`.
+  L'écouteur jQuery reçoit donc l'événement **puis** ces trois valeurs : `(event, $form, options, veto)`.
+  Il pose `veto.veto = true` (sur le quatrième paramètre, pas sur `options`) et `ajaxSubmit()` s'arrête
+  avant de lire les champs.
 
 Dans les deux cas, le bouton de soumission utilisé est mémorisé. À la fin des envois, la soumission
 repart d'elle-même par `form.requestSubmit(bouton)`, qui reprend la voie d'origine (le `submit` du
