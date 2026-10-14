@@ -103,30 +103,34 @@ describe('tiptap_spip_init', () => {
 		expect(bouton.disabled).toBe(false);
 	});
 
-	it('sélecteur de langue : présent avec des multis, langues du texte, change la langue affichée', () => {
+	it('langue affichée : menu présent avec des multis, langues du texte, change la langue affichée', () => {
 		page('<textarea class="inserer_barre_edition">a <multi>[fr]chat[en]cat[de]Katze</multi></textarea>');
 		document.documentElement.lang = 'fr';
 		try {
 			tiptap_spip_init();
-			const select = document.querySelector('.tts-toolbar .tts-outil--langues');
-			expect(select.hidden).toBe(false);
-			expect([...select.options].map((o) => o.value)).toEqual(['fr', 'en', 'de']);
-			select.value = 'de';
-			select.dispatchEvent(new Event('change'));
+			const menu = document.querySelector('.tts-toolbar .tts-menu--langues');
+			const bouton = menu.querySelector('.tts-outil--langues');
+			expect(menu.hidden).toBe(false);
+			expect(bouton.textContent).toBe('[fr]');
+			bouton.click();
+			const items = [...menu.querySelectorAll('[role=menuitemradio]')];
+			expect(items.map((i) => i.textContent)).toEqual(['fr', 'en', 'de']);
+			items[2].click();
+			expect(bouton.textContent).toBe('[de]');
 			expect(document.querySelector('.tts-multi').textContent).toBe('Katze');
 			expect(document.querySelector('.tts-outil--multi').disabled).toBe(false);
 			document.querySelector('.tts-outil--source').click();
-			expect(select.disabled).toBe(true);
+			expect(bouton.disabled).toBe(true);
 			expect(document.querySelector('.tts-outil--multi').disabled).toBe(true);
 		} finally {
 			document.documentElement.lang = '';
 		}
 	});
 
-	it('sélecteur de langue masqué sans multi', () => {
+	it('langue affichée : menu masqué sans multi', () => {
 		page('<textarea class="inserer_barre_edition">rien</textarea>');
 		tiptap_spip_init();
-		expect(document.querySelector('.tts-outil--langues').hidden).toBe(true);
+		expect(document.querySelector('.tts-menu--langues').hidden).toBe(true);
 	});
 
 	it('panneau des notes recalculé au retour du mode source', () => {

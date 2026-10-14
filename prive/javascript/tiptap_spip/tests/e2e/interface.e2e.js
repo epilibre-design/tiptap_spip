@@ -249,9 +249,11 @@ test('multilinguisme : multi inséré sur une sélection, multi bloc et ses lang
 	await page.keyboard.type('cat');
 	await popover.locator('button[name=appliquer]').click();
 	// langue affichée choisie dans la barre
-	await page.locator('.tts-outil--langues').selectOption('fr');
+	await page.locator('.tts-outil--langues').click();
+	await page.getByRole('menuitemradio', { name: 'fr', exact: true }).click();
 	await expect(page.locator('.ProseMirror .tts-multi')).toHaveText('chat');
-	await page.locator('.tts-outil--langues').selectOption('en');
+	await page.locator('.tts-outil--langues').click();
+	await page.getByRole('menuitemradio', { name: 'en', exact: true }).click();
 	await expect(page.locator('.ProseMirror .tts-multi')).toHaveText('cat');
 	// multi bloc : langue ajoutée
 	await page.locator('.ProseMirror .tts-multi-block p', { hasText: 'One' }).click();

@@ -224,11 +224,27 @@ describe('composants', () => {
 		expect(outil('pleinEcran').getAttribute('aria-label')).toBe('Quitter le plein écran');
 	});
 
-	it('sélecteur de langue : masqué sans multi', () => {
+	it('langue affichée : bouton [fr] masqué sans multi', () => {
 		barre('edition', { src: 'x <multi>[fr]a[en]b</multi>' });
-		const select = wrapper.querySelector('.tts-outil--langues');
-		expect(select.hidden).toBe(false);
+		const menu = wrapper.querySelector('.tts-menu--langues');
+		expect(menu.hidden).toBe(false);
 		editor.commands.setContent('<p>y</p>', { emitUpdate: true });
-		expect(select.hidden).toBe(true);
+		expect(menu.hidden).toBe(true);
+	});
+
+	it('langue affichée : le menu liste les langues du texte et change la langue', () => {
+		barre('edition', { src: 'x <multi>[fr]a[en]b[de]c</multi>' });
+		const bouton = wrapper.querySelector('.tts-menu--langues .tts-outil--langues');
+		expect(bouton.getAttribute('aria-haspopup')).toBe('menu');
+		expect(bouton.querySelector('svg')).not.toBeNull();
+		bouton.click();
+		const items = [...wrapper.querySelectorAll('.tts-menu--langues [role=menuitemradio]')];
+		expect(items.map((i) => i.textContent)).toEqual(expect.arrayContaining(['fr', 'en', 'de']));
+		items.find((i) => i.textContent === 'en').click();
+		expect(bouton.textContent).toBe('[en]');
+		expect(bouton.getAttribute('aria-label')).toBe('Langue affichée : en');
+		bouton.click();
+		const coche = wrapper.querySelector('.tts-menu--langues [aria-checked=true]');
+		expect(coche.textContent).toBe('en');
 	});
 });
