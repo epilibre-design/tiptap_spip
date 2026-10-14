@@ -19,6 +19,8 @@
 
 ### Corrigé
 
+- Texte de l'éditeur aligné selon le sens de la langue dans une page centrée, par exemple
+  dans le formulaire des crayons.
 - Affichage de l'icône du menu de configuration dans l'espace privé.
 
 ## [1.0.0] - 2026-10-13
