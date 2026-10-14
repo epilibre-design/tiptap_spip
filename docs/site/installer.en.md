@@ -6,13 +6,13 @@ site administrator.
 
 For a version whose contents will not change, open the
 [list of versions (tags)](https://github.com/epilibre-design/tiptap_spip/tags) and choose the ZIP
-for the latest tag. The first published version, `1.0.0`, is available directly:
+for the latest tag. The latest version, `1.1.0`, is available directly:
 
 ```text
-https://github.com/epilibre-design/tiptap_spip/archive/refs/tags/1.0.0.zip
+https://github.com/epilibre-design/tiptap_spip/archive/refs/tags/1.1.0.zip
 ```
 
-GitHub currently labels this first release a **prerelease**: its contents are fixed, but it is not
+GitHub currently labels releases as **prereleases**: their contents are fixed, but they are not
 announced as stable. To try the newest changes instead, use the `main` branch archive:
 
 ```text
@@ -27,7 +27,7 @@ installed if you need to obtain the same version later.
 1. Sign in to the private area as a webmaster.
 2. Open **Configuration → Plugin management → Add plugins**.
 3. Under **Download a plugin from its archive**, paste the direct ZIP URL into **Archive URL**.
-   You can use the `1.0.0` URL above. For a newer version, open the tags page and copy its ZIP URL.
+   You can use the `1.1.0` URL above. For a newer version, open the tags page and copy its ZIP URL.
 4. Start the download, then activate **Visual editor for SPIP** in the plugin manager. SPIP may
    ask for your webmaster password.
 
