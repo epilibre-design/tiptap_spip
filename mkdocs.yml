@@ -61,6 +61,7 @@ plugins:
             Utiliser: Use the editor
             Mettre en forme: Format text
             Contenus SPIP: SPIP content
+            Captures: Screenshots
             Configurer: Configure
             Résoudre un problème: Troubleshoot
             Comprendre: Understand
@@ -100,6 +101,7 @@ nav:
   - Utiliser:
       - Mettre en forme: utiliser/mise-en-forme.md
       - Contenus SPIP: utiliser/contenus-spip.md
+      - Captures: utiliser/captures.md
   - Configurer: configurer.md
   - Résoudre un problème: problemes.md
   - Comprendre:
