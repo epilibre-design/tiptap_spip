@@ -122,5 +122,15 @@ function tiptap_spip_config_js($valeur = null): string {
 		'mode' => $config['mode'],
 		'niveaux' => $config['niveaux'],
 		'champs' => (object) tiptap_spip_champs_par_objet(),
+		'multilingue' => tiptap_spip_multilingue(),
 	], TIPTAP_SPIP_JSON);
+}
+
+/**
+ * Site multilingue : plus d'une langue cochée dans la configuration du multilinguisme
+ * (méta langues_multilingue).
+ */
+function tiptap_spip_multilingue(): bool {
+	$langues = array_filter(explode(',', $GLOBALS['meta']['langues_multilingue'] ?? ''));
+	return count(array_unique($langues)) > 1;
 }

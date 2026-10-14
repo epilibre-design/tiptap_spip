@@ -1,6 +1,6 @@
 import { config } from '../config.js';
 import { ALIGNEMENTS, alignementActif, selectionAlignee } from '../editor/edition.js';
-import { langueAffichee, languesDuDocument } from '../editor/extensions.js';
+import { aDesMultis, langueAffichee, languesDuDocument } from '../editor/extensions.js';
 import { boutonOutil, habiller, menuOutil } from './boutons.js';
 import { ICONES } from './icones.js';
 import { label } from './labels.js';
@@ -163,7 +163,21 @@ const COMPOSANTS = {
 			],
 		})
 		: popover('modele', 'editModel', { raccourci: 'Mod-Alt-m' })(ctx)),
-	multi: popover('multi', 'editMulti'),
+	// site monolingue (une seule langue dans la configuration du multilinguisme) : masqué, sauf
+	// si le texte contient déjà un multi
+	multi: (ctx) => {
+		const outil = popover('multi', 'editMulti')(ctx);
+		let doc = null;
+		return {
+			...outil,
+			maj() {
+				const { doc: actuel } = ctx.editor.state;
+				if (actuel === doc) return;
+				doc = actuel;
+				outil.element.hidden = config().multilingue === false && !aDesMultis(doc);
+			},
+		};
+	},
 
 	// langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis. Bouton
 	// « [fr] ⌄ » qui déplie la liste des langues du texte.

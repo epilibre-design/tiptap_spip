@@ -25935,6 +25935,15 @@ function languesDuDocument(doc4) {
   });
   return [...langues];
 }
+function aDesMultis(doc4) {
+  let trouve = false;
+  doc4.descendants((node2) => {
+    if (trouve) return false;
+    if (node2.type.name === "spipMultiInline" || node2.type.name === "spipMultiBlock") trouve = true;
+    return !trouve;
+  });
+  return trouve;
+}
 var langueInitiale = () => globalThis.document?.documentElement?.lang ?? "";
 var langueAffichee = (state) => clefLangues.getState(state)?.langue ?? "";
 var SpipLangues = Extension.create({
@@ -26716,7 +26725,21 @@ var _Toolbar = class _Toolbar {
       c.maj?.();
       if (source && !c.source) c.cible.disabled = true;
     }
+    this.masquerSeparateurs();
     this.activer(this.cibles().includes(this.courant) ? this.courant : this.cibles()[0] ?? null);
+  }
+  /** Séparateurs masqués en tête, en fin et entre deux groupes dont les éléments sont tous masqués. */
+  masquerSeparateurs() {
+    let precedent = null;
+    for (const e of this.element.children) {
+      if (!e.matches(".tts-separateur")) {
+        if (!e.hidden) precedent = e;
+        continue;
+      }
+      e.hidden = !precedent || precedent.matches(".tts-separateur");
+      if (!e.hidden) precedent = e;
+    }
+    if (precedent?.matches(".tts-separateur")) precedent.hidden = true;
   }
   /** Éléments atteignables aux flèches : ni désactivés, ni masqués. */
   cibles() {
@@ -28168,7 +28191,21 @@ var COMPOSANTS = {
       { libelle: label("modele_saisir"), action: () => ctx.ui.editModel(null) }
     ]
   }) : popover("modele", "editModel", { raccourci: "Mod-Alt-m" })(ctx),
-  multi: popover("multi", "editMulti"),
+  // site monolingue (une seule langue dans la configuration du multilinguisme) : masqué, sauf
+  // si le texte contient déjà un multi
+  multi: (ctx) => {
+    const outil = popover("multi", "editMulti")(ctx);
+    let doc4 = null;
+    return {
+      ...outil,
+      maj() {
+        const { doc: actuel } = ctx.editor.state;
+        if (actuel === doc4) return;
+        doc4 = actuel;
+        outil.element.hidden = config().multilingue === false && !aDesMultis(doc4);
+      }
+    };
+  },
   // langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis. Bouton
   // « [fr] ⌄ » qui déplie la liste des langues du texte.
   langues: ({ editor }) => {

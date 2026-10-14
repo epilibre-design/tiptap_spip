@@ -74,6 +74,12 @@
 	background: #ccc;
 }
 
+/* Bouton multi sur un site monolingue, séparateur sans groupe visible. */
+.tts-outil[hidden],
+.tts-separateur[hidden] {
+	display: none;
+}
+
 .tts-menu {
 	position: relative;
 }

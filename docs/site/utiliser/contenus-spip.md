@@ -37,6 +37,9 @@ Le bouton **Multi** permet de créer un passage avec des versions par langue. L�
 qu’une langue à la fois ; le sélecteur de langue permet de passer de l’une à l’autre pendant la
 rédaction. La source SPIP conserve le raccourci `<multi>…</multi>`.
 
+Le bouton n’apparaît que si plusieurs langues sont activées dans **Configuration → Multilinguisme**,
+ou si le texte contient déjà un multi.
+
 ## Si un passage s’affiche comme du code
 
 Un raccourci mal formé ou une syntaxe ajoutée par un autre plugin peut rester sous forme brute.

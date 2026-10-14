@@ -8,6 +8,7 @@ import { apres, demonter, editor, monter, source, wrapper } from './outils.js';
 afterEach(() => {
 	demonter();
 	document.documentElement.lang = '';
+	delete globalThis.spipConfig;
 });
 
 /** Instance simulée : mode, plein écran, langue de l'objet. */
@@ -230,6 +231,31 @@ describe('composants', () => {
 		expect(menu.hidden).toBe(false);
 		editor.commands.setContent('<p>y</p>', { emitUpdate: true });
 		expect(menu.hidden).toBe(true);
+	});
+
+	it('multi : présent sans configuration ou sur un site multilingue', () => {
+		barre('edition');
+		expect(outil('multi').hidden).toBe(false);
+		demonter();
+		globalThis.spipConfig = { tiptap_spip: { multilingue: true } };
+		barre('edition');
+		expect(outil('multi').hidden).toBe(false);
+	});
+
+	it('multi : masqué sur un site monolingue, sauf si le texte a un multi ; séparateur orphelin masqué', () => {
+		globalThis.spipConfig = { tiptap_spip: { multilingue: false } };
+		const { element } = barre('edition');
+		expect(outil('multi').hidden).toBe(true);
+		const separateurs = [...element.querySelectorAll('.tts-separateur')];
+		const visibles = () => [...element.children].filter((e) => !e.hidden);
+		expect(separateurs.filter((s) => s.hidden)).toHaveLength(1);
+		visibles().forEach((e, i, l) => {
+			if (e.matches('.tts-separateur')) expect(l[i + 1]?.matches('.tts-separateur')).toBe(false);
+		});
+		demonter();
+		barre('edition', { src: 'x <multi>[fr]a[en]b</multi>' });
+		expect(outil('multi').hidden).toBe(false);
+		expect(wrapper.querySelectorAll('.tts-separateur[hidden]')).toHaveLength(0);
 	});
 
 	it('langue affichée : le menu liste les langues du texte et change la langue', () => {

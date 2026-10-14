@@ -69,7 +69,22 @@ export class Toolbar {
 			c.maj?.();
 			if (source && !c.source) c.cible.disabled = true;
 		}
+		this.masquerSeparateurs();
 		this.activer(this.cibles().includes(this.courant) ? this.courant : this.cibles()[0] ?? null);
+	}
+
+	/** Séparateurs masqués en tête, en fin et entre deux groupes dont les éléments sont tous masqués. */
+	masquerSeparateurs() {
+		let precedent = null;
+		for (const e of this.element.children) {
+			if (!e.matches('.tts-separateur')) {
+				if (!e.hidden) precedent = e;
+				continue;
+			}
+			e.hidden = !precedent || precedent.matches('.tts-separateur');
+			if (!e.hidden) precedent = e;
+		}
+		if (precedent?.matches('.tts-separateur')) precedent.hidden = true;
 	}
 
 	/** Éléments atteignables aux flèches : ni désactivés, ni masqués. */

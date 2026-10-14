@@ -35,6 +35,9 @@ The **Multi** button creates a passage with versions in different languages. The
 one language at a time; use the language selector to switch between them as you write. The SPIP
 source retains the `<multi>…</multi>` shortcut.
 
+The button only appears when several languages are enabled in **Configuration → Multilingual**,
+or when the text already contains a multi.
+
 ## If a passage appears as code
 
 A malformed shortcut or syntax added by another plugin may remain as raw source. Click it to
