@@ -2,6 +2,7 @@ import { config } from '../config.js';
 import { ALIGNEMENTS, alignementActif, selectionAlignee } from '../editor/edition.js';
 import { langueAffichee, languesDuDocument } from '../editor/extensions.js';
 import { boutonOutil, habiller, menuOutil } from './boutons.js';
+import { ICONES } from './icones.js';
 import { label } from './labels.js';
 import { Toolbar } from './Toolbar.js';
 
@@ -164,25 +165,44 @@ const COMPOSANTS = {
 		: popover('modele', 'editModel', { raccourci: 'Mod-Alt-m' })(ctx)),
 	multi: popover('multi', 'editMulti'),
 
-	// langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis
+	// langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis. Bouton
+	// « [fr] ⌄ » qui déplie la liste des langues du texte.
 	langues: ({ editor }) => {
-		const select = document.createElement('select');
-		select.className = 'tts-outil tts-outil--langues';
-		select.setAttribute('aria-label', label('langue_affichee'));
-		select.addEventListener('change', () => editor.commands.setLangueAffichee(select.value));
 		let doc = null;
+		let options = [];
+		let etiquette = null;
+		const menu = menuOutil({
+			nom: 'langues',
+			libelle: label('langue_affichee'),
+			elements: () => options.map((l) => ({
+				libelle: l,
+				coche: 'radio',
+				actif: () => langueAffichee(editor.state) === l,
+				action: () => lancer(editor, (c) => c.setLangueAffichee(l)),
+			})),
+		});
+		const bouton = menu.cible;
+		bouton.classList.add('tts-outil--texte');
 		return {
-			element: select,
+			...menu,
 			maj() {
 				const affichee = langueAffichee(editor.state);
 				if (editor.state.doc !== doc) {
 					doc = editor.state.doc;
 					const langues = languesDuDocument(doc);
-					const options = [...new Set([...(affichee ? [affichee] : []), ...langues])];
-					select.replaceChildren(...options.map((l) => Object.assign(document.createElement('option'), { value: l, textContent: l })));
-					select.hidden = langues.length === 0;
+					options = [...new Set([...(affichee ? [affichee] : []), ...langues])];
+					menu.element.hidden = langues.length === 0;
+					if (menu.element.hidden) menu.fermer();
 				}
-				select.value = affichee;
+				if (affichee === etiquette) return;
+				etiquette = affichee;
+				const libelle = `${label('langue_affichee')} : ${affichee}`;
+				bouton.setAttribute('aria-label', libelle);
+				bouton.title = libelle;
+				const code = document.createElement('span');
+				code.textContent = `[${affichee || '…'}]`;
+				bouton.replaceChildren(code);
+				bouton.insertAdjacentHTML('beforeend', ICONES.chevronBas);
 			},
 		};
 	},

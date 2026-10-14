@@ -25986,6 +25986,7 @@ var ICONES = {
   abbr: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4ZM4 5V19H20V5H4ZM7 8H17V11H15V10H13V14H14.5V16H9.5V14H11V10H9V11H7V8Z"/></svg>',
   modele: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5C7 2.79086 8.79086 1 11 1C13.2091 1 15 2.79086 15 5H18C18.5523 5 19 5.44772 19 6V9C21.2091 9 23 10.7909 23 13C23 15.2091 21.2091 17 19 17V20C19 20.5523 18.5523 21 18 21H4C3.44772 21 3 20.5523 3 20V6C3 5.44772 3.44772 5 4 5H7ZM11 3C9.89543 3 9 3.89543 9 5C9 5.23554 9.0403 5.45952 9.11355 5.66675C9.22172 5.97282 9.17461 6.31235 8.98718 6.57739C8.79974 6.84243 8.49532 7 8.17071 7H5V19H17V15.8293C17 15.5047 17.1576 15.2003 17.4226 15.0128C17.6877 14.8254 18.0272 14.7783 18.3332 14.8865C18.5405 14.9597 18.7645 15 19 15C20.1046 15 21 14.1046 21 13C21 11.8954 20.1046 11 19 11C18.7645 11 18.5405 11.0403 18.3332 11.1135C18.0272 11.2217 17.6877 11.1746 17.4226 10.9872C17.1576 10.7997 17 10.4953 17 10.1707V7H13.8293C13.5047 7 13.2003 6.84243 13.0128 6.57739C12.8254 6.31235 12.7783 5.97282 12.8865 5.66675C12.9597 5.45952 13 5.23555 13 5C13 3.89543 12.1046 3 11 3Z"/></svg>',
   multi: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 10L22.9 21H20.745L19.544 18H15.454L14.255 21H12.101L16.5 10H18.5ZM10 2V4H16V6L14.0322 6.0006C13.2425 8.36616 11.9988 10.5057 10.4115 12.301C11.1344 12.9457 11.917 13.5176 12.7475 14.0079L11.9969 15.8855C10.9237 15.2781 9.91944 14.5524 8.99961 13.7249C7.21403 15.332 5.10914 16.5553 2.79891 17.2734L2.26257 15.3442C4.2385 14.7203 6.04543 13.6737 7.59042 12.3021C6.46277 11.0281 5.50873 9.57985 4.76742 8.00028L7.00684 8.00037C7.57018 9.03885 8.23979 10.0033 8.99967 10.877C10.2283 9.46508 11.2205 7.81616 11.9095 6.00101L2 6V4H8V2H10ZM17.5 12.8852L16.253 16H18.745L17.5 12.8852Z"/></svg>',
+  chevronBas: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"/></svg>',
   alignement: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
   alignGauche: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 19H17V21H3V19ZM3 14H21V16H3V14ZM3 9H17V11H3V9Z"/></svg>',
   alignCentre: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM5 19H19V21H5V19ZM3 14H21V16H3V14ZM5 9H19V11H5V9Z"/></svg>',
@@ -27902,25 +27903,44 @@ var COMPOSANTS = {
     ]
   }) : popover("modele", "editModel", { raccourci: "Mod-Alt-m" })(ctx),
   multi: popover("multi", "editMulti"),
-  // langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis
+  // langue affichée par les multis (spec 05 §5) : présente quand le texte a des multis. Bouton
+  // « [fr] ⌄ » qui déplie la liste des langues du texte.
   langues: ({ editor }) => {
-    const select = document.createElement("select");
-    select.className = "tts-outil tts-outil--langues";
-    select.setAttribute("aria-label", label("langue_affichee"));
-    select.addEventListener("change", () => editor.commands.setLangueAffichee(select.value));
     let doc4 = null;
+    let options = [];
+    let etiquette = null;
+    const menu = menuOutil({
+      nom: "langues",
+      libelle: label("langue_affichee"),
+      elements: () => options.map((l) => ({
+        libelle: l,
+        coche: "radio",
+        actif: () => langueAffichee(editor.state) === l,
+        action: () => lancer(editor, (c) => c.setLangueAffichee(l))
+      }))
+    });
+    const bouton = menu.cible;
+    bouton.classList.add("tts-outil--texte");
     return {
-      element: select,
+      ...menu,
       maj() {
         const affichee = langueAffichee(editor.state);
         if (editor.state.doc !== doc4) {
           doc4 = editor.state.doc;
           const langues = languesDuDocument(doc4);
-          const options = [.../* @__PURE__ */ new Set([...affichee ? [affichee] : [], ...langues])];
-          select.replaceChildren(...options.map((l) => Object.assign(document.createElement("option"), { value: l, textContent: l })));
-          select.hidden = langues.length === 0;
+          options = [.../* @__PURE__ */ new Set([...affichee ? [affichee] : [], ...langues])];
+          menu.element.hidden = langues.length === 0;
+          if (menu.element.hidden) menu.fermer();
         }
-        select.value = affichee;
+        if (affichee === etiquette) return;
+        etiquette = affichee;
+        const libelle = `${label("langue_affichee")} : ${affichee}`;
+        bouton.setAttribute("aria-label", libelle);
+        bouton.title = libelle;
+        const code2 = document.createElement("span");
+        code2.textContent = `[${affichee || "\u2026"}]`;
+        bouton.replaceChildren(code2);
+        bouton.insertAdjacentHTML("beforeend", ICONES.chevronBas);
       }
     };
   },

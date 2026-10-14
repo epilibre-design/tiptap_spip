@@ -67,12 +67,6 @@
 	cursor: default;
 }
 
-select.tts-outil {
-	padding: 0 0.2em;
-	border-color: #ccc;
-	background: #fff;
-}
-
 .tts-separateur {
 	width: 1px;
 	height: 1.5em;
@@ -544,8 +538,24 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	background: #fff;
 }
 
-.tts-outil--langues[hidden] {
+/* Langue affichée par les multis : bouton « [fr] ⌄ » et menu des langues du texte. */
+.tts-menu--langues[hidden] {
 	display: none;
+}
+
+.tts-outil--texte {
+	gap: 0.1em;
+	padding: 0 0.15em 0 0.4em;
+	font-family: monospace;
+}
+
+.tts-outil--texte svg {
+	width: 1em;
+	height: 1em;
+}
+
+.tts-menu--langues .tts-menu__liste {
+	min-width: 6em;
 }
 
 /* Anomalies de syntaxe (lot L5.2) : raccourci cassé souligné, explication en bulle. */

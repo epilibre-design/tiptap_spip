@@ -29,6 +29,7 @@ const ICONES = {
 	abbr: 'text-snippet',
 	modele: 'puzzle-line',
 	multi: 'translate-2',
+	chevronBas: 'arrow-down-s-line',
 	alignement: 'align-left',
 	alignGauche: 'align-left',
 	alignCentre: 'align-center',
