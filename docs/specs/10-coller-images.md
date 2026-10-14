@@ -122,6 +122,10 @@ couvertes, comme pour la synchronisation du textarea (`TextareaBridge`) :
   L'écouteur jQuery reçoit donc l'événement **puis** ces trois valeurs : `(event, $form, options, veto)`.
   Il pose `veto.veto = true` (sur le quatrième paramètre, pas sur `options`) et `ajaxSubmit()` s'arrête
   avant de lire les champs.
+  **Crayons a sa propre copie de jQuery** : `crayons.js.html` charge `jquery.js` et `jquery.form.js` renommés
+  en `cQuery` (`pack_cQuery`, puis `cQuery.noConflict()`), et le formulaire du crayon passe par
+  `cQuery(…).ajaxForm()`. Un `trigger` de `cQuery` n'atteint que les écouteurs posés par `cQuery` : l'écouteur
+  `form-pre-serialize` est donc posé avec `globalThis.jQuery` **et**, s'il existe, avec `globalThis.cQuery`.
 
 Dans les deux cas, le bouton de soumission utilisé est mémorisé. À la fin des envois, la soumission
 repart d'elle-même par `form.requestSubmit(bouton)`, qui reprend la voie d'origine (le `submit` du
@@ -158,7 +162,10 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
 
 - **Ajout** : `action_ajouter_documents_dist('new', [$fichier], $objet, $id_objet_lien, 'auto')` du plugin
   medias. Il refait les contrôles de taille et de dimensions du site (`_IMG_MAX_SIZE`, `_IMG_MAX_WIDTH`…) et
-  renvoie un message d'erreur sous forme de chaîne, transmis tel quel dans `message_erreur`.
+  renvoie un message d'erreur sous forme de chaîne, transmis tel quel dans `message_erreur`. Le mode `auto`
+  range une image collée en mode `image`, comme la boîte « Documents » ; l'envoi de Crayons
+  (`action_crayons_upload`) force, lui, le mode `document`. Une même image n'a donc pas le même mode selon
+  l'outil d'envoi : c'est voulu, sans effet sur `<docN>`.
 - **Objet nouveau** (`id_objet` = 0) : le document est lié à `-id_auteur`, comme le fait la boîte
   « Documents » ; `medias_post_insertion` le rattache à l'objet lors de sa création. `autoriser('joindredocument')`
   accepte cet id négatif quand il vaut l'auteur connecté.
@@ -192,8 +199,8 @@ le collage se comporte comme aujourd'hui.
 | Vitest | arbitrage du presse-papiers (§3, chaque ligne du tableau), notamment deux images en un collage et fichiers mêlés (PDF puis PNG) ; ordre des images et un appel CVT par fichier ; renommage d'un fichier sans nom ; refus avant envoi (type, taille) sans bloquer les autres images ; collage avant l'arrivée des services → collage habituel, collage suivant envoyé une fois les services là ; marqueur : position reportée quand on tape avant lui, repli quand on supprime autour, absent de `getJSON()` et du textarea ; remplacement par `<docN>` en une transaction annulable ; échec sans insertion |
 | Vitest (CVT) | réponses enregistrées de `deposer_image` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
 | PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur ; disponibilité dans `charger()` : article avec `documents_objets` vide → disponible, objet absent de `documents_objets` → indisponible, sans objet → indisponible |
-| Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; collage de deux PNG en un geste → deux `<docN>` dans l'ordre, deux documents liés ; même chose sur un article **nouveau**, puis enregistrement : documents rattachés à l'article créé ; mode source ; soumission pendant les envois retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX, crayon), puis relancée après le dernier envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
-| Playwright (L7.2) | avec `crayons/upload` activé : dépôt sur Tiptap en modes visuel et source → un seul document et un seul raccourci par fichier, avec un lien `spip_documents_liens` vers l'article édité ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt |
+| Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; collage de deux PNG en un geste → deux `<docN>` dans l'ordre, deux documents liés ; même chose sur un article **nouveau**, puis enregistrement : documents rattachés à l'article créé ; mode source ; soumission pendant les envois retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX ; crayon, dont `ajaxForm` passe par `cQuery`), puis relancée après le dernier envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
+| Playwright (L7.2) | avec `crayons/upload` activé : dépôt en mode visuel → un seul document par fichier, lié à l'article édité (`spip_documents_liens`), et un seul `<docN>` dans le texte ; dépôt en mode source → un seul envoi, par Crayons (raccourci dans son panneau, rien inséré dans le texte, aucune requête `deposer_image`) ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt ; dépôt refusé (type non accepté, services absents) → la page reste affichée, le texte édité est intact |
 
 ## 8. Hors périmètre et suites
 
@@ -201,7 +208,11 @@ le collage se comporte comme aujourd'hui.
   à tous les types de documents par une opération adaptée. Plusieurs fichiers déposés ensemble sont envoyés
   un par un dans l'ordre, chacun avec son marqueur. La différence d'interface est un état visible de la zone
   d'édition pendant le survol avec des fichiers (par exemple une classe et une indication « Déposer les
-  fichiers »), retiré quand la souris quitte la zone ou après le dépôt → lot L7.2.
+  fichiers »), retiré quand la souris quitte la zone ou après le dépôt. Un dépôt de fichiers que l'éditeur ne
+  traite pas (type refusé, services absents ou encore en chargement, opération indisponible) appelle quand même
+  `preventDefault()` sur `dragover` et `drop` : sinon le navigateur ouvre le fichier à la place de la page, et
+  l'édition en cours est perdue. Le refus est signalé dans la barre d'état. Seule exception : le mode source
+  d'un crayon avec `crayons/upload`, laissé à Crayons (ci-dessous) → lot L7.2.
 - Images référencées par URL dans un HTML collé (`<img src="https://…">`, `data:`) : non rapatriées ; le
   collage HTML les ignore comme aujourd'hui.
 - Retouche (recadrage, redimensionnement) avant envoi.
@@ -221,13 +232,21 @@ Une image collée ou déposée dans le crayon `article.texte` équipé par Tipta
 (`spip_documents_liens` avec `objet = article` et `id_objet = id_article`), comme avec Crayons. La présence de
 `<docN>` dans le texte ne remplace pas cette liaison (§5).
 
-En mode visuel, Tiptap masque le textarea : déposer sur sa zone visible ne déclenche pas le gestionnaire de
-Crayons. En mode source, le textarea est de nouveau visible et les deux gestionnaires peuvent recevoir le
-même `drop`. Quand Tiptap prend en charge le dépôt sur sa zone d'édition, **un fichier ne doit être envoyé
-qu'une fois et produire un seul raccourci dans le texte** : son gestionnaire intercepte l'événement avant
-celui de Crayons. Le panneau latéral de Crayons conserve sa propre zone de dépôt. Si Tiptap n'est pas actif,
-Crayons garde son comportement, sans insertion automatique dans le texte ; la désactivation de Tiptap le
-restitue. Vérifier ces cas avec `crayons/upload` activé, dans les deux modes (§7).
+Partage des dépôts, pour qu'un fichier ne soit envoyé qu'**une fois** :
+
+- **mode visuel** : Tiptap masque le textarea, déposer sur sa zone visible ne déclenche pas le gestionnaire de
+  Crayons. Tiptap traite le dépôt : un document lié à l'article et un `<docN>` inséré dans le texte par fichier ;
+- **mode source** : le textarea est visible et Crayons y a déjà branché ses gestionnaires (par `cQuery`, avec
+  `return false`, avant le montage de l'éditeur). Tiptap **laisse Crayons gérer le dépôt** : son écouteur du
+  mode source ne fait rien (ni envoi, ni `preventDefault()`, ni arrêt de la propagation) quand le textarea
+  porte la classe `uploader`, que `uploader.js.html` pose. Le raccourci s'affiche alors dans le panneau de
+  Crayons, sans être inséré dans le texte : c'est le comportement de Crayons, gardé tel quel. Intercepter le
+  dépôt avant Crayons demanderait une capture sur un ancêtre pour `dragenter`, `dragover`, `dragleave` et
+  `drop` (sinon sa classe `hover` et son panneau restent ouverts) : écarté ;
+- **panneau latéral** de Crayons : sa propre zone de dépôt, inchangée ;
+- **Tiptap désactivé** : Crayons garde son comportement.
+
+Vérifier ces cas avec `crayons/upload` activé (§7).
 
 Question tranchée, reprise dans [09](09-lots-roadmap.md) §3 :
 
