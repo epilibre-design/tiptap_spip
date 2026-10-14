@@ -1,4 +1,4 @@
-# 10 — Coller une image
+# 10 — Coller des images
 
 Demande : [#4](https://git.spip.net/spip-contrib-extensions/tiptap_spip/-/work_items/4), « Ajouter
 l'insertion d'une image par paste du clipboard », sur le modèle d'InlineAttachment
@@ -18,13 +18,18 @@ raccourci. Ce lot réduit ce parcours à un `Ctrl+V`.
 4. Le marqueur est remplacé par le modèle `<docN>` (§4), affiché par la prévisualisation habituelle des modèles
    ([05](05-extensions-spip.md) §3). L'insertion est une étape d'historique : `Ctrl+Z` la retire (le document
    reste lié à l'objet, comme après un ajout par la boîte « Documents »).
-5. En cas d'échec, le marqueur disparaît, rien n'est inséré, et la barre d'état
+5. En cas d'échec pour une image, son marqueur disparaît, rien n'est inséré à sa place, et la barre d'état
    ([06](06-interface.md) §5) affiche le message du serveur (type refusé, taille, droits, session expirée).
 
-Plusieurs images collées d'un coup sont envoyées une par une, dans l'ordre, chacune avec son marqueur.
+Un collage peut contenir **plusieurs images** (fichiers copiés depuis l'explorateur, selon le navigateur et le
+système). Toutes les images acceptées sont insérées dans l'ordre du presse-papiers, chacune avec son marqueur
+et son `<docN>`. Une capture d'écran ou « Copier l'image » ne fournit généralement qu'une image. Plusieurs
+collages successifs ajoutent leurs envois à la même file sérialisée (§3) ; les marqueurs restent visibles
+pendant l'attente et le transfert.
 
-Le même comportement vaut en **mode source** : le marqueur est alors un texte provisoire dans le textarea
-(`<!-- envoi… -->`, à la manière du `progressText` d'InlineAttachment), remplacé par `<docN>` ou retiré.
+Le même comportement vaut en **mode source** : chaque marqueur est alors un texte provisoire distinct dans le
+textarea (`<!-- envoi… -->` avec un identifiant temporaire unique, à la manière du `progressText`
+d'InlineAttachment), remplacé par son `<docN>` ou retiré sans toucher aux autres marqueurs.
 
 ## 2. Ce qu'on reprend d'InlineAttachment
 
@@ -78,10 +83,15 @@ paragraphe copié depuis un traitement de texte aussi. Règle :
 
 | Contenu du presse-papiers | Traitement |
 |---------------------------|------------|
-| Fichiers image seuls | envoi |
-| Fichier image + `text/html` réduit à une seule `<img>` (copie d'image depuis un navigateur) | envoi du fichier ; le HTML est ignoré |
-| Fichier image + autre `text/html` ou `text/plain` non vide | collage texte/HTML habituel ; le fichier est ignoré |
-| Fichier non image, ou type hors liste blanche | collage habituel (rien n'est envoyé) ; message « type non accepté » |
+| Un ou plusieurs fichiers image, sans texte ni HTML | envoi de toutes les images acceptées, dans l'ordre (§1) ; les types refusés sont signalés |
+| Fichier(s) image + `text/html` réduit à une seule `<img>` (copie d'image depuis un navigateur), avec éventuellement `text/plain` | envoi de toutes les images acceptées ; le HTML et le texte sont ignorés |
+| Fichier(s) image + autre `text/html` ou `text/plain` non vide | collage texte/HTML habituel ; les fichiers sont ignorés |
+| Fichiers image et non image, sans texte ni HTML | envoi des images acceptées dans l'ordre ; fichiers non image ignorés avec message « type non accepté » |
+| Fichier(s) non image ou image(s) de type hors liste blanche, sans image acceptée | collage habituel (rien n'est envoyé) ; message « type non accepté » |
+
+La priorité est donnée au texte ou au HTML ordinaire, puis aux images acceptées. Un fichier refusé ne bloque
+pas les autres images du même collage. Chaque image part dans un appel `deposer_image` distinct : le formulaire
+CVT est renouvelé entre deux appels (§5).
 
 Liste blanche par défaut : `image/png`, `image/jpeg`, `image/gif`, `image/webp`. Elle est envoyée au JS dans
 la configuration (§6), recoupée par le serveur avec `spip_types_documents` (types `upload='oui'`).
@@ -120,9 +130,10 @@ restants, retire les marqueurs du mode source, puis relance la soumission de la 
 
 ### Envoi
 
-Par `src/services/cvt.js`, dans la file sérialisée du formulaire de services : nouvelle opération
-`deposer_image` (§5), corps `FormData` du formulaire + `fichier` (le `File` renommé). `fetch` ne donnant pas
-la progression d'un envoi, celle-ci passe par `XMLHttpRequest.upload.onprogress` pour cette seule opération ;
+Par `src/services/cvt.js`, dans la file sérialisée du formulaire de services : chaque image appelle la
+nouvelle opération `deposer_image` (§5), avec un corps `FormData` du formulaire et `fichier` (le `File`
+renommé). `fetch` ne donnant pas la progression d'un envoi, celle-ci passe par
+`XMLHttpRequest.upload.onprogress` pour cette seule opération ;
 sans progression, le marqueur reste indéterminé.
 
 ## 4. Raccourci inséré
@@ -178,15 +189,19 @@ le collage se comporte comme aujourd'hui.
 
 | Niveau | Cas |
 |--------|-----|
-| Vitest | arbitrage du presse-papiers (§3, chaque ligne du tableau) ; renommage d'un fichier sans nom ; refus avant envoi (type, taille) ; collage avant l'arrivée des services → collage habituel, collage suivant envoyé une fois les services là ; marqueur : position reportée quand on tape avant lui, repli quand on supprime autour, absent de `getJSON()` et du textarea ; remplacement par `<docN>` en une transaction annulable ; échec sans insertion |
+| Vitest | arbitrage du presse-papiers (§3, chaque ligne du tableau), notamment deux images en un collage et fichiers mêlés (PDF puis PNG) ; ordre des images et un appel CVT par fichier ; renommage d'un fichier sans nom ; refus avant envoi (type, taille) sans bloquer les autres images ; collage avant l'arrivée des services → collage habituel, collage suivant envoyé une fois les services là ; marqueur : position reportée quand on tape avant lui, repli quand on supprime autour, absent de `getJSON()` et du textarea ; remplacement par `<docN>` en une transaction annulable ; échec sans insertion |
 | Vitest (CVT) | réponses enregistrées de `deposer_image` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
 | PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur ; disponibilité dans `charger()` : article avec `documents_objets` vide → disponible, objet absent de `documents_objets` → indisponible, sans objet → indisponible |
-| Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; même chose sur un article **nouveau**, puis enregistrement : document rattaché à l'article créé ; mode source ; soumission pendant l'envoi retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX, crayon), puis relancée à la fin de l'envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
+| Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; collage de deux PNG en un geste → deux `<docN>` dans l'ordre, deux documents liés ; même chose sur un article **nouveau**, puis enregistrement : documents rattachés à l'article créé ; mode source ; soumission pendant les envois retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX, crayon), puis relancée après le dernier envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
 
 ## 8. Hors périmètre et suites
 
-- **Glisser-déposer** de fichiers : même chaîne (`handleDrop`, même opération), étendue à tous les types de
-  documents → lot L7.2.
+- **Glisser-déposer** de fichiers : même chaîne d'envoi que le collage pour les images (`handleDrop`), étendue
+  à tous les types de documents par une opération adaptée. Plusieurs fichiers déposés ensemble sont envoyés
+  un par un dans l'ordre,
+  chacun avec son marqueur. La différence d'interface est un état visible de la zone d'édition pendant le
+  survol avec des fichiers (par exemple une classe et une indication « Déposer les fichiers »), retiré quand
+  la souris quitte la zone ou après le dépôt. À vérifier par un test de survol et de retrait de cet état → lot L7.2.
 - Images référencées par URL dans un HTML collé (`<img src="https://…">`, `data:`) : non rapatriées ; le
   collage HTML les ignore comme aujourd'hui.
 - Retouche (recadrage, redimensionnement) avant envoi.
