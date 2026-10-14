@@ -13,6 +13,11 @@ Son objectif est d’ajouter un bloc question-réponse à l’éditeur **sans mo
 4. Ouvrez le texte d’un article. Le bouton **FAQ** apparaît dans la barre d’édition. Saisissez une
    question et une réponse, enregistrez, puis vérifiez leur affichage sur le site public.
 
+![Un bloc FAQ dans l’éditeur et la fenêtre de saisie de sa question](../medias/faq_demo.png)
+
+La réponse se modifie directement dans le bloc ; le bouton **FAQ** ouvre la fenêtre de saisie de
+la question.
+
 En mode source, un bloc ressemble à ceci :
 
 ```text

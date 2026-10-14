@@ -13,6 +13,10 @@ The goal is to add a question-and-answer block to the editor **without changing*
 4. Open an article's text. The **FAQ** button appears in the toolbar. Enter a question and an
    answer, save, and check how they appear on the public site.
 
+![A FAQ block in the editor and the dialog for its question](../medias/faq_demo.png)
+
+Edit the answer directly in the block; the **FAQ** button opens the dialog for the question.
+
 In source mode, a block looks like this:
 
 ```text
