@@ -193,20 +193,36 @@ le collage se comporte comme aujourd'hui.
 | Vitest (CVT) | réponses enregistrées de `deposer_image` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
 | PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur ; disponibilité dans `charger()` : article avec `documents_objets` vide → disponible, objet absent de `documents_objets` → indisponible, sans objet → indisponible |
 | Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; collage de deux PNG en un geste → deux `<docN>` dans l'ordre, deux documents liés ; même chose sur un article **nouveau**, puis enregistrement : documents rattachés à l'article créé ; mode source ; soumission pendant les envois retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX, crayon), puis relancée après le dernier envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
+| Playwright (L7.2) | avec `crayons/upload` activé : dépôt sur Tiptap en modes visuel et source → un seul document et un seul raccourci par fichier ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt |
 
 ## 8. Hors périmètre et suites
 
 - **Glisser-déposer** de fichiers : même chaîne d'envoi que le collage pour les images (`handleDrop`), étendue
   à tous les types de documents par une opération adaptée. Plusieurs fichiers déposés ensemble sont envoyés
-  un par un dans l'ordre,
-  chacun avec son marqueur. La différence d'interface est un état visible de la zone d'édition pendant le
-  survol avec des fichiers (par exemple une classe et une indication « Déposer les fichiers »), retiré quand
-  la souris quitte la zone ou après le dépôt. À vérifier par un test de survol et de retrait de cet état → lot L7.2.
+  un par un dans l'ordre, chacun avec son marqueur. La différence d'interface est un état visible de la zone
+  d'édition pendant le survol avec des fichiers (par exemple une classe et une indication « Déposer les
+  fichiers »), retiré quand la souris quitte la zone ou après le dépôt → lot L7.2.
 - Images référencées par URL dans un HTML collé (`<img src="https://…">`, `data:`) : non rapatriées ; le
   collage HTML les ignore comme aujourd'hui.
 - Retouche (recadrage, redimensionnement) avant envoi.
 - Suppression du document quand le rédacteur retire `<docN>` : non, comme dans SPIP (le document reste dans
   la boîte « Documents »).
+
+### Coexistence avec le dépôt expérimental de Crayons (lot L7.2)
+
+Quand `crayons/upload` est activé, le contrôleur `article.texte` de Crayons ajoute un panneau latéral et lie
+`dragenter`, `dragover`, `dragleave` et `drop` au textarea et à ce panneau (`crayons/controleurs/article_texte.html`,
+`crayons/js/uploader.js.html`). Sa bibliothèque parcourt `dataTransfer.files`, envoie chaque fichier par XHR à
+`action_crayons_upload`, puis affiche `<docN>` dans le panneau (`crayons/modeles/uploader_item.html`) ; elle
+n'insère pas ce raccourci dans le texte.
+
+En mode visuel, Tiptap masque le textarea : déposer sur sa zone visible ne déclenche pas le gestionnaire de
+Crayons. En mode source, le textarea est de nouveau visible et les deux gestionnaires peuvent recevoir le
+même `drop`. Quand Tiptap prend en charge le dépôt sur sa zone d'édition, **un fichier ne doit être envoyé
+qu'une fois et produire un seul raccourci dans le texte** : son gestionnaire intercepte l'événement avant
+celui de Crayons. Le panneau latéral de Crayons conserve sa propre zone de dépôt. Si Tiptap n'est pas actif,
+Crayons garde son comportement, sans insertion automatique dans le texte ; la désactivation de Tiptap le
+restitue. Vérifier ces cas avec `crayons/upload` activé, dans les deux modes (§7).
 
 Question tranchée, reprise dans [09](09-lots-roadmap.md) §3 :
 
