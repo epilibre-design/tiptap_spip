@@ -31,12 +31,9 @@ of that optional plugin: enter the shortcut directly.
 
 ## Multiple languages in one text
 
-The **Multi** button creates a passage with versions in different languages. The editor displays
-one language at a time; use the language selector to switch between them as you write. The SPIP
-source retains the `<multi>…</multi>` shortcut.
-
-The button only appears when several languages are enabled in **Configuration → Multilingual**,
-or when the text already contains a multi.
+The **Multi** button creates language-specific versions of a passage. See
+[Use multis](multilinguisme.md) to enable the button, switch the displayed language while editing,
+and fill in the multi window.
 
 ## If a passage appears as code
 
