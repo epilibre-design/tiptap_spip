@@ -12,6 +12,8 @@ vous excluez dans la [configuration](../configurer.md).
 Le bouton **Source** de Tiptap affiche les raccourcis SPIP, mais ne rétablit pas la barre du
 porte-plume sur le champ équipé de l’éditeur visuel.
 
+Documentation du plugin : [Porte-plume sur SPIP-Contrib](https://contrib.spip.net/Porte-plume-3117).
+
 ## Insérer modèles
 
 Ce plugin ajoute au bouton **Modèle** un catalogue et des formulaires qui permettent d’insérer un
@@ -22,6 +24,8 @@ Sans Insérer modèles, vous pouvez toujours saisir directement un raccourci com
 Avec la version actuelle de ce plugin, son catalogue n’est pas disponible sous SPIP 5. Voir aussi
 [Insérer des contenus SPIP](../utiliser/contenus-spip.md#images-documents-et-autres-modeles).
 
+Documentation du plugin : [Insérer modèles sur SPIP-Contrib](https://contrib.spip.net/Plugin-Inserer-Modeles).
+
 ## Coloration Code
 
 Ce plugin colore le code des blocs de code sur le site public. Quand il est actif, l’éditeur
@@ -31,3 +35,5 @@ que le site : tapez par exemple ```` ```php ```` suivi d’une espace, puis votr
 Le langage vient du bloc (```` ```php ````) ou de la classe de la balise (`<code class="css">`).
 Un bloc sans langage reste en texte brut. Sans Coloration Code, l’éditeur ne colore pas le code :
 il affiche seulement le langage des blocs ```` ```php ```` en haut à droite, comme SPIP.
+
+Documentation du plugin : [Coloration Code sur SPIP-Contrib](https://contrib.spip.net/Coloration-Code).

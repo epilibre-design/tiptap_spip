@@ -12,6 +12,8 @@ exclude in the [configuration](../configurer.md).
 Tiptap's **Source** button shows SPIP syntax, but it does not restore the Porte-plume toolbar
 on a field using the visual editor.
 
+Plugin documentation: [Porte-plume on SPIP-Contrib](https://contrib.spip.net/Porte-plume-3117) (in French).
+
 ## Insérer modèles
 
 This plugin adds a catalog and forms to **Model** for inserting a model or editing an existing
@@ -21,6 +23,8 @@ permissions.
 Without Insérer modèles, you can still enter a shortcut such as `<doc12|center>` directly. With
 the current version of this plugin, its catalog is unavailable on SPIP 5. See also
 [Insert SPIP content](../utiliser/contenus-spip.md#images-documents-and-other-models).
+
+Plugin documentation: [Insérer modèles on SPIP-Contrib](https://contrib.spip.net/Plugin-Inserer-Modeles) (in French).
 
 ## Coloration Code
 
@@ -32,3 +36,5 @@ The language comes from the block (```` ```php ````) or from the tag's class
 (`<code class="css">`). A block without a language stays plain text. Without Coloration Code, the
 editor does not highlight code: it only shows the language of ```` ```php ```` blocks in the top
 right corner, as SPIP does.
+
+Plugin documentation: [Coloration Code on SPIP-Contrib](https://contrib.spip.net/Coloration-Code) (in French).
