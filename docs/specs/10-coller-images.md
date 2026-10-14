@@ -160,12 +160,12 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
 |-----------|------------|------------------------|----------|
 | `deposer_image` | `fichier` (dans `$_FILES`) | un seul fichier, envoi PHP sans erreur (`UPLOAD_ERR_OK`, `is_uploaded_file`) ; extension et type réel (`finfo`) dans la liste blanche et acceptés par `spip_types_documents` ; `autoriser('joindredocument', objet, id_objet_lien)` ; configuration `tiptap_spip/coller_images` active | `{id_document, raccourci}` (`raccourci` = `doc12`) |
 
-- **Ajout** : `action_ajouter_documents_dist('new', [$fichier], $objet, $id_objet_lien, 'auto')` du plugin
+- **Ajout** : `action_ajouter_documents_dist('new', [$fichier], $objet, $id_objet_lien, 'document')` du plugin
   medias. Il refait les contrôles de taille et de dimensions du site (`_IMG_MAX_SIZE`, `_IMG_MAX_WIDTH`…) et
-  renvoie un message d'erreur sous forme de chaîne, transmis tel quel dans `message_erreur`. Le mode `auto`
-  range une image collée en mode `image`, comme la boîte « Documents » ; l'envoi de Crayons
-  (`action_crayons_upload`) force, lui, le mode `document`. Une même image n'a donc pas le même mode selon
-  l'outil d'envoi : c'est voulu, sans effet sur `<docN>`.
+  renvoie un message d'erreur sous forme de chaîne, transmis tel quel dans `message_erreur`. Mode
+  `document`, et non `auto` (qui rangerait l'image en mode `image`) : le raccourci inséré est `<docN>`, pas
+  `<imgN>` (§4), et c'est le mode que force l'envoi de Crayons (`action_crayons_upload`). Une image ajoutée
+  par l'un ou l'autre outil a ainsi le même mode.
 - **Objet nouveau** (`id_objet` = 0) : le document est lié à `-id_auteur`, comme le fait la boîte
   « Documents » ; `medias_post_insertion` le rattache à l'objet lors de sa création. `autoriser('joindredocument')`
   accepte cet id négatif quand il vaut l'auteur connecté.
