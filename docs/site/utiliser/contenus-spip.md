@@ -33,12 +33,9 @@ disponible avec la version actuelle de ce plugin facultatif : utilisez la saisie
 
 ## Plusieurs langues dans un même texte
 
-Le bouton **Multi** permet de créer un passage avec des versions par langue. L’éditeur n’affiche
-qu’une langue à la fois ; le sélecteur de langue permet de passer de l’une à l’autre pendant la
-rédaction. La source SPIP conserve le raccourci `<multi>…</multi>`.
-
-Le bouton n’apparaît que si plusieurs langues sont activées dans **Configuration → Multilinguisme**,
-ou si le texte contient déjà un multi.
+Le bouton **Multi** crée des versions d’un passage selon la langue. Consultez
+[Utiliser les multis](multilinguisme.md) pour activer le bouton, changer la langue affichée pendant
+l’édition et remplir la fenêtre du multi.
 
 Dans la fenêtre du multi, choisissez la langue de chaque version dans la liste. Elle propose les
 langues activées dans cette configuration ; une langue déjà présente dans le multi reste

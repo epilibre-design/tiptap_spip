@@ -61,6 +61,7 @@ plugins:
             Utiliser: Use the editor
             Mettre en forme: Format text
             Contenus SPIP: SPIP content
+            Multilinguisme: Multilingual content
             Erreurs de syntaxe: Syntax issues
             Captures: Screenshots
             Configurer: Configure
@@ -103,6 +104,7 @@ nav:
   - Utiliser:
       - Mettre en forme: utiliser/mise-en-forme.md
       - Contenus SPIP: utiliser/contenus-spip.md
+      - Multilinguisme: utiliser/multilinguisme.md
       - Erreurs de syntaxe: utiliser/erreurs-de-syntaxe.md
       - Captures: utiliser/captures.md
   - Configurer: configurer.md

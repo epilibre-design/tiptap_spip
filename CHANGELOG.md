@@ -1,5 +1,10 @@
 ## [Non publié]
 
+### Ajouté
+
+- Guide d’utilisation des passages multilingues, avec captures du formulaire Multi en français et
+  en anglais.
+
 ### Modifié
 
 - Le bouton **Multi** n'apparaît plus sur un site monolingue (une seule langue dans la
