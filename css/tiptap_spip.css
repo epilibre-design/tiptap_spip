@@ -187,6 +187,11 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	display: none;
 }
 
+/* Bloc de code : repère de l'étiquette de langage de code.css (div.precode chez SPIP). */
+.tts-editor pre.spip_code_block {
+	position: relative;
+}
+
 /* Constructions conservées telles quelles : affichées comme du code. */
 .tts-raw,
 .tts-raw-inline {

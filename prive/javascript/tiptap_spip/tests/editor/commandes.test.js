@@ -142,3 +142,20 @@ describe('schéma du sous-éditeur des notes', () => {
 		}
 	});
 });
+
+describe('bloc de code', () => {
+	it('data-language sur le <pre> comme SPIP (étiquette de code.css), sans changer la source', () => {
+		const src = '```php\n$x = 1;\n```\n\n<code class="css">\na { b: c; }\n</code>\n\n<code>\nbrut\n</code>';
+		monter(src);
+		const pres = [...document.querySelectorAll('pre')];
+		expect(pres.map((p) => p.getAttribute('data-language'))).toEqual(['php', null, null]);
+		expect(pres[0].querySelector('code').className).toBe('language-php');
+		expect(source()).toBe(src);
+	});
+
+	it('```js puis espace : bloc avec data-language', () => {
+		monter('');
+		taper('```js ');
+		expect(document.querySelector('pre').getAttribute('data-language')).toBe('js');
+	});
+});

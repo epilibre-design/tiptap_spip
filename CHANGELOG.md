@@ -12,6 +12,8 @@
 - Mise en forme des blocs de poésie dans l'éditeur.
 - Langue affichée par les multis : un bouton de menu « [fr] » remplace la liste déroulante,
   comme les autres menus de la barre d'outils.
+- Blocs de code : le langage (```` ```php ````) s'affiche en étiquette à droite, comme dans
+  l'espace privé de SPIP.
 
 ### Corrigé
 

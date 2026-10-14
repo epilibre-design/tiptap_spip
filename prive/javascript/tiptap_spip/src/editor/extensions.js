@@ -74,7 +74,13 @@ const SpipCode = Code.extend({ excludes: 'spipGlossary spipAbbr' });
 /** Bloc de code : ```` ``` ```` ou <code> multiligne ; openTag garde un <code …> avec attributs. */
 const SpipCodeBlock = CodeBlock.extend({
 	addAttributes() {
-		return { ...this.parent?.(), openTag: hidden() };
+		const parent = this.parent?.() ?? {};
+		return {
+			...parent,
+			// comme SPIP (spip_balisage_code) : data-language sur le <pre>, affiché en étiquette par code.css
+			language: { ...parent.language, rendered: true, renderHTML: (attrs) => (attrs.language ? { 'data-language': attrs.language } : {}) },
+			openTag: hidden(),
+		};
 	},
 });
 

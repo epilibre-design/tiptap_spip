@@ -7,7 +7,7 @@ var __export = (target, all) => {
 };
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-// node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
 var __defProp2 = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {
   let target = {};
@@ -19,7 +19,7 @@ var __exportAll = (all, no_symbols) => {
   return target;
 };
 
-// node_modules/orderedmap/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/orderedmap/dist/index.js
 function OrderedMap(content) {
   this.content = content;
 }
@@ -138,7 +138,7 @@ OrderedMap.from = function(value) {
 };
 var dist_default = OrderedMap;
 
-// node_modules/prosemirror-model/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-model/dist/index.js
 function findDiffStart(a, b, pos) {
   for (let i2 = 0; ; i2++) {
     if (i2 == a.childCount || i2 == b.childCount)
@@ -3348,7 +3348,7 @@ function renderSpec(doc4, structure, xmlNS, blockArraysIn) {
   return { dom, contentDOM };
 }
 
-// node_modules/prosemirror-transform/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-transform/dist/index.js
 var lower16 = 65535;
 var factor16 = Math.pow(2, 16);
 function makeRecover(index, offset) {
@@ -5219,7 +5219,7 @@ var Transform = class {
   }
 };
 
-// node_modules/prosemirror-state/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-state/dist/index.js
 var classesById = /* @__PURE__ */ Object.create(null);
 var Selection = class {
   /**
@@ -6145,7 +6145,7 @@ var PluginKey = class {
   }
 };
 
-// node_modules/prosemirror-commands/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-commands/dist/index.js
 var deleteSelection = (state, dispatch) => {
   if (state.selection.empty)
     return false;
@@ -6673,7 +6673,7 @@ for (let key in pcBaseKeymap)
   macBaseKeymap[key] = pcBaseKeymap[key];
 var mac = typeof navigator != "undefined" ? /Mac|iP(hone|[oa]d)/.test(navigator.platform) : typeof os != "undefined" && os.platform ? os.platform() == "darwin" : false;
 
-// node_modules/prosemirror-schema-list/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-schema-list/dist/index.js
 function wrapInList(listType, attrs = null) {
   return function(state, dispatch) {
     let { $from, $to } = state.selection;
@@ -6797,7 +6797,7 @@ function sinkListItem(itemType) {
   };
 }
 
-// node_modules/prosemirror-view/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-view/dist/index.js
 var domIndex = function(node2) {
   for (var index = 0; ; index++) {
     node2 = node2.previousSibling;
@@ -12129,7 +12129,7 @@ function checkStateComponent(plugin) {
     throw new RangeError("Plugins passed directly to the view must not have a state component");
 }
 
-// node_modules/w3c-keyname/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/w3c-keyname/index.js
 var base = {
   8: "Backspace",
   9: "Tab",
@@ -12235,7 +12235,7 @@ function keyName(event) {
   return name;
 }
 
-// node_modules/prosemirror-keymap/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-keymap/dist/index.js
 var mac4 = typeof navigator != "undefined" && /Mac|iP(hone|[oa]d)/.test(navigator.platform);
 var windows2 = typeof navigator != "undefined" && /Win/.test(navigator.platform);
 function normalizeKeyName(name) {
@@ -12314,7 +12314,7 @@ function keydownHandler(bindings) {
   };
 }
 
-// node_modules/rope-sequence/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/rope-sequence/dist/index.js
 var GOOD_LEAF_SIZE = 200;
 var RopeSequence = function RopeSequence2() {
 };
@@ -12497,7 +12497,7 @@ var Append = /* @__PURE__ */ (function(RopeSequence3) {
 })(RopeSequence);
 var dist_default2 = RopeSequence;
 
-// node_modules/prosemirror-history/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-history/dist/index.js
 var max_empty_items = 500;
 var Branch = class _Branch {
   constructor(items, eventCount) {
@@ -12854,7 +12854,7 @@ var redo = buildCommand(true, true);
 var undoNoScroll = buildCommand(false, false);
 var redoNoScroll = buildCommand(true, false);
 
-// node_modules/@tiptap/core/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/core/dist/index.js
 function createChainableState(config2) {
   const { state, transaction } = config2;
   let { selection } = transaction;
@@ -19178,7 +19178,7 @@ function schemaJSON(json, schema) {
 }
 var toEditorJSON = (source, schema, regles = []) => schemaJSON(parse(source, { empreintes: false, regles }), schema);
 
-// node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
 var jsxElements = /* @__PURE__ */ new WeakSet();
 var jsxFragments = /* @__PURE__ */ new WeakSet();
 function createJSXElement(spec) {
@@ -19229,7 +19229,7 @@ function render(tag, attributes) {
 }
 var h = (tag, attributes) => render(tag, attributes);
 
-// node_modules/@tiptap/extension-blockquote/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-blockquote/dist/index.js
 var handleBackspace = (editor, type) => {
   var _previous$lastChild;
   const { state } = editor;
@@ -19324,7 +19324,7 @@ ${prefix}
 });
 var src_default = Blockquote;
 
-// node_modules/@tiptap/extension-bold/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-bold/dist/index.js
 var starInputRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))$/;
 var starPasteRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))/g;
 var underscoreInputRegex = /(?:^|\s)(__(?!\s+__)((?:[^_]+))__(?!\s+__))$/;
@@ -19408,7 +19408,7 @@ var Bold = Mark2.create({
 });
 var src_default2 = Bold;
 
-// node_modules/@tiptap/extension-code/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-code/dist/index.js
 var inputRegexMatch = (text2) => {
   const match = /`([^`]+)`(?!`)$/.exec(text2);
   if (!match) return null;
@@ -19503,7 +19503,7 @@ var Code = Mark2.create({
 });
 var src_default3 = Code;
 
-// node_modules/@tiptap/extension-code-block/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-code-block/dist/index.js
 var DEFAULT_TAB_SIZE = 4;
 var backtickInputRegex = /^```([a-z]+)?[\s\n]$/;
 var tildeInputRegex = /^~~~([a-z]+)?[\s\n]$/;
@@ -19736,7 +19736,7 @@ var CodeBlock = Node3.create({
 });
 var src_default4 = CodeBlock;
 
-// node_modules/@tiptap/extension-document/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-document/dist/index.js
 var Document = Node3.create({
   name: "doc",
   topNode: true,
@@ -19748,7 +19748,7 @@ var Document = Node3.create({
 });
 var src_default5 = Document;
 
-// node_modules/@tiptap/extension-hard-break/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-hard-break/dist/index.js
 var HardBreak = Node3.create({
   name: "hardBreak",
   markdownTokenName: "br",
@@ -19803,7 +19803,7 @@ var HardBreak = Node3.create({
 });
 var src_default6 = HardBreak;
 
-// node_modules/@tiptap/extension-heading/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-heading/dist/index.js
 var Heading = Node3.create({
   name: "heading",
   addOptions() {
@@ -19881,7 +19881,7 @@ var Heading = Node3.create({
 });
 var src_default7 = Heading;
 
-// node_modules/@tiptap/extension-horizontal-rule/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-horizontal-rule/dist/index.js
 var HorizontalRule = Node3.create({
   name: "horizontalRule",
   addOptions() {
@@ -19943,7 +19943,7 @@ var HorizontalRule = Node3.create({
 });
 var src_default8 = HorizontalRule;
 
-// node_modules/@tiptap/extension-italic/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-italic/dist/index.js
 var starInputRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))$/;
 var starPasteRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))/g;
 var underscoreInputRegex2 = /(?:^|\s)(_(?!\s+_)((?:[^_]+))_(?!\s+_))$/;
@@ -20025,7 +20025,7 @@ var Italic = Mark2.create({
 });
 var src_default9 = Italic;
 
-// node_modules/@tiptap/extension-list/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-list/dist/index.js
 var ListItemName$1 = "listItem";
 var TextStyleName$1 = "textStyle";
 var bulletListInputRegex = /^\s*([-+*])\s$/;
@@ -21267,7 +21267,7 @@ var ListKit = Extension.create({
   }
 });
 
-// node_modules/@tiptap/extension-paragraph/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-paragraph/dist/index.js
 var EMPTY_PARAGRAPH_MARKDOWN = "&nbsp;";
 var NBSP_CHAR = "\xA0";
 var Paragraph = Node3.create({
@@ -21316,7 +21316,7 @@ var Paragraph = Node3.create({
 });
 var src_default10 = Paragraph;
 
-// node_modules/@tiptap/extension-strike/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-strike/dist/index.js
 var inputRegex3 = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))$/;
 var pasteRegex = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))/g;
 var Strike = Mark2.create({
@@ -21381,7 +21381,7 @@ var Strike = Mark2.create({
 });
 var src_default11 = Strike;
 
-// node_modules/@tiptap/extension-subscript/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-subscript/dist/index.js
 var Subscript = Mark2.create({
   name: "subscript",
   addOptions() {
@@ -21422,7 +21422,7 @@ var Subscript = Mark2.create({
 });
 var src_default12 = Subscript;
 
-// node_modules/@tiptap/extension-superscript/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-superscript/dist/index.js
 var Superscript = Mark2.create({
   name: "superscript",
   addOptions() {
@@ -21463,7 +21463,7 @@ var Superscript = Mark2.create({
 });
 var src_default13 = Superscript;
 
-// node_modules/prosemirror-tables/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-tables/dist/index.js
 var readFromCache;
 var addToCache;
 if (typeof WeakMap != "undefined") {
@@ -23187,7 +23187,7 @@ function tableEditing({ allowTableNodeSelection = false } = {}) {
   });
 }
 
-// node_modules/@tiptap/extension-table/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-table/dist/index.js
 function normalizeTableCellAlign(value) {
   if (value === "left" || value === "right" || value === "center") return value;
   return null;
@@ -23886,7 +23886,7 @@ var TableKit = Extension.create({
   }
 });
 
-// node_modules/@tiptap/extension-text/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-text/dist/index.js
 var Text = Node3.create({
   name: "text",
   group: "inline",
@@ -23900,7 +23900,7 @@ var Text = Node3.create({
 });
 var src_default14 = Text;
 
-// node_modules/prosemirror-dropcursor/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-dropcursor/dist/index.js
 function dropCursor(options = {}) {
   return new Plugin({
     view(editorView) {
@@ -24047,7 +24047,7 @@ var DropCursorView = class {
   }
 };
 
-// node_modules/prosemirror-gapcursor/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-gapcursor/dist/index.js
 var GapCursor = class _GapCursor extends Selection {
   /**
   Create a gap cursor.
@@ -24261,7 +24261,7 @@ function drawGapCursor(state) {
   return DecorationSet.create(state.doc, [Decoration.widget(state.selection.head, node2, { key: "gapcursor" })]);
 }
 
-// node_modules/@tiptap/extensions/dist/index.js
+// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extensions/dist/index.js
 var CharacterCount = Extension.create({
   name: "characterCount",
   addOptions() {
@@ -25397,7 +25397,13 @@ var SpipHardBreak = src_default6.extend({
 var SpipCode = src_default3.extend({ excludes: "spipGlossary spipAbbr" });
 var SpipCodeBlock = src_default4.extend({
   addAttributes() {
-    return { ...this.parent?.(), openTag: hidden() };
+    const parent = this.parent?.() ?? {};
+    return {
+      ...parent,
+      // comme SPIP (spip_balisage_code) : data-language sur le <pre>, affiché en étiquette par code.css
+      language: { ...parent.language, rendered: true, renderHTML: (attrs) => attrs.language ? { "data-language": attrs.language } : {} },
+      openTag: hidden()
+    };
   }
 });
 var SpipListItem = ListItem.extend({ content: "paragraph (bulletList | orderedList)?" });
