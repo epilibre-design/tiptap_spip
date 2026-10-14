@@ -11,6 +11,8 @@ Object.assign(window.spipConfig, {
 		extensions: [(#VAL|tiptap_spip_extensions_json)],
 		[(#REM) catalogue des modèles du plugin Insérer modèles, null sans lui (spec 05 §3) ]
 		modeles: [(#VAL|tiptap_spip_catalogue_modeles_json)],
+		[(#REM) coloration syntaxique des blocs de code avec le plugin Coloration Code ]
+		coloration_code: [(#PLUGIN{coloration_code}|?{true,false})],
 		i18n: {
 			mode_source: "<:tiptap_spip:mode_source|texte_script:>",
 			lien: "<:tiptap_spip:lien|texte_script:>",

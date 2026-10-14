@@ -1,6 +1,6 @@
 # Plugins complémentaires
 
-**Porte-plume** et **Insérer modèles** sont facultatifs : l’éditeur visuel fonctionne sans eux.
+**Porte-plume**, **Insérer modèles** et **Coloration Code** sont facultatifs : l’éditeur visuel fonctionne sans eux.
 Vous pouvez les activer dans la gestion des plugins de SPIP.
 
 ## Porte-plume
@@ -21,3 +21,13 @@ configurés dans le plugin et des droits de l’auteur.
 Sans Insérer modèles, vous pouvez toujours saisir directement un raccourci comme `<doc12|center>`.
 Avec la version actuelle de ce plugin, son catalogue n’est pas disponible sous SPIP 5. Voir aussi
 [Insérer des contenus SPIP](../utiliser/contenus-spip.md#images-documents-et-autres-modeles).
+
+## Coloration Code
+
+Ce plugin colore le code des blocs de code sur le site public. Quand il est actif, l’éditeur
+visuel colore aussi les blocs de code pendant la saisie, avec les mêmes langages et le même thème
+que le site : tapez par exemple ```` ```php ```` suivi d’une espace, puis votre code.
+
+Le langage vient du bloc (```` ```php ````) ou de la classe de la balise (`<code class="css">`).
+Un bloc sans langage reste en texte brut. Sans Coloration Code, l’éditeur ne colore pas le code :
+il affiche seulement le langage des blocs ```` ```php ```` en haut à droite, comme SPIP.

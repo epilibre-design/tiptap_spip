@@ -7,7 +7,7 @@ var __export = (target, all) => {
 };
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
+// node_modules/@tiptap/core/dist/rolldown-runtime-D7D4PA-g.js
 var __defProp2 = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {
   let target = {};
@@ -19,7 +19,7 @@ var __exportAll = (all, no_symbols) => {
   return target;
 };
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/orderedmap/dist/index.js
+// node_modules/orderedmap/dist/index.js
 function OrderedMap(content) {
   this.content = content;
 }
@@ -138,7 +138,7 @@ OrderedMap.from = function(value) {
 };
 var dist_default = OrderedMap;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-model/dist/index.js
+// node_modules/prosemirror-model/dist/index.js
 function findDiffStart(a, b, pos) {
   for (let i2 = 0; ; i2++) {
     if (i2 == a.childCount || i2 == b.childCount)
@@ -1118,18 +1118,18 @@ var ResolvedPos = class _ResolvedPos {
   @internal
   */
   static resolveCached(doc4, pos) {
-    let cache = resolveCache.get(doc4);
-    if (cache) {
-      for (let i2 = 0; i2 < cache.elts.length; i2++) {
-        let elt = cache.elts[i2];
+    let cache2 = resolveCache.get(doc4);
+    if (cache2) {
+      for (let i2 = 0; i2 < cache2.elts.length; i2++) {
+        let elt = cache2.elts[i2];
         if (elt.pos == pos)
           return elt;
       }
     } else {
-      resolveCache.set(doc4, cache = new ResolveCache());
+      resolveCache.set(doc4, cache2 = new ResolveCache());
     }
-    let result = cache.elts[cache.i] = _ResolvedPos.resolve(doc4, pos);
-    cache.i = (cache.i + 1) % resolveCacheSize;
+    let result = cache2.elts[cache2.i] = _ResolvedPos.resolve(doc4, pos);
+    cache2.i = (cache2.i + 1) % resolveCacheSize;
     return result;
   }
 };
@@ -3348,7 +3348,7 @@ function renderSpec(doc4, structure, xmlNS, blockArraysIn) {
   return { dom, contentDOM };
 }
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-transform/dist/index.js
+// node_modules/prosemirror-transform/dist/index.js
 var lower16 = 65535;
 var factor16 = Math.pow(2, 16);
 function makeRecover(index, offset) {
@@ -5219,7 +5219,7 @@ var Transform = class {
   }
 };
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-state/dist/index.js
+// node_modules/prosemirror-state/dist/index.js
 var classesById = /* @__PURE__ */ Object.create(null);
 var Selection = class {
   /**
@@ -6145,7 +6145,7 @@ var PluginKey = class {
   }
 };
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-commands/dist/index.js
+// node_modules/prosemirror-commands/dist/index.js
 var deleteSelection = (state, dispatch) => {
   if (state.selection.empty)
     return false;
@@ -6673,7 +6673,7 @@ for (let key in pcBaseKeymap)
   macBaseKeymap[key] = pcBaseKeymap[key];
 var mac = typeof navigator != "undefined" ? /Mac|iP(hone|[oa]d)/.test(navigator.platform) : typeof os != "undefined" && os.platform ? os.platform() == "darwin" : false;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-schema-list/dist/index.js
+// node_modules/prosemirror-schema-list/dist/index.js
 function wrapInList(listType, attrs = null) {
   return function(state, dispatch) {
     let { $from, $to } = state.selection;
@@ -6797,7 +6797,7 @@ function sinkListItem(itemType) {
   };
 }
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-view/dist/index.js
+// node_modules/prosemirror-view/dist/index.js
 var domIndex = function(node2) {
   for (var index = 0; ; index++) {
     node2 = node2.previousSibling;
@@ -10516,8 +10516,8 @@ var DecorationSet = class _DecorationSet {
   document. This will consume (modify) the `decorations` array, so
   you must make a copy if you want need to preserve that.
   */
-  static create(doc4, decorations2) {
-    return decorations2.length ? buildTree(decorations2, doc4, 0, noSpec) : empty;
+  static create(doc4, decorations3) {
+    return decorations3.length ? buildTree(decorations3, doc4, 0, noSpec) : empty;
   }
   /**
   Find all decorations in this set which touch the given range
@@ -10577,18 +10577,18 @@ var DecorationSet = class _DecorationSet {
   access to the current document to create the appropriate tree
   structure.
   */
-  add(doc4, decorations2) {
-    if (!decorations2.length)
+  add(doc4, decorations3) {
+    if (!decorations3.length)
       return this;
     if (this == empty)
-      return _DecorationSet.create(doc4, decorations2);
-    return this.addInner(doc4, decorations2, 0);
+      return _DecorationSet.create(doc4, decorations3);
+    return this.addInner(doc4, decorations3, 0);
   }
-  addInner(doc4, decorations2, offset) {
+  addInner(doc4, decorations3, offset) {
     let children, childIndex = 0;
     doc4.forEach((childNode, childOffset) => {
       let baseOffset = childOffset + offset, found2;
-      if (!(found2 = takeSpansForNode(decorations2, childNode, baseOffset)))
+      if (!(found2 = takeSpansForNode(decorations3, childNode, baseOffset)))
         return;
       if (!children)
         children = this.children.slice();
@@ -10600,7 +10600,7 @@ var DecorationSet = class _DecorationSet {
         children.splice(childIndex, 0, childOffset, childOffset + childNode.nodeSize, buildTree(found2, childNode, baseOffset + 1, noSpec));
       childIndex += 3;
     });
-    let local = moveSpans(childIndex ? withoutNulls(decorations2) : decorations2, -offset);
+    let local = moveSpans(childIndex ? withoutNulls(decorations3) : decorations3, -offset);
     for (let i2 = 0; i2 < local.length; i2++)
       if (!local[i2].type.valid(doc4, local[i2]))
         local.splice(i2--, 1);
@@ -10610,20 +10610,20 @@ var DecorationSet = class _DecorationSet {
   Create a new set that contains the decorations in this set, minus
   the ones in the given array.
   */
-  remove(decorations2) {
-    if (decorations2.length == 0 || this == empty)
+  remove(decorations3) {
+    if (decorations3.length == 0 || this == empty)
       return this;
-    return this.removeInner(decorations2, 0);
+    return this.removeInner(decorations3, 0);
   }
-  removeInner(decorations2, offset) {
+  removeInner(decorations3, offset) {
     let children = this.children, local = this.local;
     for (let i2 = 0; i2 < children.length; i2 += 3) {
       let found2;
       let from2 = children[i2] + offset, to = children[i2 + 1] + offset;
-      for (let j = 0, span; j < decorations2.length; j++)
-        if (span = decorations2[j]) {
+      for (let j = 0, span; j < decorations3.length; j++)
+        if (span = decorations3[j]) {
           if (span.from > from2 && span.to < to) {
-            decorations2[j] = null;
+            decorations3[j] = null;
             (found2 || (found2 = [])).push(span);
           }
         }
@@ -10640,8 +10640,8 @@ var DecorationSet = class _DecorationSet {
       }
     }
     if (local.length) {
-      for (let i2 = 0, span; i2 < decorations2.length; i2++)
-        if (span = decorations2[i2]) {
+      for (let i2 = 0, span; i2 < decorations3.length; i2++)
+        if (span = decorations3[i2]) {
           for (let j = 0; j < local.length; j++)
             if (local[j].eq(span, offset)) {
               if (local == this.local)
@@ -10845,8 +10845,8 @@ function mapChildren(oldChildren, newLocal, mapping, node2, offset, oldOffset, o
       }
     }
   if (mustRebuild) {
-    let decorations2 = mapAndGatherRemainingDecorations(children, oldChildren, newLocal, mapping, offset, oldOffset, options);
-    let built = buildTree(decorations2, node2, 0, options);
+    let decorations3 = mapAndGatherRemainingDecorations(children, oldChildren, newLocal, mapping, offset, oldOffset, options);
+    let built = buildTree(decorations3, node2, 0, options);
     newLocal = built.local;
     for (let i2 = 0; i2 < children.length; i2 += 3)
       if (children[i2 + 1] < 0) {
@@ -10872,12 +10872,12 @@ function moveSpans(spans, offset) {
   }
   return result;
 }
-function mapAndGatherRemainingDecorations(children, oldChildren, decorations2, mapping, offset, oldOffset, options) {
+function mapAndGatherRemainingDecorations(children, oldChildren, decorations3, mapping, offset, oldOffset, options) {
   function gather(set, oldOffset2) {
     for (let i2 = 0; i2 < set.local.length; i2++) {
       let mapped = set.local[i2].map(mapping, offset, oldOffset2);
       if (mapped)
-        decorations2.push(mapped);
+        decorations3.push(mapped);
       else if (options.onRemove)
         options.onRemove(set.local[i2].spec);
     }
@@ -10887,7 +10887,7 @@ function mapAndGatherRemainingDecorations(children, oldChildren, decorations2, m
   for (let i2 = 0; i2 < children.length; i2 += 3)
     if (children[i2 + 1] == -1)
       gather(children[i2 + 2], oldChildren[i2] + oldOffset + 1);
-  return decorations2;
+  return decorations3;
 }
 function takeSpansForNode(spans, node2, offset) {
   if (node2.isLeaf)
@@ -12129,7 +12129,7 @@ function checkStateComponent(plugin) {
     throw new RangeError("Plugins passed directly to the view must not have a state component");
 }
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/w3c-keyname/index.js
+// node_modules/w3c-keyname/index.js
 var base = {
   8: "Backspace",
   9: "Tab",
@@ -12235,7 +12235,7 @@ function keyName(event) {
   return name;
 }
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-keymap/dist/index.js
+// node_modules/prosemirror-keymap/dist/index.js
 var mac4 = typeof navigator != "undefined" && /Mac|iP(hone|[oa]d)/.test(navigator.platform);
 var windows2 = typeof navigator != "undefined" && /Win/.test(navigator.platform);
 function normalizeKeyName(name) {
@@ -12314,7 +12314,7 @@ function keydownHandler(bindings) {
   };
 }
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/rope-sequence/dist/index.js
+// node_modules/rope-sequence/dist/index.js
 var GOOD_LEAF_SIZE = 200;
 var RopeSequence = function RopeSequence2() {
 };
@@ -12497,7 +12497,7 @@ var Append = /* @__PURE__ */ (function(RopeSequence3) {
 })(RopeSequence);
 var dist_default2 = RopeSequence;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-history/dist/index.js
+// node_modules/prosemirror-history/dist/index.js
 var max_empty_items = 500;
 var Branch = class _Branch {
   constructor(items, eventCount) {
@@ -12854,7 +12854,7 @@ var redo = buildCommand(true, true);
 var undoNoScroll = buildCommand(false, false);
 var redoNoScroll = buildCommand(true, false);
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/core/dist/index.js
+// node_modules/@tiptap/core/dist/index.js
 function createChainableState(config2) {
   const { state, transaction } = config2;
   let { selection } = transaction;
@@ -15060,10 +15060,10 @@ var isDev = typeof process !== "undefined" && true;
 function isWidgetDecoration(decoration) {
   return decoration.kind === "widget";
 }
-function decorationsToPMDecorations(decorations2, extensionName) {
+function decorationsToPMDecorations(decorations3, extensionName) {
   const pmDecorations = [];
   const widgetKeys = /* @__PURE__ */ new Set();
-  for (const decoration of decorations2) {
+  for (const decoration of decorations3) {
     if (decoration.kind === "widget") {
       if (isWidgetDecoration(decoration)) widgetKeys.add(decoration.key);
     }
@@ -15074,8 +15074,8 @@ function decorationsToPMDecorations(decorations2, extensionName) {
     widgetKeys
   };
 }
-function buildDecorationSet(doc4, decorations2, extensionName) {
-  const { decorations: pmDecorations, widgetKeys } = decorationsToPMDecorations(decorations2, extensionName);
+function buildDecorationSet(doc4, decorations3, extensionName) {
+  const { decorations: pmDecorations, widgetKeys } = decorationsToPMDecorations(decorations3, extensionName);
   return {
     set: DecorationSet.create(doc4, pmDecorations),
     widgetKeys
@@ -15086,8 +15086,8 @@ function rangeOwnsPosition({ position, from: from2, to, docSize }) {
   if (position < to) return true;
   return position === to && to === docSize;
 }
-function filterOutOfRangeDecorations({ decorations: decorations2, from: from2, to, docSize, extensionName, warnedExtensions }) {
-  return decorations2.filter((decoration) => {
+function filterOutOfRangeDecorations({ decorations: decorations3, from: from2, to, docSize, extensionName, warnedExtensions }) {
+  return decorations3.filter((decoration) => {
     if (rangeOwnsPosition({
       position: decoration.anchor,
       from: from2,
@@ -15435,12 +15435,12 @@ var DecorationManager = class {
   * @returns The decoration set and widget keys
   */
   buildFullSet(name, spec, state) {
-    const decorations2 = this.runCreate(name, "create", () => spec.create({
+    const decorations3 = this.runCreate(name, "create", () => spec.create({
       editor: this.editor,
       state,
       view: this.mountedView
     }));
-    return buildDecorationSet(state.doc, decorations2, name);
+    return buildDecorationSet(state.doc, decorations3, name);
   }
   /**
   * Runs a decoration callback and swallows anything it throws. These run inside
@@ -16270,13 +16270,13 @@ var ExtensionManager = class {
       if (!addNodeView) return [];
       const nodeViewResult = addNodeView();
       if (!nodeViewResult) return [];
-      const nodeview = (node2, view, getPos, decorations2, innerDecorations) => {
+      const nodeview = (node2, view, getPos, decorations3, innerDecorations) => {
         const HTMLAttributes = getRenderedAttributes(node2, extensionAttributes);
         return nodeViewResult({
           node: node2,
           view,
           getPos,
-          decorations: decorations2,
+          decorations: decorations3,
           innerDecorations,
           editor,
           extension,
@@ -17868,7 +17868,7 @@ function parseIdiome(src) {
   if (!m) return null;
   return m[1] === void 0 ? { cle: m[2] } : { module: m[1], cle: m[2] };
 }
-var serializeIdiome = ({ module, cle }) => `<:${module ? `${module}:` : ""}${cle}:>`;
+var serializeIdiome = ({ module, cle: cle2 }) => `<:${module ? `${module}:` : ""}${cle2}:>`;
 
 // src/spip/notes.js
 var BLOCS = /* @__PURE__ */ new Set(["paragraph", "bulletList", "orderedList", "spipModelBlock"]);
@@ -19178,7 +19178,7 @@ function schemaJSON(json, schema) {
 }
 var toEditorJSON = (source, schema, regles = []) => schemaJSON(parse(source, { empreintes: false, regles }), schema);
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
+// node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
 var jsxElements = /* @__PURE__ */ new WeakSet();
 var jsxFragments = /* @__PURE__ */ new WeakSet();
 function createJSXElement(spec) {
@@ -19229,7 +19229,7 @@ function render(tag, attributes) {
 }
 var h = (tag, attributes) => render(tag, attributes);
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-blockquote/dist/index.js
+// node_modules/@tiptap/extension-blockquote/dist/index.js
 var handleBackspace = (editor, type) => {
   var _previous$lastChild;
   const { state } = editor;
@@ -19324,7 +19324,7 @@ ${prefix}
 });
 var src_default = Blockquote;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-bold/dist/index.js
+// node_modules/@tiptap/extension-bold/dist/index.js
 var starInputRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))$/;
 var starPasteRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))/g;
 var underscoreInputRegex = /(?:^|\s)(__(?!\s+__)((?:[^_]+))__(?!\s+__))$/;
@@ -19408,7 +19408,7 @@ var Bold = Mark2.create({
 });
 var src_default2 = Bold;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-code/dist/index.js
+// node_modules/@tiptap/extension-code/dist/index.js
 var inputRegexMatch = (text2) => {
   const match = /`([^`]+)`(?!`)$/.exec(text2);
   if (!match) return null;
@@ -19503,7 +19503,7 @@ var Code = Mark2.create({
 });
 var src_default3 = Code;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-code-block/dist/index.js
+// node_modules/@tiptap/extension-code-block/dist/index.js
 var DEFAULT_TAB_SIZE = 4;
 var backtickInputRegex = /^```([a-z]+)?[\s\n]$/;
 var tildeInputRegex = /^~~~([a-z]+)?[\s\n]$/;
@@ -19736,7 +19736,7 @@ var CodeBlock = Node3.create({
 });
 var src_default4 = CodeBlock;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-document/dist/index.js
+// node_modules/@tiptap/extension-document/dist/index.js
 var Document = Node3.create({
   name: "doc",
   topNode: true,
@@ -19748,7 +19748,7 @@ var Document = Node3.create({
 });
 var src_default5 = Document;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-hard-break/dist/index.js
+// node_modules/@tiptap/extension-hard-break/dist/index.js
 var HardBreak = Node3.create({
   name: "hardBreak",
   markdownTokenName: "br",
@@ -19803,7 +19803,7 @@ var HardBreak = Node3.create({
 });
 var src_default6 = HardBreak;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-heading/dist/index.js
+// node_modules/@tiptap/extension-heading/dist/index.js
 var Heading = Node3.create({
   name: "heading",
   addOptions() {
@@ -19881,7 +19881,7 @@ var Heading = Node3.create({
 });
 var src_default7 = Heading;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-horizontal-rule/dist/index.js
+// node_modules/@tiptap/extension-horizontal-rule/dist/index.js
 var HorizontalRule = Node3.create({
   name: "horizontalRule",
   addOptions() {
@@ -19943,7 +19943,7 @@ var HorizontalRule = Node3.create({
 });
 var src_default8 = HorizontalRule;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-italic/dist/index.js
+// node_modules/@tiptap/extension-italic/dist/index.js
 var starInputRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))$/;
 var starPasteRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))/g;
 var underscoreInputRegex2 = /(?:^|\s)(_(?!\s+_)((?:[^_]+))_(?!\s+_))$/;
@@ -20025,7 +20025,7 @@ var Italic = Mark2.create({
 });
 var src_default9 = Italic;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-list/dist/index.js
+// node_modules/@tiptap/extension-list/dist/index.js
 var ListItemName$1 = "listItem";
 var TextStyleName$1 = "textStyle";
 var bulletListInputRegex = /^\s*([-+*])\s$/;
@@ -21267,7 +21267,7 @@ var ListKit = Extension.create({
   }
 });
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-paragraph/dist/index.js
+// node_modules/@tiptap/extension-paragraph/dist/index.js
 var EMPTY_PARAGRAPH_MARKDOWN = "&nbsp;";
 var NBSP_CHAR = "\xA0";
 var Paragraph = Node3.create({
@@ -21316,7 +21316,7 @@ var Paragraph = Node3.create({
 });
 var src_default10 = Paragraph;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-strike/dist/index.js
+// node_modules/@tiptap/extension-strike/dist/index.js
 var inputRegex3 = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))$/;
 var pasteRegex = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))/g;
 var Strike = Mark2.create({
@@ -21381,7 +21381,7 @@ var Strike = Mark2.create({
 });
 var src_default11 = Strike;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-subscript/dist/index.js
+// node_modules/@tiptap/extension-subscript/dist/index.js
 var Subscript = Mark2.create({
   name: "subscript",
   addOptions() {
@@ -21422,7 +21422,7 @@ var Subscript = Mark2.create({
 });
 var src_default12 = Subscript;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-superscript/dist/index.js
+// node_modules/@tiptap/extension-superscript/dist/index.js
 var Superscript = Mark2.create({
   name: "superscript",
   addOptions() {
@@ -21463,27 +21463,27 @@ var Superscript = Mark2.create({
 });
 var src_default13 = Superscript;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-tables/dist/index.js
+// node_modules/prosemirror-tables/dist/index.js
 var readFromCache;
 var addToCache;
 if (typeof WeakMap != "undefined") {
-  let cache = /* @__PURE__ */ new WeakMap();
-  readFromCache = (key) => cache.get(key);
+  let cache2 = /* @__PURE__ */ new WeakMap();
+  readFromCache = (key) => cache2.get(key);
   addToCache = (key, value) => {
-    cache.set(key, value);
+    cache2.set(key, value);
     return value;
   };
 } else {
-  const cache = [];
+  const cache2 = [];
   const cacheSize = 10;
   let cachePos = 0;
   readFromCache = (key) => {
-    for (let i2 = 0; i2 < cache.length; i2 += 2) if (cache[i2] == key) return cache[i2 + 1];
+    for (let i2 = 0; i2 < cache2.length; i2 += 2) if (cache2[i2] == key) return cache2[i2 + 1];
   };
   addToCache = (key, value) => {
     if (cachePos == cacheSize) cachePos = 0;
-    cache[cachePos++] = key;
-    return cache[cachePos++] = value;
+    cache2[cachePos++] = key;
+    return cache2[cachePos++] = value;
   };
 }
 var TableMap = class {
@@ -23135,7 +23135,7 @@ function zeroes(n) {
   return Array(n).fill(0);
 }
 function handleDecorations(state, cell) {
-  const decorations2 = [];
+  const decorations3 = [];
   const $cell = state.doc.resolve(cell);
   const table = $cell.node(-1);
   if (!table) return DecorationSet.empty;
@@ -23150,11 +23150,11 @@ function handleDecorations(state, cell) {
       const pos = start + cellPos + table.nodeAt(cellPos).nodeSize - 1;
       const dom = document.createElement("div");
       dom.className = "column-resize-handle";
-      if ((_columnResizingPlugin = columnResizingPluginKey.getState(state)) === null || _columnResizingPlugin === void 0 ? void 0 : _columnResizingPlugin.dragging) decorations2.push(Decoration.node(start + cellPos, start + cellPos + table.nodeAt(cellPos).nodeSize, { class: "column-resize-dragging" }));
-      decorations2.push(Decoration.widget(pos, dom));
+      if ((_columnResizingPlugin = columnResizingPluginKey.getState(state)) === null || _columnResizingPlugin === void 0 ? void 0 : _columnResizingPlugin.dragging) decorations3.push(Decoration.node(start + cellPos, start + cellPos + table.nodeAt(cellPos).nodeSize, { class: "column-resize-dragging" }));
+      decorations3.push(Decoration.widget(pos, dom));
     }
   }
-  return DecorationSet.create(state.doc, decorations2);
+  return DecorationSet.create(state.doc, decorations3);
 }
 function tableEditing({ allowTableNodeSelection = false } = {}) {
   return new Plugin({
@@ -23187,7 +23187,7 @@ function tableEditing({ allowTableNodeSelection = false } = {}) {
   });
 }
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-table/dist/index.js
+// node_modules/@tiptap/extension-table/dist/index.js
 function normalizeTableCellAlign(value) {
   if (value === "left" || value === "right" || value === "center") return value;
   return null;
@@ -23886,7 +23886,7 @@ var TableKit = Extension.create({
   }
 });
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extension-text/dist/index.js
+// node_modules/@tiptap/extension-text/dist/index.js
 var Text = Node3.create({
   name: "text",
   group: "inline",
@@ -23900,7 +23900,7 @@ var Text = Node3.create({
 });
 var src_default14 = Text;
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-dropcursor/dist/index.js
+// node_modules/prosemirror-dropcursor/dist/index.js
 function dropCursor(options = {}) {
   return new Plugin({
     view(editorView) {
@@ -24047,7 +24047,7 @@ var DropCursorView = class {
   }
 };
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/prosemirror-gapcursor/dist/index.js
+// node_modules/prosemirror-gapcursor/dist/index.js
 var GapCursor = class _GapCursor extends Selection {
   /**
   Create a gap cursor.
@@ -24261,7 +24261,7 @@ function drawGapCursor(state) {
   return DecorationSet.create(state.doc, [Decoration.widget(state.selection.head, node2, { key: "gapcursor" })]);
 }
 
-// ../../../../tiptap-spip/prive/javascript/tiptap_spip/node_modules/@tiptap/extensions/dist/index.js
+// node_modules/@tiptap/extensions/dist/index.js
 var CharacterCount = Extension.create({
   name: "characterCount",
   addOptions() {
@@ -24364,7 +24364,7 @@ var Focus = Extension.create({
       props: { decorations: ({ doc: doc4, selection }) => {
         const { isEditable, isFocused } = this.editor;
         const { anchor } = selection;
-        const decorations2 = [];
+        const decorations3 = [];
         if (!isEditable || !isFocused) return DecorationSet.create(doc4, []);
         let maxLevels = 0;
         if (this.options.mode === "deepest") doc4.descendants((node2, pos) => {
@@ -24378,9 +24378,9 @@ var Focus = Extension.create({
           if (!(anchor >= pos && anchor <= pos + node2.nodeSize - 1)) return false;
           currentLevel += 1;
           if (this.options.mode === "deepest" && maxLevels - currentLevel > 0 || this.options.mode === "shallowest" && currentLevel > 1) return this.options.mode === "deepest";
-          decorations2.push(Decoration.node(pos, pos + node2.nodeSize, { class: this.options.className }));
+          decorations3.push(Decoration.node(pos, pos + node2.nodeSize, { class: this.options.className }));
         });
-        return DecorationSet.create(doc4, decorations2);
+        return DecorationSet.create(doc4, decorations3);
       } }
     })];
   }
@@ -24421,13 +24421,13 @@ function resolveEmptyNodeClass(emptyNodeClass, props) {
 }
 function scanRangeForDecorations({ editor, options, dataAttribute, doc: doc4, selection, from: from2, to }) {
   const { anchor } = selection;
-  const decorations2 = [];
+  const decorations3 = [];
   const isEmptyDoc = editor.isEmpty;
   doc4.nodesBetween(from2, to, (node2, pos) => {
     const hasAnchor = anchor >= pos && anchor <= pos + node2.nodeSize;
     const isEmpty2 = !node2.isLeaf && isNodeEmpty(node2);
     if (!node2.type.isTextblock) return options.includeChildren;
-    if ((hasAnchor || !options.showOnlyCurrent) && isEmpty2) decorations2.push(createPlaceholderDecoration({
+    if ((hasAnchor || !options.showOnlyCurrent) && isEmpty2) decorations3.push(createPlaceholderDecoration({
       editor,
       isEmptyDoc,
       dataAttribute,
@@ -24447,12 +24447,12 @@ function scanRangeForDecorations({ editor, options, dataAttribute, doc: doc4, se
     }));
     return options.includeChildren;
   });
-  return decorations2;
+  return decorations3;
 }
 function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4, selection }) {
   if (!(editor.isEditable || !options.showOnlyWhenEditable)) return null;
   const { anchor } = selection;
-  const decorations2 = [];
+  const decorations3 = [];
   const isEmptyDoc = editor.isEmpty;
   if (options.showOnlyCurrent && !options.includeChildren) {
     const resolved = doc4.resolve(anchor);
@@ -24460,7 +24460,7 @@ function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4
     const nodeStart = resolved.depth > 0 ? resolved.before(1) : anchor;
     if (node2 && node2.type.isTextblock && isNodeEmpty(node2)) {
       const hasAnchor = anchor >= nodeStart && anchor <= nodeStart + node2.nodeSize;
-      decorations2.push(createPlaceholderDecoration({
+      decorations3.push(createPlaceholderDecoration({
         editor,
         isEmptyDoc,
         dataAttribute,
@@ -24479,7 +24479,7 @@ function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4
         pos: nodeStart
       }));
     }
-  } else decorations2.push(...scanRangeForDecorations({
+  } else decorations3.push(...scanRangeForDecorations({
     editor,
     options,
     dataAttribute,
@@ -24488,7 +24488,7 @@ function buildPlaceholderDecorations({ editor, options, dataAttribute, doc: doc4
     from: 0,
     to: doc4.content.size
   }));
-  return DecorationSet.create(doc4, decorations2);
+  return DecorationSet.create(doc4, decorations3);
 }
 function resolveTopLevelRange(doc4, pos) {
   const resolved = doc4.resolve(pos);
@@ -24569,8 +24569,8 @@ function clampRange(from2, to, doc4) {
     to: Math.max(clampedFrom, Math.min(to, doc4.content.size))
   };
 }
-function updateDecorationsInRanges({ decorations: decorations2, ranges, editor, options, dataAttribute, doc: doc4, selection }) {
-  let next = decorations2;
+function updateDecorationsInRanges({ decorations: decorations3, ranges, editor, options, dataAttribute, doc: doc4, selection }) {
+  let next = decorations3;
   for (const range of ranges) {
     const { from: from2, to } = clampRange(range.from, range.to, doc4);
     const existing = next.find(from2, to).filter((decoration) => decoration.from >= from2 && decoration.to <= to);
@@ -24591,14 +24591,14 @@ function updateDecorationsInRanges({ decorations: decorations2, ranges, editor, 
 function createPlaceholderStateField({ editor, options, dataAttribute }) {
   return {
     init(_config, state) {
-      const decorations2 = buildPlaceholderDecorations({
+      const decorations3 = buildPlaceholderDecorations({
         editor,
         options,
         dataAttribute,
         doc: state.doc,
         selection: state.selection
       });
-      return decorations2 !== null && decorations2 !== void 0 ? decorations2 : DecorationSet.empty;
+      return decorations3 !== null && decorations3 !== void 0 ? decorations3 : DecorationSet.empty;
     },
     apply(tr, prev, oldState, newState) {
       if (!tr.docChanged && !tr.selectionSet) return prev;
@@ -25082,7 +25082,7 @@ function texteEtAppels(content, labels = []) {
   ecrire2(false);
   return noeuds;
 }
-var multiView = () => ({ node: node2, decorations: decorations2 }) => {
+var multiView = () => ({ node: node2, decorations: decorations3 }) => {
   const dom = document.createElement("span");
   dom.className = "tts-multi";
   dom.contentEditable = "false";
@@ -25096,7 +25096,7 @@ var multiView = () => ({ node: node2, decorations: decorations2 }) => {
     dom.dataset.ttsLang = affichee?.lang ?? "";
     dom.title = parts.map((p) => `${p.lang ?? "*"} : ${apercu(p.content)}`).join(" \xB7 ");
   };
-  render2(node2, decorations2);
+  render2(node2, decorations3);
   return {
     dom,
     update(updated, decos) {
@@ -25167,14 +25167,14 @@ function anomaliesDuDocument(doc4) {
   const out = [];
   doc4.descendants((node2, pos) => {
     if (node2.type.name !== "spipRawInline") return true;
-    const cle = anomalie(node2.attrs.source);
-    if (cle) out.push({ pos, cle, node: node2 });
+    const cle2 = anomalie(node2.attrs.source);
+    if (cle2) out.push({ pos, cle: cle2, node: node2 });
     return false;
   });
   return out;
 }
-var explication = (cle) => label(`anomalie_${cle}`);
-var decorations = (doc4) => DecorationSet.create(doc4, anomaliesDuDocument(doc4).map(({ pos, cle, node: node2 }) => Decoration.node(pos, pos + node2.nodeSize, { class: "tts-anomalie", "data-tts-anomalie": cle, title: explication(cle) })));
+var explication = (cle2) => label(`anomalie_${cle2}`);
+var decorations = (doc4) => DecorationSet.create(doc4, anomaliesDuDocument(doc4).map(({ pos, cle: cle2, node: node2 }) => Decoration.node(pos, pos + node2.nodeSize, { class: "tts-anomalie", "data-tts-anomalie": cle2, title: explication(cle2) })));
 var clef = new PluginKey("spipAnomalies");
 var SpipAnomalies = Extension.create({
   name: "spipAnomalies",
@@ -25187,6 +25187,248 @@ var SpipAnomalies = Extension.create({
     props: { decorations: (state) => clef.getState(state) }
   })]
 });
+
+// src/config.js
+var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
+
+// src/editor/coloration.js
+var cle = new PluginKey("coloration");
+var FICHIERS = {
+  as: "angelscript",
+  apacheconf: "apache",
+  osascript: "applescript",
+  ino: "arduino",
+  arm: "armasm",
+  adoc: "asciidoc",
+  mawk: "awk",
+  nawk: "awk",
+  gawk: "awk",
+  "x++": "axapta",
+  sh: "bash",
+  bf: "brainfuck",
+  capnp: "capnproto",
+  html: "xml",
+  xhtml: "xml",
+  rss: "xml",
+  atom: "xml",
+  xjb: "xml",
+  xsd: "xml",
+  xsl: "xml",
+  plist: "xml",
+  svg: "xml",
+  clj: "clojure",
+  "cmake.in": "cmake",
+  h: "c",
+  coffee: "coffeescript",
+  cson: "coffeescript",
+  iced: "coffeescript",
+  cls: "cos",
+  hpp: "cpp",
+  cc: "cpp",
+  hh: "cpp",
+  "c++": "cpp",
+  "h++": "cpp",
+  cxx: "cpp",
+  hxx: "cpp",
+  crm: "crmsh",
+  pcmk: "crmsh",
+  cr: "crystal",
+  cs: "csharp",
+  dpr: "delphi",
+  dfm: "delphi",
+  pas: "delphi",
+  pascal: "delphi",
+  patch: "diff",
+  jinja: "django",
+  zone: "dns",
+  bind: "dns",
+  docker: "dockerfile",
+  bat: "dos",
+  cmd: "dos",
+  dst: "dust",
+  erl: "erlang",
+  xls: "excel",
+  xlsx: "excel",
+  f90: "fortran",
+  f95: "fortran",
+  fs: "fsharp",
+  gms: "gams",
+  gss: "gauss",
+  nc: "gcode",
+  gololang: "golo",
+  golang: "go",
+  hbs: "handlebars",
+  "html.hbs": "handlebars",
+  "html.handlebars": "handlebars",
+  hs: "haskell",
+  hx: "haxe",
+  https: "http",
+  hylang: "hy",
+  i7: "inform7",
+  toml: "ini",
+  jsp: "java",
+  js: "javascript",
+  jsx: "javascript",
+  kt: "kotlin",
+  lassoscript: "lasso",
+  tex: "latex",
+  ls: "livescript",
+  mk: "makefile",
+  mak: "makefile",
+  make: "makefile",
+  md: "markdown",
+  mkdown: "markdown",
+  mkd: "markdown",
+  mma: "mathematica",
+  wl: "mathematica",
+  moon: "moonscript",
+  nginxconf: "nginx",
+  nimrod: "nim",
+  mm: "objectivec",
+  objc: "objectivec",
+  "obj-c": "objectivec",
+  "obj-c++": "objectivec",
+  "objective-c++": "objectivec",
+  ml: "sml",
+  scad: "openscad",
+  pl: "perl",
+  pm: "perl",
+  "pf.conf": "pf",
+  postgres: "pgsql",
+  postgresql: "pgsql",
+  txt: "plaintext",
+  text: "plaintext",
+  ps: "powershell",
+  ps1: "powershell",
+  pp: "puppet",
+  py: "python",
+  gyp: "python",
+  re: "reasonml",
+  graph: "roboconf",
+  instances: "roboconf",
+  rb: "ruby",
+  gemspec: "ruby",
+  podspec: "ruby",
+  thor: "ruby",
+  irb: "ruby",
+  rs: "rust",
+  sci: "scilab",
+  console: "shell",
+  st: "smalltalk",
+  stanfuncs: "stan",
+  styl: "stylus",
+  tk: "tcl",
+  craftcms: "twig",
+  ts: "typescript",
+  tsx: "typescript",
+  vb: "vbnet",
+  vbs: "vbscript",
+  v: "verilog",
+  tao: "xl",
+  xpath: "xquery",
+  xq: "xquery",
+  yml: "yaml",
+  zep: "zephir"
+};
+function langageDu(node2) {
+  const classe = /\bclass\s*=\s*["']([^"']*)["']/i.exec(node2.attrs.openTag ?? "")?.[1];
+  const langage = node2.attrs.language || classe?.split(/\s+/).map((c) => c.replace(/^language-/, "")).find(Boolean);
+  return langage ? langage.toLowerCase() : null;
+}
+function plages(html) {
+  const modele = document.createElement("template");
+  modele.innerHTML = html;
+  const resultat = [];
+  let pos = 0;
+  const parcourir = (parent, classes) => {
+    for (const enfant of parent.childNodes) {
+      if (enfant.nodeType === Node.TEXT_NODE) {
+        if (classes.length) resultat.push([pos, pos + enfant.data.length, classes.join(" ")]);
+        pos += enfant.data.length;
+      } else {
+        parcourir(enfant, enfant.className ? [...classes, enfant.className] : classes);
+      }
+    }
+  };
+  parcourir(modele.content, []);
+  return resultat;
+}
+var chargements = /* @__PURE__ */ new Map();
+function charger(langage) {
+  const fichier = FICHIERS[langage] ?? langage;
+  const assets = globalThis.spipConfig?.coloration_code?.assets;
+  if (!assets || !/^[\w+-]+$/.test(fichier)) return Promise.resolve(false);
+  if (!chargements.has(fichier)) {
+    chargements.set(fichier, new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = `${assets}highlightjs/languages/${fichier}.min.js`;
+      script.addEventListener("load", () => resolve(true));
+      script.addEventListener("error", () => resolve(false));
+      document.head.append(script);
+    }));
+  }
+  return chargements.get(fichier);
+}
+var theme;
+function styleDuTheme() {
+  if (theme === void 0) {
+    const echantillon = document.createElement("code");
+    echantillon.className = "hljs";
+    document.body.append(echantillon);
+    const { backgroundColor, color } = getComputedStyle(echantillon);
+    echantillon.remove();
+    theme = backgroundColor && color ? `background-color: ${backgroundColor}; color: ${color}` : "";
+  }
+  return theme;
+}
+var cache = /* @__PURE__ */ new WeakMap();
+function decorations2(doc4, hljs, demander) {
+  const decos = [];
+  doc4.descendants((node2, pos) => {
+    if (node2.type.name !== "codeBlock") return node2.isBlock;
+    const langage = langageDu(node2);
+    decos.push(Decoration.node(pos, pos + node2.nodeSize, { class: "hljs", "data-language": langage ?? "plaintext", style: styleDuTheme() }));
+    if (!langage) return false;
+    if (!hljs.getLanguage(langage)) {
+      demander(langage);
+      return false;
+    }
+    let p = cache.get(node2);
+    if (!p) {
+      p = plages(hljs.highlight(node2.textContent, { language: langage, ignoreIllegals: true }).value);
+      cache.set(node2, p);
+    }
+    for (const [de, a, classes] of p) decos.push(Decoration.inline(pos + 1 + de, pos + 1 + a, { class: classes }));
+    return false;
+  });
+  return DecorationSet.create(doc4, decos);
+}
+var colorationActive = () => Boolean(config().coloration_code) && typeof globalThis.hljs?.highlight === "function";
+function coloration() {
+  if (!colorationActive()) return [];
+  const hljs = globalThis.hljs;
+  let vue = null;
+  const demandes = /* @__PURE__ */ new Set();
+  const demander = (langage) => {
+    if (demandes.has(langage)) return;
+    demandes.add(langage);
+    charger(langage).then((ok) => {
+      if (ok && vue && !vue.isDestroyed) vue.dispatch(vue.state.tr.setMeta(cle, true));
+    });
+  };
+  return [new Plugin({
+    key: cle,
+    state: {
+      init: (_, { doc: doc4 }) => decorations2(doc4, hljs, demander),
+      apply: (tr, set) => tr.docChanged || tr.getMeta(cle) ? decorations2(tr.doc, hljs, demander) : set
+    },
+    view(v) {
+      vue = v;
+      return {};
+    },
+    props: { decorations: (state) => cle.getState(state) }
+  })];
+}
 
 // src/editor/edition.js
 var ALIGNEMENTS = ["left", "center", "right", "justify"];
@@ -25404,6 +25646,15 @@ var SpipCodeBlock = src_default4.extend({
       language: { ...parent.language, rendered: true, renderHTML: (attrs) => attrs.language ? { "data-language": attrs.language } : {} },
       openTag: hidden()
     };
+  },
+  // avec Coloration Code, <code class="hljs"> : son script (pre code:not(.hljs)) laisse l'éditeur
+  renderHTML({ node: node2, HTMLAttributes }) {
+    const [pre, attrs, [code2, codeAttrs, trou]] = this.parent({ node: node2, HTMLAttributes });
+    const classe = [codeAttrs.class, colorationActive() ? "hljs" : null].filter(Boolean).join(" ") || null;
+    return [pre, attrs, [code2, { ...codeAttrs, class: classe }, trou]];
+  },
+  addProseMirrorPlugins() {
+    return [...this.parent?.() ?? [], ...coloration()];
   }
 });
 var SpipListItem = ListItem.extend({ content: "paragraph (bulletList | orderedList)?" });
@@ -25684,21 +25935,21 @@ var SpipLangues = Extension.create({
   }),
   addProseMirrorPlugins() {
     const decorer = (doc4, langue) => {
-      const decorations2 = [];
+      const decorations3 = [];
       doc4.descendants((node2, pos) => {
         if (node2.type.name === "spipMultiInline") {
-          decorations2.push(Decoration.node(pos, pos + node2.nodeSize, {}, { langue }));
+          decorations3.push(Decoration.node(pos, pos + node2.nodeSize, {}, { langue }));
         } else if (node2.type.name === "spipMultiBlock") {
           const parts = [];
           node2.forEach((part, offset) => parts.push({ lang: part.attrs.lang, pos: pos + 1 + offset, size: part.nodeSize }));
           const montree = partieAffichee(parts, langue);
           for (const p of parts) {
-            if (p !== montree) decorations2.push(Decoration.node(p.pos, p.pos + p.size, { class: "tts-lang--autre" }));
+            if (p !== montree) decorations3.push(Decoration.node(p.pos, p.pos + p.size, { class: "tts-lang--autre" }));
           }
           return false;
         }
       });
-      return DecorationSet.create(doc4, decorations2);
+      return DecorationSet.create(doc4, decorations3);
     };
     return [new Plugin({
       key: clefLangues,
@@ -25805,11 +26056,11 @@ var SpipNoteNumbers = Extension.create({
     const key = new PluginKey("spipNoteNumbers");
     const numeroter = (doc4, langue) => {
       const notes = notesDuDocument(doc4, langue);
-      const decorations2 = notes.filter((note) => !note.multi).map(({ pos, label: label2, aria }) => Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, { "data-tts-label": label2, "aria-label": aria }));
+      const decorations3 = notes.filter((note) => !note.multi).map(({ pos, label: label2, aria }) => Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, { "data-tts-label": label2, "aria-label": aria }));
       const multis = /* @__PURE__ */ new Map();
       for (const note of notes.filter((nt) => nt.multi)) multis.set(note.pos, [...multis.get(note.pos) ?? [], note.label]);
-      for (const [pos, labels] of multis) decorations2.push(Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, {}, { notes: labels }));
-      return { langue, set: DecorationSet.create(doc4, decorations2) };
+      for (const [pos, labels] of multis) decorations3.push(Decoration.node(pos, pos + doc4.nodeAt(pos).nodeSize, {}, { notes: labels }));
+      return { langue, set: DecorationSet.create(doc4, decorations3) };
     };
     return [new Plugin({
       key,
@@ -26517,9 +26768,6 @@ function allerRetour(source, extensions = []) {
   };
 }
 
-// src/config.js
-var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
-
 // src/editor/createEditor.js
 function createEditor({ element: element2, source, ui: ui2 = null, tierces = [], extensions = coreExtensions({ ui: ui2, tierces }), editorProps = {} }) {
   const regles = reglesSpip(extensions);
@@ -26757,10 +27005,10 @@ function contexte2(textarea) {
   const form = textarea.form;
   if (form?.classList.contains("formulaire_crayon")) {
     for (const input of form.querySelectorAll("input.crayon-id")) {
-      const cle = input.value;
-      const prefixe = `content_${cle}_`;
+      const cle2 = input.value;
+      const prefixe = `content_${cle2}_`;
       if (!textarea.name.startsWith(prefixe)) continue;
-      const nom = form.querySelector(`input[name="name_${CSS.escape(cle)}"]`)?.value ?? "";
+      const nom = form.querySelector(`input[name="name_${CSS.escape(cle2)}"]`)?.value ?? "";
       const m = nom.match(/^([a-z_]+)-.*-(\d+)$/);
       if (m) return { objet: m[1], id: Number(m[2]), champ: textarea.name.slice(prefixe.length) };
     }
@@ -26911,11 +27159,11 @@ var CacheParLots = class {
     this.pending = /* @__PURE__ */ new Map();
     this.scheduled = false;
   }
-  get(cle) {
-    if (this.cache.has(cle)) return this.cache.get(cle);
-    const promise = new Promise((resolve, reject) => this.pending.set(cle, { resolve, reject }));
-    this.cache.set(cle, promise);
-    promise.catch(() => this.cache.delete(cle));
+  get(cle2) {
+    if (this.cache.has(cle2)) return this.cache.get(cle2);
+    const promise = new Promise((resolve, reject) => this.pending.set(cle2, { resolve, reject }));
+    this.cache.set(cle2, promise);
+    promise.catch(() => this.cache.delete(cle2));
     if (!this.scheduled) {
       this.scheduled = true;
       queueMicrotask(() => this.flush());
@@ -26928,10 +27176,10 @@ var CacheParLots = class {
     this.pending.clear();
     for (let i2 = 0; i2 < demandes.length; i2 += this.batch) {
       const lot = demandes.slice(i2, i2 + this.batch);
-      disponibles(this.services).then((s) => s.call(this.operation, { [this.parametre]: lot.map(([cle]) => cle) })).then(
+      disponibles(this.services).then((s) => s.call(this.operation, { [this.parametre]: lot.map(([cle2]) => cle2) })).then(
         (resultats) => {
           const parCle = new Map(resultats.map((r) => [r[this.champ], r]));
-          for (const [cle, { resolve }] of lot) resolve(parCle.get(cle) ?? this.vide(cle));
+          for (const [cle2, { resolve }] of lot) resolve(parCle.get(cle2) ?? this.vide(cle2));
         },
         (erreur) => lot.forEach(([, { reject }]) => reject(erreur))
       );
@@ -26945,7 +27193,7 @@ var LinkTitles = class extends CacheParLots {
 };
 var IdiomTranslations = class extends CacheParLots {
   constructor(services, { batch = 50 } = {}) {
-    super(services, { operation: "idiomes", parametre: "cles", champ: "cle", vide: (cle) => ({ cle, texte: null }), batch });
+    super(services, { operation: "idiomes", parametre: "cles", champ: "cle", vide: (cle2) => ({ cle: cle2, texte: null }), batch });
   }
 };
 
@@ -27244,12 +27492,12 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
   const regles = editor.tiptapSpip?.regles ?? [];
   const source = serialize({ type: "doc", content: segment2.blocs.map((b) => b.toJSON()) }, { regles });
   const popover2 = new Popover({ editor, wrapper, parent, titre: label("brut"), className: "tts-popover--brut", onSubmit: () => appliquer(), onClose: () => suivi.fin() });
-  const cle = brut2.type.name === "spipRawInline" ? anomalie(brut2.attrs.source) : null;
-  if (cle) {
+  const cle2 = brut2.type.name === "spipRawInline" ? anomalie(brut2.attrs.source) : null;
+  if (cle2) {
     const texte2 = document.createElement("p");
     texte2.className = "tts-popover__explication";
     texte2.id = idUnique("tts-explication");
-    texte2.textContent = explication(cle);
+    texte2.textContent = explication(cle2);
     popover2.form.prepend(texte2);
     popover2.element.setAttribute("aria-describedby", texte2.id);
   }
@@ -27531,7 +27779,7 @@ function openIdiomePopover({ editor, wrapper }, pos = null) {
   const { selection } = editor.state;
   if (!(selection instanceof NodeSelection) || selection.node.type.name !== "spipIdiome") return null;
   const suivi = suivrePosition(editor, selection.from);
-  const { module, cle } = selection.node.attrs;
+  const { module, cle: cle2 } = selection.node.attrs;
   const popover2 = new Popover({
     editor,
     wrapper,
@@ -27540,7 +27788,7 @@ function openIdiomePopover({ editor, wrapper }, pos = null) {
     onSubmit: () => appliquer(),
     onClose: () => suivi.fin()
   });
-  const raccourci = popover2.input(label("idiome_raccourci"), { value: `<:${module ? `${module}:` : ""}${cle}:>`, name: "raccourci" });
+  const raccourci = popover2.input(label("idiome_raccourci"), { value: `<:${module ? `${module}:` : ""}${cle2}:>`, name: "raccourci" });
   const idiome = () => {
     const p = suivi.pos();
     return p !== null && editor.state.doc.nodeAt(p)?.type.name === "spipIdiome" ? p : null;
@@ -27786,8 +28034,8 @@ var lancer = (editor, commande2) => {
   editor.view.focus();
   return fait;
 };
-var bascule = ({ nom, cle = `outil_${nom}`, raccourci, commande: commande2, actif, possible }) => ({ editor }) => {
-  const element2 = boutonOutil({ nom, libelle: label(cle), raccourci, bascule: true, action: () => lancer(editor, commande2) });
+var bascule = ({ nom, cle: cle2 = `outil_${nom}`, raccourci, commande: commande2, actif, possible }) => ({ editor }) => {
+  const element2 = boutonOutil({ nom, libelle: label(cle2), raccourci, bascule: true, action: () => lancer(editor, commande2) });
   return {
     element: element2,
     maj() {
@@ -27796,16 +28044,16 @@ var bascule = ({ nom, cle = `outil_${nom}`, raccourci, commande: commande2, acti
     }
   };
 };
-var mark = (nom, type, raccourci, cle) => bascule({
+var mark = (nom, type, raccourci, cle2) => bascule({
   nom,
-  cle,
+  cle: cle2,
   raccourci,
   commande: (c) => c.toggleMark(type),
   actif: (editor) => editor.isActive(type),
   possible: (editor) => editor.can().toggleMark(type)
 });
-var popover = (nom, action, { cle = nom, raccourci, possible } = {}) => ({ editor, ui: ui2 }) => {
-  const element2 = boutonOutil({ nom, libelle: label(cle), raccourci, action: () => ui2[action](null) });
+var popover = (nom, action, { cle: cle2 = nom, raccourci, possible } = {}) => ({ editor, ui: ui2 }) => {
+  const element2 = boutonOutil({ nom, libelle: label(cle2), raccourci, action: () => ui2[action](null) });
   return { element: element2, maj: possible ? () => {
     element2.disabled = !possible(editor);
   } : void 0 };
@@ -27816,8 +28064,8 @@ var commande = (nom, cmd, raccourci) => ({ editor }) => {
     element2.disabled = !editor.can()[cmd]();
   } };
 };
-var element = (editor, cle, cmd, extra = {}) => ({
-  libelle: label(cle),
+var element = (editor, cle2, cmd, extra = {}) => ({
+  libelle: label(cle2),
   action: () => lancer(editor, cmd),
   possible: () => cmd(editor.can()),
   ...extra
@@ -27970,7 +28218,7 @@ var COMPOSANTS = {
     return { ...menu, maj: () => menu.cible.classList.toggle("tts-outil--actif", selectionAlignee(editor.state)) };
   },
   tableau: ({ editor }) => {
-    const t = (cle, cmd) => element(editor, `outil_tableau_${cle}`, cmd);
+    const t = (cle2, cmd) => element(editor, `outil_tableau_${cle2}`, cmd);
     return menuOutil({
       nom: "tableau",
       libelle: label("outil_tableau"),

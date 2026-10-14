@@ -49,7 +49,7 @@ back up the site first, replace the plugin files, and check that the plugin rema
 also the [SPIP FTP documentation](https://www.spip.net/fr_article6841.html#Methodes-alternatives-pour-gerer-les-plugins)
 (in French).
 
-**Porte-plume** and **Insérer modèles** can complement the editor. See
+**Porte-plume**, **Insérer modèles** and **Coloration Code** can complement the editor. See
 [Optional plugins](installer/plugins-complementaires.md) for what they provide.
 
 ## Check the installation
