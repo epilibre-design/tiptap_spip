@@ -25926,7 +25926,7 @@ function extensionsDuCoeur({ headingLevels, ui: ui2 }) {
     src_default12,
     SpipAbbr,
     SpipGlossary,
-    SpipCode,
+    SpipCode.configure({ HTMLAttributes: { class: "spip_code spip_code_inline" } }),
     SegmentMap,
     Dropcursor,
     Gapcursor,

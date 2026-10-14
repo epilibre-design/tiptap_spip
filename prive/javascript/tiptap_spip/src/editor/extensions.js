@@ -727,7 +727,7 @@ function extensionsDuCoeur({ headingLevels, ui }) {
 		Subscript,
 		SpipAbbr,
 		SpipGlossary,
-		SpipCode,
+		SpipCode.configure({ HTMLAttributes: { class: 'spip_code spip_code_inline' } }),
 		SegmentMap,
 		Dropcursor,
 		Gapcursor,

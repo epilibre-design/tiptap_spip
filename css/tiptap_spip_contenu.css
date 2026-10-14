@@ -55,3 +55,14 @@
 	background: #f6f6f6;
 	white-space: pre-wrap;
 }
+
+.tts-styles-contenu .tts-prosemirror .spip_code.spip_code_inline {
+	margin: 0 0.125em;
+	padding: 0 0.125em;
+	font-size: 0.85em;
+	border: 1px solid hsl(var(--spip-color-theme--h, 210), 10%, 85%);
+	border-radius: 0.125em;
+	background-color: hsla(var(--spip-color-theme--h, 210), 10%, 95%, 0.75);
+	color: hsl(var(--spip-color-theme--h, 210), 10%, 20%);
+	text-shadow: 0 1px 0 hsl(var(--spip-color-theme--h, 210), 10%, 80%);
+}

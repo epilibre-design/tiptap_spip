@@ -1,11 +1,3 @@
-# Journal des modifications
-
-Les changements notables de ce projet sont consignés dans ce fichier.
-
-Le format suit [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
-Les versions portent un numéro `MAJOR.MINOR.PATCH` ; le projet ne déclare pas, à ce jour,
-de politique formelle de compatibilité selon le [versionnement sémantique](https://semver.org/lang/fr/).
-
 ## [Non publié]
 
 ### Ajouté
@@ -13,11 +5,15 @@ de politique formelle de compatibilité selon le [versionnement sémantique](htt
 - Version anglaise du guide utilisateur, accessible sous `/en/`.
 - Documentation des plugins complémentaires Porte-plume et Insérer modèles.
 
+### Modifié
+
+- Code inline dans l'éditeur : espacement, bordure et fond proches du rendu SPIP.
+- Tailles distinctes pour les intertitres `h2` et `h3` dans l'éditeur.
+- Mise en forme des blocs de poésie dans l'éditeur.
+
 ### Corrigé
 
 - Affichage de l'icône du menu de configuration dans l'espace privé.
-- Distinction visuelle des intertitres `h2` et `h3` dans l'éditeur.
-- Mise en forme des blocs de poésie dans l'éditeur.
 
 ## [1.0.0] - 2026-10-13
 
