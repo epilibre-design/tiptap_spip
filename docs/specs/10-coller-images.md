@@ -193,7 +193,7 @@ le collage se comporte comme aujourd'hui.
 | Vitest (CVT) | réponses enregistrées de `deposer_image` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
 | PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur ; disponibilité dans `charger()` : article avec `documents_objets` vide → disponible, objet absent de `documents_objets` → indisponible, sans objet → indisponible |
 | Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; collage de deux PNG en un geste → deux `<docN>` dans l'ordre, deux documents liés ; même chose sur un article **nouveau**, puis enregistrement : documents rattachés à l'article créé ; mode source ; soumission pendant les envois retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX, crayon), puis relancée après le dernier envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
-| Playwright (L7.2) | avec `crayons/upload` activé : dépôt sur Tiptap en modes visuel et source → un seul document et un seul raccourci par fichier ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt |
+| Playwright (L7.2) | avec `crayons/upload` activé : dépôt sur Tiptap en modes visuel et source → un seul document et un seul raccourci par fichier, avec un lien `spip_documents_liens` vers l'article édité ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt |
 
 ## 8. Hors périmètre et suites
 
@@ -214,7 +214,12 @@ Quand `crayons/upload` est activé, le contrôleur `article.texte` de Crayons aj
 `dragenter`, `dragover`, `dragleave` et `drop` au textarea et à ce panneau (`crayons/controleurs/article_texte.html`,
 `crayons/js/uploader.js.html`). Sa bibliothèque parcourt `dataTransfer.files`, envoie chaque fichier par XHR à
 `action_crayons_upload`, puis affiche `<docN>` dans le panneau (`crayons/modeles/uploader_item.html`) ; elle
-n'insère pas ce raccourci dans le texte.
+n'insère pas ce raccourci dans le texte. L'action transmet `article` et son `id_article` à
+`action_ajouter_documents_dist()` : le document est lié à l'article.
+
+Une image collée ou déposée dans le crayon `article.texte` équipé par Tiptap doit être liée au **même article**
+(`spip_documents_liens` avec `objet = article` et `id_objet = id_article`), comme avec Crayons. La présence de
+`<docN>` dans le texte ne remplace pas cette liaison (§5).
 
 En mode visuel, Tiptap masque le textarea : déposer sur sa zone visible ne déclenche pas le gestionnaire de
 Crayons. En mode source, le textarea est de nouveau visible et les deux gestionnaires peuvent recevoir le
