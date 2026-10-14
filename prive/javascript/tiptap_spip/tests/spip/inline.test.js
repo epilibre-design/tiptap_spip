@@ -31,6 +31,15 @@ describe('parseInline : marks', () => {
 		expect(inl('{a {{b} c}}')).toEqual([raw('{'), text('a '), raw('{{'), text('b'), raw('}'), text(' c'), raw('}}')]);
 	});
 
+	it('délimiteur orphelin : lui seul reste brut, les paires voisines restent des marks', () => {
+		expect(inl('Un {{gras}}, un {orphelin')).toEqual([text('Un '), text('gras', [B]), text(', un '), raw('{'), text('orphelin')]);
+		expect(inl('{{a}} b}} <i>c</i> d</strong>')).toEqual([text('a', [B]), text(' b'), raw('}}'), text(' '), text('c', [I]), text(' d'), raw('</strong>')]);
+		// orphelin autour d'une paire de même mark : la paire intérieure est gardée
+		expect(inl('{a {b} c')).toEqual([raw('{'), text('a '), text('b', [I]), text(' c')]);
+		// même mark imbriquée dans une paire : tout reste brut
+		expect(inl('{a {b} c}')).toEqual([raw('{'), text('a '), raw('{'), text('b'), raw('}'), text(' c'), raw('}')]);
+	});
+
 	it('accolades orphelines, vides ou triples : brutes', () => {
 		expect(inl('a} {} {{}} {{{x')).toEqual([text('a'), raw('}'), text(' '), raw('{}'), text(' '), raw('{{}}'), text(' '), raw('{{{'), text('x')]);
 	});

@@ -18698,18 +18698,30 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne, bords) {
   flush();
   return tokens;
 }
-function wellNested(tokens) {
-  const stack = [];
+function appariement(tokens) {
+  const pile = [];
+  const enfermees = /* @__PURE__ */ new Set();
+  const paires = /* @__PURE__ */ new Set();
   for (const tk of tokens) {
     if (tk.t === "open") {
-      if (stack.includes(tk.mark)) return false;
-      stack.push(tk.mark);
+      pile.push(tk);
     } else if (tk.t === "close") {
-      if (stack[stack.length - 1] !== tk.mark) return false;
-      stack.pop();
+      const k = pile.findLastIndex((o) => o.mark === tk.mark);
+      if (k < 0) continue;
+      if (enfermees.has(pile[k])) return /* @__PURE__ */ new Set();
+      for (const o of pile.slice(k + 1)) enfermees.add(o);
+      paires.add(pile[k]).add(tk);
+      pile.splice(k, 1);
     }
   }
-  return stack.length === 0;
+  const ouvertes = [];
+  for (const tk of tokens) {
+    if (!paires.has(tk)) continue;
+    if (tk.t === "close") ouvertes.pop();
+    else if (ouvertes.includes(tk.mark)) return /* @__PURE__ */ new Set();
+    else ouvertes.push(tk.mark);
+  }
+  return paires;
 }
 function marksVides(tokens) {
   const out = tokens.filter((tk) => tk.t !== "text" || tk.v !== "");
@@ -18724,7 +18736,7 @@ function marksVides(tokens) {
 }
 function buildNodes(tokens) {
   tokens = marksVides(tokens);
-  const ok = wellNested(tokens);
+  const paires = appariement(tokens);
   const open = [];
   const nodes = [];
   for (const tk of tokens) {
@@ -18732,11 +18744,11 @@ function buildNodes(tokens) {
     const withMarks = (n) => marks.length ? { ...n, marks } : n;
     switch (tk.t) {
       case "open":
-        if (ok) open.push(tk.mark);
+        if (paires.has(tk)) open.push(tk.mark);
         else nodes.push(raw(tk.src, marks));
         break;
       case "close":
-        if (ok) open.pop();
+        if (paires.has(tk)) open.pop();
         else nodes.push(raw(tk.src, marks));
         break;
       case "text":
