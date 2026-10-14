@@ -96,6 +96,7 @@ return [
 	'multi_invalide' => 'Ce multi ne peut pas s’écrire tel quel (code de langue, langue sans code en double, texte).',
 	'multi_langues' => 'Langues du multi',
 	'multi_retirer_langue' => 'Retirer',
+	'multi_sans_langue' => 'Sans langue',
 	'multi_supprimer' => 'Supprimer le multi',
 	'multi_texte' => 'Texte dans cette langue',
 	'multi_vide' => 'Le multi est vide.',

@@ -1,5 +1,6 @@
 import { Editor, getSchema } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
+import { config } from '../config.js';
 import { schemaJSON } from '../editor/content.js';
 import { langueAffichee, partieExtensions } from '../editor/extensions.js';
 import { partieAffichee } from '../editor/texte.js';
@@ -12,8 +13,51 @@ import { openGlossaryPopover } from './MarkPopover.js';
 import { lireSelection, Popover, suivrePosition } from './popover.js';
 import { openRawPopover } from './RawPopover.js';
 
-/** Langue proposée pour une nouvelle partie : celle qu'affichent les multis, sinon celle de l'interface. */
-const langueParDefaut = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || '').replace('-', '_');
+/** Langue qu'affichent les multis, sinon celle de l'interface. */
+const langueCourante = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || '').replace('-', '_');
+
+/**
+ * Langues proposées (spec 05 §5) : celles activées dans la configuration du multilinguisme (config
+ * `langues`), sinon la langue courante. Sans les codes que SPIP ne lit pas comme marqueur de multi
+ * (ber_tam_tfng, sh_latn, sh_cyrl : partie de plus de 3 lettres).
+ */
+const languesProposees = (editor) => {
+	const langues = (config().langues ?? []).filter((l) => RE_CODE_LANGUE.test(l.code));
+	if (langues.length) return langues;
+	const courante = langueCourante(editor);
+	return courante ? [{ code: courante, nom: courante }] : [];
+};
+
+/** Langue d'une première partie : la langue courante si elle est proposée, sinon la première proposée. */
+const languePremiere = (editor) => {
+	const codes = languesProposees(editor).map((l) => l.code);
+	const courante = langueCourante(editor);
+	return codes.includes(courante) ? courante : codes[0] ?? '';
+};
+
+/** Langue d'une partie ajoutée : la première proposée que n'a encore aucune partie, sinon aucune. */
+const langueSuivante = (editor, lignes) => {
+	const prises = lignes.map((l) => l.langue.value);
+	return languesProposees(editor).map((l) => l.code).find((c) => !prises.includes(c)) ?? '';
+};
+
+/**
+ * Sélecteur de la langue d'une partie : langues proposées, plus celle de la partie si elle n'en fait
+ * pas partie (multi existant), et « sans langue ».
+ */
+const selecteurLangue = (editor, lang) => {
+	const langues = [...languesProposees(editor)];
+	if (lang && !langues.some((l) => l.code === lang)) langues.push({ code: lang, nom: lang });
+	const select = document.createElement('select');
+	select.name = 'langue';
+	select.setAttribute('aria-label', label('langue'));
+	select.append(
+		...langues.map((l) => new Option(l.nom && l.nom !== l.code ? `${l.nom} (${l.code})` : l.code, l.code)),
+		new Option(label('multi_sans_langue'), ''),
+	);
+	select.value = lang ?? '';
+	return select;
+};
 
 /** Codes saisis : valides, et une seule partie sans langue. */
 const languesValides = (langues) => langues.every((l) => l === null || RE_CODE_LANGUE.test(l)) && langues.filter((l) => l === null).length <= 1;
@@ -76,11 +120,7 @@ function multiEnLigne(contexte, existant) {
 	const ajouter = (lang, origine) => {
 		const ligne = document.createElement('div');
 		ligne.className = 'tts-multi__partie';
-		const langue = document.createElement('input');
-		langue.name = 'langue';
-		langue.size = 6;
-		langue.value = lang ?? '';
-		langue.setAttribute('aria-label', label('langue'));
+		const langue = selecteurLangue(editor, lang);
 		const zone = document.createElement('div');
 		zone.className = 'tts-multi__texte';
 		const retirer = document.createElement('button');
@@ -122,13 +162,13 @@ function multiEnLigne(contexte, existant) {
 	if (existant) {
 		for (const p of existant.node.attrs.parts ?? []) ajouter(p.lang, p.content);
 	} else {
-		ajouter(langueParDefaut(editor), morceau);
-		ajouter('', null);
+		ajouter(languePremiere(editor), morceau);
+		ajouter(langueSuivante(editor, lignes), null);
 	}
 	const appliquer = () => {
 		const parts = lignes
 			.map((l) => ({
-				lang: l.langue.value.trim() || null,
+				lang: l.langue.value || null,
 				content: l.modifie || !l.origine ? l.sous.getJSON().content?.[0]?.content ?? [] : l.origine,
 			}))
 			.filter((p) => p.lang || p.content.length);
@@ -157,7 +197,7 @@ function multiEnLigne(contexte, existant) {
 
 	popover.button(label('appliquer'), null, { submit: true, name: 'appliquer' });
 	popover.button(label('multi_ajouter'), () => {
-		ajouter('', null).langue.focus();
+		ajouter(langueSuivante(editor, lignes), null).langue.focus();
 		return false;
 	}, { name: 'ajouter_langue' });
 	if (existant) {
@@ -195,11 +235,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
 	const ajouter = (lang, partie) => {
 		const ligne = document.createElement('div');
 		ligne.className = 'tts-multi__partie';
-		const langue = document.createElement('input');
-		langue.name = 'langue';
-		langue.size = 6;
-		langue.value = lang ?? '';
-		langue.setAttribute('aria-label', label('langue'));
+		const langue = selecteurLangue(editor, lang);
 		const retirer = document.createElement('button');
 		retirer.type = 'button';
 		retirer.name = 'retirer_langue';
@@ -214,7 +250,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
 		lignes.push(l);
 		return l;
 	};
-	if (nouveau) ajouter(langueParDefaut(editor), null);
+	if (nouveau) ajouter(languePremiere(editor), null);
 	else editor.state.doc.nodeAt(pos).forEach((partie) => ajouter(partie.attrs.lang, partie));
 
 	// multi modifié, ou paragraphe vide qu'un nouveau multi remplace
@@ -225,7 +261,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
 	};
 
 	const appliquer = () => {
-		const langues = lignes.map((l) => l.langue.value.trim() || null);
+		const langues = lignes.map((l) => l.langue.value || null);
 		if (!lignes.length) {
 			popover.error(label('multi_vide'));
 			return false;
@@ -255,7 +291,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
 
 	popover.button(label('appliquer'), null, { submit: true, name: 'appliquer' });
 	popover.button(label('multi_ajouter'), () => {
-		ajouter('', null).langue.focus();
+		ajouter(langueSuivante(editor, lignes), null).langue.focus();
 		return false;
 	}, { name: 'ajouter_langue' });
 	// le multi retiré laisse les paragraphes de la langue affichée

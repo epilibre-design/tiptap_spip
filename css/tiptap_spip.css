@@ -556,8 +556,16 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	margin-bottom: 0.4em;
 }
 
+/* sélecteur de langue à sa largeur naturelle (l'espace privé étire les select) */
+.tts-multi__partie select {
+	flex: 0 0 auto;
+	width: auto;
+	max-width: 12em;
+}
+
 .tts-multi__texte {
 	flex: 1;
+	min-width: 10em;
 }
 
 .tts-multi__texte .tts-prosemirror {

@@ -56,6 +56,13 @@ if (!function_exists('include_spip')) {
 	}
 }
 
+if (!function_exists('traduire_nom_langue')) {
+	/** Simulation : quelques noms de langue, avec des entités comme SPIP, le code sinon. */
+	function traduire_nom_langue($lang) {
+		return ['fr' => 'fran&#231;ais', 'en' => 'English', 'de' => 'Deutsch'][$lang] ?? $lang;
+	}
+}
+
 if (!function_exists('lire_config')) {
 	function lire_config(string $cle, $defaut = null) {
 		return $GLOBALS['_test_config'][$cle] ?? $defaut;
