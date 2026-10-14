@@ -18,9 +18,12 @@ item, simply place the cursor where you want it.
 **Intertitle** corresponds to the usual SPIP heading. Additional levels are available if the
 administrator kept them in the [configuration](../configurer.md).
 
-In a list, **Tab** indents an item and **Shift+Tab** outdents it. In a table, place the cursor in
-a cell before reopening **Table**: you can add or delete a row or column, add a header row, or
-merge or split cells.
+In a list, **Tab** indents an item and **Shift+Tab** outdents it. 
+
+In a table, place the cursor in a cell before reopening **Table**: 
+you can add or delete a row or column, add a header row, or merge or split cells.
+
+![Table edition](../medias/editeur_tableau.png)
 
 ## A few keyboard shortcuts
 
