@@ -21,9 +21,9 @@
 
 ### Corrigé
 
-- Crayons : une modification faite sans saisie (insertion d'un document, d'un modèle…) puis enregistrée
-  aussitôt est bien enregistrée. Le texte est recopié sur le `form-pre-serialize` de la copie de jQuery
-  propre à Crayons (`cQuery`), et plus seulement sur celui de jQuery.
+- Crayons : un texte modifié sans saisie au clavier (document ou modèle inséré, fichier déposé…) puis
+  enregistré aussitôt, sans quitter l'éditeur, partait avec l'ancien texte. Il est maintenant bien
+  enregistré.
 - Code en ligne près d'un backtick ou d'une balise `<code>` restés bruts, même dans un autre
   paragraphe : le texte enregistré relit désormais le même contenu (le code s'écrit en `<code>`,
   éventuellement coupé, ou avec d'autres backticks).
