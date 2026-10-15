@@ -670,3 +670,19 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	box-sizing: border-box;
 	font-family: monospace;
 }
+
+/* Marqueur d'envoi d'une image collée (spec 10 §3) */
+.tts-envoi {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3em;
+	padding: 0 0.3em;
+	border: 1px dashed currentColor;
+	border-radius: 3px;
+	font-size: 0.85em;
+	opacity: 0.75;
+}
+
+.tts-envoi progress {
+	width: 4em;
+}

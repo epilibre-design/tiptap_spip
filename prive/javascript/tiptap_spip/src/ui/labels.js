@@ -118,6 +118,7 @@ export const DEFAUTS = {
 	brut_source: 'Source SPIP, relue quand on applique',
 	brut_invalide: 'Ce texte ne peut pas remplacer la source à cet endroit.',
 	modele_aria: 'Modèle @modele@',
+	image_envoi: 'Envoi de l’image…',
 	zone_texte: 'Texte',
 	appliquer: 'Appliquer',
 	annuler: 'Annuler',

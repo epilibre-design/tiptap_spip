@@ -33,10 +33,10 @@ export let wrapper = null;
  * Éditeur monté comme par main.js, avec ou sans services, avec ou sans extensions tierces, avec ou
  * sans catalogue des modèles ({ url, modeles }).
  */
-export const monter = (source, services = null, { tierces = [], catalogue = null } = {}) => {
+export const monter = (source, services = null, { tierces = [], catalogue = null, ui: autres = {} } = {}) => {
 	document.body.innerHTML = '<div class="tts-editor"><div class="tts-content"></div></div>';
 	wrapper = document.querySelector('.tts-editor');
-	const ui = creerInterface({ editor: () => editor, wrapper, services, catalogue });
+	const ui = Object.assign(creerInterface({ editor: () => editor, wrapper, services, catalogue }), autres);
 	editor = createEditor({ element: wrapper.querySelector('.tts-content'), source, ui, tierces });
 	return { editor, ui };
 };

@@ -5899,13 +5899,13 @@ var Configuration = class {
     this.pluginsByKey = /* @__PURE__ */ Object.create(null);
     this.fields = baseFields.slice();
     if (plugins)
-      plugins.forEach((plugin) => {
-        if (this.pluginsByKey[plugin.key])
-          throw new RangeError("Adding different instances of a keyed plugin (" + plugin.key + ")");
-        this.plugins.push(plugin);
-        this.pluginsByKey[plugin.key] = plugin;
-        if (plugin.spec.state)
-          this.fields.push(new FieldDesc(plugin.key, plugin.spec.state, plugin));
+      plugins.forEach((plugin2) => {
+        if (this.pluginsByKey[plugin2.key])
+          throw new RangeError("Adding different instances of a keyed plugin (" + plugin2.key + ")");
+        this.plugins.push(plugin2);
+        this.pluginsByKey[plugin2.key] = plugin2;
+        if (plugin2.spec.state)
+          this.fields.push(new FieldDesc(plugin2.key, plugin2.spec.state, plugin2));
       });
   }
 };
@@ -5940,8 +5940,8 @@ var EditorState = class _EditorState {
   filterTransaction(tr, ignore = -1) {
     for (let i2 = 0; i2 < this.config.plugins.length; i2++)
       if (i2 != ignore) {
-        let plugin = this.config.plugins[i2];
-        if (plugin.spec.filterTransaction && !plugin.spec.filterTransaction.call(plugin, tr, this))
+        let plugin2 = this.config.plugins[i2];
+        if (plugin2.spec.filterTransaction && !plugin2.spec.filterTransaction.call(plugin2, tr, this))
           return false;
       }
     return true;
@@ -5960,10 +5960,10 @@ var EditorState = class _EditorState {
     for (; ; ) {
       let haveNew = false;
       for (let i2 = 0; i2 < this.config.plugins.length; i2++) {
-        let plugin = this.config.plugins[i2];
-        if (plugin.spec.appendTransaction) {
+        let plugin2 = this.config.plugins[i2];
+        if (plugin2.spec.appendTransaction) {
           let n = seen ? seen[i2].n : 0, oldState = seen ? seen[i2].state : this;
-          let tr = n < trs.length && plugin.spec.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState);
+          let tr = n < trs.length && plugin2.spec.appendTransaction.call(plugin2, n ? trs.slice(n) : trs, oldState, newState);
           if (tr && newState.filterTransaction(tr, i2)) {
             tr.setMeta("appendedTransaction", rootTr);
             if (!seen) {
@@ -6044,9 +6044,9 @@ var EditorState = class _EditorState {
       for (let prop in pluginFields) {
         if (prop == "doc" || prop == "selection")
           throw new RangeError("The JSON fields `doc` and `selection` are reserved");
-        let plugin = pluginFields[prop], state = plugin.spec.state;
+        let plugin2 = pluginFields[prop], state = plugin2.spec.state;
         if (state && state.toJSON)
-          result[prop] = state.toJSON.call(plugin, this[plugin.key]);
+          result[prop] = state.toJSON.call(plugin2, this[plugin2.key]);
       }
     return result;
   }
@@ -6075,9 +6075,9 @@ var EditorState = class _EditorState {
       } else {
         if (pluginFields)
           for (let prop in pluginFields) {
-            let plugin = pluginFields[prop], state = plugin.spec.state;
-            if (plugin.key == field.name && state && state.fromJSON && Object.prototype.hasOwnProperty.call(json, prop)) {
-              instance[field.name] = state.fromJSON.call(plugin, config2, json[prop], instance);
+            let plugin2 = pluginFields[prop], state = plugin2.spec.state;
+            if (plugin2.key == field.name && state && state.fromJSON && Object.prototype.hasOwnProperty.call(json, prop)) {
+              instance[field.name] = state.fromJSON.call(plugin2, config2, json[prop], instance);
               return;
             }
           }
@@ -7453,7 +7453,7 @@ var ViewDesc = class {
   }
   // Used to check whether a given description corresponds to a
   // widget/mark/node.
-  matchesWidget(widget) {
+  matchesWidget(widget2) {
     return false;
   }
   matchesMark(mark2) {
@@ -7831,8 +7831,8 @@ var ViewDesc = class {
   }
 };
 var WidgetViewDesc = class extends ViewDesc {
-  constructor(parent, widget, view, pos) {
-    let self, dom = widget.type.toDOM;
+  constructor(parent, widget2, view, pos) {
+    let self, dom = widget2.type.toDOM;
     if (typeof dom == "function")
       dom = dom(view, () => {
         if (!self)
@@ -7840,7 +7840,7 @@ var WidgetViewDesc = class extends ViewDesc {
         if (self.parent)
           return self.parent.posBeforeChild(self);
       });
-    if (!widget.type.spec.raw) {
+    if (!widget2.type.spec.raw) {
       let elt = isElt(dom) ? dom : document.createElement("span");
       if (elt != dom)
         elt.appendChild(dom);
@@ -7849,12 +7849,12 @@ var WidgetViewDesc = class extends ViewDesc {
       elt.classList.add("ProseMirror-widget");
     }
     super(parent, [], dom, null);
-    this.widget = widget;
-    this.widget = widget;
+    this.widget = widget2;
+    this.widget = widget2;
     self = this;
   }
-  matchesWidget(widget) {
-    return this.dirty == NOT_DIRTY && widget.type.eq(this.widget.type);
+  matchesWidget(widget2) {
+    return this.dirty == NOT_DIRTY && widget2.type.eq(this.widget.type);
   }
   parseRule() {
     return { ignore: true };
@@ -8052,12 +8052,12 @@ var NodeViewDesc = class _NodeViewDesc extends ViewDesc {
     let compositionInChild = composition && composition.pos < 0;
     let updater = new ViewTreeUpdater(this, localComposition && localComposition.node, view);
     let addBuffers = this.node.inlineContent, atBufferPos = addBuffers && this.node.isBlock;
-    iterDeco(this.node, this.innerDeco, (widget, i2, insideNode) => {
-      if (widget.spec.marks)
-        updater.syncToMarks(widget.spec.marks, inline, view, i2);
-      else if (widget.type.side >= 0 && !insideNode)
+    iterDeco(this.node, this.innerDeco, (widget2, i2, insideNode) => {
+      if (widget2.spec.marks)
+        updater.syncToMarks(widget2.spec.marks, inline, view, i2);
+      else if (widget2.type.side >= 0 && !insideNode)
         updater.syncToMarks(i2 == this.node.childCount ? Mark.none : this.node.child(i2).marks, inline, view, i2);
-      updater.placeWidget(widget, view, off);
+      updater.placeWidget(widget2, view, off);
     }, (child, outerDeco, innerDeco, i2) => {
       updater.syncToMarks(child.marks, inline, view, i2);
       if (atBufferPos && child.isAtom && !child.isText)
@@ -8592,12 +8592,12 @@ var ViewTreeUpdater = class {
     this.top.children.splice(this.index++, 0, desc);
     this.changed = true;
   }
-  placeWidget(widget, view, pos) {
+  placeWidget(widget2, view, pos) {
     let next = this.index < this.top.children.length ? this.top.children[this.index] : null;
-    if (next && next.matchesWidget(widget) && (widget == next.widget || !next.widget.type.toDOM.parentNode)) {
+    if (next && next.matchesWidget(widget2) && (widget2 == next.widget || !next.widget.type.toDOM.parentNode)) {
       this.index++;
     } else {
-      let desc = new WidgetViewDesc(this.top, widget, view, pos);
+      let desc = new WidgetViewDesc(this.top, widget2, view, pos);
       this.top.children.splice(this.index++, 0, desc);
       this.changed = true;
     }
@@ -8689,23 +8689,23 @@ function iterDeco(parent, deco, onWidget, onNode) {
   }
   let decoIndex = 0, active = [], restNode = null;
   for (let parentIndex = 0; ; ) {
-    let widget, widgets;
+    let widget2, widgets;
     while (decoIndex < locals.length && locals[decoIndex].to == offset) {
       let next = locals[decoIndex++];
       if (next.widget) {
-        if (!widget)
-          widget = next;
+        if (!widget2)
+          widget2 = next;
         else
-          (widgets || (widgets = [widget])).push(next);
+          (widgets || (widgets = [widget2])).push(next);
       }
     }
-    if (widget) {
+    if (widget2) {
       if (widgets) {
         widgets.sort(compareSide);
         for (let i2 = 0; i2 < widgets.length; i2++)
           onWidget(widgets[i2], parentIndex, !!restNode);
       } else {
-        onWidget(widget, parentIndex, !!restNode);
+        onWidget(widget2, parentIndex, !!restNode);
       }
     }
     let child, index;
@@ -11805,14 +11805,14 @@ var EditorView = class {
       this.prevDirectPlugins = this.directPlugins;
       this.destroyPluginViews();
       for (let i2 = 0; i2 < this.directPlugins.length; i2++) {
-        let plugin = this.directPlugins[i2];
-        if (plugin.spec.view)
-          this.pluginViews.push(plugin.spec.view(this));
+        let plugin2 = this.directPlugins[i2];
+        if (plugin2.spec.view)
+          this.pluginViews.push(plugin2.spec.view(this));
       }
       for (let i2 = 0; i2 < this.state.plugins.length; i2++) {
-        let plugin = this.state.plugins[i2];
-        if (plugin.spec.view)
-          this.pluginViews.push(plugin.spec.view(this));
+        let plugin2 = this.state.plugins[i2];
+        if (plugin2.spec.view)
+          this.pluginViews.push(plugin2.spec.view(this));
       }
     } else {
       for (let i2 = 0; i2 < this.pluginViews.length; i2++) {
@@ -12124,8 +12124,8 @@ function changedNodeViews(a, b) {
     nB++;
   return nA != nB;
 }
-function checkStateComponent(plugin) {
-  if (plugin.spec.state || plugin.spec.filterTransaction || plugin.spec.appendTransaction)
+function checkStateComponent(plugin2) {
+  if (plugin2.spec.state || plugin2.spec.filterTransaction || plugin2.spec.appendTransaction)
     throw new RangeError("Plugins passed directly to the view must not have a state component");
 }
 
@@ -14783,9 +14783,9 @@ var toggleWrap = (typeOrName, attributes = {}) => ({ state, commands }) => {
 var undoInputRule = () => ({ state, dispatch }) => {
   const plugins = state.plugins;
   for (let i2 = 0; i2 < plugins.length; i2 += 1) {
-    const plugin = plugins[i2];
+    const plugin2 = plugins[i2];
     let undoable;
-    if (plugin.spec.isInputRules && (undoable = plugin.getState(state))) {
+    if (plugin2.spec.isInputRules && (undoable = plugin2.getState(state))) {
       if (dispatch) {
         const tr = state.tr;
         const toUndo = undoable.transform;
@@ -15703,7 +15703,7 @@ function createRuleTransaction(config2) {
   };
 }
 function applyRule(config2) {
-  const { editor, from: from2, to, text: text2, rule, match, plugin, insertText } = config2;
+  const { editor, from: from2, to, text: text2, rule, match, plugin: plugin2, insertText } = config2;
   const { view } = editor;
   const { inputTransaction, tr } = createRuleTransaction({
     editor,
@@ -15739,7 +15739,7 @@ function applyRule(config2) {
   }
   closeHistory(tr);
   tr.setMeta("inputRule", true);
-  if (rule.undoable) tr.setMeta(plugin, {
+  if (rule.undoable) tr.setMeta(plugin2, {
     transform: tr,
     from: from2,
     to: inputEnd,
@@ -15756,7 +15756,7 @@ function matchesDocument($from, match, text2) {
 }
 function run$1(config2) {
   var _ref;
-  const { editor, from: from2, to, text: text2, rules, plugin, insertText } = config2;
+  const { editor, from: from2, to, text: text2, rules, plugin: plugin2, insertText } = config2;
   const { view } = editor;
   if (view.composing) return false;
   const $from = view.state.doc.resolve(from2);
@@ -15772,7 +15772,7 @@ function run$1(config2) {
       text: text2,
       rule,
       match,
-      plugin,
+      plugin: plugin2,
       insertText
     })) return true;
   }
@@ -15780,13 +15780,13 @@ function run$1(config2) {
 }
 function inputRulesPlugin(props) {
   const { editor, rules } = props;
-  const plugin = new Plugin({
+  const plugin2 = new Plugin({
     state: {
       init() {
         return null;
       },
       apply(tr, prev, state) {
-        const stored = tr.getMeta(plugin);
+        const stored = tr.getMeta(plugin2);
         if (stored) return stored;
         const simulatedInputMeta = tr.getMeta("applyInputRules");
         if (!!simulatedInputMeta) setTimeout(() => {
@@ -15801,7 +15801,7 @@ function inputRulesPlugin(props) {
             to,
             text: text2,
             rules,
-            plugin
+            plugin: plugin2
           });
         });
         return tr.selectionSet || tr.docChanged ? null : prev;
@@ -15815,7 +15815,7 @@ function inputRulesPlugin(props) {
           to,
           text: text2,
           rules,
-          plugin,
+          plugin: plugin2,
           insertText: true
         });
       },
@@ -15828,7 +15828,7 @@ function inputRulesPlugin(props) {
             to: $cursor.pos,
             text: "",
             rules,
-            plugin
+            plugin: plugin2
           });
         });
         return false;
@@ -15842,14 +15842,14 @@ function inputRulesPlugin(props) {
           to: $cursor.pos,
           text: "\n",
           rules,
-          plugin
+          plugin: plugin2
         });
         return false;
       }
     },
     isInputRules: true
   });
-  return plugin;
+  return plugin2;
 }
 var Extendable = class {
   constructor(config2 = {}) {
@@ -17219,8 +17219,8 @@ var Editor = class extends EventEmitter {
   * @param handlePlugins Control how to merge the plugin into the existing plugins.
   * @returns The new editor state
   */
-  registerPlugin(plugin, handlePlugins) {
-    const plugins = isFunction(handlePlugins) ? handlePlugins(plugin, [...this.state.plugins]) : [...this.state.plugins, plugin];
+  registerPlugin(plugin2, handlePlugins) {
+    const plugins = isFunction(handlePlugins) ? handlePlugins(plugin2, [...this.state.plugins]) : [...this.state.plugins, plugin2];
     const state = this.state.reconfigure({ plugins });
     this.view.updateState(state);
     return state;
@@ -17237,7 +17237,7 @@ var Editor = class extends EventEmitter {
     let plugins = prevPlugins;
     [].concat(nameOrPluginKeyToRemove).forEach((nameOrPluginKey) => {
       const name = typeof nameOrPluginKey === "string" ? `${nameOrPluginKey}$` : nameOrPluginKey.key;
-      plugins = plugins.filter((plugin) => !plugin.key.startsWith(name));
+      plugins = plugins.filter((plugin2) => !plugin2.key.startsWith(name));
     });
     if (prevPlugins.length === plugins.length) return;
     const state = this.state.reconfigure({ plugins });
@@ -22992,12 +22992,12 @@ function updateColumnsOnResize(node2, colgroup, table, defaultCellMinWidth, over
 }
 var columnResizingPluginKey = new PluginKey("tableColumnResizing");
 function columnResizing({ handleWidth = 5, cellMinWidth = 25, defaultCellMinWidth = 100, View = TableView, lastColumnResizable = true } = {}) {
-  const plugin = new Plugin({
+  const plugin2 = new Plugin({
     key: columnResizingPluginKey,
     state: {
       init(_, state) {
         var _plugin$spec;
-        const nodeViews = (_plugin$spec = plugin.spec) === null || _plugin$spec === void 0 || (_plugin$spec = _plugin$spec.props) === null || _plugin$spec === void 0 ? void 0 : _plugin$spec.nodeViews;
+        const nodeViews = (_plugin$spec = plugin2.spec) === null || _plugin$spec === void 0 || (_plugin$spec = _plugin$spec.props) === null || _plugin$spec === void 0 ? void 0 : _plugin$spec.nodeViews;
         const tableName = tableNodeTypes(state.schema).table.name;
         if (View && nodeViews) nodeViews[tableName] = (node2, view) => {
           return new View(node2, defaultCellMinWidth, view);
@@ -23031,7 +23031,7 @@ function columnResizing({ handleWidth = 5, cellMinWidth = 25, defaultCellMinWidt
       nodeViews: {}
     }
   });
-  return plugin;
+  return plugin2;
 }
 var ResizeState = class ResizeState2 {
   constructor(activeHandle, dragging) {
@@ -24772,14 +24772,14 @@ var TrailingNode = Extension.create({
   },
   addProseMirrorPlugins() {
     var _this$editor$schema$t;
-    const plugin = new PluginKey(this.name);
+    const plugin2 = new PluginKey(this.name);
     const defaultNode = this.options.node || ((_this$editor$schema$t = this.editor.schema.topNodeType.contentMatch.defaultType) === null || _this$editor$schema$t === void 0 ? void 0 : _this$editor$schema$t.name) || "paragraph";
     const disabledNodes = Object.entries(this.editor.schema.nodes).map(([, value]) => value).filter((node2) => (this.options.notAfter || []).concat(defaultNode).includes(node2.name));
     return [new Plugin({
-      key: plugin,
+      key: plugin2,
       appendTransaction: (transactions, __, state) => {
         const { doc: doc4, tr, schema } = state;
-        const shouldInsertNodeAtEnd = plugin.getState(state);
+        const shouldInsertNodeAtEnd = plugin2.getState(state);
         const endPosition = doc4.content.size;
         const type = schema.nodes[defaultNode];
         if (transactions.some((transaction) => transaction.getMeta("skipTrailingNode"))) return;
@@ -24976,6 +24976,7 @@ var DEFAUTS = {
   brut_source: "Source SPIP, relue quand on applique",
   brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
   modele_aria: "Mod\xE8le @modele@",
+  image_envoi: "Envoi de l\u2019image\u2026",
   zone_texte: "Texte",
   appliquer: "Appliquer",
   annuler: "Annuler"
@@ -25651,6 +25652,50 @@ var SpipEdition = Extension.create({
   })]
 });
 
+// src/editor/marqueurEnvoi.js
+var cleMarqueurs = new PluginKey("spipUploadPlaceholder");
+function widget(id) {
+  const element2 = document.createElement("span");
+  element2.className = "tts-envoi";
+  element2.dataset.ttsEnvoi = id;
+  element2.contentEditable = "false";
+  const barre = document.createElement("progress");
+  barre.max = 1;
+  element2.append(label("image_envoi"), " ", barre);
+  return element2;
+}
+var plugin = (ui2) => new Plugin({
+  key: cleMarqueurs,
+  state: {
+    init: () => /* @__PURE__ */ new Map(),
+    apply(tr, marqueurs) {
+      const meta = tr.getMeta(cleMarqueurs);
+      if (!tr.docChanged && !meta) return marqueurs;
+      const suite = /* @__PURE__ */ new Map();
+      for (const [id, pos] of marqueurs) suite.set(id, tr.mapping.map(pos));
+      for (const { id, pos } of meta?.ajouter ?? []) suite.set(id, pos);
+      for (const id of meta?.retirer ?? []) suite.delete(id);
+      return suite;
+    }
+  },
+  props: {
+    decorations(state) {
+      const marqueurs = cleMarqueurs.getState(state);
+      if (!marqueurs.size) return null;
+      return DecorationSet.create(state.doc, [...marqueurs].map(([id, pos]) => Decoration.widget(pos, () => widget(id), { key: id })));
+    },
+    // collage d'images (spec 10 §3) : décidé à chaque collage par l'instance (services, disponibilité)
+    handlePaste: (view, event) => ui2?.collerImages?.(view, event) ?? false
+  }
+});
+var SpipPasteImage = Extension.create({
+  name: "spipPasteImage",
+  addOptions: () => ({ ui: null }),
+  addProseMirrorPlugins() {
+    return [plugin(this.options.ui)];
+  }
+});
+
 // src/editor/extensions.js
 var hidden = (fallback = null, keepOnSplit = true) => ({ default: fallback, rendered: false, keepOnSplit });
 var TOP_BLOCKS = [
@@ -26254,7 +26299,8 @@ function extensionsDuCoeur({ headingLevels, ui: ui2 }) {
     UndoRedo,
     SpipEdition,
     SpipAnomalies,
-    SpipUi.configure({ ui: ui2 })
+    SpipUi.configure({ ui: ui2 }),
+    SpipPasteImage.configure({ ui: ui2 })
   ];
 }
 var NoteDocument = SpipDocument.extend({ content: "(paragraph | bulletList | orderedList | spipModelBlock)+" });
@@ -28514,14 +28560,18 @@ var StatusBar = class {
     this.element.setAttribute("aria-label", label("etat"));
     this.mots = document.createElement("span");
     this.mots.className = "tts-etat__mots";
-    const annonce = document.createElement("span");
-    annonce.setAttribute("aria-live", "polite");
+    this.annonce = document.createElement("span");
+    this.annonce.setAttribute("aria-live", "polite");
     this.anomalies = document.createElement("button");
     this.anomalies.type = "button";
     this.anomalies.className = "tts-etat__anomalies";
     this.anomalies.addEventListener("click", () => this.suivante());
-    annonce.append(this.anomalies);
-    this.element.append(this.mots, annonce);
+    this.annonce.append(this.anomalies);
+    this.message = document.createElement("span");
+    this.message.className = "tts-etat__message";
+    this.message.setAttribute("role", "status");
+    this.message.hidden = true;
+    this.element.append(this.message, this.mots, this.annonce);
     this.source = false;
     this.render = ({ transaction }) => {
       if (transaction.docChanged) this.afficher();
@@ -28529,13 +28579,37 @@ var StatusBar = class {
     editor.on("transaction", this.render);
     this.afficher();
   }
-  /** Mode source : barre masquée. */
+  /** Mode source : seul le message reste affiché. */
   setMode(source) {
     this.source = source;
     this.afficher();
   }
+  /**
+   * Message dans la barre, avec éventuellement un bouton d'action ; remplace le précédent.
+   * @param {string} texte
+   * @param {{ libelle: string, faire: () => void }} [action]
+   */
+  signaler(texte2, action = null) {
+    this.message.replaceChildren(texte2);
+    if (action) {
+      const bouton = document.createElement("button");
+      bouton.type = "button";
+      bouton.textContent = action.libelle;
+      bouton.addEventListener("click", () => action.faire());
+      this.message.append(" ", bouton);
+    }
+    this.message.hidden = false;
+    this.afficher();
+  }
+  effacer() {
+    this.message.replaceChildren();
+    this.message.hidden = true;
+    this.afficher();
+  }
   afficher() {
-    this.element.hidden = this.source;
+    this.element.hidden = this.source && this.message.hidden;
+    this.mots.hidden = this.source;
+    this.annonce.hidden = this.source;
     if (this.source) return;
     const { doc: doc4 } = this.editor.state;
     const mots = doc4.textBetween(0, doc4.content.size, " ", " ").match(/\S+/g)?.length ?? 0;

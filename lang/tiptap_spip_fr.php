@@ -76,6 +76,7 @@ return [
 	'idiome_invalide' => 'Ce n’est pas un raccourci d’idiome.',
 	'idiome_raccourci' => 'Raccourci (<:module:cle:>)',
 	'idiome_retirer' => 'Supprimer l’idiome',
+	'image_envoi' => 'Envoi de l’image…',
 	'italique' => 'Italique',
 	'langue' => 'Langue',
 	'langue_affichee' => 'Langue affichée',
