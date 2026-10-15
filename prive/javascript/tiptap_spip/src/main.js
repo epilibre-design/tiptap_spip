@@ -20,12 +20,14 @@ import { Toolbar } from './ui/Toolbar.js';
 
 /**
  * Textareas équipés (spec 02 §6) : ceux du porte-plume (classes, et champ texte des formulaires
- * SPIP comme le fait son option inserer_auto_name_texte) ou data-tts-toolbar.
+ * SPIP comme le fait son option inserer_auto_name_texte), ceux des formulaires d'objet (leurs
+ * champs configurés, data-tts-champs, avec ou sans les classes du porte-plume) ou data-tts-toolbar.
  */
 const SELECTOR = [
 	'textarea.inserer_barre_edition',
 	'textarea.inserer_barre_forum',
 	'.formulaire_spip textarea[name="texte"]',
+	'form[data-tts-champs] textarea',
 	'textarea[data-tts-toolbar]',
 ].join(', ');
 
