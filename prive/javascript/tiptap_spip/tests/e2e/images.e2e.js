@@ -154,15 +154,21 @@ test.describe('collage', () => {
 
 	test('texte sélectionné conservé (comme Crayons), image insérée après lui', async ({ page }) => {
 		const id = await editer(page, 'Avant après');
-		await page.locator('.tts-editor .ProseMirror p').first().dblclick({ position: { x: 60, y: 5 } });
-		await selectionStable(page);
-		const choisi = await page.evaluate(() => getSelection().toString());
-		expect(choisi.trim()).toBe('après');
+		await module(page);
+		// sélection posée par l'éditeur : un double-clic dépend du rendu de chaque navigateur
+		const choisi = await page.evaluate(() => {
+			const { editor } = [...window.__tts.instances][0];
+			editor.commands.focus();
+			editor.commands.setTextSelection({ from: 7, to: 12 });
+			const { from, to } = editor.state.selection;
+			return editor.state.doc.textBetween(from, to);
+		});
+		expect(choisi).toBe('après');
 		await coller(page, '.tts-editor .ProseMirror', [{}]);
 		await envoisTermines(page);
 		const [doc] = documents('article', id);
 		await enregistrer(page);
-		expect(texte(id)).toMatch(new RegExp(`^Avant après\\s?<doc${doc.id_document}>$`));
+		expect(texte(id)).toBe(`Avant après<doc${doc.id_document}>`);
 	});
 
 	test('deux PNG en un geste : deux <docN> dans l\'ordre, deux documents', async ({ page }) => {
