@@ -2,9 +2,10 @@
 
 ### Ajouté
 
-- Coller une ou plusieurs images (capture d'écran, image copiée) dans l'éditeur, visuel ou source :
-  chaque image devient un document de l'objet, inséré en `<docN>` à l'endroit du collage. Réglage
-  « Coller des images » dans la configuration de l'éditeur (actif par défaut).
+- Coller une ou plusieurs images (capture d'écran, image copiée), ou glisser-déposer des fichiers de tout
+  type accepté par SPIP, dans l'éditeur, visuel ou source : chaque fichier devient un document de l'objet,
+  inséré en `<docN>` à l'endroit du collage ou du dépôt. Réglage « Coller des images et déposer des
+  documents » dans la configuration de l'éditeur (actif par défaut).
 - Guide d’utilisation des passages multilingues, avec captures du formulaire Multi en français et
   en anglais.
 - Nom, slogan et description du plugin dans la liste des plugins (`lang/paquet-tiptap_spip_fr.php`).

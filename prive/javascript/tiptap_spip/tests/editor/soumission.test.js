@@ -36,7 +36,7 @@ describe('SoumissionRetenue (spec 10 §3)', () => {
 		const { form, parties, etat } = preparer();
 		form.querySelector('[name=autre]').click();
 		expect(parties).toEqual([]);
-		expect(etat.messages[0].texte).toBe('Une image est en cours d’envoi.');
+		expect(etat.messages[0].texte).toBe('Un fichier est en cours d’envoi.');
 		expect(etat.messages[0].action.libelle).toBe('Enregistrer sans attendre');
 		soumission.verifier();
 		expect(parties).toEqual([]);
@@ -74,7 +74,7 @@ describe('SoumissionRetenue (spec 10 §3)', () => {
 	it('relance unique : un verifier() pendant sansAttendre ne soumet pas deux fois', () => {
 		const { form, parties, etat } = preparer();
 		form.querySelector('[name=enregistrer]').click();
-		// comme CollerImages : abandonner() prévient l'instance, qui appelle verifier()
+		// comme Envois : abandonner() prévient l'instance, qui appelle verifier()
 		soumission.abandonner = () => {
 			etat.envois = 0;
 			soumission.verifier();

@@ -6,7 +6,7 @@
  * (var_ajax=form) avec l'opération et ses paramètres ; SPIP répond
  * `<br class='… ajax-form-is-ok'>` suivi du formulaire recalculé, qui porte le résultat
  * (script.tts-resultat) ou les erreurs de verifier() (script.tts-erreurs) en JSON. Un appel qui
- * envoie un fichier (deposer_image) passe par XMLHttpRequest, pour la progression et l'abandon.
+ * envoie un fichier (deposer_document) passe par XMLHttpRequest, pour la progression et l'abandon.
  */
 
 /** Le service ne répond plus (session expirée, droit retiré, réseau) : mode dégradé. */
@@ -79,12 +79,13 @@ export class Services {
 	}
 
 	/**
-	 * Collage d'images (spec 10 §6) : configuration annoncée par charger() sur le formulaire courant,
-	 * null si deposer_image est indisponible.
-	 * @returns {{ types: string[], extensions: Record<string, string>, taille: number } | null}
+	 * Collage et dépôt de fichiers (spec 10 §6) : configuration annoncée par charger() sur le formulaire
+	 * courant, null si deposer_document est indisponible.
+	 * @returns {{ images: string[], extensions: Record<string, string>, taille_image: number,
+	 *             documents: string[], documents_limite_image: string[], taille_document: number } | null}
 	 */
-	images() {
-		const brut = this.container.querySelector('form')?.dataset.ttsImages;
+	depot() {
+		const brut = this.container.querySelector('form')?.dataset.ttsDepot;
 		if (!brut) return null;
 		try {
 			return JSON.parse(brut);
@@ -96,7 +97,7 @@ export class Services {
 	/**
 	 * Appelle une opération ; les appels sont sérialisés (chacun repart du formulaire renouvelé
 	 * par la réponse précédente).
-	 * @param {string} operation  previsu_modele, titre_lien, rechercher, deposer_image…
+	 * @param {string} operation  previsu_modele, titre_lien, rechercher, deposer_document…
 	 * @param {object} params  valeurs non chaînes envoyées en JSON
 	 * @param {{ fichier?: File, progression?: (ratio: number|null) => void, signal?: AbortSignal }} [options]
 	 *        fichier : envoyé dans le champ « fichier », par XMLHttpRequest (progression) ;

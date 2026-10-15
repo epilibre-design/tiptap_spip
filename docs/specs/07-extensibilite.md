@@ -143,16 +143,16 @@ function faq_tiptap_spip_extensions(array $flux): array {
   - Le rendu reste à la charge du plugin. Une syntaxe en forme de modèle (`<faq|q=…>`) doit être
     transformée avant les modèles (`pre_echappe_html_propre`), car SPIP les traite avant `pre_propre`.
 
-## 6. Événements des images collées (lot L7.1)
+## 6. Événements des fichiers collés ou déposés (lots L7.1 et L7.2)
 
-Le collage d'images ([10](10-coller-images.md)) émet sur le textarea des événements `CustomEvent`, qui
+Le collage d'images et le dépôt de documents ([10](10-coller-images.md)) émettent sur le textarea des événements `CustomEvent`, qui
 remontent le DOM (`bubbles`). Leur `detail` :
 
 | Événement | `detail` |
 |-----------|----------|
-| `tiptap-spip:image-recue` | `{ fichier }` : le `File` envoyé, déjà renommé (`capture-…`) |
-| `tiptap-spip:image-inseree` | `{ fichier, id_document, raccourci }` (`raccourci` = `doc12`) |
-| `tiptap-spip:image-erreur` | `{ fichier, message }` : message du serveur, ou message générique si le service ne répond plus |
+| `tiptap-spip:document-recu` | `{ fichier }` : le `File` envoyé, déjà renommé (`capture-…`) s'il s'agit d'une image |
+| `tiptap-spip:document-insere` | `{ fichier, id_document, raccourci }` (`raccourci` = `doc12`) |
+| `tiptap-spip:document-erreur` | `{ fichier, message }` : message du serveur, ou message générique si le service ne répond plus |
 
-Un envoi abandonné (éditeur détruit, « Enregistrer sans attendre ») n'émet ni `image-inseree` ni
-`image-erreur`.
+Un envoi abandonné (éditeur détruit, « Enregistrer sans attendre ») n'émet ni `document-insere` ni
+`document-erreur`. Un marqueur effacé à la main avant la fin de son envoi n'émet pas `document-insere`.

@@ -24976,12 +24976,14 @@ var DEFAUTS = {
   brut_source: "Source SPIP, relue quand on applique",
   brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
   modele_aria: "Mod\xE8le @modele@",
-  image_envoi: "Envoi de l\u2019image\u2026",
-  image_echec: "L\u2019image n\u2019a pas pu \xEAtre envoy\xE9e (session expir\xE9e ou connexion perdue).",
-  image_envoi_en_cours: "Une image est en cours d\u2019envoi.",
-  image_enregistrer_sans_attendre: "Enregistrer sans attendre",
-  image_trop_grosse: "Image trop volumineuse : @nom@.",
-  image_type_refuse: "Type de fichier non accept\xE9 : @nom@.",
+  envoi_fichier: "Envoi du fichier\u2026",
+  depot_indication: "D\xE9poser les fichiers",
+  depot_indisponible: "L\u2019ajout de fichiers n\u2019est pas disponible ici.",
+  envoi_echec: "Le fichier n\u2019a pas pu \xEAtre envoy\xE9 (session expir\xE9e ou connexion perdue).",
+  envoi_en_cours: "Un fichier est en cours d\u2019envoi.",
+  enregistrer_sans_attendre: "Enregistrer sans attendre",
+  fichier_trop_gros: "Fichier trop volumineux : @nom@.",
+  fichier_type_refuse: "Type de fichier non accept\xE9 : @nom@.",
   zone_texte: "Texte",
   appliquer: "Appliquer",
   annuler: "Annuler"
@@ -25666,7 +25668,7 @@ function widget(id) {
   element2.contentEditable = "false";
   const barre = document.createElement("progress");
   barre.max = 1;
-  element2.append(label("image_envoi"), " ", barre);
+  element2.append(label("envoi_fichier"), " ", barre);
   return element2;
 }
 var plugin = (ui2) => new Plugin({
@@ -25693,8 +25695,7 @@ var plugin = (ui2) => new Plugin({
     handlePaste: (view, event) => ui2?.collerImages?.(view, event) ?? false
   }
 });
-function ajouterMarqueurs(view, ids) {
-  const pos = view.state.selection.to;
+function ajouterMarqueurs(view, ids, pos = view.state.selection.to) {
   view.dispatch(view.state.tr.setMeta(cleMarqueurs, { ajouter: ids.map((id) => ({ id, pos })) }).setMeta("addToHistory", false));
 }
 var positionMarqueur = (state, id) => cleMarqueurs.getState(state)?.get(id) ?? null;
@@ -26917,6 +26918,164 @@ function allerRetour(source, extensions = []) {
   };
 }
 
+// src/editor/createEditor.js
+function createEditor({ element: element2, source, ui: ui2 = null, tierces = [], extensions = coreExtensions({ ui: ui2, tierces }), editorProps = {} }) {
+  const regles = reglesSpip(extensions);
+  const content = toEditorJSON(source, getSchema(extensions), regles);
+  const editor = new Editor({
+    element: element2,
+    extensions,
+    content,
+    editorProps,
+    enableContentCheck: true,
+    onContentError: ({ error }) => {
+      throw error;
+    }
+  });
+  editor.tiptapSpip = { regles, tierces };
+  return editor;
+}
+
+// src/editor/collerImage.js
+var EXTENSIONS = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
+var deux = (n) => String(n).padStart(2, "0");
+function nommer(fichier, date = /* @__PURE__ */ new Date(), extensions = {}) {
+  const extension = extensions[fichier.type] ?? EXTENSIONS[fichier.type] ?? fichier.name.split(".").pop();
+  const capture = !fichier.name || /^image\.\w+$/i.test(fichier.name);
+  const base2 = capture ? `capture-${date.getFullYear()}${deux(date.getMonth() + 1)}${deux(date.getDate())}-${deux(date.getHours())}${deux(date.getMinutes())}${deux(date.getSeconds())}` : fichier.name.replace(/\.[^.]*$/, "");
+  return new File([fichier], `${base2}.${extension}`, { type: fichier.type, lastModified: fichier.lastModified });
+}
+function imageSeule(html) {
+  const body = new DOMParser().parseFromString(html, "text/html").body;
+  const images = body.querySelectorAll("img");
+  if (images.length !== 1 || body.textContent.trim() !== "") return false;
+  return [...body.querySelectorAll("*")].every((el) => el === images[0] || el.contains(images[0]));
+}
+function trierPressePapiers(donnees, { images, taille_image: taille }) {
+  const fichiers = [...donnees?.files ?? []];
+  if (!fichiers.length) return null;
+  const html = donnees.getData("text/html");
+  if (html ? !imageSeule(html) : donnees.getData("text/plain").trim() !== "") return null;
+  const envoyer = [];
+  const refuses = [];
+  for (const fichier of fichiers) {
+    if (!images.includes(fichier.type)) refuses.push({ fichier, raison: "type" });
+    else if (taille && fichier.size > taille) refuses.push({ fichier, raison: "taille" });
+    else envoyer.push(fichier);
+  }
+  return { envoyer, refuses };
+}
+
+// src/editor/deposer.js
+var CORRECTIONS = { htm: "html", jpeg: "jpg", tiff: "tif", aif: "aiff", mpeg: "mpg" };
+var corrigerExtension = (extension) => {
+  const e = extension.replace(/[^a-z0-9]/gi, "");
+  return CORRECTIONS[e] ?? e;
+};
+var extensionDe = (nom) => corrigerExtension((nom.match(/\.([^.]+)$/)?.[1] ?? "").toLowerCase());
+function trierDepot(donnees, config2) {
+  const fichiers = [...donnees?.files ?? []];
+  if (!fichiers.length) return null;
+  const envoyer = [];
+  const refuses = [];
+  for (const fichier of fichiers) {
+    const image = config2.images.includes(fichier.type);
+    const extension = image ? config2.extensions[fichier.type] : extensionDe(fichier.name);
+    const taille = image || config2.documents_limite_image.includes(extension) ? config2.taille_image : config2.taille_document;
+    if (!image && !config2.documents.includes(extension)) refuses.push({ fichier, raison: "type" });
+    else if (taille && fichier.size > taille) refuses.push({ fichier, raison: "taille" });
+    else envoyer.push(image ? nommer(fichier, /* @__PURE__ */ new Date(), config2.extensions) : fichier);
+  }
+  return { envoyer, refuses };
+}
+var porteFichiers = (event) => [...event.dataTransfer?.types ?? []].includes("Files");
+var DepotFichiers = class {
+  /**
+   * @param {{ wrapper: HTMLElement, textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor,
+   *           envois: import('./envois.js').Envois, services: () => ?import('../services/cvt.js').Services,
+   *           mode: () => 'visual'|'source', signaler: (texte: string) => void }} options
+   */
+  constructor({ wrapper, textarea, editor, envois, services, mode, signaler }) {
+    Object.assign(this, { wrapper, textarea, editor, envois, services, mode, signaler });
+    this.onSurvol = (event) => {
+      if (!this.concerne(event)) {
+        if (porteFichiers(event)) this.survol(false);
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+      this.survol(true);
+    };
+    this.onSortie = (event) => {
+      if (!this.wrapper.contains(event.relatedTarget)) this.survol(false);
+    };
+    this.onDepot = (event) => {
+      if (!this.concerne(event)) {
+        if (porteFichiers(event)) this.survol(false);
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      this.survol(false);
+      this.deposer(event);
+    };
+    wrapper.addEventListener("dragenter", this.onSurvol, true);
+    wrapper.addEventListener("dragover", this.onSurvol, true);
+    wrapper.addEventListener("dragleave", this.onSortie, true);
+    wrapper.addEventListener("drop", this.onDepot, true);
+  }
+  /**
+   * Glisser de fichiers, sauf sur le textarea géré par Crayons en mode source (crayons/upload y a lié
+   * ses gestionnaires). Ailleurs dans la zone (barre d'outils, barre d'état), Crayons n'écoute pas :
+   * le dépôt reste à l'éditeur, qui l'annule au moins.
+   */
+  concerne(event) {
+    if (!porteFichiers(event)) return false;
+    return !(this.mode() === "source" && event.target === this.textarea && this.textarea.classList.contains("uploader"));
+  }
+  survol(actif) {
+    this.wrapper.classList.toggle("tts-editor--depot", actif);
+    if (actif) this.wrapper.dataset.ttsDepot = label("depot_indication");
+    else delete this.wrapper.dataset.ttsDepot;
+  }
+  deposer(event) {
+    const services = this.services();
+    const config2 = services?.available ? services.depot() : null;
+    if (!config2) {
+      this.signaler(label("depot_indisponible"));
+      return;
+    }
+    const tri = trierDepot(event.dataTransfer, config2);
+    if (!tri) return;
+    this.envois.signalerRefus(tri.refuses);
+    if (!tri.envoyer.length) return;
+    const mode = this.mode();
+    this.envois.lancer(tri.envoyer, mode, mode === "visual" ? this.position(event) : void 0);
+  }
+  /**
+   * Visuel : point du dépôt dans le contenu ; dans un bloc de code, après ce bloc ; hors du contenu ou
+   * sans position, après la sélection.
+   */
+  position(event) {
+    const { view } = this.editor;
+    const trouve = view.dom.contains(event.target) ? view.posAtCoords({ left: event.clientX, top: event.clientY }) : null;
+    if (!trouve) return view.state.selection.to;
+    const $pos = view.state.doc.resolve(trouve.pos);
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.spec.code) return $pos.after(d);
+    }
+    return trouve.pos;
+  }
+  destroy() {
+    this.survol(false);
+    this.wrapper.removeEventListener("dragenter", this.onSurvol, true);
+    this.wrapper.removeEventListener("dragover", this.onSurvol, true);
+    this.wrapper.removeEventListener("dragleave", this.onSortie, true);
+    this.wrapper.removeEventListener("drop", this.onDepot, true);
+  }
+};
+
 // src/services/cvt.js
 var ServiceUnavailable = class extends Error {
   constructor(message = "services de l'\xE9diteur indisponibles") {
@@ -26970,12 +27129,13 @@ var Services = class _Services {
     this.queue = Promise.resolve();
   }
   /**
-   * Collage d'images (spec 10 §6) : configuration annoncée par charger() sur le formulaire courant,
-   * null si deposer_image est indisponible.
-   * @returns {{ types: string[], extensions: Record<string, string>, taille: number } | null}
+   * Collage et dépôt de fichiers (spec 10 §6) : configuration annoncée par charger() sur le formulaire
+   * courant, null si deposer_document est indisponible.
+   * @returns {{ images: string[], extensions: Record<string, string>, taille_image: number,
+   *             documents: string[], documents_limite_image: string[], taille_document: number } | null}
    */
-  images() {
-    const brut2 = this.container.querySelector("form")?.dataset.ttsImages;
+  depot() {
+    const brut2 = this.container.querySelector("form")?.dataset.ttsDepot;
     if (!brut2) return null;
     try {
       return JSON.parse(brut2);
@@ -26986,7 +27146,7 @@ var Services = class _Services {
   /**
    * Appelle une opération ; les appels sont sérialisés (chacun repart du formulaire renouvelé
    * par la réponse précédente).
-   * @param {string} operation  previsu_modele, titre_lien, rechercher, deposer_image…
+   * @param {string} operation  previsu_modele, titre_lien, rechercher, deposer_document…
    * @param {object} params  valeurs non chaînes envoyées en JSON
    * @param {{ fichier?: File, progression?: (ratio: number|null) => void, signal?: AbortSignal }} [options]
    *        fichier : envoyé dans le champ « fichier », par XMLHttpRequest (progression) ;
@@ -27052,39 +27212,11 @@ var Services = class _Services {
   }
 };
 
-// src/editor/collerImage.js
-var EXTENSIONS = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
-var deux = (n) => String(n).padStart(2, "0");
-function nommer(fichier, date = /* @__PURE__ */ new Date(), extensions = {}) {
-  const extension = extensions[fichier.type] ?? EXTENSIONS[fichier.type] ?? fichier.name.split(".").pop();
-  const capture = !fichier.name || /^image\.\w+$/i.test(fichier.name);
-  const base2 = capture ? `capture-${date.getFullYear()}${deux(date.getMonth() + 1)}${deux(date.getDate())}-${deux(date.getHours())}${deux(date.getMinutes())}${deux(date.getSeconds())}` : fichier.name.replace(/\.[^.]*$/, "");
-  return new File([fichier], `${base2}.${extension}`, { type: fichier.type, lastModified: fichier.lastModified });
-}
-function imageSeule(html) {
-  const body = new DOMParser().parseFromString(html, "text/html").body;
-  const images = body.querySelectorAll("img");
-  if (images.length !== 1 || body.textContent.trim() !== "") return false;
-  return [...body.querySelectorAll("*")].every((el) => el === images[0] || el.contains(images[0]));
-}
-function trierPressePapiers(donnees, { types, taille }) {
-  const fichiers = [...donnees?.files ?? []];
-  if (!fichiers.length) return null;
-  const html = donnees.getData("text/html");
-  if (html ? !imageSeule(html) : donnees.getData("text/plain").trim() !== "") return null;
-  const envoyer = [];
-  const refuses = [];
-  for (const fichier of fichiers) {
-    if (!types.includes(fichier.type)) refuses.push({ fichier, raison: "type" });
-    else if (taille && fichier.size > taille) refuses.push({ fichier, raison: "taille" });
-    else envoyer.push(fichier);
-  }
-  return { envoyer, refuses };
-}
+// src/editor/envois.js
 var compteur = 0;
-var nouvelId = () => `tts-img-${Date.now().toString(36)}-${++compteur}`;
+var nouvelId = () => `tts-envoi-${Date.now().toString(36)}-${++compteur}`;
 var marqueurSource = (id) => `<!-- envoi ${id} -->`;
-var CollerImages = class {
+var Envois = class {
   /**
    * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor,
    *           services: () => ?import('../services/cvt.js').Services, mode: () => 'visual'|'source',
@@ -27114,48 +27246,63 @@ var CollerImages = class {
    */
   coller(donnees, mode) {
     const services = this.services();
-    const config2 = services?.available ? services.images() : null;
+    const config2 = services?.available ? services.depot() : null;
     const tri = config2 && trierPressePapiers(donnees, config2);
     if (!tri) return false;
-    if (tri.refuses.length) {
-      this.signaler(tri.refuses.map(({ fichier, raison }) => label(raison === "type" ? "image_type_refuse" : "image_trop_grosse").replace("@nom@", fichier.name || "image")).join(" "));
-    } else {
-      this.effacer();
-    }
+    this.signalerRefus(tri.refuses);
     if (!tri.envoyer.length) return false;
-    const envois = tri.envoyer.map((fichier) => ({ id: nouvelId(), fichier: nommer(fichier, /* @__PURE__ */ new Date(), config2.extensions), mode, controleur: new AbortController() }));
+    this.lancer(tri.envoyer.map((fichier) => nommer(fichier, /* @__PURE__ */ new Date(), config2.extensions)), mode);
+    return true;
+  }
+  /** Refus avant envoi dans la barre d'état ; aucun refus : message effacé. */
+  signalerRefus(refuses) {
+    if (!refuses.length) {
+      this.effacer();
+      return;
+    }
+    this.signaler(refuses.map(({ fichier, raison }) => label(raison === "type" ? "fichier_type_refuse" : "fichier_trop_gros").replace("@nom@", fichier.name || "image")).join(" "));
+  }
+  /**
+   * Envoie des fichiers déjà nommés, dans l'ordre, chacun avec son marqueur.
+   * @param {File[]} fichiers
+   * @param {'visual'|'source'} mode
+   * @param {number} [pos]  visuel : position des marqueurs (après la sélection par défaut) ;
+   *        source : position dans le textarea (après la sélection par défaut)
+   */
+  lancer(fichiers, mode, pos) {
+    const services = this.services();
+    const envois = fichiers.map((fichier) => ({ id: nouvelId(), fichier, mode, controleur: new AbortController() }));
     if (mode === "visual") {
-      ajouterMarqueurs(this.editor.view, envois.map((e) => e.id));
+      ajouterMarqueurs(this.editor.view, envois.map((e) => e.id), pos);
     } else {
-      const fin = this.textarea.selectionEnd;
+      const fin = pos ?? this.textarea.selectionEnd;
       this.textarea.setRangeText(envois.map((e) => marqueurSource(e.id)).join(""), fin, fin, "preserve");
       this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
     }
     for (const envoi of envois) {
       this.envois.set(envoi.id, envoi);
-      this.emettre("image-recue", { fichier: envoi.fichier });
+      this.emettre("document-recu", { fichier: envoi.fichier });
       this.envoyer(services, envoi);
     }
     this.surChangement();
-    return true;
   }
   async envoyer(services, envoi) {
     const { signal } = envoi.controleur;
     try {
-      const resultat = await services.call("deposer_image", {}, {
+      const resultat = await services.call("deposer_document", {}, {
         fichier: envoi.fichier,
         signal,
         progression: (ratio) => envoi.mode === "visual" && progressionMarqueur(this.editor.view, envoi.id, ratio)
       });
       if (signal.aborted) return;
       if (!this.inserer(envoi, `<${resultat.raccourci}>`)) return;
-      this.emettre("image-inseree", { fichier: envoi.fichier, id_document: resultat.id_document, raccourci: resultat.raccourci });
+      this.emettre("document-insere", { fichier: envoi.fichier, id_document: resultat.id_document, raccourci: resultat.raccourci });
     } catch (erreur) {
       if (signal.aborted || erreur?.name === "AbortError") return;
       this.retirer(envoi);
-      const message = erreur instanceof ServiceUnavailable || !erreur?.message ? label("image_echec") : erreur.message;
+      const message = erreur instanceof ServiceUnavailable || !erreur?.message ? label("envoi_echec") : erreur.message;
       this.signaler(message);
-      this.emettre("image-erreur", { fichier: envoi.fichier, message });
+      this.emettre("document-erreur", { fichier: envoi.fichier, message });
     } finally {
       if (this.envois.delete(envoi.id)) this.surChangement();
     }
@@ -27205,24 +27352,6 @@ var CollerImages = class {
   }
 };
 
-// src/editor/createEditor.js
-function createEditor({ element: element2, source, ui: ui2 = null, tierces = [], extensions = coreExtensions({ ui: ui2, tierces }), editorProps = {} }) {
-  const regles = reglesSpip(extensions);
-  const content = toEditorJSON(source, getSchema(extensions), regles);
-  const editor = new Editor({
-    element: element2,
-    extensions,
-    content,
-    editorProps,
-    enableContentCheck: true,
-    onContentError: ({ error }) => {
-      throw error;
-    }
-  });
-  editor.tiptapSpip = { regles, tierces };
-  return editor;
-}
-
 // src/editor/soumission.js
 var SoumissionRetenue = class {
   /**
@@ -27252,7 +27381,7 @@ var SoumissionRetenue = class {
     if (!this.enCours()) return false;
     this.attente = true;
     this.bouton = bouton ?? null;
-    this.signaler(label("image_envoi_en_cours"), { libelle: label("image_enregistrer_sans_attendre"), faire: () => this.sansAttendre() });
+    this.signaler(label("envoi_en_cours"), { libelle: label("enregistrer_sans_attendre"), faire: () => this.sansAttendre() });
     return true;
   }
   /** À chaque fin d'envoi : la soumission retenue repart après le dernier. */
@@ -28984,7 +29113,7 @@ var Instance = class {
     this.content.after(this.notes.element);
     this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
     let soumission = null;
-    this.images = new CollerImages({
+    this.envois = new Envois({
       textarea,
       editor: this.editor,
       services: () => this.services,
@@ -28996,13 +29125,22 @@ var Instance = class {
         soumission?.verifier();
       }
     });
-    this.ui.collerImages = (view, event) => this.images.collerVisuel(view, event);
+    this.ui.collerImages = (view, event) => this.envois.collerVisuel(view, event);
+    this.depot = new DepotFichiers({
+      wrapper: this.wrapper,
+      textarea,
+      editor: this.editor,
+      envois: this.envois,
+      services: () => this.services,
+      mode: () => this.bridge.mode,
+      signaler: (texte2) => this.etat.signaler(texte2)
+    });
     soumission = textarea.form ? new SoumissionRetenue({
       form: textarea.form,
-      enCours: () => this.images.enCours() > 0,
+      enCours: () => this.envois.enCours() > 0,
       signaler: (texte2, action) => this.etat.signaler(texte2, action),
       effacer: () => this.etat.effacer(),
-      abandonner: () => this.images.abandonner()
+      abandonner: () => this.envois.abandonner()
     }) : null;
     this.soumission = soumission;
     textarea.before(this.wrapper);
@@ -29049,8 +29187,8 @@ var Instance = class {
   }
   /** @param {{ focus?: boolean }} options  focus : donner le focus à la zone affichée */
   toggleMode({ focus: focus2 = true } = {}) {
-    if (this.images.enCours()) {
-      this.etat.signaler(label("image_envoi_en_cours"));
+    if (this.envois.enCours()) {
+      this.etat.signaler(label("envoi_en_cours"));
       return;
     }
     const mode = this.bridge.mode === "visual" ? "source" : "visual";
@@ -29069,8 +29207,9 @@ var Instance = class {
     instances.delete(this);
     while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
     this.notes.destroy();
+    this.depot.destroy();
     this.soumission?.destroy();
-    this.images.destroy();
+    this.envois.destroy();
     this.etat.destroy();
     this.editor.off("transaction", this.majBarre);
     if (this.pleinEcran()) this.togglePleinEcran(false);

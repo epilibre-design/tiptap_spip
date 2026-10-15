@@ -1,4 +1,4 @@
-# 10 — Coller des images
+# 10 — Coller des images, déposer des documents
 
 Demande : [#4](https://git.spip.net/spip-contrib-extensions/tiptap_spip/-/work_items/4), « Ajouter
 l'insertion d'une image par paste du clipboard », sur le modèle d'InlineAttachment
@@ -58,7 +58,7 @@ presse-papiers, envoi XHR, texte provisoire, remplacement par un gabarit (`![fil
 | `defaultExtension` + nom horodaté pour un fichier sans nom (`image-<timestamp>.png`) | même règle : une capture arrive nommée `image.png` ou sans nom ; elle est renommée `capture-AAAAMMJJ-HHMMSS.<ext>` (extension tirée du type MIME) |
 | `progressText` puis remplacement par `urlText` | marqueur d'envoi puis `<docN>` (§1, §4) |
 | `errorText` | message d'erreur dans la barre d'état, pas de texte laissé dans le contenu |
-| `onFileReceived`, `onFileUploadResponse`, `onFileUploadError` | événements `tiptap-spip:image-recue`, `…:image-inseree`, `…:image-erreur` sur le textarea, pour les plugins tiers ([07](07-extensibilite.md)) |
+| `onFileReceived`, `onFileUploadResponse`, `onFileUploadError` | événements `tiptap-spip:document-recu`, `…:document-insere`, `…:document-erreur` sur le textarea, pour les plugins tiers ([07](07-extensibilite.md)) |
 
 ## 3. Côté client
 
@@ -75,7 +75,7 @@ qu'il arrive (`servicesPrets` dans `src/main.js`) : une extension ajoutée seule
 là resterait absente. Au collage, le module lit les services de l'instance (`this.services`, renseigné à la
 résolution de `servicesPrets`) et la configuration de l'opération qu'ils portent (§6) :
 
-- services présents et `deposer_image` disponible : envoi ;
+- services présents et `deposer_document` disponible : envoi ;
 - services encore en chargement, absents (mode dégradé) ou opération indisponible : `handlePaste` rend
   `false` et le collage habituel s'applique, sans attendre ni message. Le collage suivant refait le test.
 
@@ -94,7 +94,7 @@ paragraphe copié depuis un traitement de texte aussi. Règle :
 Collage dans un bloc de code (éditeur visuel) : collage habituel, rien n'est envoyé.
 
 La priorité est donnée au texte ou au HTML ordinaire, puis aux images acceptées. Un fichier refusé ne bloque
-pas les autres images du même collage. Chaque image part dans un appel `deposer_image` distinct : le formulaire
+pas les autres images du même collage. Chaque image part dans un appel `deposer_document` distinct : le formulaire
 CVT est renouvelé entre deux appels (§5).
 
 Liste blanche par défaut : `image/png`, `image/jpeg`, `image/gif`, `image/webp`. Elle est envoyée au JS dans
@@ -148,7 +148,7 @@ restants, retire les marqueurs du mode source, puis relance la soumission de la 
 ### Envoi
 
 Par `src/services/cvt.js`, dans la file sérialisée du formulaire de services : chaque image appelle la
-nouvelle opération `deposer_image` (§5), avec un corps `FormData` du formulaire et `fichier` (le `File`
+nouvelle opération `deposer_document` (§5), avec un corps `FormData` du formulaire et `fichier` (le `File`
 renommé). `fetch` ne donnant pas la progression d'un envoi, celle-ci passe par
 `XMLHttpRequest.upload.onprogress` pour cette seule opération ;
 sans progression, le marqueur reste indéterminé.
@@ -165,13 +165,13 @@ Toujours `<docN>`, jamais `<imgN>`, et sans réglage (Q11, tranchée le 2026-10-
 Position : à l'endroit du collage, après le texte sélectionné s'il y en a un (§1), en ligne. Le core rend `<docN>` seul sur sa ligne comme un bloc ; inséré
 au milieu d'un paragraphe, il reste en ligne, comme si le rédacteur l'avait tapé.
 
-## 5. Côté serveur : opération `deposer_image`
+## 5. Côté serveur : opération `deposer_document`
 
 Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
 
 | Opération | Paramètres | Contrôles `verifier()` | Résultat |
 |-----------|------------|------------------------|----------|
-| `deposer_image` | `fichier` (dans `$_FILES`) | un seul fichier, envoi PHP sans erreur (`UPLOAD_ERR_OK`, `is_uploaded_file`) ; extension et type réel (`finfo`) dans la liste blanche et acceptés par `spip_types_documents` ; `autoriser('joindredocument', objet, id_objet_lien)` ; configuration `tiptap_spip/coller_images` active | `{id_document, raccourci}` (`raccourci` = `doc12`) |
+| `deposer_document` | `fichier` (dans `$_FILES`) | un seul fichier, envoi PHP sans erreur (`UPLOAD_ERR_OK`, `is_uploaded_file`) ; image de la liste blanche (par son extension ou son type réel) : extension et type réel (`finfo`) concordants ; autre document : extension acceptée par `spip_types_documents` (`upload='oui'`, après `corriger_extension`), medias refaisant ses contrôles comme pour la boîte « Documents » ; `autoriser('joindredocument', objet, id_objet_lien)` ; configuration `tiptap_spip/coller_images` active | `{id_document, raccourci}` (`raccourci` = `doc12`) |
 
 - **Ajout** : `action_ajouter_documents_dist('new', [$fichier], $objet, $id_objet_lien, 'document')` du plugin
   medias. Il refait les contrôles de taille et de dimensions du site (`_IMG_MAX_SIZE`, `_IMG_MAX_WIDTH`…) et
@@ -203,9 +203,18 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
 |-----|--------|-------|
 | `tiptap_spip/coller_images` | `oui` | active la capture du collage d'images |
 
-Le JS reçoit de `charger()`, dans l'attribut `data-tts-images` du `<form>` de services (JSON
-`{types, extensions, taille}`, absent si l'opération est indisponible), la disponibilité de l'opération, la
-liste blanche, l'extension de chaque type et la taille maximale. Le formulaire est remplacé après chaque réponse : l'annonce reste à jour. Ces informations arrivent avec le
+Le JS reçoit de `charger()`, dans l'attribut `data-tts-depot` du `<form>` de services (JSON, absent si
+l'opération est indisponible) :
+
+- `images`, `extensions`, `taille_image` : types collables (liste blanche acceptée par le site), extension
+  de chacun, taille maximale (`_IMG_MAX_SIZE`) ;
+- `documents` : extensions déposables (tous les types envoyables) ;
+- `documents_limite_image` : celles dont medias borne la taille par `_IMG_MAX_SIZE`. C'est une liste de
+  limite de taille, pas de types d'images : svg et swf y figurent sans être collables ;
+- `taille_document` : taille maximale des autres (`_DOC_MAX_SIZE`).
+
+La case de configuration « Coller des images et déposer des documents » (clé `coller_images`) commande le
+collage et le dépôt. Le formulaire est remplacé après chaque réponse : l'annonce reste à jour. Ces informations arrivent avec le
 formulaire de services, éventuellement après la création de l'éditeur (§3). Sans elles, pas de capture :
 le collage se comporte comme aujourd'hui.
 
@@ -214,7 +223,7 @@ le collage se comporte comme aujourd'hui.
 | Niveau | Cas |
 |--------|-----|
 | Vitest | arbitrage du presse-papiers (§3, chaque ligne du tableau), notamment deux images en un collage et fichiers mêlés (PDF puis PNG) ; ordre des images et un appel CVT par fichier ; renommage d'un fichier sans nom ; refus avant envoi (type, taille) sans bloquer les autres images ; collage avant l'arrivée des services → collage habituel, collage suivant envoyé une fois les services là ; marqueur : position reportée quand on tape avant lui, repli quand on supprime autour, absent de `getJSON()` et du textarea ; remplacement par `<docN>` en une transaction annulable ; échec sans insertion |
-| Vitest (CVT) | réponses enregistrées de `deposer_image` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
+| Vitest (CVT) | réponses enregistrées de `deposer_document` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
 | PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur ; disponibilité dans `charger()` : article avec `documents_objets` vide → disponible, objet absent de `documents_objets` → indisponible, sans objet → indisponible |
 | Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; collage de deux PNG en un geste → deux `<docN>` dans l'ordre, deux documents liés ; même chose sur un article **nouveau**, puis enregistrement : documents rattachés à l'article créé ; mode source ; soumission pendant les envois retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX ; crayon, dont `ajaxForm` passe par `cQuery`), puis relancée après le dernier envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
 
@@ -227,24 +236,42 @@ et par l'e2e.
 
 | Niveau | Cas |
 |--------|-----|
-| Playwright (L7.2) | avec `crayons/upload` activé : dépôt en mode visuel → un seul document par fichier, lié à l'article édité (`spip_documents_liens`), et un seul `<docN>` dans le texte ; dépôt en mode source → un seul envoi, par Crayons (raccourci dans son panneau, rien inséré dans le texte, aucune requête `deposer_image`) ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt ; dépôt refusé (type non accepté, services absents) → la page reste affichée, le texte édité est intact |
+| Playwright (L7.2) | avec `crayons/upload` activé : dépôt en mode visuel → un seul document par fichier, lié à l'article édité (`spip_documents_liens`), et un seul `<docN>` dans le texte ; dépôt en mode source → un seul envoi, par Crayons (raccourci dans son panneau, rien inséré dans le texte, aucun envoi par l'éditeur) ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt ; dépôt refusé (type non accepté, services absents) → la page reste affichée, le texte édité est intact |
 
 ## 8. Hors périmètre et suites
 
-- **Glisser-déposer** de fichiers : même chaîne d'envoi que le collage pour les images (`handleDrop`), étendue
-  à tous les types de documents par une opération adaptée. Plusieurs fichiers déposés ensemble sont envoyés
-  un par un dans l'ordre, chacun avec son marqueur. La différence d'interface est un état visible de la zone
-  d'édition pendant le survol avec des fichiers (par exemple une classe et une indication « Déposer les
-  fichiers »), retiré quand la souris quitte la zone ou après le dépôt. Un dépôt de fichiers que l'éditeur ne
-  traite pas (type refusé, services absents ou encore en chargement, opération indisponible) appelle quand même
-  `preventDefault()` sur `dragover` et `drop` : sinon le navigateur ouvre le fichier à la place de la page, et
-  l'édition en cours est perdue. Le refus est signalé dans la barre d'état. Seule exception : le mode source
-  d'un crayon avec `crayons/upload`, laissé à Crayons (ci-dessous) → lot L7.2.
 - Images référencées par URL dans un HTML collé (`<img src="https://…">`, `data:`) : non rapatriées ; le
   collage HTML les ignore comme aujourd'hui.
 - Retouche (recadrage, redimensionnement) avant envoi.
 - Suppression du document quand le rédacteur retire `<docN>` : non, comme dans SPIP (le document reste dans
   la boîte « Documents »).
+
+### Glisser-déposer (lot L7.2, réalisé)
+
+Même chaîne d'envoi que le collage, étendue à tous les types de documents par l'opération `deposer_document`.
+
+- **Fichiers traités** : chaque fichier du dépôt, dans l'ordre, chacun avec son marqueur, même accompagné de
+  HTML ou de texte (image glissée depuis une page web). Un glisser sans fichier (texte, déplacement interne)
+  reste à ProseMirror et au navigateur.
+- **Nom** : une image de la liste blanche est renommée comme au collage (extension annoncée) ; un autre
+  document garde son nom.
+- **Types et tailles** :
+  - une image de la liste blanche, ou un fichier dont l'extension est déposable (après `corriger_extension`) ;
+  - limite `taille_image` pour les extensions de `documents_limite_image`, `taille_document` sinon, comme
+    medias.
+- **Position** :
+  - éditeur visuel : point du dépôt (`posAtCoords`), après le bloc s'il tombe dans un bloc de code, après la
+    sélection sinon ;
+  - mode source : après la sélection du textarea (un navigateur ne donne pas la position sous la souris dans un
+    textarea).
+- **État de survol** : classe `tts-editor--depot` et indication « Déposer les fichiers » sur la zone de
+  l'éditeur, retirées quand la souris en sort et après le dépôt.
+- **Refus** : un dépôt de fichiers que l'éditeur ne traite pas (type refusé, services absents ou encore en
+  chargement, opération indisponible) appelle quand même `preventDefault()` sur `dragover` et `drop`. Sinon le
+  navigateur ouvrirait le fichier à la place de la page, et l'édition en cours serait perdue. Le refus est
+  signalé dans la barre d'état.
+- **Interception** : écouteurs en capture sur la zone de l'éditeur, avant ProseMirror. Seule exception : un
+  dépôt sur le textarea d'un crayon équipé par `crayons/upload`, en mode source (ci-dessous).
 
 ### Coexistence avec le dépôt expérimental de Crayons (lot L7.2)
 
@@ -264,9 +291,11 @@ Partage des dépôts, pour qu'un fichier ne soit envoyé qu'**une fois** :
 - **mode visuel** : Tiptap masque le textarea, déposer sur sa zone visible ne déclenche pas le gestionnaire de
   Crayons. Tiptap traite le dépôt : un document lié à l'article et un `<docN>` inséré dans le texte par fichier ;
 - **mode source** : le textarea est visible et Crayons y a déjà branché ses gestionnaires (par `cQuery`, avec
-  `return false`, avant le montage de l'éditeur). Tiptap **laisse Crayons gérer le dépôt** : son écouteur du
-  mode source ne fait rien (ni envoi, ni `preventDefault()`, ni arrêt de la propagation) quand le textarea
-  porte la classe `uploader`, que `uploader.js.html` pose. Le raccourci s'affiche alors dans le panneau de
+  `return false`, avant le montage de l'éditeur). Tiptap **laisse Crayons gérer le dépôt sur ce textarea** :
+  l'éditeur ne fait rien (ni envoi, ni `preventDefault()`, ni arrêt de la propagation) quand la cible est le
+  textarea de classe `uploader`, que `uploader.js.html` pose. Il retire seulement son état de survol, affiché
+  si le glisser est passé par la barre d'outils. Un dépôt ailleurs dans la zone (barre d'outils,
+  barre d'état), que Crayons n'écoute pas, reste traité par l'éditeur. Le raccourci s'affiche alors dans le panneau de
   Crayons, sans être inséré dans le texte : c'est le comportement de Crayons, gardé tel quel. Intercepter le
   dépôt avant Crayons demanderait une capture sur un ancêtre pour `dragenter`, `dragover`, `dragleave` et
   `drop` (sinon sa classe `hover` et son panneau restent ouverts) : écarté ;
@@ -314,3 +343,34 @@ Plan : `docs/superpowers/plans/2026-10-15-coller-images-l7-1.md`.
   - suite e2e complète sous Chromium, sur SPIP 4.4 : 68 réussis, 1 sauté, 4 échecs dans `menus.e2e.js`. Ces
     échecs ne viennent pas de ce lot : le test ouvre chaque `.tts-menu > button`, y compris le menu de la
     langue affichée, masqué sans multi depuis `32247a8`.
+
+## 10. Réalisation (lot L7.2)
+
+Plan : `docs/superpowers/plans/2026-10-15-deposer-documents-l7-2.md`.
+
+- **Serveur** : `inc/tiptap_spip_depot.php` (remplace `inc/tiptap_spip_images.php`) : extensions déposables,
+  limites `taille_image` et `taille_document` selon `documents_limite_image`, `finfo` pour les images
+  seulement ; opération `deposer_document` (remplace `deposer_image`) et annonce `data-tts-depot`. Le
+  réglage `coller_images` couvre le collage et le dépôt (libellé élargi).
+- **Client** :
+  - `src/services/cvt.js` : `depot()` ;
+  - `src/editor/envois.js` : classe `Envois`, commune au collage et au dépôt (envoi, insertion, refus) ;
+    événements `tiptap-spip:document-recu`, `document-insere` et `document-erreur` ([07](07-extensibilite.md)) ;
+  - `src/editor/deposer.js` : arbitrage du dépôt (`trierDepot`), extension corrigée comme medias
+    (`corrigerExtension`), extension `DepotFichiers` (écouteurs en capture, état de survol, position).
+- **Écarts** :
+  - Bigup étend la zone de dépôt de la boîte « Documents » à `#contenu`. Sans `stopPropagation()` sur les
+    `dragenter` et `dragover` pris par l'éditeur, son calque restait affiché après un dépôt sur SPIP 4.2 et
+    bloquait « Enregistrer » ;
+  - Crayons 3.5.1 : `action_crayons_upload` répond 500 (`distant_table()` appelée avant
+    `include_spip('inc/crayons')`). Ce bug n'est pas le nôtre : les tests de coexistence vérifient que le
+    fichier part bien vers Crayons (ligne ajoutée au panneau, requête `crayons_upload`, texte intact), pas
+    le document créé ;
+  - un crayon modifié sans que l'éditeur ait perdu le focus n'enregistrait pas le texte : Crayons soumet par
+    `cQuery`, dont `form-pre-serialize` n'atteint pas un écouteur posé avec `jQuery`. Corrigé dans
+    `TextareaBridge` (MR !28, fusionnée avant ce lot).
+- **Tests** :
+  - PHPUnit : 68 tests ;
+  - Vitest : 1439 tests ;
+  - e2e `depot.e2e.js` (10 tests) et `images.e2e.js` (17 tests), sous Chromium, Firefox et WebKit : 81
+    réussis sur SPIP 4.4 et 4.2 ; 63 réussis et 18 sautés (pas de Crayons) sur SPIP 5.

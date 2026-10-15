@@ -32,7 +32,7 @@ test('fixtures de cvt.js', async ({ page }) => {
 	ecrire('titre_lien', await poster(page, { operation: 'titre_lien', cibles: JSON.stringify([`art${id}`, 'https://www.spip.net/fr', 'art999999']) }));
 	ecrire('erreurs', await poster(page, { operation: 'previsu_modele', modele: '<zzz1>' }));
 	const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-	ecrire('deposer_image', await poster(page, { operation: 'deposer_image' }, { fichier: { nom: 'capture.png', base64: png } }));
-	ecrire('deposer_image_type', await poster(page, { operation: 'deposer_image' }, { fichier: { nom: 'x.php', base64: png } }));
+	ecrire('deposer_document', await poster(page, { operation: 'deposer_document' }, { fichier: { nom: 'capture.png', base64: png } }));
+	ecrire('deposer_document_type', await poster(page, { operation: 'deposer_document' }, { fichier: { nom: 'x.php', base64: png } }));
 	ecrire('sans_session', await poster(page, { operation: 'titre_lien', cibles: JSON.stringify([`art${id}`]) }, { sansSession: true }));
 });
