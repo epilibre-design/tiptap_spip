@@ -31,3 +31,9 @@ Les sources du site MkDocs sont dans `docs/site/`. Pour le construire localement
 | 08 | [Tests et recette](docs/specs/08-tests-recette.md) | Corpus, équivalence de rendu, critères d'acceptation |
 | 09 | [Lots et feuille de route](docs/specs/09-lots-roadmap.md) | Découpage, priorités, questions ouvertes |
 | 10 | [Coller des images, déposer des documents](docs/specs/10-coller-images.md) | Collage d'images et glisser-déposer de documents : un document SPIP et un `<docN>` par fichier |
+
+## Licence et crédits
+
+GPL-3.0-or-later ([LICENSE](LICENSE)). Le code adapté de SPIP, de TextWheel, du porte-plume et de Coloration
+Code, les composants embarqués (Tiptap, ProseMirror, Remix Icon) et les inspirations (markdown_editor,
+InlineAttachment) sont recensés dans [CREDITS.md](CREDITS.md).

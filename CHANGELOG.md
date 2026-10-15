@@ -18,6 +18,9 @@
   configuration du multilinguisme), sauf si le texte contient déjà un multi.
 - Fenêtre du multi : la langue de chaque version se choisit dans une liste des langues activées
   dans la configuration du multilinguisme, au lieu d'un code à saisir.
+- Remix Icon est fixé à la version 4.8.0, la dernière distribuée sous licence Apache-2.0 (les icônes
+  ne changent pas). Les reprises de code de SPIP, de TextWheel, du porte-plume et de Coloration Code
+  portent une notice de provenance, et sont recensées avec les autres crédits dans `CREDITS.md`.
 
 ### Corrigé
 

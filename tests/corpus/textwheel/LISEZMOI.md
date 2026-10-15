@@ -4,7 +4,7 @@ Textes des tests de `propre()` du plugin TextWheel de SPIP 4.4.21
 (`plugins-dist/textwheel/tests/data/{base,typo,modeles_block,modeles_inline}/*.txt`), renommés en `.spip`.
 Un texte identique à un texte d'un jeu précédent n'est pas recopié.
 
-- Licence : GNU GPL, comme SPIP et ce plugin.
+- Licence : GPL-3.0-or-later (plugin TextWheel, Collectif SPIP), comme ce plugin.
 - Import : `node scripts/importer-textwheel.mjs /chemin/vers/plugins-dist/textwheel` (depuis
   `prive/javascript/tiptap_spip`).
 - Les rendus attendus (`.html`) de TextWheel ne sont pas repris : l'oracle est le site SPIP de l'équivalence

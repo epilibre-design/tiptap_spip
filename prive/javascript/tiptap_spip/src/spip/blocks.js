@@ -152,6 +152,9 @@ function inlineOf(src, msk, regions, s, e, options) {
 	return parseInline(src.slice(s, e), msk.slice(s, e), regionsIn(regions, s, e), options);
 }
 
+// Provenance de RE_HR et RE_ITEM : règles ligne-horizontale (wheels/spip/spip.json) et listes
+// (wheels/spip/spip-listes.json) de TextWheel, SPIP 4.4.21, Collectif SPIP, licence GPL-3.0-or-later.
+// Adaptation du 2026-10-11 : appliquées à une ligne isolée.
 const RE_HR = /^(?:-{4,}|_{4,})[ \t\r]*$/;
 const RE_H2 = /^\{\{\{(?!\{)(.*?)\}\}\}[ \t\r]*$/;
 const RE_HN = /^<h([3-6])>(.*)<\/h\1>[ \t\r]*$/;
@@ -272,7 +275,9 @@ function tableBlock(src, msk, regions) {
 	const attrs = {};
 	let rowLines = lines.map((_, k) => k);
 	// légende : cherchée comme textwheel (traiter_tableau()) sur la ligne privée de son | final puis de
-	// tous les | de fin : ||x| en est une, |||| non (ligne d'en-têtes vides)
+	// tous les | de fin : ||x| en est une, |||| non (ligne d'en-têtes vides). Provenance : expression de
+	// traiter_tableau() (plugins-dist/textwheel/inc/texte.php, SPIP 4.4.21), Collectif SPIP, licence
+	// GPL-3.0-or-later ; adaptation du 2026-10-11 : traduite en JavaScript, | final retiré avant.
 	const cm = L(0).slice(0, -1).replace(/\|+$/, '').match(/^\|\|([^|]*)(?:\|([\s\S]*))?$/);
 	if (cm) {
 		if (cm[0].includes(FILL)) throw new Fallback();

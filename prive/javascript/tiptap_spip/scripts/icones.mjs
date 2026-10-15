@@ -1,5 +1,7 @@
 // Icônes de la barre d'outils : SVG de Remix Icon (Apache-2.0, https://remixicon.com) extraits du
 // paquet remixicon dans src/ui/icones.js, versionné.
+// remixicon reste fixé à 4.8.0 : à partir de 4.9.0, il est distribué sous la Remix Icon License v1.0,
+// plus restrictive (CREDITS.md). Ne pas le mettre à jour sans revoir sa licence.
 // Usage : npm run icones
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

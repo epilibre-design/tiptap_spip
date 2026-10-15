@@ -9,6 +9,10 @@ const FERMANT = '</multi>'.length;
  * n'est pas vide. Les marqueurs se cherchent dans le texte que voit le core au moment de typo(), où
  * liens, notes, modèles… sont déjà remplacés (masked).
  *
+ * Provenance du découpage : Multis::extraire_trads() (ecrire/src/Texte/Collecteur/Multis.php,
+ * SPIP 4.4.21), © Arnaud Martin, Antoine Pitrou, Philippe Rivière, Emmanuel Saint-James, licence
+ * GNU GPL. Adaptation du 2026-10-12 : traduit en JavaScript, positions au lieu des textes.
+ *
  * Un marqueur caché dans un raccourci traité avant (note, lien, code) rend le découpage incertain : le
  * core coupe le multi dans une note (`[[voir [en] ici]]`), pas dans du code. Non représentable (null).
  *

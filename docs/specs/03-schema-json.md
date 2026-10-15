@@ -113,7 +113,7 @@ Remarques :
 
 ## 4. Attribut `model` (modèles)
 
-Repris de l'attribut `spip_model` de markdown_editor, en ajoutant l'ordre et la forme brute des paramètres
+Inspiré de l'attribut `spip_model` de markdown_editor (sans reprise de code), en ajoutant l'ordre et la forme brute des paramètres
 pour une restitution fidèle :
 
 ```json

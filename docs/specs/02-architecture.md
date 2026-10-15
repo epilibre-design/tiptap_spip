@@ -32,7 +32,7 @@ les tests.
 tiptap_spip/
 ├── paquet.xml
 ├── tiptap_spip_pipelines.php        # header_prive, importmap, toolbars, autoriser, formulaire_fond
-├── tiptap_spip_fonctions.php        # traitements_previsu (repris de markdown_editor)
+├── tiptap_spip_fonctions.php        # traitements_previsu (adapté du porte-plume)
 ├── tiptap_spip_options.php          # constantes surchargeables
 ├── formulaires/
 │   ├── tiptap_spip.html / .php      # services serveur de l'éditeur (CVT, cf. §5)
@@ -122,9 +122,10 @@ Sources dans `prive/javascript/tiptap_spip/` (package npm privé), bundle constr
 markdown_editor pour que le plugin s'installe sans build. esbuild remplace bun (absent des postes de
 développement) et produit le même module ESM.
 
-Licence : GPL-3.0-or-later (fichier `LICENSE`), imposée par le code repris de textwheel, du porte-plume et
-de markdown_editor. Les paquets embarqués dans le bundle (MIT : Tiptap, ProseMirror ; Apache-2.0 : Remix
-Icon) n'ont pas de commentaire de licence : le build écrit leurs licences dans
+Licence : GPL-3.0-or-later (fichier `LICENSE`), imposée par le code adapté du core de SPIP, de TextWheel et du
+porte-plume ; markdown_editor n'est qu'une inspiration, sans code repris. Crédits et notices de provenance :
+`CREDITS.md`. Les paquets embarqués dans le bundle (MIT : Tiptap, ProseMirror ; Apache-2.0 : Remix Icon,
+fixé à 4.8.0, dernière version sous cette licence) n'ont pas de commentaire de licence : le build écrit leurs licences dans
 `prive/javascript/tiptap_spip.LICENSES.txt`, d'après la liste des paquets embarqués (metafile d'esbuild), et
 le bundle commence par une bannière qui y renvoie.
 

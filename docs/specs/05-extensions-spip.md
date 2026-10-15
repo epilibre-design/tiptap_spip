@@ -109,7 +109,7 @@ l'identique (sinon le texte reste, comme le parseur le garde brut).
 
 ## 3. Modèles — `spipModel` / `spipModelBlock`
 
-Reprise de `SpipModel.js` de markdown_editor (cf. [01](01-contexte-objectifs.md) §4), portée en Tiptap 3,
+Conception inspirée de `SpipModel.js` de markdown_editor (cf. [01](01-contexte-objectifs.md) §4), réécrite pour Tiptap 3,
 avec les évolutions suivantes.
 
 ### Reconnaissance
@@ -209,7 +209,7 @@ avec les évolutions suivantes.
 
 ## 5. Multilinguisme — `spipMultiInline`, `spipMultiBlock`, `spipLang*`, `spipIdiome`
 
-- Repris de markdown_editor (`SpipMultiInline`, `SpipMultiBlock`, `SpipLang`), mais avec une structure
+- Inspiré de markdown_editor (`SpipMultiInline`, `SpipMultiBlock`, `SpipLang`), réécrit avec une structure
   explicite : un multi contient des **parties par langue** (`spipLangInline` / `spipLangBlock`, attribut
   `lang`) au lieu de marqueurs `[fr]` mêlés au texte. Une partie sans code de langue en tête est la
   partie par défaut (`lang: null`).
@@ -250,7 +250,7 @@ Lot L4.2 :
   historique `<code>` (inline ou bloc), `<cadre>` : texte brut, aucun raccourci interprété, attributs de la
   balise conservés (`<code class="php">`). Les nouveaux codes sont écrits en backticks, comme le fait
   le porte-plume de SPIP 4.
-- `<html>` : repris de `SpipHtml.js`, texte brut éditable avec coloration minimale ; jamais interprété
+- `<html>` : inspiré de `SpipHtml.js`, texte brut éditable avec coloration minimale ; jamais interprété
   dans l'éditeur.
 - `<math>` : texte brut ; aperçu optionnel si le site fournit un rendu (hors v1).
 - `<poesie>` : conteneur de paragraphes où chaque retour à la ligne est significatif (rendu `hardBreak`).
