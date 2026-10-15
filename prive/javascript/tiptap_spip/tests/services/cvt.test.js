@@ -137,3 +137,99 @@ describe('Services.call', () => {
 		expect(ordre).toEqual(['titre_lien', 'rechercher']);
 	});
 });
+
+/** XMLHttpRequest simulé : répond `reponse` (ou échoue) à send(), progression 50 % puis 100 %. */
+const fakeXHR = (reponse) => {
+	const envois = [];
+	const fabrique = () => {
+		const xhr = {
+			upload: {},
+			open: vi.fn((methode, url) => { xhr.url = url; }),
+			send: vi.fn((body) => {
+				envois.push({ url: xhr.url, body, xhr });
+				queueMicrotask(() => {
+					if (xhr.aborted) return;
+					xhr.upload.onprogress?.({ lengthComputable: true, loaded: 1, total: 2 });
+					xhr.upload.onprogress?.({ lengthComputable: true, loaded: 2, total: 2 });
+					if (reponse instanceof Error) xhr.onerror?.();
+					else { xhr.responseText = reponse; xhr.onload?.(); }
+				});
+			}),
+			abort: vi.fn(() => { xhr.aborted = true; xhr.onabort?.(); }),
+		};
+		return xhr;
+	};
+	fabrique.envois = envois;
+	return fabrique;
+};
+
+const png = () => new File([new Uint8Array([137, 80, 78, 71])], 'capture.png', { type: 'image/png' });
+
+describe('Services.images', () => {
+	it('lit l\'annonce du formulaire courant', () => {
+		const services = Services.forTextarea(page());
+		expect(services.images()).toEqual({ types: expect.arrayContaining(['image/png']), taille: expect.any(Number) });
+	});
+
+	it('null sans annonce (opération indisponible)', () => {
+		const services = Services.forTextarea(page());
+		delete services.container.querySelector('form').dataset.ttsImages;
+		expect(services.images()).toBeNull();
+	});
+});
+
+describe('Services.call avec un fichier', () => {
+	it('envoi par XHR avec le fichier, progression, résultat', async () => {
+		const xhr = fakeXHR(fixture('deposer_image'));
+		const services = Services.forTextarea(page(), { fetch: fakeFetch(), xhr });
+		const action = services.container.querySelector('form').getAttribute('action');
+		const progression = vi.fn();
+		const resultat = await services.call('deposer_image', {}, { fichier: png(), progression });
+		expect(resultat.raccourci).toBe(`doc${resultat.id_document}`);
+		const { body, url } = xhr.envois[0];
+		expect(url).toBe(action);
+		expect(body.get('operation')).toBe('deposer_image');
+		expect(body.get('fichier').name).toBe('capture.png');
+		expect(progression.mock.calls).toEqual([[0.5], [1]]);
+	});
+
+	it('type refusé : ServiceError avec le message du serveur', async () => {
+		const services = Services.forTextarea(page(), { xhr: fakeXHR(fixture('deposer_image_type')) });
+		const erreur = await services.call('deposer_image', {}, { fichier: png() }).catch((e) => e);
+		expect(erreur).toBeInstanceOf(ServiceError);
+		expect(erreur.message).toBe('Ce type d’image n’est pas accepté.');
+		expect(services.available).toBe(true);
+	});
+
+	it('session expirée ou réseau coupé : indisponible', async () => {
+		for (const reponse of [fixture('sans_session'), new TypeError('réseau')]) {
+			const services = Services.forTextarea(page(), { xhr: fakeXHR(reponse) });
+			await expect(services.call('deposer_image', {}, { fichier: png() })).rejects.toBeInstanceOf(ServiceUnavailable);
+			expect(services.available).toBe(false);
+		}
+	});
+
+	it('abandon : AbortError, le service reste disponible, l\'appel suivant part', async () => {
+		const xhr = fakeXHR(fixture('deposer_image'));
+		const services = Services.forTextarea(page(), { xhr });
+		const controleur = new AbortController();
+		const promesse = services.call('deposer_image', {}, { fichier: png(), signal: controleur.signal });
+		controleur.abort();
+		const erreur = await promesse.catch((e) => e);
+		expect(erreur.name).toBe('AbortError');
+		expect(services.available).toBe(true);
+		await expect(services.call('deposer_image', {}, { fichier: png() })).resolves.toMatchObject({ raccourci: expect.stringMatching(/^doc\d+$/) });
+	});
+
+	it('abandon avant son tour dans la file : rien n\'est envoyé', async () => {
+		const xhr = fakeXHR(fixture('deposer_image'));
+		const services = Services.forTextarea(page(), { xhr });
+		const premier = services.call('deposer_image', {}, { fichier: png() });
+		const controleur = new AbortController();
+		const second = services.call('deposer_image', {}, { fichier: png(), signal: controleur.signal });
+		controleur.abort();
+		await premier;
+		expect((await second.catch((e) => e)).name).toBe('AbortError');
+		expect(xhr.envois).toHaveLength(1);
+	});
+});

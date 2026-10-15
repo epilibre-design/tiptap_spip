@@ -26968,6 +26968,7 @@ var ServiceError = class extends Error {
     this.erreurs = erreurs;
   }
 };
+var abandon = () => new DOMException("envoi abandonn\xE9", "AbortError");
 var texte = (html) => new DOMParser().parseFromString(String(html), "text/html").body.textContent.trim();
 var lireJSON = (doc4, selecteur2) => {
   const script = doc4.querySelector(selecteur2);
@@ -26998,27 +26999,46 @@ var Services = class _Services {
     return container?.querySelector("form") ? new _Services(container, options) : null;
   }
   /** @param {HTMLElement} container  élément .tts-services */
-  constructor(container, { fetch = globalThis.fetch?.bind(globalThis) } = {}) {
+  constructor(container, { fetch = globalThis.fetch?.bind(globalThis), xhr = () => new XMLHttpRequest() } = {}) {
     this.container = container;
     this.fetch = fetch;
+    this.xhr = xhr;
     this.available = true;
     this.queue = Promise.resolve();
   }
   /**
+   * Collage d'images (spec 10 §6) : configuration annoncée par charger() sur le formulaire courant,
+   * null si deposer_image est indisponible.
+   * @returns {{ types: string[], taille: number } | null}
+   */
+  images() {
+    const brut2 = this.container.querySelector("form")?.dataset.ttsImages;
+    if (!brut2) return null;
+    try {
+      return JSON.parse(brut2);
+    } catch {
+      return null;
+    }
+  }
+  /**
    * Appelle une opération ; les appels sont sérialisés (chacun repart du formulaire renouvelé
    * par la réponse précédente).
-   * @param {string} operation  previsu_modele, titre_lien, rechercher
+   * @param {string} operation  previsu_modele, titre_lien, rechercher, deposer_image…
    * @param {object} params  valeurs non chaînes envoyées en JSON
+   * @param {{ fichier?: File, progression?: (ratio: number|null) => void, signal?: AbortSignal }} [options]
+   *        fichier : envoyé dans le champ « fichier », par XMLHttpRequest (progression) ;
+   *        signal : abandon de l'appel, en attente ou en cours (AbortError)
    * @returns {Promise<any>} résultat de l'opération
    */
-  call(operation, params = {}) {
-    const run2 = () => this.send(operation, params);
+  call(operation, params = {}, options = {}) {
+    const run2 = () => this.send(operation, params, options);
     const promise = this.queue.then(run2, run2);
     this.queue = promise.catch(() => {
     });
     return promise;
   }
-  async send(operation, params) {
+  async send(operation, params, { fichier = null, progression = null, signal = null } = {}) {
+    if (signal?.aborted) throw abandon();
     if (!this.available) throw new ServiceUnavailable();
     const form = this.container.querySelector("form");
     const body = new FormData(form);
@@ -27027,11 +27047,14 @@ var Services = class _Services {
     for (const [key, value] of Object.entries(params)) {
       body.set(key, typeof value === "string" ? value : JSON.stringify(value));
     }
+    if (fichier) body.set("fichier", fichier, fichier.name);
+    const url = form.getAttribute("action");
     let reponse;
     try {
-      const res = await this.fetch(form.getAttribute("action"), { method: "POST", body, credentials: "same-origin" });
-      reponse = parseResponse(await res.text());
-    } catch {
+      const html = fichier ? await this.envoyer(url, body, { progression, signal }) : await (await this.fetch(url, { method: "POST", body, credentials: "same-origin" })).text();
+      reponse = parseResponse(html);
+    } catch (erreur) {
+      if (erreur?.name === "AbortError") throw erreur;
       reponse = null;
     }
     if (!reponse) {
@@ -27041,6 +27064,28 @@ var Services = class _Services {
     form.replaceWith(document.importNode(reponse.form, true));
     if (reponse.erreurs) throw new ServiceError(reponse.erreurs);
     return reponse.resultat;
+  }
+  /**
+   * POST par XMLHttpRequest, seule voie qui donne la progression d'un envoi (fetch ne la donne pas).
+   * @returns {Promise<string>} réponse ; rejet TypeError (réseau) ou AbortError
+   */
+  envoyer(url, body, { progression, signal }) {
+    return new Promise((resolve, reject) => {
+      const xhr = this.xhr();
+      const abandonner = () => xhr.abort();
+      const fin = (suite) => {
+        signal?.removeEventListener("abort", abandonner);
+        suite();
+      };
+      xhr.open("POST", url);
+      xhr.withCredentials = true;
+      if (progression) xhr.upload.onprogress = (e) => progression(e.lengthComputable ? e.loaded / e.total : null);
+      xhr.onload = () => fin(() => resolve(xhr.responseText));
+      xhr.onerror = () => fin(() => reject(new TypeError("\xE9chec de l'envoi")));
+      xhr.onabort = () => fin(() => reject(abandon()));
+      signal?.addEventListener("abort", abandonner, { once: true });
+      xhr.send(body);
+    });
   }
 };
 
