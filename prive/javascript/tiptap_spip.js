@@ -18097,15 +18097,44 @@ var regleEcrite = (nom, type) => {
   return regle?.type === type && regle.renderSpip ? regle : null;
 };
 function serialize(doc4, { conservative = true, regles } = {}) {
-  const avant = contexte;
-  contexte = { ...contexte, conservative };
-  try {
-    return avecRegles(regles, () => serializeDoc(doc4, conservative));
-  } finally {
-    contexte = avant;
+  const imbrique = contexte.enCours;
+  const ecrire2 = (code2 = contexte.code) => {
+    const avant = contexte;
+    contexte = { ...contexte, conservative, code: code2, enCours: true };
+    try {
+      return avecRegles(regles, () => serializeDoc(doc4, conservative));
+    } finally {
+      contexte = avant;
+    }
+  };
+  const source = ecrire2();
+  if (imbrique || !codeARisque(doc4)) return source;
+  const redonne = (texte2) => canon(parse(texte2, { regles }).content) === canon(doc4.content);
+  if (redonne(source)) return source;
+  for (const code2 of ["html", "backticks"]) {
+    const autre = ecrire2(code2);
+    if (redonne(autre)) return autre;
   }
+  return source;
 }
-var contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0, crochetsNote: 0 };
+function codeARisque(doc4) {
+  let code2 = false;
+  let risque = false;
+  const parcourir = (n) => {
+    if (n.type === "text") {
+      const enCode = n.marks?.some((m) => m.type === "code");
+      code2 || (code2 = enCode);
+      if (enCode ? /`|<\/code>/i.test(n.text) : n.text.includes("`")) risque = true;
+    } else if (typeof n.attrs?.source === "string" && /`|<\/?code/i.test(n.attrs.source)) {
+      risque = true;
+    }
+    n.content?.forEach(parcourir);
+    n.attrs?.parts?.forEach((p) => p.content?.forEach(parcourir));
+  };
+  parcourir(doc4);
+  return code2 && risque;
+}
+var contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0, crochetsNote: 0, code: "auto", enCours: false };
 function chevronsOuverts(texte2, avant = 0) {
   if (!texte2.includes("<") && !texte2.includes(">")) return avant;
   let n = avant;
@@ -18499,9 +18528,22 @@ function serializeMultiInline({ parts = [], spipSrc = null, spipHash = null }) {
   return enMulti(() => serializeMulti(parts.map(({ lang, content }) => ({ lang, texte: serializeInline(content ?? [], { bords: false }) }))));
 }
 function serializeCode(code2) {
+  if (contexte.code !== "auto") {
+    const html = code2.split(/(?<=<\/code)(?=>)/i).map((morceau) => `<code>${encodeCode(morceau)}</code>`).join("");
+    if (contexte.code === "html") return html;
+    return enBackticks(code2) ?? html;
+  }
   const backtick = code2 === code2.trim() && canBacktick(code2) && !/^`|`$|``/.test(code2);
   if (!backtick) return `<code>${encodeCode(code2)}</code>`;
   return code2.includes("`") ? `\`\`${code2}\`\`` : `\`${code2}\``;
+}
+function enBackticks(code2) {
+  const attendu = canon([node("paragraph", null, [text(code2, [{ type: "code" }])])]);
+  for (const d of ["`", "``"]) {
+    const ecrit = `${d}${code2}${d}`;
+    if (canon(parse(ecrit).content) === attendu) return ecrit;
+  }
+  return null;
 }
 function escapeText(value, atLineStart, { link = false, cellule = false } = {}) {
   let s = value.replace(/\\/g, "\\\\").replace(/[{}`~]/g, (c) => `\\${c}`).replace(/ /g, "~").replace(/&(?=#?[a-z0-9]+;)/gi, "&amp;").replace(/<(?=[a-z/!:]|[_-][a-z_-]{2})/gi, "&lt;").replace(/\[\?/g, "[&#63;").replace(/\[\[/g, "[&#91;");

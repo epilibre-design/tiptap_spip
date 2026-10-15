@@ -121,6 +121,32 @@ describe('serializeInline', () => {
 		expect(serializeInline([text(' a ', [C])])).toBe('<code> a </code>');
 		expect(serializeInline([text('a\\`b', [C])])).toBe('<code>a\\\\\\`b</code>');
 	});
+
+	it('code exposé aux appariements du core : le texte écrit est relu, le code réécrit s\'il le faut', () => {
+		// le core lit les backticks sur tout le texte, avant <code> et avant les blocs. Cas réduits du
+		// corpus (code-non-ferme.spip suivi de code-accoles.spip ou code-echappements.spip)
+		const cas = {
+			// backtick d'un fragment brut apparié au code écrit en backticks : <code>
+			'<code>`\n</code><code>></code>': '<code>`\n</code><code>></code>',
+			// … même dans un autre bloc
+			'a <code>`\n</code> b\n\n<code>x</code>': 'a <code>`\n</code> b\n\n<code>x</code>',
+			// un fragment brut <code> entre deux codes : les backticks restent (<code> s'y recollerait)
+			'``n`\n`e`:`<code>`:`': '\\`\\`n`\n`e`:`<code>`:`',
+			// code qui contient </code> : coupé entre </code et >
+			'`e`b`y</code>``e`': '<code>e</code>b<code>y</code</code><code>>\\`\\`e</code>',
+			// </code sans > : il tient dans <code>
+			'<code>`\n</code><code></code</code>': '<code>`\n</code><code></code</code>',
+			// code </code> après un backtick brut : coupé en deux <code>, réunis à la relecture
+			'<code>`\n</code><code></code</code><code>></code>': '<code>`\n</code><code></code</code><code>></code>',
+		};
+		for (const [source, attendu] of Object.entries(cas)) {
+			const doc = parse(source);
+			const once = serialize(doc, { conservative: false });
+			expect(once, source).toBe(attendu);
+			expect(stripTech(parse(once).content), source).toEqual(stripTech(doc.content));
+			expect(serialize(parse(once), { conservative: false }), source).toBe(once);
+		}
+	});
 });
 
 describe('< brut d\'une balise incomplète', () => {
