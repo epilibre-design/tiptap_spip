@@ -22,6 +22,12 @@ describe('nommer', () => {
 		expect(nommer(fichier('image.jpeg', 'image/jpeg'), date).name).toBe('capture-20261015-090503.jpg');
 	});
 
+	it('extension annoncée par le serveur pour le type, sinon celle par défaut', () => {
+		expect(nommer(fichier('', 'image/jpeg'), date, { 'image/jpeg': 'jpeg' }).name).toBe('capture-20261015-090503.jpeg');
+		expect(nommer(fichier('photo.jpg', 'image/jpeg'), date, { 'image/jpeg': 'jpeg' }).name).toBe('photo.jpeg');
+		expect(nommer(fichier('a.png', 'image/png'), date, { 'image/jpeg': 'jpeg' }).name).toBe('a.png');
+	});
+
 	it('fichier nommé : son nom, avec l\'extension de son type', () => {
 		expect(nommer(fichier('Photo vacances.JPEG', 'image/jpeg'), date).name).toBe('Photo vacances.jpg');
 		expect(nommer(fichier('schema.webp', 'image/webp'), date).name).toBe('schema.webp');
@@ -198,6 +204,50 @@ describe('CollerImages (spec 10 §1, §3)', () => {
 		// le retour en visuel relit la source
 		instance.toggleMode({ focus: false });
 		expect(instance.editor.view.dom.querySelector('.tts-model')).not.toBeNull();
+	});
+
+	it('texte sélectionné conservé (comme Crayons), image insérée après lui, dans les deux modes', async () => {
+		// visuel : « après » sélectionné
+		const visuel = monterInstance('Avant après', services({ id_document: 11, raccourci: 'doc11' }));
+		visuel.editor.commands.setTextSelection({ from: 7, to: 12 });
+		coller(visuel.editor.view.dom, presse({ files: [png()] }));
+		await vi.waitFor(() => expect(visuel.images.enCours()).toBe(0));
+		visuel.bridge.flush();
+		expect(visuel.textarea.value).toBe('Avant après<doc11>');
+		visuel.destroy();
+		// source : « Tex » sélectionné, la sélection reste en place
+		const source = monterInstance('Texte', services({ id_document: 12, raccourci: 'doc12' }), { mode: 'source' });
+		source.textarea.setSelectionRange(0, 3);
+		coller(source.textarea, presse({ files: [png()] }));
+		expect(source.textarea.value).toMatch(/^Tex<!-- envoi tts-img-[\w-]+ -->te$/);
+		expect([source.textarea.selectionStart, source.textarea.selectionEnd]).toEqual([0, 3]);
+		await vi.waitFor(() => expect(source.images.enCours()).toBe(0));
+		expect(source.textarea.value).toBe('Tex<doc12>te');
+	});
+
+	it('marqueur effacé à la main (mode source) : rien inséré, pas d\'événement image-inseree', async () => {
+		let liberer;
+		const attente = new Promise((r) => { liberer = r; });
+		const s = { ...services(), call: vi.fn(async () => { await attente; return { id_document: 13, raccourci: 'doc13' }; }) };
+		const instance = monterInstance('Texte', s, { mode: 'source' });
+		instance.textarea.setSelectionRange(5, 5);
+		const inserees = [];
+		instance.textarea.addEventListener('tiptap-spip:image-inseree', (e) => inserees.push(e.detail.raccourci));
+		coller(instance.textarea, presse({ files: [png()] }));
+		instance.textarea.value = 'Texte';
+		liberer();
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		expect(instance.textarea.value).toBe('Texte');
+		expect(inserees).toEqual([]);
+	});
+
+	it('extension annoncée par le serveur pour le type (jpeg plutôt que jpg)', async () => {
+		const s = services({ id_document: 14, raccourci: 'doc14' });
+		s.images = () => ({ ...CONFIG, extensions: { 'image/jpeg': 'jpeg' } });
+		const instance = monterInstance('Texte', s);
+		coller(instance.editor.view.dom, presse({ files: [fichier('', 'image/jpeg'), fichier('photo.jpg', 'image/jpeg')] }));
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		expect(s.call.mock.calls.map(([, , { fichier: f }]) => f.name.replace(/\d{8}-\d{6}/, 'D'))).toEqual(['capture-D.jpeg', 'photo.jpeg']);
 	});
 
 	it('bascule de mode refusée pendant un envoi', async () => {

@@ -168,7 +168,7 @@ const png = () => new File([new Uint8Array([137, 80, 78, 71])], 'capture.png', {
 describe('Services.images', () => {
 	it('lit l\'annonce du formulaire courant', () => {
 		const services = Services.forTextarea(page());
-		expect(services.images()).toEqual({ types: expect.arrayContaining(['image/png']), taille: expect.any(Number) });
+		expect(services.images()).toEqual({ types: expect.arrayContaining(['image/png']), extensions: expect.objectContaining({ 'image/png': 'png' }), taille: expect.any(Number) });
 	});
 
 	it('null sans annonce (opération indisponible)', () => {

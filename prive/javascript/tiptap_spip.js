@@ -25694,7 +25694,7 @@ var plugin = (ui2) => new Plugin({
   }
 });
 function ajouterMarqueurs(view, ids) {
-  const pos = view.state.selection.from;
+  const pos = view.state.selection.to;
   view.dispatch(view.state.tr.setMeta(cleMarqueurs, { ajouter: ids.map((id) => ({ id, pos })) }).setMeta("addToHistory", false));
 }
 var positionMarqueur = (state, id) => cleMarqueurs.getState(state)?.get(id) ?? null;
@@ -26972,7 +26972,7 @@ var Services = class _Services {
   /**
    * Collage d'images (spec 10 §6) : configuration annoncée par charger() sur le formulaire courant,
    * null si deposer_image est indisponible.
-   * @returns {{ types: string[], taille: number } | null}
+   * @returns {{ types: string[], extensions: Record<string, string>, taille: number } | null}
    */
   images() {
     const brut2 = this.container.querySelector("form")?.dataset.ttsImages;
@@ -27055,8 +27055,8 @@ var Services = class _Services {
 // src/editor/collerImage.js
 var EXTENSIONS = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
 var deux = (n) => String(n).padStart(2, "0");
-function nommer(fichier, date = /* @__PURE__ */ new Date()) {
-  const extension = EXTENSIONS[fichier.type] ?? fichier.name.split(".").pop();
+function nommer(fichier, date = /* @__PURE__ */ new Date(), extensions = {}) {
+  const extension = extensions[fichier.type] ?? EXTENSIONS[fichier.type] ?? fichier.name.split(".").pop();
   const capture = !fichier.name || /^image\.\w+$/i.test(fichier.name);
   const base2 = capture ? `capture-${date.getFullYear()}${deux(date.getMonth() + 1)}${deux(date.getDate())}-${deux(date.getHours())}${deux(date.getMinutes())}${deux(date.getSeconds())}` : fichier.name.replace(/\.[^.]*$/, "");
   return new File([fichier], `${base2}.${extension}`, { type: fichier.type, lastModified: fichier.lastModified });
@@ -27123,12 +27123,12 @@ var CollerImages = class {
       this.effacer();
     }
     if (!tri.envoyer.length) return false;
-    const envois = tri.envoyer.map((fichier) => ({ id: nouvelId(), fichier: nommer(fichier), mode, controleur: new AbortController() }));
+    const envois = tri.envoyer.map((fichier) => ({ id: nouvelId(), fichier: nommer(fichier, /* @__PURE__ */ new Date(), config2.extensions), mode, controleur: new AbortController() }));
     if (mode === "visual") {
       ajouterMarqueurs(this.editor.view, envois.map((e) => e.id));
     } else {
-      const { selectionStart, selectionEnd } = this.textarea;
-      this.textarea.setRangeText(envois.map((e) => marqueurSource(e.id)).join(""), selectionStart, selectionEnd, "end");
+      const fin = this.textarea.selectionEnd;
+      this.textarea.setRangeText(envois.map((e) => marqueurSource(e.id)).join(""), fin, fin, "preserve");
       this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
     }
     for (const envoi of envois) {
@@ -27148,7 +27148,7 @@ var CollerImages = class {
         progression: (ratio) => envoi.mode === "visual" && progressionMarqueur(this.editor.view, envoi.id, ratio)
       });
       if (signal.aborted) return;
-      this.inserer(envoi, `<${resultat.raccourci}>`);
+      if (!this.inserer(envoi, `<${resultat.raccourci}>`)) return;
       this.emettre("image-inseree", { fichier: envoi.fichier, id_document: resultat.id_document, raccourci: resultat.raccourci });
     } catch (erreur) {
       if (signal.aborted || erreur?.name === "AbortError") return;
@@ -27160,13 +27160,12 @@ var CollerImages = class {
       if (this.envois.delete(envoi.id)) this.surChangement();
     }
   }
-  /** Remplace le marqueur par le raccourci ; marqueur supprimé par le rédacteur : rien. */
+  /**
+   * Remplace le marqueur par le raccourci.
+   * @returns {boolean} false si le marqueur n'existe plus (supprimé par le rédacteur) : rien d'inséré
+   */
   inserer(envoi, raccourci) {
-    if (envoi.mode === "visual") {
-      remplacerMarqueur(this.editor, envoi.id, raccourci);
-      return;
-    }
-    this.remplacerSource(envoi.id, raccourci);
+    return envoi.mode === "visual" ? remplacerMarqueur(this.editor, envoi.id, raccourci) : this.remplacerSource(envoi.id, raccourci);
   }
   retirer(envoi) {
     if (envoi.mode === "visual") {
@@ -27175,13 +27174,17 @@ var CollerImages = class {
     }
     this.remplacerSource(envoi.id, "");
   }
-  /** Remplace le texte provisoire d'un envoi, sans toucher à la sélection ni aux autres marqueurs. */
+  /**
+   * Remplace le texte provisoire d'un envoi, sans toucher à la sélection ni aux autres marqueurs.
+   * @returns {boolean} false si le texte provisoire n'est plus là
+   */
   remplacerSource(id, texte2) {
     const marqueur = marqueurSource(id);
     const debut = this.textarea.value.indexOf(marqueur);
-    if (debut < 0) return;
+    if (debut < 0) return false;
     this.textarea.setRangeText(texte2, debut, debut + marqueur.length, "preserve");
     this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
   }
   emettre(nom, detail) {
     this.textarea.dispatchEvent(new CustomEvent(`tiptap-spip:${nom}`, { bubbles: true, detail }));

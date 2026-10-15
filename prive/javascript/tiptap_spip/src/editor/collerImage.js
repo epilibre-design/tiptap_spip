@@ -8,20 +8,22 @@ import { ajouterMarqueurs, progressionMarqueur, remplacerMarqueur, retirerMarque
  * mode source.
  */
 
-/** Extension de chaque type d'image de la liste blanche. */
+/** Extension de chaque type d'image de la liste blanche, quand le serveur n'annonce pas la sienne. */
 const EXTENSIONS = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
 
 const deux = (n) => String(n).padStart(2, '0');
 
 /**
  * Nom envoyé au serveur (spec 10 §2) : une capture arrive sans nom ou nommée image.png, elle devient
- * capture-AAAAMMJJ-HHMMSS.<ext> ; un fichier nommé garde son nom, avec l'extension de son type.
+ * capture-AAAAMMJJ-HHMMSS.<ext> ; un fichier nommé garde son nom, avec l'extension de son type :
+ * celle que le serveur accepte pour lui (annonce des services), sinon celle par défaut.
  * @param {File} fichier
  * @param {Date} [date]
+ * @param {Record<string, string>} [extensions]  type MIME → extension acceptée par le serveur
  * @returns {File}
  */
-export function nommer(fichier, date = new Date()) {
-	const extension = EXTENSIONS[fichier.type] ?? fichier.name.split('.').pop();
+export function nommer(fichier, date = new Date(), extensions = {}) {
+	const extension = extensions[fichier.type] ?? EXTENSIONS[fichier.type] ?? fichier.name.split('.').pop();
 	const capture = !fichier.name || /^image\.\w+$/i.test(fichier.name);
 	const base = capture
 		? `capture-${date.getFullYear()}${deux(date.getMonth() + 1)}${deux(date.getDate())}-${deux(date.getHours())}${deux(date.getMinutes())}${deux(date.getSeconds())}`
@@ -113,12 +115,13 @@ export class CollerImages {
 			this.effacer();
 		}
 		if (!tri.envoyer.length) return false;
-		const envois = tri.envoyer.map((fichier) => ({ id: nouvelId(), fichier: nommer(fichier), mode, controleur: new AbortController() }));
+		const envois = tri.envoyer.map((fichier) => ({ id: nouvelId(), fichier: nommer(fichier, new Date(), config.extensions), mode, controleur: new AbortController() }));
 		if (mode === 'visual') {
 			ajouterMarqueurs(this.editor.view, envois.map((e) => e.id));
 		} else {
-			const { selectionStart, selectionEnd } = this.textarea;
-			this.textarea.setRangeText(envois.map((e) => marqueurSource(e.id)).join(''), selectionStart, selectionEnd, 'end');
+			// texte sélectionné conservé, comme avec Crayons : marqueurs après lui, sélection inchangée
+			const fin = this.textarea.selectionEnd;
+			this.textarea.setRangeText(envois.map((e) => marqueurSource(e.id)).join(''), fin, fin, 'preserve');
 			this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
 		}
 		for (const envoi of envois) {
@@ -139,7 +142,8 @@ export class CollerImages {
 				progression: (ratio) => envoi.mode === 'visual' && progressionMarqueur(this.editor.view, envoi.id, ratio),
 			});
 			if (signal.aborted) return;
-			this.inserer(envoi, `<${resultat.raccourci}>`);
+			// marqueur supprimé par le rédacteur : rien d'inséré, pas d'événement
+			if (!this.inserer(envoi, `<${resultat.raccourci}>`)) return;
 			this.emettre('image-inseree', { fichier: envoi.fichier, id_document: resultat.id_document, raccourci: resultat.raccourci });
 		} catch (erreur) {
 			if (signal.aborted || erreur?.name === 'AbortError') return;
@@ -152,13 +156,12 @@ export class CollerImages {
 		}
 	}
 
-	/** Remplace le marqueur par le raccourci ; marqueur supprimé par le rédacteur : rien. */
+	/**
+	 * Remplace le marqueur par le raccourci.
+	 * @returns {boolean} false si le marqueur n'existe plus (supprimé par le rédacteur) : rien d'inséré
+	 */
 	inserer(envoi, raccourci) {
-		if (envoi.mode === 'visual') {
-			remplacerMarqueur(this.editor, envoi.id, raccourci);
-			return;
-		}
-		this.remplacerSource(envoi.id, raccourci);
+		return envoi.mode === 'visual' ? remplacerMarqueur(this.editor, envoi.id, raccourci) : this.remplacerSource(envoi.id, raccourci);
 	}
 
 	retirer(envoi) {
@@ -169,13 +172,17 @@ export class CollerImages {
 		this.remplacerSource(envoi.id, '');
 	}
 
-	/** Remplace le texte provisoire d'un envoi, sans toucher à la sélection ni aux autres marqueurs. */
+	/**
+	 * Remplace le texte provisoire d'un envoi, sans toucher à la sélection ni aux autres marqueurs.
+	 * @returns {boolean} false si le texte provisoire n'est plus là
+	 */
 	remplacerSource(id, texte) {
 		const marqueur = marqueurSource(id);
 		const debut = this.textarea.value.indexOf(marqueur);
-		if (debut < 0) return;
+		if (debut < 0) return false;
 		this.textarea.setRangeText(texte, debut, debut + marqueur.length, 'preserve');
 		this.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+		return true;
 	}
 
 	emettre(nom, detail) {

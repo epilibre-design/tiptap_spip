@@ -42,6 +42,8 @@ test.describe('serveur', () => {
 		const images = await annonce(page);
 		expect(images.types).toEqual(expect.arrayContaining(['image/png', 'image/jpeg', 'image/gif']));
 		expect(images.taille).toBeGreaterThan(0);
+		// extension de chaque type, celle que medias reconnaît
+		expect(images.extensions).toMatchObject({ 'image/png': 'png', 'image/jpeg': 'jpg' });
 		configurer('tiptap_spip/coller_images', 'non');
 		try {
 			await page.reload();
@@ -148,6 +150,19 @@ test.describe('collage', () => {
 		expect(doc.mode).toBe('document');
 		await enregistrer(page);
 		expect(texte(id)).toBe(`Texte<doc${doc.id_document}>`);
+	});
+
+	test('texte sélectionné conservé (comme Crayons), image insérée après lui', async ({ page }) => {
+		const id = await editer(page, 'Avant après');
+		await page.locator('.tts-editor .ProseMirror p').first().dblclick({ position: { x: 60, y: 5 } });
+		await selectionStable(page);
+		const choisi = await page.evaluate(() => getSelection().toString());
+		expect(choisi.trim()).toBe('après');
+		await coller(page, '.tts-editor .ProseMirror', [{}]);
+		await envoisTermines(page);
+		const [doc] = documents('article', id);
+		await enregistrer(page);
+		expect(texte(id)).toMatch(new RegExp(`^Avant après\\s?<doc${doc.id_document}>$`));
 	});
 
 	test('deux PNG en un geste : deux <docN> dans l\'ordre, deux documents', async ({ page }) => {

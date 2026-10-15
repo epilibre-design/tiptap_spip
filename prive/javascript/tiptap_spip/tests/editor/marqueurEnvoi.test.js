@@ -17,6 +17,15 @@ describe('marqueurs d\'envoi (spec 10 §3)', () => {
 		expect(source()).toBe('Avant après');
 	});
 
+	it('sélection non vide : posé après elle, texte sélectionné conservé', () => {
+		monter('Avant après');
+		editor.commands.setTextSelection({ from: 7, to: 12 });
+		ajouterMarqueurs(editor.view, ['a']);
+		expect(positionMarqueur(editor.state, 'a')).toBe(12);
+		remplacerMarqueur(editor, 'a', '<doc3>');
+		expect(source()).toBe('Avant après<doc3>');
+	});
+
 	it('position reportée quand on tape avant lui', () => {
 		monter('Avant après');
 		editor.commands.setTextSelection(6);

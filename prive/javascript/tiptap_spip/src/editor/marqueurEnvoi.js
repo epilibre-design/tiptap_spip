@@ -49,9 +49,12 @@ const plugin = (ui) => new Plugin({
 	},
 });
 
-/** Marqueurs à la sélection, dans l'ordre des ids. */
+/**
+ * Marqueurs après la sélection, dans l'ordre des ids : le texte sélectionné est conservé, comme avec
+ * Crayons (son envoi ne touche pas au texte).
+ */
 export function ajouterMarqueurs(view, ids) {
-	const pos = view.state.selection.from;
+	const pos = view.state.selection.to;
 	view.dispatch(view.state.tr.setMeta(cleMarqueurs, { ajouter: ids.map((id) => ({ id, pos })) }).setMeta('addToHistory', false));
 }
 

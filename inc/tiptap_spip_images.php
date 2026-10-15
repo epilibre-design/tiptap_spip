@@ -38,15 +38,19 @@ function tiptap_spip_images_taille_max(string $upload, string $post, ?int $img_m
 }
 
 /**
- * Types d'images que le site accepte en envoi : extension → type MIME, parmi la liste blanche.
+ * Types d'images que le site accepte en envoi : extension → type MIME, parmi la liste blanche. Seules
+ * les extensions que medias reconnaît comptent : il corrige l'extension envoyée (corriger_extension,
+ * .jpeg → .jpg) avant de la chercher.
  *
  * @return array<string, string>
  */
 function tiptap_spip_images_types(): array {
 	include_spip('base/abstract_sql');
+	include_spip('inc/documents');
 	$types = [];
 	foreach (sql_allfetsel('extension, mime_type', 'spip_types_documents', "upload='oui'") as $ligne) {
-		if (in_array($ligne['mime_type'], TIPTAP_SPIP_IMAGES_TYPES, true)) {
+		$extension = (string) $ligne['extension'];
+		if (in_array($ligne['mime_type'], TIPTAP_SPIP_IMAGES_TYPES, true) && corriger_extension($extension) === $extension) {
 			$types[(string) $ligne['extension']] = (string) $ligne['mime_type'];
 		}
 	}
@@ -62,11 +66,11 @@ function tiptap_spip_images_id_lien(int $id_objet): int {
 }
 
 /**
- * Collage d'images pour l'éditeur d'un objet (spec 10 §5, « Disponibilité ») : types acceptés et
- * taille maximale, ou null si l'opération deposer_image est indisponible (sans objet, plugin medias
+ * Collage d'images pour l'éditeur d'un objet (spec 10 §5, « Disponibilité ») : types acceptés, extension
+ * de chacun (le JS renomme le fichier avec elle) et taille maximale, ou null si l'opération deposer_image est indisponible (sans objet, plugin medias
  * inactif, réglage désactivé, pas le droit de joindre un document, aucun type d'image accepté).
  *
- * @return ?array{types: string[], taille: int}
+ * @return ?array{types: string[], extensions: array<string, string>, taille: int}
  */
 function tiptap_spip_images(string $objet, int $id_objet): ?array {
 	if ($objet === '' || tiptap_spip_config()['coller_images'] !== 'oui' || !test_plugin_actif('medias')) {
@@ -76,12 +80,17 @@ function tiptap_spip_images(string $objet, int $id_objet): ?array {
 	if (!autoriser('joindredocument', $objet, tiptap_spip_images_id_lien($id_objet))) {
 		return null;
 	}
-	$types = array_values(array_unique(tiptap_spip_images_types()));
-	if (!$types) {
+	// type MIME → première extension acceptée
+	$extensions = [];
+	foreach (tiptap_spip_images_types() as $extension => $type) {
+		$extensions[$type] ??= $extension;
+	}
+	if (!$extensions) {
 		return null;
 	}
 	return [
-		'types' => $types,
+		'types' => array_keys($extensions),
+		'extensions' => $extensions,
 		'taille' => tiptap_spip_images_taille_max(
 			(string) ini_get('upload_max_filesize'),
 			(string) ini_get('post_max_size'),

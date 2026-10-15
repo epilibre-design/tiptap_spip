@@ -13,7 +13,9 @@ raccourci. Ce lot réduit ce parcours à un `Ctrl+V`.
 
 1. Le rédacteur colle une image (capture d'écran, image copiée depuis un navigateur ou un logiciel de dessin).
 2. Un **marqueur d'envoi** apparaît à la position du curseur (« Envoi de l'image… », avec une progression si
-   le navigateur la fournit). La saisie reste libre pendant l'envoi.
+   le navigateur la fournit). La saisie reste libre pendant l'envoi. Si du texte est sélectionné, il est
+   **conservé**, comme avec l'envoi de Crayons, qui ne touche pas au texte : le marqueur se place après la
+   sélection, qui reste en place. La règle est la même dans les deux modes.
 3. L'image est envoyée au serveur, qui crée un **document SPIP** lié à l'objet édité.
 4. Le marqueur est remplacé par le modèle `<docN>` (§4), affiché par la prévisualisation habituelle des modèles
    ([05](05-extensions-spip.md) §3). L'insertion est une étape d'historique : `Ctrl+Z` la retire (le document
@@ -96,7 +98,10 @@ pas les autres images du même collage. Chaque image part dans un appel `deposer
 CVT est renouvelé entre deux appels (§5).
 
 Liste blanche par défaut : `image/png`, `image/jpeg`, `image/gif`, `image/webp`. Elle est envoyée au JS dans
-la configuration (§6), recoupée par le serveur avec `spip_types_documents` (types `upload='oui'`).
+la configuration (§6), recoupée par le serveur avec `spip_types_documents` (types `upload='oui'`). Le serveur
+annonce aussi l'extension de chaque type, et le JS renomme le fichier avec elle. Seules comptent les
+extensions que medias reconnaît : il corrige l'extension envoyée (`corriger_extension`, `.jpeg` → `.jpg`)
+avant de la chercher.
 
 Taille : le JS refuse avant envoi un fichier plus gros que la limite annoncée par le serveur (minimum de
 `upload_max_filesize`, `post_max_size` et `_IMG_MAX_SIZE` si défini), pour ne pas faire attendre un envoi
@@ -157,7 +162,7 @@ comme tout modèle. Pas de nouveau nœud, pas de nouvelle règle de parseur ni d
 
 Toujours `<docN>`, jamais `<imgN>`, et sans réglage (Q11, tranchée le 2026-10-14 ; cf. §8).
 
-Position : à l'endroit du collage, en ligne. Le core rend `<docN>` seul sur sa ligne comme un bloc ; inséré
+Position : à l'endroit du collage, après le texte sélectionné s'il y en a un (§1), en ligne. Le core rend `<docN>` seul sur sa ligne comme un bloc ; inséré
 au milieu d'un paragraphe, il reste en ligne, comme si le rédacteur l'avait tapé.
 
 ## 5. Côté serveur : opération `deposer_image`
@@ -199,8 +204,8 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
 | `tiptap_spip/coller_images` | `oui` | active la capture du collage d'images |
 
 Le JS reçoit de `charger()`, dans l'attribut `data-tts-images` du `<form>` de services (JSON
-`{types, taille}`, absent si l'opération est indisponible), la disponibilité de l'opération, la liste blanche
-et la taille maximale. Le formulaire est remplacé après chaque réponse : l'annonce reste à jour. Ces informations arrivent avec le
+`{types, extensions, taille}`, absent si l'opération est indisponible), la disponibilité de l'opération, la
+liste blanche, l'extension de chaque type et la taille maximale. Le formulaire est remplacé après chaque réponse : l'annonce reste à jour. Ces informations arrivent avec le
 formulaire de services, éventuellement après la création de l'éditeur (§3). Sans elles, pas de capture :
 le collage se comporte comme aujourd'hui.
 

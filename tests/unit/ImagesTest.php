@@ -75,6 +75,14 @@ final class ImagesTest extends TestCase
 		$this->assertSame([['joindredocument', 'article', 12]], $demandes);
 	}
 
+	public function testExtensionAnnonceeParType(): void {
+		$this->assertSame(['image/gif' => 'gif', 'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'], tiptap_spip_images('article', 12)['extensions']);
+		// ligne jpeg seule : medias corrige .jpeg en .jpg (corriger_extension) et ne la trouverait pas
+		$GLOBALS['_test_sql']['spip_types_documents'] = [['extension' => 'jpeg', 'mime_type' => 'image/jpeg'], ['extension' => 'png', 'mime_type' => 'image/png']];
+		$this->assertSame(['image/png'], tiptap_spip_images('article', 12)['types']);
+		$this->assertSame(['image/png' => 'png'], tiptap_spip_images('article', 12)['extensions']);
+	}
+
 	public function testObjetNouveauLieAuRedacteur(): void {
 		$GLOBALS['visiteur_session'] = ['id_auteur' => 7];
 		$demandes = [];

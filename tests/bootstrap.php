@@ -156,6 +156,14 @@ if (!function_exists('sql_allfetsel')) {
 	}
 }
 
+if (!function_exists('corriger_extension')) {
+	/** Simulation : ecrire/inc/documents.php. */
+	function corriger_extension($ext) {
+		$ext = preg_replace(',[^a-z0-9],i', '', $ext);
+		return ['htm' => 'html', 'jpeg' => 'jpg', 'tiff' => 'tif', 'aif' => 'aiff', 'mpeg' => 'mpg'][$ext] ?? $ext;
+	}
+}
+
 if (!function_exists('test_plugin_actif')) {
 	function test_plugin_actif(string $plugin): bool {
 		return in_array($plugin, $GLOBALS['_test_plugins'], true);

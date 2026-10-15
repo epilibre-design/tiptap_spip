@@ -81,7 +81,7 @@ export class Services {
 	/**
 	 * Collage d'images (spec 10 §6) : configuration annoncée par charger() sur le formulaire courant,
 	 * null si deposer_image est indisponible.
-	 * @returns {{ types: string[], taille: number } | null}
+	 * @returns {{ types: string[], extensions: Record<string, string>, taille: number } | null}
 	 */
 	images() {
 		const brut = this.container.querySelector('form')?.dataset.ttsImages;

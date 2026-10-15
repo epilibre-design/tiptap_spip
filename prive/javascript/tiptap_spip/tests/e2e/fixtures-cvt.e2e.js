@@ -26,7 +26,8 @@ const poster = (page, params, { sansSession = false, fichier = null } = {}) => p
 test('fixtures de cvt.js', async ({ page }) => {
 	const id = await editer(page, 'Texte');
 	mkdirSync(dossier, { recursive: true });
-	const ecrire = (nom, html) => writeFileSync(new URL(`${nom}.html`, dossier), html);
+	// sans les blancs de fin de ligne du HTML de SPIP (git diff --check), sans effet sur la lecture
+	const ecrire = (nom, html) => writeFileSync(new URL(`${nom}.html`, dossier), html.replace(/[ \t]+$/gm, ''));
 	ecrire('formulaire', await page.evaluate(() => document.querySelector('.tts-services[data-tts-champ=texte]').outerHTML));
 	ecrire('titre_lien', await poster(page, { operation: 'titre_lien', cibles: JSON.stringify([`art${id}`, 'https://www.spip.net/fr', 'art999999']) }));
 	ecrire('erreurs', await poster(page, { operation: 'previsu_modele', modele: '<zzz1>' }));
