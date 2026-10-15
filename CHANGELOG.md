@@ -15,6 +15,9 @@
 
 ### Corrigé
 
+- Code en ligne près d'un backtick ou d'une balise `<code>` restés bruts, même dans un autre
+  paragraphe : le texte enregistré relit désormais le même contenu (le code s'écrit en `<code>`,
+  éventuellement coupé, ou avec d'autres backticks).
 - Une accolade orpheline (`{` ou `}}` sans partenaire) ne compte plus qu'une anomalie : seule
   elle reste brute, et le gras ou l'italique correctement fermés du même paragraphe s'affichent
   normalement.

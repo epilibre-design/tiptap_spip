@@ -31,22 +31,65 @@ const regleEcrite = (nom, type) => {
  * @returns {string}
  */
 export function serialize(doc, { conservative = true, regles } = {}) {
-	const avant = contexte;
-	contexte = { ...contexte, conservative };
-	try {
-		return avecRegles(regles, () => serializeDoc(doc, conservative));
-	} finally {
-		contexte = avant;
+	const imbrique = contexte.enCours;
+	const ecrire = (code = contexte.code) => {
+		const avant = contexte;
+		contexte = { ...contexte, conservative, code, enCours: true };
+		try {
+			return avecRegles(regles, () => serializeDoc(doc, conservative));
+		} finally {
+			contexte = avant;
+		}
+	};
+	const source = ecrire();
+	// appel imbriqué (multi, note) : le document entier est relu par l'appel de premier niveau
+	if (imbrique || !codeARisque(doc)) return source;
+	// le core lit les backticks sur tout le texte, avant <code> et avant le découpage en blocs : un
+	// backtick ou un <code> d'un fragment brut, même dans un autre bloc, peut s'apparier au code écrit.
+	// Le texte est relu ; s'il ne redonne pas le document, le code s'écrit autrement
+	const redonne = (texte) => canon(parse(texte, { regles }).content) === canon(doc.content);
+	if (redonne(source)) return source;
+	for (const code of ['html', 'backticks']) {
+		const autre = ecrire(code);
+		if (redonne(autre)) return autre;
 	}
+	// aucune écriture ne relit le document : la première, sans rien changer à sa structure
+	return source;
+}
+
+/**
+ * Code en ligne exposé aux appariements du core : du code, et ailleurs un backtick ou une balise
+ * <code> que le texte écrit laisse tels quels (source d'un fragment brut, texte restitué par la
+ * sérialisation conservatrice), ou un code qui contient un backtick ou </code>. Sans eux, le texte
+ * écrit n'est pas relu : les attributs techniques (spipSrc…) ne comptent pas.
+ */
+function codeARisque(doc) {
+	let code = false;
+	let risque = false;
+	const parcourir = (n) => {
+		if (n.type === 'text') {
+			const enCode = n.marks?.some((m) => m.type === 'code');
+			code ||= enCode;
+			if (enCode ? /`|<\/code>/i.test(n.text) : n.text.includes('`')) risque = true;
+		} else if (typeof n.attrs?.source === 'string' && /`|<\/?code/i.test(n.attrs.source)) {
+			risque = true;
+		}
+		n.content?.forEach(parcourir);
+		n.attrs?.parts?.forEach((p) => p.content?.forEach(parcourir));
+	};
+	parcourir(doc);
+	return code && risque;
 }
 
 /**
  * Contexte de la sérialisation en cours : conservative (forme canonique ou non, transmise au
  * contenu des notes) ; note (texte d'une note : un ] s'écrit \] pour ne pas la fermer) ; multi
  * (partie d'un multi : un [xx] s'écrit en entité) ; ouvert (nombre de < restés ouverts avant ce bloc) ;
- * crochets (nombre de [ restés ouverts avant ce bloc) ; crochetsNote (ceux qu'ouvre la note englobante).
+ * crochets (nombre de [ restés ouverts avant ce bloc) ; crochetsNote (ceux qu'ouvre la note englobante) ;
+ * code (écriture du code en ligne : auto, html ou backticks, cf. serializeCode) ; enCours (dans un appel
+ * de serialize(), pour les appels imbriqués).
  */
-let contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0, crochetsNote: 0 };
+let contexte = { conservative: true, note: false, multi: false, ouvert: 0, crochets: 0, crochetsNote: 0, code: 'auto', enCours: false };
 
 /**
  * Chevrons < restés ouverts à la fin de ce texte, en partant de ceux d'avant : le modèle du core
@@ -566,11 +609,30 @@ function serializeMultiInline({ parts = [], spipSrc = null, spipHash = null }) {
 /**
  * Code inline : backticks par défaut (`` si le code contient un backtick) ; <code> si le code a
  * des blancs aux bords (SPIP les retire entre backticks) ou ne tient pas entre backticks.
+ * Écritures de repli, quand le document relu diffère (serialize) : contexte.code html, <code> d'abord ;
+ * backticks, backticks d'abord.
  */
 function serializeCode(code) {
+	if (contexte.code !== 'auto') {
+		// </code> fermerait la balise (RE_PROTEGE_BLOCS) : le code est coupé entre </code et >, en
+		// plusieurs <code> que le parseur réunit
+		const html = code.split(/(?<=<\/code)(?=>)/i).map((morceau) => `<code>${encodeCode(morceau)}</code>`).join('');
+		if (contexte.code === 'html') return html;
+		return enBackticks(code) ?? html;
+	}
 	const backtick = code === code.trim() && canBacktick(code) && !/^`|`$|``/.test(code);
 	if (!backtick) return `<code>${encodeCode(code)}</code>`;
 	return code.includes('`') ? `\`\`${code}\`\`` : `\`${code}\``;
+}
+
+/** Le plus court délimiteur de backticks (1 à 2) qui, relu, redonne ce code ; null sinon. */
+function enBackticks(code) {
+	const attendu = canon([node('paragraph', null, [text(code, [{ type: 'code' }])])]);
+	for (const d of ['`', '``']) {
+		const ecrit = `${d}${code}${d}`;
+		if (canon(parse(ecrit).content) === attendu) return ecrit;
+	}
+	return null;
 }
 
 /**
