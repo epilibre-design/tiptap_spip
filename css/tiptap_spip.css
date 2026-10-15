@@ -686,3 +686,23 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 .tts-envoi progress {
 	width: 4em;
 }
+
+/* Survol de la zone d'édition avec des fichiers (spec 10 §8) */
+.tts-editor--depot {
+	position: relative;
+	outline: 2px dashed #3584e4;
+	outline-offset: -2px;
+}
+
+.tts-editor--depot::after {
+	content: attr(data-tts-depot);
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgb(53 132 228 / 12%);
+	color: #1c71d8;
+	font-weight: bold;
+	pointer-events: none;
+}

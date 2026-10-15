@@ -119,6 +119,8 @@ export const DEFAUTS = {
 	brut_invalide: 'Ce texte ne peut pas remplacer la source à cet endroit.',
 	modele_aria: 'Modèle @modele@',
 	envoi_fichier: 'Envoi du fichier…',
+	depot_indication: 'Déposer les fichiers',
+	depot_indisponible: 'L’ajout de fichiers n’est pas disponible ici.',
 	envoi_echec: 'Le fichier n’a pas pu être envoyé (session expirée ou connexion perdue).',
 	envoi_en_cours: 'Un fichier est en cours d’envoi.',
 	enregistrer_sans_attendre: 'Enregistrer sans attendre',

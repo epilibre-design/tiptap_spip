@@ -1,6 +1,7 @@
 import { allerRetour, core, extensionsTierces, registerExtension, registerToolbarComponent, ui } from './api.js';
 import { config } from './config.js';
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
+import { DepotFichiers } from './editor/deposer.js';
 import { Envois } from './editor/envois.js';
 import { SoumissionRetenue } from './editor/soumission.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
@@ -178,6 +179,16 @@ class Instance {
 			},
 		});
 		this.ui.collerImages = (view, event) => this.envois.collerVisuel(view, event);
+		// glisser-déposer de fichiers (spec 10 §8)
+		this.depot = new DepotFichiers({
+			wrapper: this.wrapper,
+			textarea,
+			editor: this.editor,
+			envois: this.envois,
+			services: () => this.services,
+			mode: () => this.bridge.mode,
+			signaler: (texte) => this.etat.signaler(texte),
+		});
 		// soumission retenue pendant les envois (spec 10 §3)
 		soumission = textarea.form ? new SoumissionRetenue({
 			form: textarea.form,
@@ -269,6 +280,7 @@ class Instance {
 		this.notes.destroy();
 		// soumission d'abord : son destroy() bloque toute relance, même si l'abandon des envois
 		// appelle encore verifier()
+		this.depot.destroy();
 		this.soumission?.destroy();
 		this.envois.destroy();
 		this.etat.destroy();

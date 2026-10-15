@@ -1,3 +1,4 @@
+import { label } from '../ui/labels.js';
 import { nommer } from './collerImage.js';
 
 /**
@@ -42,4 +43,99 @@ export function trierDepot(donnees, config) {
 		else envoyer.push(image ? nommer(fichier, new Date(), config.extensions) : fichier);
 	}
 	return { envoyer, refuses };
+}
+
+const porteFichiers = (event) => [...(event.dataTransfer?.types ?? [])].includes('Files');
+
+/**
+ * Glisser-déposer de fichiers sur la zone d'une instance (spec 10 §8). Écouteurs en capture sur le
+ * wrapper : ils passent avant ProseMirror, qui ne voit pas un dépôt de fichiers. Tout survol ou dépôt
+ * de fichiers est annulé (preventDefault), même refusé : sinon le navigateur ouvrirait le fichier à la
+ * place de la page. Seule exception : le mode source d'un textarea .uploader, dont Crayons
+ * (crayons/upload) gère le dépôt : rien n'est fait, l'événement lui parvient intact.
+ */
+export class DepotFichiers {
+	/**
+	 * @param {{ wrapper: HTMLElement, textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor,
+	 *           envois: import('./envois.js').Envois, services: () => ?import('../services/cvt.js').Services,
+	 *           mode: () => 'visual'|'source', signaler: (texte: string) => void }} options
+	 */
+	constructor({ wrapper, textarea, editor, envois, services, mode, signaler }) {
+		Object.assign(this, { wrapper, textarea, editor, envois, services, mode, signaler });
+		this.onSurvol = (event) => {
+			if (!this.concerne(event)) return;
+			event.preventDefault();
+			if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+			this.survol(true);
+		};
+		this.onSortie = (event) => {
+			// sortie de la zone : pas vers un de ses descendants
+			if (!this.wrapper.contains(event.relatedTarget)) this.survol(false);
+		};
+		this.onDepot = (event) => {
+			if (!this.concerne(event)) return;
+			event.preventDefault();
+			event.stopPropagation();
+			this.survol(false);
+			this.deposer(event);
+		};
+		wrapper.addEventListener('dragenter', this.onSurvol, true);
+		wrapper.addEventListener('dragover', this.onSurvol, true);
+		wrapper.addEventListener('dragleave', this.onSortie, true);
+		wrapper.addEventListener('drop', this.onDepot, true);
+	}
+
+	/**
+	 * Glisser de fichiers, sauf sur le textarea géré par Crayons en mode source (crayons/upload y a lié
+	 * ses gestionnaires). Ailleurs dans la zone (barre d'outils, barre d'état), Crayons n'écoute pas :
+	 * le dépôt reste à l'éditeur, qui l'annule au moins.
+	 */
+	concerne(event) {
+		if (!porteFichiers(event)) return false;
+		return !(this.mode() === 'source' && event.target === this.textarea && this.textarea.classList.contains('uploader'));
+	}
+
+	survol(actif) {
+		this.wrapper.classList.toggle('tts-editor--depot', actif);
+		if (actif) this.wrapper.dataset.ttsDepot = label('depot_indication');
+		else delete this.wrapper.dataset.ttsDepot;
+	}
+
+	deposer(event) {
+		const services = this.services();
+		const config = services?.available ? services.depot() : null;
+		if (!config) {
+			this.signaler(label('depot_indisponible'));
+			return;
+		}
+		const tri = trierDepot(event.dataTransfer, config);
+		if (!tri) return;
+		this.envois.signalerRefus(tri.refuses);
+		if (!tri.envoyer.length) return;
+		const mode = this.mode();
+		this.envois.lancer(tri.envoyer, mode, mode === 'visual' ? this.position(event) : undefined);
+	}
+
+	/**
+	 * Visuel : point du dépôt dans le contenu ; dans un bloc de code, après ce bloc ; hors du contenu ou
+	 * sans position, après la sélection.
+	 */
+	position(event) {
+		const { view } = this.editor;
+		const trouve = view.dom.contains(event.target) ? view.posAtCoords({ left: event.clientX, top: event.clientY }) : null;
+		if (!trouve) return view.state.selection.to;
+		const $pos = view.state.doc.resolve(trouve.pos);
+		for (let d = $pos.depth; d > 0; d--) {
+			if ($pos.node(d).type.spec.code) return $pos.after(d);
+		}
+		return trouve.pos;
+	}
+
+	destroy() {
+		this.survol(false);
+		this.wrapper.removeEventListener('dragenter', this.onSurvol, true);
+		this.wrapper.removeEventListener('dragover', this.onSurvol, true);
+		this.wrapper.removeEventListener('dragleave', this.onSortie, true);
+		this.wrapper.removeEventListener('drop', this.onDepot, true);
+	}
 }
