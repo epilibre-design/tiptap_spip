@@ -31,6 +31,8 @@ raccourci. Si le plugin facultatif **Insérer modèles** est présent et compati
 de SPIP, son catalogue et ses formulaires sont proposés. Sur SPIP 5, ce catalogue n’est pas
 disponible avec la version actuelle de ce plugin facultatif : utilisez la saisie du raccourci.
 
+Pour envoyer des fichiers depuis l’éditeur, voir [Coller des images et déposer des fichiers](images-documents.md).
+
 ## Plusieurs langues dans un même texte
 
 Le bouton **Multi** crée des versions d’un passage selon la langue. Consultez

@@ -14,6 +14,17 @@ The editor works in the private area whenever a field is selected. **On the publ
 **In Crayons** are independent options, both disabled by default. Enable them if you want the
 editor in those contexts too. The **Crayons** plugin must be installed to use the latter option.
 
+## Enable or disable file uploads
+
+In the **Documents** section, **Paste images and drop documents** is selected by default. Leave
+it selected to allow image pasting and file dropping in fields using the editor. Clear it to
+disable both features, then save the settings. This setting also applies to the editor inside
+Crayons; it does not disable Crayons' own upload feature.
+
+Uploaded files are attached to the edited object and inserted into the text as `<docN>`
+shortcuts. The **Médias** plugin and permission to attach documents to that object are still
+required. See [Paste images and drop files](utiliser/images-documents.md).
+
 ## Set editing preferences
 
 - **Initial mode**: choose **Visual** or **Source**. If someone has already changed modes in

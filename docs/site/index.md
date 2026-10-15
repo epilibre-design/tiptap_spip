@@ -15,6 +15,9 @@ Le bouton **Source** permet de retrouver les raccourcis SPIP à tout moment.
 3. [Découvrir les outils de mise en forme](utiliser/mise-en-forme.md) et les
    [contenus propres à SPIP](utiliser/contenus-spip.md).
 
+Pour ajouter des images ou d’autres fichiers à un article, voir
+[Coller des images et déposer des fichiers](utiliser/images-documents.md).
+
 Si vous gérez le site, consultez les [réglages](configurer.md). Si vous développez un plugin,
 la page [Créer une extension FAQ](developper/faq.md) part d’un exemple fonctionnel.
 

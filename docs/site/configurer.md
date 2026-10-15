@@ -15,6 +15,18 @@ et **Dans les crayons** sont indépendantes et désactivées par défaut. Active
 souhaitez aussi l’éditeur dans ces contextes. Le plugin **Crayons** doit bien sûr être présent pour
 utiliser la seconde option.
 
+## Activer ou désactiver l’envoi de fichiers
+
+Dans la rubrique **Documents**, la case **Coller des images et déposer des documents** est cochée
+par défaut. Laissez-la cochée pour permettre le collage d’images et le glisser-déposer de fichiers
+dans les champs équipés de l’éditeur. Décochez-la pour désactiver ces deux fonctions, puis
+enregistrez la configuration. Ce réglage s’applique aussi à l’éditeur utilisé dans les crayons ;
+il ne désactive pas la fonction de dépôt propre à Crayons.
+
+Les fichiers envoyés sont ajoutés aux documents de l’objet édité et insérés dans le texte sous
+forme de raccourcis `<docN>`. Le plugin **Médias** et le droit de joindre des documents à l’objet
+restent nécessaires. Voir [Coller des images et déposer des fichiers](utiliser/images-documents.md).
+
 ## Régler l’édition
 
 - **Mode à l’ouverture** : choisissez **Visuel** ou **Source**. Si une personne a déjà changé de
