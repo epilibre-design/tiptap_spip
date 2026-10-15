@@ -27326,9 +27326,9 @@ var TextareaBridge = class {
     editor.on("blur", this.onFlush);
     textarea.addEventListener("input", this.onInput);
     textarea.form?.addEventListener("submit", this.onFlush, true);
-    const $ = globalThis.jQuery;
-    this.$form = $ && textarea.form ? $(textarea.form) : null;
-    this.$form?.on("form-pre-serialize.tts", this.onFlush);
+    const bibliotheques = textarea.form ? [...new Set([globalThis.jQuery, globalThis.cQuery].filter(Boolean))] : [];
+    this.$forms = bibliotheques.map(($) => $(textarea.form));
+    for (const $form of this.$forms) $form.on("form-pre-serialize.tts", this.onFlush);
     globalThis.window?.addEventListener("beforeunload", this.onFlush);
   }
   schedule() {
@@ -27388,7 +27388,7 @@ var TextareaBridge = class {
     this.editor.off("blur", this.onFlush);
     this.textarea.removeEventListener("input", this.onInput);
     this.textarea.form?.removeEventListener("submit", this.onFlush, true);
-    this.$form?.off("form-pre-serialize.tts", this.onFlush);
+    for (const $form of this.$forms) $form.off("form-pre-serialize.tts", this.onFlush);
     globalThis.window?.removeEventListener("beforeunload", this.onFlush);
     this.editor.destroy();
   }

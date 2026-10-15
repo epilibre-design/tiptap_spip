@@ -110,6 +110,32 @@ describe('TextareaBridge', () => {
 		}
 	});
 
+	it('Crayons (jquery.form chargé en cQuery) : sérialise aussi sur le form-pre-serialize de cQuery', () => {
+		// crayons.js.html charge sa propre copie de jQuery et jquery.form (cQuery) : un trigger de cQuery
+		// n'atteint que les écouteurs posés par cQuery
+		const ecouteurs = { jQuery: {}, cQuery: {} };
+		const fabrique = (nom) => {
+			const $form = { on: vi.fn((evt, h) => { ecouteurs[nom][evt] = h; return $form; }), off: vi.fn(() => $form) };
+			return Object.assign(vi.fn(() => $form), { $form });
+		};
+		globalThis.jQuery = fabrique('jQuery');
+		globalThis.cQuery = fabrique('cQuery');
+		try {
+			setup('Texte');
+			typeAtEnd('!');
+			ecouteurs.cQuery['form-pre-serialize.tts']();
+			expect(textarea.value).toBe('Texte!');
+			expect(ecouteurs.jQuery['form-pre-serialize.tts']).toBeTypeOf('function');
+			bridge.destroy();
+			expect(globalThis.cQuery.$form.off).toHaveBeenCalledWith('form-pre-serialize.tts', ecouteurs.cQuery['form-pre-serialize.tts']);
+			expect(globalThis.jQuery.$form.off).toHaveBeenCalledWith('form-pre-serialize.tts', ecouteurs.jQuery['form-pre-serialize.tts']);
+			bridge = null;
+		} finally {
+			delete globalThis.jQuery;
+			delete globalThis.cQuery;
+		}
+	});
+
 	it('destroy() sérialise ce qui reste et détache tout', () => {
 		setup('Texte');
 		typeAtEnd('!');
