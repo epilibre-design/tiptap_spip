@@ -28431,13 +28431,9 @@ function openNotePopover(contexte3, pos = null) {
   const titre = document.createElement("span");
   titre.id = idUnique("tts-note");
   titre.textContent = label("note_texte");
-  const barre = document.createElement("div");
-  barre.className = "tts-note__barre";
-  barre.setAttribute("role", "toolbar");
-  barre.setAttribute("aria-labelledby", titre.id);
   const zone = document.createElement("div");
   zone.className = "tts-note__texte";
-  bloc.append(titre, barre, zone);
+  bloc.append(titre, zone);
   popover2.actions.before(bloc);
   const enfant = () => ({ ...contexte3, editor: sous, parent: popover2 });
   const sousUi = {
@@ -28472,20 +28468,6 @@ function openNotePopover(contexte3, pos = null) {
     modifie = true;
     if (popover2.flottant) popover2.replacer();
   });
-  for (const [texte2, action] of [
-    [label("gras"), () => sous.chain().focus().toggleBold().run()],
-    [label("italique"), () => sous.chain().focus().toggleItalic().run()],
-    [label("lien"), () => sousUi.openLink()],
-    [label("glossaire"), () => sousUi.openGlossary()],
-    [label("modele"), () => sousUi.editModel(null)]
-  ]) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = texte2;
-    b.addEventListener("mousedown", (event) => event.preventDefault());
-    b.addEventListener("click", action);
-    barre.append(b);
-  }
   const appliquer = () => {
     const nouveau = sansAppel.checked ? "" : nom.value.trim() || null;
     const texte2 = modifie || !origine ? sous.getJSON().content : origine;

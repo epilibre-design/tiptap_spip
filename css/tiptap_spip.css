@@ -429,16 +429,10 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	gap: 4px;
 }
 
-/* Popover de note : un peu plus large, sous-éditeur et sa barre réduite. */
+/* Popover de note : un peu plus large, sous-éditeur sans barre d'outils. */
 .tts-popover--note {
 	min-width: 24em;
 	max-width: 36em;
-}
-
-.tts-note__barre {
-	display: flex;
-	gap: 2px;
-	margin-bottom: 2px;
 }
 
 .tts-note__texte .tts-prosemirror {

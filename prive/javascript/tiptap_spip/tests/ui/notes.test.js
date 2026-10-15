@@ -59,18 +59,12 @@ describe('popover de note', () => {
 		expect(source()).toBe('un\n\nde[[n]]ux');
 	});
 
-	it('barre du sous-éditeur : modèle inséré en popover enfant', () => {
+	it('sous-éditeur sans barre d\'outils : seuls Appliquer, Supprimer et Annuler', () => {
 		const { ui } = monter('a[[Voir]]');
 		ui.editNote(notePos());
-		const boutons = [...wrapper.querySelectorAll('.tts-note__barre button')].map((b) => b.textContent);
-		expect(boutons).toEqual(['Gras', 'Italique', 'Lien', 'Glossaire', 'Modèle']);
-		sousEditeur().commands.focus('end');
-		wrapper.querySelectorAll('.tts-note__barre button')[4].click();
-		expect(popovers()).toHaveLength(2);
-		remplir('raccourci', '<doc1>');
-		valider();
-		valider();
-		expect(source()).toBe('a[[Voir<doc1>]]');
+		const note = wrapper.querySelector('.tts-popover--note');
+		expect(note.querySelector('[role=toolbar]')).toBeNull();
+		expect([...note.querySelectorAll('button[name]')].map((b) => b.name)).toEqual(['appliquer', 'retirer', 'annuler']);
 	});
 
 	it('note vide refusée', () => {

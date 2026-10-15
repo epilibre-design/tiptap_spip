@@ -26,8 +26,8 @@ comportement attendu de chacune.
   - Le panneau des notes suit la langue affichée ; un clic sur une note d'un multi en ligne ouvre le popover du multi.
 - Survol / focus : infobulle avec l'aperçu texte de la note.
 - Clic, `Entrée` sur le nœud sélectionné ou bouton « Modifier » : **popover d'édition** contenant un
-  **sous-éditeur Tiptap** (même schéma, sans les notes, barre réduite : gras, italique, lien, glossaire,
-  modèle). Champ « Nom de la note » optionnel (vide = automatique, case « sans appel »).
+  **sous-éditeur Tiptap** (même schéma, sans les notes, sans barre d'outils : une zone de texte, avec
+  Appliquer, Supprimer la note et Annuler). Champ « Nom de la note » optionnel (vide = automatique, case « sans appel »).
 - **Panneau des notes** (repliable, sous l'éditeur) : liste ordonnée de toutes les notes du texte, comme
   elles apparaîtront en bas d'article ; cliquer sur une note y place le curseur et ouvre son popover.
   Le panneau est une vue dérivée, pas une zone de saisie distincte.
@@ -51,8 +51,8 @@ sur un appel, ou le panneau des notes ; le bouton « Note » sur un appel sélec
 bouton « Modifier ». Comme le bouton Note du porte-plume, un texte sélectionné dans un même bloc
 devient le texte de la nouvelle note, qui le remplace ; une autre sélection est gardée, la note est
 insérée après. Le sous-éditeur a le schéma de l'éditeur sans notes, avec les seuls blocs permis dans
-une note (`noteExtensions()`) ; sa barre réduite a gras, italique, lien, glossaire et modèle, ces trois
-derniers en popovers enfants. Une note ouverte puis appliquée sans que son texte change
+une note (`noteExtensions()`) ; il n'a pas de barre d'outils, le lien (`Ctrl+K`) et les modèles déjà
+présents s'y modifient en popovers enfants. Une note ouverte puis appliquée sans que son texte change
 garde son contenu d'origine (identité) ; une note vide est refusée, comme une note qui ne se relirait
 pas à l'identique (nom `a>b`, nom `i` devant un texte contenant `</i>` brut…). La note est suivie
 pendant que le popover est ouvert : supprimée entre-temps, rien n'est modifié.

@@ -116,7 +116,7 @@ test('dialogue enfant d’une note : il reste devant et rend le focus à la note
 	const note = page.locator('.tts-popover--note');
 	await note.locator('.tts-note__texte .ProseMirror').click();
 	await page.keyboard.press('ControlOrMeta+a');
-	await note.locator('.tts-note__barre button').filter({ hasText: 'Lien' }).click();
+	await page.keyboard.press('ControlOrMeta+k');
 	const lien = page.locator('.tts-popover--lien');
 	await expect(lien).toBeVisible();
 	const devant = await lien.locator('input').first().evaluate((input) => {
