@@ -29,6 +29,8 @@ optional **Insérer modèles** plugin is installed and compatible with your SPIP
 catalog and forms are offered. On SPIP 5, the catalog is unavailable with the current version
 of that optional plugin: enter the shortcut directly.
 
+To upload files from the editor, see [Paste images and drop files](images-documents.md).
+
 ## Multiple languages in one text
 
 The **Multi** button creates language-specific versions of a passage. See

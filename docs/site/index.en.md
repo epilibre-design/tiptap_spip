@@ -15,6 +15,8 @@ return to SPIP syntax at any time.
 3. Explore the [formatting tools](utiliser/mise-en-forme.md) and
    [SPIP content tools](utiliser/contenus-spip.md).
 
+To add images or other files to an article, see [Paste images and drop files](utiliser/images-documents.md).
+
 If you manage the site, read about [configuration](configurer.md). If you develop plugins, the
 [FAQ extension tutorial](developper/faq.md) starts from a working example.
 
