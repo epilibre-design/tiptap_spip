@@ -53,12 +53,12 @@ n’insère aucun raccourci.
 ## Avec Crayons
 
 Le collage d’images fonctionne aussi dans un article modifié avec **Crayons**, lorsque l’éditeur
-visuel est [activé dans les crayons](../configurer.md#choisir-ou-lediteur-apparait). En mode
-visuel, l’éditeur gère également le dépôt : les documents sont liés à l’article et les raccourcis
-s’insèrent dans le texte comme dans l’espace privé.
+visuel est [activé dans les crayons](../configurer.md#choisir-ou-lediteur-apparait). Dans les deux
+modes, l’éditeur gère le dépôt sur sa zone : chaque document est lié à l’article et son raccourci
+`<docN>` est inséré dans le texte. En mode source, il se place après la sélection.
 
-Si l’option expérimentale de dépôt de **Crayons** (`crayons/upload`) est activée, le dépôt **sur la
-zone de texte en mode source** reste géré par Crayons. Les documents sont liés à l’article et leurs
-raccourcis apparaissent dans son panneau latéral ; ils ne sont pas ajoutés automatiquement au
-texte. Le dépôt sur ce panneau reste lui aussi géré par Crayons. Pour insérer les raccourcis
-directement dans le texte, utilisez le collage ou le mode visuel.
+Si l’option expérimentale de dépôt de **Crayons** (`crayons/upload`) est activée, elle conserve sa
+propre zone de dépôt dans le panneau latéral. Un fichier déposé sur ce panneau est géré par
+Crayons ; son raccourci apparaît dans le panneau et n’est pas inséré automatiquement dans le
+texte. Si l’éditeur visuel est désactivé dans les crayons, Crayons conserve aussi son comportement
+habituel sur la zone de texte.
