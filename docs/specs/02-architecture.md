@@ -404,10 +404,9 @@ Tiptap n'utilise pas d'iframe : la zone d'édition fait partie du DOM de la page
   `.trigger("submit")` jQuery que l'écouteur natif ne voit pas : le pont sérialise sur `form-pre-serialize`.
   Crayons charge sa propre copie de jQuery, `cQuery` (`crayons.js.html`, `cQuery.noConflict()`), et son
   `ajaxForm` déclenche `form-pre-serialize` par elle : un écouteur posé avec `jQuery` ne le voit pas. L'écouteur
-  doit être posé aussi avec `globalThis.cQuery` quand il existe. `TextareaBridge` ne le fait pas encore : dans
-  un crayon, il compte sur la synchronisation différée (150 ms après chaque modification), `blur` et le
-  `submit` natif ; une soumission dans ce délai, sans perte de focus, pourrait partir avec l'ancien texte
-  (non vérifié).
+  est donc posé aussi avec `globalThis.cQuery` quand il existe (`TextareaBridge`). Sans lui, une modification
+  faite sans saisie (insertion d'un document déposé…) puis soumise dans les 150 ms de la synchronisation
+  différée, sans perte de focus, partait avec l'ancien texte : constaté et couvert par `hotes.e2e.js`.
   Un crayon enregistré ou annulé quitte le DOM : son éditeur est détruit.
 - **Glisser-déposer avec Crayons** (lot L7.2) : son option expérimentale `crayons/upload` installe déjà un
   gestionnaire `drop` sur le textarea `article.texte`. En mode visuel, la zone Tiptap reçoit le dépôt à la place

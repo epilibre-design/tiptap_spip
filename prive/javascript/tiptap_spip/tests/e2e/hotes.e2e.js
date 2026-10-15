@@ -68,6 +68,22 @@ test('crayon public : éditeur et services à la demande, enregistrement, fermet
 	expect(await servicesCharges(page)).toBe(servicesAvant);
 });
 
+test('crayon : contenu modifié sans focus puis enregistré aussitôt, le texte enregistré le contient (form-pre-serialize de cQuery)', async ({ page }) => {
+	sansCrayons();
+	const id = await articlePublic(page, 'Texte du crayon.');
+	await page.locator(`.crayon.article-texte-${id}`).dblclick();
+	await expect(page.locator('.crayon-html .tts-editor .ProseMirror')).toBeVisible();
+	// modification hors saisie (insertion d'un document, d'un modèle…) : pas de blur, pas encore de
+	// recopie différée (150 ms) quand le crayon est soumis par cQuery(…).ajaxSubmit()
+	await page.evaluate(() => {
+		const { editor } = [...window.__tts.instances].find((i) => i.textarea.closest('.crayon-html'));
+		editor.commands.insertContentAt(editor.state.doc.content.size - 1, ' Ajout');
+		document.querySelector('.crayon-html .crayon-submit').click();
+	});
+	await expect(page.locator('.crayon-html')).toHaveCount(0);
+	expect(texte(id)).toBe('Texte du crayon. Ajout');
+});
+
 test('crayons sans l\'option publique : bundle chargé, crayon équipé, formulaire de forum laissé', async ({ page }) => {
 	sansCrayons();
 	configurer('tiptap_spip/public', 'non');
