@@ -13,8 +13,9 @@ demande #4).
   - Le type réel (`finfo`) n'est contrôlé que pour les images de la liste blanche. Pour les autres types, le
     contrôle d'extension reste celui de medias, comme dans la boîte « Documents » et Crayons.
   - L'annonce `data-tts-images` devient `data-tts-depot` :
-    `{ images, extensions, taille_image, documents, documents_image, taille_document }`.
-    `documents_image` liste les extensions déposables que medias mesure comme images.
+    `{ images, extensions, taille_image, documents, documents_limite_image, taille_document }`.
+    `documents_limite_image` liste les extensions déposables que medias borne par `_IMG_MAX_SIZE`. C'est une liste
+    de limite de taille, pas de types d'images : on y trouve svg et swf, qui ne se collent pas.
 - **Client.**
   - L'orchestrateur `CollerImages` devient `Envois` (`src/editor/envois.js`). Il sert au collage et au dépôt.
     Les événements deviennent `tiptap-spip:document-*`, les libellés parlent de « fichier ».
@@ -37,9 +38,9 @@ demande #4).
 - Types acceptés au dépôt : ceux de `spip_types_documents` avec `upload='oui'`, après `corriger_extension()`.
   Au collage : les images de la liste blanche (`image/png`, `image/jpeg`, `image/gif`, `image/webp`).
 - Taille maximale, avec la même répartition que medias (`verifier_taille_document_acceptable`) :
-  - fichiers que medias mesure comme images, c'est-à-dire reconnus par `getimagesize()` (`decoder_type_image` :
-    gif, jpg, png, psd, bmp, tif, webp, svg ; et swf, dont `metadata/swf.php` passe par `metadata/image.php`) :
-    minimum de `upload_max_filesize`, `post_max_size` et
+  - fichiers dont medias borne la taille par `_IMG_MAX_SIZE`, c'est-à-dire reconnus par `getimagesize()`
+    (`decoder_type_image` : gif, jpg, png, psd, bmp, tif, webp, svg, et swf, dont `metadata/swf.php` passe par
+    `metadata/image.php`) : minimum de `upload_max_filesize`, `post_max_size` et
     `_IMG_MAX_SIZE` (Ko) ;
   - autres documents : même calcul avec `_DOC_MAX_SIZE` (Ko).
 - Le dépôt de fichiers appelle toujours `preventDefault()` sur `dragover` et `drop`, même refusé.
@@ -83,9 +84,13 @@ demande #4).
    - Une image de la liste blanche est renommée comme au collage (`nommer`, extension annoncée).
    - Un autre document garde son nom.
 7. **Tailles** : la limite d'un fichier déposé suit la répartition de medias. Le serveur annonce
-   `documents_image`, les extensions déposables reconnues par `getimagesize()`. Un SVG est donc mesuré avec
-   `taille_image`, alors même qu'il ne se colle pas. Il en va de même d'un SWF, malgré son type `video` : medias
-   le décrit avec `metadata/image.php`.
+   `documents_limite_image`, les extensions déposables dont medias borne la taille par `_IMG_MAX_SIZE`. C'est une
+   liste technique de limite de taille, distincte de `images` (types collables) :
+   - un SVG y figure, sans être collable ;
+   - un SWF aussi, parce que medias le décrit avec `metadata/image.php`. Ce n'est pas une image (Flash est
+     abandonné), il n'est jamais collable, et il n'est déposable que si le site autorise son envoi.
+
+   Exclure le SWF du dépôt serait une décision distincte, non prise ici.
 8. **Exception Crayons** limitée à la cible : seul un dépôt sur le textarea `.uploader`, en mode source, est
    laissé à Crayons (relecture du plan).
 9. **Renommages**, puisque rien n'est publié :
@@ -145,8 +150,9 @@ for s in v4.2.16 v4.4.21 v5.0-dev; do rm -rf /src/jetables/$s/tmp/cache/skel/* /
   - `tiptap_spip_images_types(): array<string, string>` (extension → type MIME, liste blanche ; inchangée)
   - `tiptap_spip_documents_extensions(): string[]` (toutes les extensions `upload='oui'`, après correction)
   - `tiptap_spip_depot_id_lien(int $id_objet): int`
-  - `tiptap_spip_depot(string $objet, int $id_objet): ?array{images: string[], extensions: array<string,string>, taille_image: int, documents: string[], documents_image: string[], taille_document: int}`
-  - constante `TIPTAP_SPIP_EXTENSIONS_IMAGE` (extensions reconnues par `getimagesize()`)
+  - `tiptap_spip_depot(string $objet, int $id_objet): ?array{images: string[], extensions: array<string,string>, taille_image: int, documents: string[], documents_limite_image: string[], taille_document: int}`
+  - constante `TIPTAP_SPIP_EXTENSIONS_LIMITE_IMAGE` (extensions bornées par `_IMG_MAX_SIZE` dans medias ; liste
+    de limite de taille, pas de types d'images)
   - `tiptap_spip_controler_document(array $files, array $images, array $documents, ?callable $est_envoye = null): ?string`
   - `tiptap_spip_deposer_document(array $fichier, string $objet, int $id_objet): array{id_document: int, raccourci: string}|string`
   - attribut `data-tts-depot` sur le `<form>` de services ; opération `deposer_document`
@@ -187,21 +193,22 @@ Puis remplacer les tests de disponibilité et de contrôle par :
 		$this->assertSame(['image/gif', 'image/jpeg', 'image/png', 'image/webp'], $depot['images']);
 		$this->assertSame(['image/gif' => 'gif', 'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'], $depot['extensions']);
 		$this->assertSame(['gif', 'jpg', 'png', 'webp', 'pdf', 'odt'], $depot['documents']);
-		// mesurées comme images par medias (getimagesize), donc avec _IMG_MAX_SIZE
-		$this->assertSame(['gif', 'jpg', 'png', 'webp'], $depot['documents_image']);
+		// bornées par _IMG_MAX_SIZE dans medias (getimagesize)
+		$this->assertSame(['gif', 'jpg', 'png', 'webp'], $depot['documents_limite_image']);
 		$this->assertIsInt($depot['taille_image']);
 		$this->assertIsInt($depot['taille_document']);
 	}
 
-	public function testSvgEtSwfMesuresCommeImages(): void {
+	public function testLimiteImagePourSvgEtSwfSansLesRendreCollables(): void {
 		$GLOBALS['_test_sql']['spip_types_documents'][] = ['extension' => 'svg', 'mime_type' => 'image/svg+xml'];
 		$GLOBALS['_test_sql']['spip_types_documents'][] = ['extension' => 'swf', 'mime_type' => 'application/x-shockwave-flash'];
 		$depot = tiptap_spip_depot('article', 12);
 		$this->assertNotContains('image/svg+xml', $depot['images'], 'un SVG ne se colle pas');
-		$this->assertContains('svg', $depot['documents_image'], 'mais medias le mesure comme image');
-		// metadata_swf passe par metadata_image : _IMG_MAX_SIZE malgré le type video
-		$this->assertContains('swf', $depot['documents_image']);
-		$this->assertNotContains('pdf', $depot['documents_image']);
+		$this->assertContains('svg', $depot['documents_limite_image'], 'mais medias borne sa taille par _IMG_MAX_SIZE');
+		// metadata_swf passe par metadata_image : _IMG_MAX_SIZE, sans que le SWF soit une image ni collable
+		$this->assertContains('swf', $depot['documents_limite_image']);
+		$this->assertNotContains('application/x-shockwave-flash', $depot['images']);
+		$this->assertNotContains('pdf', $depot['documents_limite_image']);
 	}
 
 	public function testDepotSansImageAccepteeMaisAvecDocuments(): void {
@@ -301,12 +308,14 @@ Après `tiptap_spip_images_types()`, ajouter :
 
 ```php
 /**
- * Extensions que medias mesure comme images : celles que decoder_type_image() donne pour un fichier
- * reconnu par getimagesize() (metadata/image.php ; metadata/swf.php passe aussi par lui, un SWF est
- * donc mesuré comme une image malgré son type video). Leur taille est bornée par _IMG_MAX_SIZE, celle
- * des autres documents par _DOC_MAX_SIZE (inc/verifier_taille_document_acceptable.php).
+ * Extensions dont medias borne la taille par _IMG_MAX_SIZE, et non par _DOC_MAX_SIZE
+ * (inc/verifier_taille_document_acceptable.php) : celles que decoder_type_image() rend pour un fichier
+ * reconnu par getimagesize() (metadata/image.php). Liste technique de limite de taille, pas de types
+ * d'images : swf y figure parce que metadata/swf.php passe par metadata/image.php, mais un SWF n'est ni
+ * une image ni collable (images de tiptap_spip_depot()). Il n'est déposable que si le site en autorise
+ * l'envoi.
  */
-const TIPTAP_SPIP_EXTENSIONS_IMAGE = ['gif', 'jpg', 'png', 'psd', 'bmp', 'tif', 'webp', 'svg', 'swf'];
+const TIPTAP_SPIP_EXTENSIONS_LIMITE_IMAGE = ['gif', 'jpg', 'png', 'psd', 'bmp', 'tif', 'webp', 'svg', 'swf'];
 
 /**
  * Extensions de tous les types que le site accepte en envoi (boîte « Documents »), dans l'ordre de
@@ -343,10 +352,11 @@ Remplacer `tiptap_spip_images()` par :
  * joindre un document, aucun type envoyable) :
  * - images : types collables (liste blanche acceptée par le site), extension de chacun (le JS renomme
  *   le fichier avec elle), taille maximale (_IMG_MAX_SIZE) ;
- * - documents : extensions déposables (tous les types envoyables) ; documents_image : celles que medias
- *   mesure comme images (taille_image) ; taille maximale des autres (_DOC_MAX_SIZE).
+ * - documents : extensions déposables (tous les types envoyables) ; documents_limite_image : celles que medias
+ *   borne par _IMG_MAX_SIZE (documents_limite_image : liste de limite de taille, pas de types d'images ;
+ *   taille_image) ; taille maximale des autres (_DOC_MAX_SIZE).
  *
- * @return ?array{images: string[], extensions: array<string, string>, taille_image: int, documents: string[], documents_image: string[], taille_document: int}
+ * @return ?array{images: string[], extensions: array<string, string>, taille_image: int, documents: string[], documents_limite_image: string[], taille_document: int}
  */
 function tiptap_spip_depot(string $objet, int $id_objet): ?array {
 	if ($objet === '' || tiptap_spip_config()['coller_images'] !== 'oui' || !test_plugin_actif('medias')) {
@@ -372,7 +382,7 @@ function tiptap_spip_depot(string $objet, int $id_objet): ?array {
 		'extensions' => $extensions,
 		'taille_image' => tiptap_spip_taille_max($upload, $post, defined('_IMG_MAX_SIZE') ? (int) _IMG_MAX_SIZE : null),
 		'documents' => $documents,
-		'documents_image' => array_values(array_intersect($documents, TIPTAP_SPIP_EXTENSIONS_IMAGE)),
+		'documents_limite_image' => array_values(array_intersect($documents, TIPTAP_SPIP_EXTENSIONS_LIMITE_IMAGE)),
 		'taille_document' => tiptap_spip_taille_max($upload, $post, defined('_DOC_MAX_SIZE') ? (int) _DOC_MAX_SIZE : null),
 	];
 }
@@ -491,8 +501,8 @@ Dans `prive/javascript/tiptap_spip/tests/e2e/images.e2e.js`, partie `serveur` :
 		expect(depot.images).toEqual(expect.arrayContaining(['image/png', 'image/jpeg', 'image/gif']));
 		expect(depot.extensions).toMatchObject({ 'image/png': 'png', 'image/jpeg': 'jpg' });
 		expect(depot.documents).toEqual(expect.arrayContaining(['pdf', 'png', 'jpg', 'odt', 'svg']));
-		expect(depot.documents_image).toEqual(expect.arrayContaining(['png', 'jpg', 'svg']));
-		expect(depot.documents_image).not.toContain('pdf');
+		expect(depot.documents_limite_image).toEqual(expect.arrayContaining(['png', 'jpg', 'svg']));
+		expect(depot.documents_limite_image).not.toContain('pdf');
 		expect(depot.taille_image).toBeGreaterThan(0);
 		expect(depot.taille_document).toBeGreaterThan(0);
 		configurer('tiptap_spip/coller_images', 'non');
@@ -554,7 +564,7 @@ git commit -m "feat: opération deposer_document pour tout type de document"
 **Interfaces:**
 - Consumes : annonce `data-tts-depot` et opération `deposer_document` (Task 1).
 - Produces :
-  - `Services#depot(): { images: string[], extensions: Record<string,string>, taille_image: number, documents: string[], documents_image: string[], taille_document: number } | null`
+  - `Services#depot(): { images: string[], extensions: Record<string,string>, taille_image: number, documents: string[], documents_limite_image: string[], taille_document: number } | null`
   - `trierPressePapiers(donnees, { images, taille_image })` (même résultat qu'avant)
   - `class Envois` (`src/editor/envois.js`), même constructeur que `CollerImages`, avec en plus `lancer(fichiers: File[], mode: 'visual'|'source', pos?: number): void`
   - `ajouterMarqueurs(view, ids, pos = view.state.selection.to)`
@@ -603,7 +613,7 @@ Les textes attendus des tests suivent ces nouvelles chaînes : par exemple
 	 * Collage et dépôt de fichiers (spec 10 §6) : configuration annoncée par charger() sur le formulaire
 	 * courant, null si deposer_document est indisponible.
 	 * @returns {{ images: string[], extensions: Record<string, string>, taille_image: number,
-	 *             documents: string[], documents_image: string[], taille_document: number } | null}
+	 *             documents: string[], documents_limite_image: string[], taille_document: number } | null}
 	 */
 	depot() {
 		const brut = this.container.querySelector('form')?.dataset.ttsDepot;
@@ -739,7 +749,7 @@ et le widget affiche `label('envoi_fichier')`.
 - Les services simulés exposent désormais :
 
 ```js
-const CONFIG = { images: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'], extensions: {}, taille_image: 1000, documents: ['png', 'jpg', 'gif', 'webp', 'pdf'], documents_image: ['png', 'jpg', 'gif', 'webp'], taille_document: 5000 };
+const CONFIG = { images: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'], extensions: {}, taille_image: 1000, documents: ['png', 'jpg', 'gif', 'webp', 'pdf'], documents_limite_image: ['png', 'jpg', 'gif', 'webp'], taille_document: 5000 };
 …
 	depot: () => CONFIG,
 ```
@@ -750,7 +760,7 @@ const CONFIG = { images: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
 - Le test « extension annoncée » de `envois.test.js` construit `depot: () => ({ ...CONFIG, extensions: { 'image/jpeg': 'jpeg' } })`.
 - `tests/services/cvt.test.js` :
   - `Services.depot` remplace `Services.images` ;
-  - l'attente devient `{ images: expect.arrayContaining(['image/png']), extensions: expect.objectContaining({ 'image/png': 'png' }), taille_image: expect.any(Number), documents: expect.arrayContaining(['pdf']), documents_image: expect.arrayContaining(['png']), taille_document: expect.any(Number) }` ;
+  - l'attente devient `{ images: expect.arrayContaining(['image/png']), extensions: expect.objectContaining({ 'image/png': 'png' }), taille_image: expect.any(Number), documents: expect.arrayContaining(['pdf']), documents_limite_image: expect.arrayContaining(['png']), taille_document: expect.any(Number) }` ;
   - les fixtures `deposer_image` / `deposer_image_type` deviennent `deposer_document` / `deposer_document_type` ;
   - le message attendu devient `'Ce type de fichier n’est pas accepté.'`.
 - `tests/e2e/fixtures-cvt.e2e.js` : les fixtures enregistrées s'appellent `deposer_document` et
@@ -816,7 +826,7 @@ git commit -m "refactor: envois de fichiers génériques (deposer_document, év�
 import { describe, expect, it } from 'vitest';
 import { corrigerExtension, trierDepot } from '../../src/editor/deposer.js';
 
-const CONFIG = { images: ['image/png', 'image/jpeg'], extensions: { 'image/jpeg': 'jpg', 'image/png': 'png' }, taille_image: 1000, documents: ['png', 'jpg', 'pdf', 'odt', 'svg'], documents_image: ['png', 'jpg', 'svg'], taille_document: 5000 };
+const CONFIG = { images: ['image/png', 'image/jpeg'], extensions: { 'image/jpeg': 'jpg', 'image/png': 'png' }, taille_image: 1000, documents: ['png', 'jpg', 'pdf', 'odt', 'svg'], documents_limite_image: ['png', 'jpg', 'svg'], taille_document: 5000 };
 const fichier = (nom, type, taille = 10) => new File([new Uint8Array(taille)], nom, { type });
 const depot = (files, { html = '', texte = '' } = {}) => ({ files, getData: (t) => ({ 'text/html': html, 'text/plain': texte })[t] ?? '' });
 
@@ -858,7 +868,7 @@ describe('trierDepot (spec 10 §8)', () => {
 		expect(trierDepot(depot([fichier('a.JPEG', 'image/jpeg')]), config).envoyer).toHaveLength(1);
 	});
 
-	it('taille d\'un SVG : taille_image, comme medias (getimagesize le reconnaît)', () => {
+	it('taille d\'un SVG : taille_image, la limite que medias lui applique (getimagesize le reconnaît)', () => {
 		const svg = fichier('logo.svg', 'image/svg+xml', 1001);
 		expect(trierDepot(depot([svg]), CONFIG).refuses).toEqual([{ fichier: svg, raison: 'taille' }]);
 		expect(trierDepot(depot([fichier('logo.svg', 'image/svg+xml', 999)]), CONFIG).envoyer).toHaveLength(1);
@@ -906,8 +916,9 @@ const extensionDe = (nom) => corrigerExtension((nom.match(/\.([^.]+)$/)?.[1] ?? 
  *
  * @param {DataTransfer|null} donnees
  * @param {{ images: string[], extensions: Record<string, string>, taille_image: number,
- *           documents: string[], documents_image: string[], taille_document: number }} config
- *        tailles 0 : sans limite ; documents_image : extensions mesurées comme images par medias
+ *           documents: string[], documents_limite_image: string[], taille_document: number }} config
+ *        tailles 0 : sans limite ; documents_limite_image : extensions que medias borne par
+ *        _IMG_MAX_SIZE (liste de limite de taille, pas de types d'images)
  * @returns {{ envoyer: File[], refuses: { fichier: File, raison: 'type'|'taille' }[] } | null}
  *          null : pas de fichier (le dépôt n'est pas pour l'éditeur)
  */
@@ -919,8 +930,8 @@ export function trierDepot(donnees, config) {
 	for (const fichier of fichiers) {
 		const image = config.images.includes(fichier.type);
 		const extension = image ? config.extensions[fichier.type] : extensionDe(fichier.name);
-		// limite de medias : _IMG_MAX_SIZE pour ce qu'il mesure comme image (svg compris), _DOC_MAX_SIZE sinon
-		const taille = image || config.documents_image.includes(extension) ? config.taille_image : config.taille_document;
+		// limite de medias : _IMG_MAX_SIZE pour les extensions qu'il borne ainsi (svg, swf…), _DOC_MAX_SIZE sinon
+		const taille = image || config.documents_limite_image.includes(extension) ? config.taille_image : config.taille_document;
 		if (!image && !config.documents.includes(extension)) refuses.push({ fichier, raison: 'type' });
 		else if (taille && fichier.size > taille) refuses.push({ fichier, raison: 'taille' });
 		else envoyer.push(image ? nommer(fichier, new Date(), config.extensions) : fichier);
@@ -1563,7 +1574,7 @@ git commit -m "test: e2e du glisser-déposer (visuel, source, refus, crayons/upl
     les images de la liste blanche ; pour les autres documents, ce sont l'extension et les contrôles de medias.
     Indiquer aussi `_DOC_MAX_SIZE`.
   - **§6 :** la case « Coller des images et déposer des documents » ; l'annonce
-    `{images, extensions, taille_image, documents, documents_image, taille_document}` (tailles réparties comme dans medias).
+    `{images, extensions, taille_image, documents, documents_limite_image, taille_document}` (tailles réparties comme dans medias).
   - **§8 :** le glisser-déposer passe de « Hors périmètre » à une section « Glisser-déposer (lot L7.2) »
     (décisions 4 à 8 de ce plan, état de survol, exception limitée au textarea `.uploader`).
   - **§7 :** la ligne Playwright (L7.2) est marquée réalisée.
@@ -1613,5 +1624,5 @@ Crayons et les résultats des tests. Sans mention « Generated with Claude Code 
 | panneau de Crayons : comportement de Crayons | 5 (dépôt sur `#uploader<id>`) |
 | Tiptap désactivé : comportement de Crayons | 5 |
 | dépôt refusé (type non accepté, services absents) : page affichée, texte intact | 4 (Vitest), 5 (e2e : type, services absents, réglage désactivé) |
-| tailles alignées sur medias (`_IMG_MAX_SIZE` pour ce qu'il mesure comme image, SVG compris) | 1, 3 |
+| tailles alignées sur medias (`_IMG_MAX_SIZE` pour les extensions qu'il borne ainsi, SVG et SWF compris, sans les rendre collables) | 1, 3 |
 | réglage | 1 (même case, libellé élargi) |
