@@ -12,7 +12,7 @@ describe('marqueurs d\'envoi (spec 10 §3)', () => {
 		editor.commands.setTextSelection(6);
 		ajouterMarqueurs(editor.view, ['a']);
 		expect(positionMarqueur(editor.state, 'a')).toBe(6);
-		expect(editor.view.dom.querySelector('[data-tts-envoi="a"]').textContent).toContain('Envoi de l’image');
+		expect(editor.view.dom.querySelector('[data-tts-envoi="a"]').textContent).toContain('Envoi du fichier');
 		expect(JSON.stringify(editor.getJSON())).not.toContain('envoi');
 		expect(source()).toBe('Avant après');
 	});

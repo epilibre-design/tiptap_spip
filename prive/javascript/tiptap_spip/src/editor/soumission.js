@@ -40,7 +40,7 @@ export class SoumissionRetenue {
 		if (!this.enCours()) return false;
 		this.attente = true;
 		this.bouton = bouton ?? null;
-		this.signaler(label('image_envoi_en_cours'), { libelle: label('image_enregistrer_sans_attendre'), faire: () => this.sansAttendre() });
+		this.signaler(label('envoi_en_cours'), { libelle: label('enregistrer_sans_attendre'), faire: () => this.sansAttendre() });
 		return true;
 	}
 

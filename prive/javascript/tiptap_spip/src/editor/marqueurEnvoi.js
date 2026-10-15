@@ -5,7 +5,7 @@ import { parseModel } from '../spip/models.js';
 import { label } from '../ui/labels.js';
 
 /**
- * Marqueurs d'envoi des images collées (spec 10 §3) : décorations, jamais des nœuds. Le document,
+ * Marqueurs d'envoi des fichiers collés ou déposés (spec 10 §3) : décorations, jamais des nœuds. Le document,
  * sa sérialisation, le textarea et l'historique ne les contiennent pas. Le plugin suit lui-même la
  * position de chaque marqueur : reportée à chaque transaction, repliée sur le point le plus proche si
  * le texte autour est supprimé (une décoration de ProseMirror disparaîtrait avec lui).
@@ -19,7 +19,7 @@ function widget(id) {
 	element.contentEditable = 'false';
 	const barre = document.createElement('progress');
 	barre.max = 1;
-	element.append(label('image_envoi'), ' ', barre);
+	element.append(label('envoi_fichier'), ' ', barre);
 	return element;
 }
 
@@ -50,11 +50,10 @@ const plugin = (ui) => new Plugin({
 });
 
 /**
- * Marqueurs après la sélection, dans l'ordre des ids : le texte sélectionné est conservé, comme avec
- * Crayons (son envoi ne touche pas au texte).
+ * Marqueurs à `pos`, dans l'ordre des ids ; par défaut après la sélection : le texte sélectionné est
+ * conservé, comme avec Crayons (son envoi ne touche pas au texte).
  */
-export function ajouterMarqueurs(view, ids) {
-	const pos = view.state.selection.to;
+export function ajouterMarqueurs(view, ids, pos = view.state.selection.to) {
 	view.dispatch(view.state.tr.setMeta(cleMarqueurs, { ajouter: ids.map((id) => ({ id, pos })) }).setMeta('addToHistory', false));
 }
 

@@ -1,7 +1,7 @@
 import { allerRetour, core, extensionsTierces, registerExtension, registerToolbarComponent, ui } from './api.js';
 import { config } from './config.js';
-import { CollerImages } from './editor/collerImage.js';
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
+import { Envois } from './editor/envois.js';
 import { SoumissionRetenue } from './editor/soumission.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
@@ -163,9 +163,9 @@ class Instance {
 		// barre d'état (mots, anomalies) en bas, sous le textarea du mode source
 		this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
 
-		// images collées (spec 10) : capture toujours installée, disponibilité décidée à chaque collage
+		// fichiers collés ou déposés (spec 10) : capture toujours installée, disponibilité décidée à chaque fois
 		let soumission = null;
-		this.images = new CollerImages({
+		this.envois = new Envois({
 			textarea,
 			editor: this.editor,
 			services: () => this.services,
@@ -177,14 +177,14 @@ class Instance {
 				soumission?.verifier();
 			},
 		});
-		this.ui.collerImages = (view, event) => this.images.collerVisuel(view, event);
+		this.ui.collerImages = (view, event) => this.envois.collerVisuel(view, event);
 		// soumission retenue pendant les envois (spec 10 §3)
 		soumission = textarea.form ? new SoumissionRetenue({
 			form: textarea.form,
-			enCours: () => this.images.enCours() > 0,
+			enCours: () => this.envois.enCours() > 0,
 			signaler: (texte, action) => this.etat.signaler(texte, action),
 			effacer: () => this.etat.effacer(),
-			abandonner: () => this.images.abandonner(),
+			abandonner: () => this.envois.abandonner(),
 		}) : null;
 		this.soumission = soumission;
 
@@ -245,8 +245,8 @@ class Instance {
 	/** @param {{ focus?: boolean }} options  focus : donner le focus à la zone affichée */
 	toggleMode({ focus = true } = {}) {
 		// un envoi appartient au mode où l'image a été collée (spec 10 §3)
-		if (this.images.enCours()) {
-			this.etat.signaler(label('image_envoi_en_cours'));
+		if (this.envois.enCours()) {
+			this.etat.signaler(label('envoi_en_cours'));
 			return;
 		}
 		const mode = this.bridge.mode === 'visual' ? 'source' : 'visual';
@@ -270,7 +270,7 @@ class Instance {
 		// soumission d'abord : son destroy() bloque toute relance, même si l'abandon des envois
 		// appelle encore verifier()
 		this.soumission?.destroy();
-		this.images.destroy();
+		this.envois.destroy();
 		this.etat.destroy();
 		this.editor.off('transaction', this.majBarre);
 		if (this.pleinEcran()) this.togglePleinEcran(false);

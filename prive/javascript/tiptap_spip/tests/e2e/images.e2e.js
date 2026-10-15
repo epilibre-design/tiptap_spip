@@ -141,10 +141,10 @@ const finDuTexte = async (page, racine = '.tts-editor') => {
 
 const envoisTermines = (page) => expect(page.locator('.tts-envoi')).toHaveCount(0, { timeout: 10_000 });
 
-/** Ralentit les envois deposer_image : la soumission arrive pendant qu'ils sont en cours. */
+/** Ralentit les envois deposer_document : la soumission arrive pendant qu'ils sont en cours. */
 const ralentirEnvois = (page, url) => page.route(url, async (route) => {
 	const corps = route.request().postDataBuffer();
-	if (route.request().method() === 'POST' && corps?.includes('deposer_image')) {
+	if (route.request().method() === 'POST' && corps?.includes('deposer_document')) {
 		await new Promise((r) => setTimeout(r, 1500));
 	}
 	await route.continue();
@@ -234,7 +234,7 @@ test.describe('collage', () => {
 		await finDuTexte(page);
 		await coller(page, '.tts-editor .ProseMirror', [{}]);
 		await page.locator('.formulaire_editer_article .boutons [type=submit]').first().click();
-		await expect(page.locator('.tts-etat__message')).toHaveText(/Une image est en cours d’envoi/);
+		await expect(page.locator('.tts-etat__message')).toHaveText(/Un fichier est en cours d’envoi/);
 		await page.waitForURL(/exec=article&/, { timeout: 15_000 });
 		const [doc] = documents('article', id);
 		expect(texte(id)).toBe(`Texte<doc${doc.id_document}>`);
@@ -270,7 +270,7 @@ test.describe('collage', () => {
 		await selectionStable(page);
 		await coller(page, `${formulaire} .ProseMirror`, [{}]);
 		await page.getByRole('button', { name: 'Publier' }).click();
-		await expect(page.locator(`${formulaire} .tts-etat__message`)).toHaveText(/Une image est en cours d’envoi/);
+		await expect(page.locator(`${formulaire} .tts-etat__message`)).toHaveText(/Un fichier est en cours d’envoi/);
 		// réponse AJAX : le formulaire est rechargé dans la page, sans navigation
 		await expect(page.locator(`${formulaire} .reponse_formulaire_ok`)).toHaveText(/^Bouton : publier ; texte : <doc\d+>$/, { timeout: 15_000 });
 	});
@@ -304,7 +304,7 @@ test.describe('crayon', () => {
 		const id = await ouvrirCrayon(page);
 		await coller(page, '.crayon-html .tts-editor .ProseMirror', [{}]);
 		await page.locator('.crayon-html .crayon-submit').click();
-		await expect(page.locator('.crayon-html .tts-etat__message')).toHaveText(/Une image est en cours d’envoi/);
+		await expect(page.locator('.crayon-html .tts-etat__message')).toHaveText(/Un fichier est en cours d’envoi/);
 		await expect(page.locator('.crayon-html')).toHaveCount(0, { timeout: 15_000 });
 		const [doc] = documents('article', id);
 		expect(texte(id)).toBe(`Texte du crayon.<doc${doc.id_document}>`);
@@ -314,7 +314,7 @@ test.describe('crayon', () => {
 		const id = await ouvrirCrayon(page);
 		await coller(page, '.crayon-html .tts-editor .ProseMirror', [{}]);
 		await page.locator('.crayon-html .crayon-submit').click();
-		await expect(page.locator('.crayon-html .tts-etat__message')).toHaveText(/Une image est en cours d’envoi/);
+		await expect(page.locator('.crayon-html .tts-etat__message')).toHaveText(/Un fichier est en cours d’envoi/);
 		await page.locator('.crayon-html .crayon-cancel').click();
 		await expect(page.locator('.crayon-html')).toHaveCount(0);
 		await page.waitForTimeout(2500);

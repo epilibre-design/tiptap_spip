@@ -26,7 +26,7 @@ describe('StatusBar : message', () => {
 		monter('Un texte');
 		etat = new StatusBar({ editor, editRaw: () => {} });
 		const faire = vi.fn();
-		etat.signaler('Une image est en cours d’envoi.', { libelle: 'Enregistrer sans attendre', faire });
+		etat.signaler('Un fichier est en cours d’envoi.', { libelle: 'Enregistrer sans attendre', faire });
 		const bouton = etat.element.querySelector('.tts-etat__message button');
 		expect(bouton.textContent).toBe('Enregistrer sans attendre');
 		bouton.click();
