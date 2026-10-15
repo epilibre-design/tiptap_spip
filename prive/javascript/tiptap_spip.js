@@ -26998,7 +26998,10 @@ var DepotFichiers = class {
   constructor({ wrapper, textarea, editor, envois, services, mode, signaler }) {
     Object.assign(this, { wrapper, textarea, editor, envois, services, mode, signaler });
     this.onSurvol = (event) => {
-      if (!this.concerne(event)) return;
+      if (!this.concerne(event)) {
+        if (porteFichiers(event)) this.survol(false);
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
@@ -27008,7 +27011,10 @@ var DepotFichiers = class {
       if (!this.wrapper.contains(event.relatedTarget)) this.survol(false);
     };
     this.onDepot = (event) => {
-      if (!this.concerne(event)) return;
+      if (!this.concerne(event)) {
+        if (porteFichiers(event)) this.survol(false);
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       this.survol(false);

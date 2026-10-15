@@ -55,7 +55,8 @@ const porteFichiers = (event) => [...(event.dataTransfer?.types ?? [])].includes
  * l'éditeur, elle retire son état de survol. Tout survol ou dépôt
  * de fichiers est annulé (preventDefault), même refusé : sinon le navigateur ouvrirait le fichier à la
  * place de la page. Seule exception : le mode source d'un textarea .uploader, dont Crayons
- * (crayons/upload) gère le dépôt : rien n'est fait, l'événement lui parvient intact.
+ * (crayons/upload) gère le dépôt : l'événement lui parvient intact, l'éditeur retire seulement son
+ * état de survol (glisser venu de la barre d'outils).
  */
 export class DepotFichiers {
 	/**
@@ -66,7 +67,11 @@ export class DepotFichiers {
 	constructor({ wrapper, textarea, editor, envois, services, mode, signaler }) {
 		Object.assign(this, { wrapper, textarea, editor, envois, services, mode, signaler });
 		this.onSurvol = (event) => {
-			if (!this.concerne(event)) return;
+			if (!this.concerne(event)) {
+				// textarea réservé à Crayons : l'indication de l'éditeur ne s'y applique plus
+				if (porteFichiers(event)) this.survol(false);
+				return;
+			}
 			event.preventDefault();
 			// les zones de dépôt englobantes (Bigup, boîte Documents : #contenu) ne voient pas un glisser
 			// que l'éditeur prend : leur état de survol resterait affiché, le dépôt ne leur parvenant pas
@@ -79,7 +84,10 @@ export class DepotFichiers {
 			if (!this.wrapper.contains(event.relatedTarget)) this.survol(false);
 		};
 		this.onDepot = (event) => {
-			if (!this.concerne(event)) return;
+			if (!this.concerne(event)) {
+				if (porteFichiers(event)) this.survol(false);
+				return;
+			}
 			event.preventDefault();
 			event.stopPropagation();
 			this.survol(false);

@@ -203,6 +203,31 @@ describe('DepotFichiers (spec 10 §8)', () => {
 		expect(instance.envois.enCours()).toBe(0);
 	});
 
+	it('mode source d\'un textarea .uploader : passage par la barre d\'outils puis dépôt sur le textarea, état de survol retiré', () => {
+		const instance = monterInstance('Texte', services(), { mode: 'source', classe: 'uploader' });
+		const { wrapper, textarea } = instance;
+		const barre = wrapper.querySelector('.tts-toolbar');
+		const vus = [];
+		textarea.addEventListener('dragenter', (e) => vus.push(['dragenter', e.defaultPrevented]));
+		textarea.addEventListener('drop', (e) => vus.push(['drop', e.defaultPrevented]));
+		glisser(barre, 'dragenter');
+		glisser(barre, 'dragover');
+		expect(wrapper.classList.contains('tts-editor--depot')).toBe(true);
+		// dragleave de la barre vers le textarea : déplacement interne, l'état reste
+		const sortie = new Event('dragleave', { bubbles: true });
+		Object.defineProperty(sortie, 'relatedTarget', { value: textarea });
+		barre.dispatchEvent(sortie);
+		const entree = glisser(textarea, 'dragenter');
+		expect(wrapper.classList.contains('tts-editor--depot')).toBe(false);
+		expect(wrapper.dataset.ttsDepot).toBeUndefined();
+		glisser(textarea, 'dragover');
+		const depot = glisser(textarea, 'drop', [fichier('a.pdf', 'application/pdf')]);
+		expect([entree.defaultPrevented, depot.defaultPrevented]).toEqual([false, false]);
+		expect(vus).toEqual([['dragenter', false], ['drop', false]]);
+		expect(wrapper.classList.contains('tts-editor--depot')).toBe(false);
+		expect(instance.envois.enCours()).toBe(0);
+	});
+
 	it('mode source d\'un textarea .uploader, dépôt ailleurs dans la zone : traité par l\'éditeur', async () => {
 		const instance = monterInstance('Texte', services({ id_document: 6, raccourci: 'doc6' }), { mode: 'source', classe: 'uploader' });
 		instance.textarea.setSelectionRange(5, 5);

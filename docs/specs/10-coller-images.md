@@ -293,7 +293,8 @@ Partage des dépôts, pour qu'un fichier ne soit envoyé qu'**une fois** :
 - **mode source** : le textarea est visible et Crayons y a déjà branché ses gestionnaires (par `cQuery`, avec
   `return false`, avant le montage de l'éditeur). Tiptap **laisse Crayons gérer le dépôt sur ce textarea** :
   l'éditeur ne fait rien (ni envoi, ni `preventDefault()`, ni arrêt de la propagation) quand la cible est le
-  textarea de classe `uploader`, que `uploader.js.html` pose. Un dépôt ailleurs dans la zone (barre d'outils,
+  textarea de classe `uploader`, que `uploader.js.html` pose. Il retire seulement son état de survol, affiché
+  si le glisser est passé par la barre d'outils. Un dépôt ailleurs dans la zone (barre d'outils,
   barre d'état), que Crayons n'écoute pas, reste traité par l'éditeur. Le raccourci s'affiche alors dans le panneau de
   Crayons, sans être inséré dans le texte : c'est le comportement de Crayons, gardé tel quel. Intercepter le
   dépôt avant Crayons demanderait une capture sur un ancêtre pour `dragenter`, `dragover`, `dragleave` et

@@ -35,6 +35,17 @@ const deposer = (page, selecteur, fichiers) => page.evaluate(([selecteur, fichie
 	return etats;
 }, [selecteur, fichiers, PNG]);
 
+/** Survol de l'élément par un glisser de fichiers, sans dépôt : dragenter, dragover. */
+const survoler = (page, selecteur) => page.evaluate((selecteur) => {
+	const dt = new DataTransfer();
+	dt.items.add(new File(['x'], 'notes.pdf', { type: 'application/pdf' }));
+	for (const type of ['dragenter', 'dragover']) {
+		const event = new Event(type, { bubbles: true, cancelable: true });
+		Object.defineProperty(event, 'dataTransfer', { value: dt });
+		document.querySelector(selecteur).dispatchEvent(event);
+	}
+}, selecteur);
+
 const envoisTermines = (page) => expect(page.locator('.tts-envoi')).toHaveCount(0, { timeout: 10_000 });
 
 test.describe('dépôt', () => {
@@ -191,7 +202,11 @@ test.describe('coexistence avec crayons/upload', () => {
 		await page.evaluate(() => [...window.__tts.instances].find((i) => i.textarea.closest('.crayon-html')).toggleMode());
 		const textarea = page.locator('.crayon-html .tts-editor textarea');
 		await expect(textarea).toHaveClass(/uploader/);
+		// glisser venu de la barre d'outils : l'indication de l'éditeur s'affiche, puis disparaît sur le textarea
+		await survoler(page, '.crayon-html .tts-editor .tts-toolbar');
+		await expect(page.locator('.crayon-html .tts-editor')).toHaveClass(/tts-editor--depot/);
 		await deposer(page, '.crayon-html .tts-editor textarea', [{ nom: 'notes.pdf', type: 'application/pdf', base64: PDF }]);
+		await expect(page.locator('.crayon-html .tts-editor')).not.toHaveClass(/tts-editor--depot/);
 		// Crayons reçoit le dépôt : sa ligne dans le panneau, son envoi vers crayons_upload. Ni le document
 		// ni la fin de l'envoi (li.ok) ne sont vérifiés : Crayons 3.5.1 appelle distant_table() avant
 		// d'inclure inc/crayons, son action répond 500
