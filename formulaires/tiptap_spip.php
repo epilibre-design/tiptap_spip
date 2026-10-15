@@ -14,7 +14,7 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 }
 
 include_spip('tiptap_spip_fonctions');
-include_spip('inc/tiptap_spip_images');
+include_spip('inc/tiptap_spip_depot');
 // dans le site public, autoriser() n'est pas chargé d'office (formulaire chargé à la demande, Crayons)
 include_spip('inc/autoriser');
 
@@ -50,8 +50,8 @@ function formulaires_tiptap_spip_charger_dist($objet = '', $id_objet = 0, $champ
 		'objets' => '',
 		'raccourci' => '',
 		'cles' => '',
-		// collage d'images (spec 10 §6) : configuration annoncée au JS, null si indisponible
-		'_images' => tiptap_spip_images((string) $objet, intval($id_objet)),
+		// collage et dépôt de fichiers (spec 10 §6) : configuration annoncée au JS, null si indisponible
+		'_depot' => tiptap_spip_depot((string) $objet, intval($id_objet)),
 		'editable' => true,
 	];
 }
@@ -104,11 +104,11 @@ function formulaires_tiptap_spip_verifier_dist($objet = '', $id_objet = 0, $cham
 				$erreurs['cles'] = _T('tiptap_spip:erreur_idiomes');
 			}
 			break;
-		case 'deposer_image':
+		case 'deposer_document':
 			// messages dans message_erreur : sinon SPIP y met son message générique
-			if (!tiptap_spip_images((string) $objet, intval($id_objet))) {
-				$erreurs['message_erreur'] = _T('tiptap_spip:erreur_image_indisponible');
-			} elseif ($erreur = tiptap_spip_controler_image($_FILES, tiptap_spip_images_types())) {
+			if (!tiptap_spip_depot((string) $objet, intval($id_objet))) {
+				$erreurs['message_erreur'] = _T('tiptap_spip:erreur_depot_indisponible');
+			} elseif ($erreur = tiptap_spip_controler_document($_FILES, tiptap_spip_images_types(), tiptap_spip_documents_extensions())) {
 				$erreurs['message_erreur'] = $erreur;
 			}
 			break;
@@ -120,9 +120,9 @@ function formulaires_tiptap_spip_verifier_dist($objet = '', $id_objet = 0, $cham
 
 function formulaires_tiptap_spip_traiter_dist($objet = '', $id_objet = 0, $champ = 'texte') {
 	$operation = _request('operation');
-	if ($operation === 'deposer_image') {
+	if ($operation === 'deposer_document') {
 		// _request() ne lit pas $_FILES : le fichier, contrôlé par verifier(), est lu directement
-		$depot = tiptap_spip_deposer_image($_FILES['fichier'], (string) $objet, intval($id_objet));
+		$depot = tiptap_spip_deposer_document($_FILES['fichier'], (string) $objet, intval($id_objet));
 		if (is_string($depot)) {
 			return ['message_erreur' => $depot, 'editable' => true];
 		}
@@ -135,7 +135,7 @@ function formulaires_tiptap_spip_traiter_dist($objet = '', $id_objet = 0, $champ
 			'url' => _request('raccourci') ? tiptap_spip_url_glossaire((string) _request('raccourci'), (string) $objet, intval($id_objet)) : null,
 			'glossaires' => tiptap_spip_glossaires_proposes(),
 		],
-		'deposer_image' => $depot,
+		'deposer_document' => $depot,
 		'idiomes' => tiptap_spip_traduire_idiomes(tiptap_spip_liste(_request('cles'), 50, 100), (string) $objet, intval($id_objet)),
 	};
 	return [
