@@ -2,6 +2,7 @@ import { allerRetour, core, extensionsTierces, registerExtension, registerToolba
 import { config } from './config.js';
 import { CollerImages } from './editor/collerImage.js';
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
+import { SoumissionRetenue } from './editor/soumission.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
 import { barreDuTextarea, contexte as contexteHote } from './hosts/contexte.js';
@@ -163,6 +164,7 @@ class Instance {
 		this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
 
 		// images collées (spec 10) : capture toujours installée, disponibilité décidée à chaque collage
+		let soumission = null;
 		this.images = new CollerImages({
 			textarea,
 			editor: this.editor,
@@ -170,8 +172,21 @@ class Instance {
 			mode: () => this.bridge.mode,
 			signaler: (texte) => this.etat.signaler(texte),
 			effacer: () => this.etat.effacer(),
+			surChangement: () => {
+				this.toolbar.maj();
+				soumission?.verifier();
+			},
 		});
 		this.ui.collerImages = (view, event) => this.images.collerVisuel(view, event);
+		// soumission retenue pendant les envois (spec 10 §3)
+		soumission = textarea.form ? new SoumissionRetenue({
+			form: textarea.form,
+			enCours: () => this.images.enCours() > 0,
+			signaler: (texte, action) => this.etat.signaler(texte, action),
+			effacer: () => this.etat.effacer(),
+			abandonner: () => this.images.abandonner(),
+		}) : null;
+		this.soumission = soumission;
 
 		textarea.before(this.wrapper);
 		this.wrapper.append(textarea, this.etat.element);
@@ -252,6 +267,9 @@ class Instance {
 		// popovers de l'instance (et sous-éditeur d'une note) fermés
 		while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
 		this.notes.destroy();
+		// soumission d'abord : son destroy() bloque toute relance, même si l'abandon des envois
+		// appelle encore verifier()
+		this.soumission?.destroy();
 		this.images.destroy();
 		this.etat.destroy();
 		this.editor.off('transaction', this.majBarre);

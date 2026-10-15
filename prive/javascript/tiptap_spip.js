@@ -24979,6 +24979,7 @@ var DEFAUTS = {
   image_envoi: "Envoi de l\u2019image\u2026",
   image_echec: "L\u2019image n\u2019a pas pu \xEAtre envoy\xE9e (session expir\xE9e ou connexion perdue).",
   image_envoi_en_cours: "Une image est en cours d\u2019envoi.",
+  image_enregistrer_sans_attendre: "Enregistrer sans attendre",
   image_trop_grosse: "Image trop volumineuse : @nom@.",
   image_type_refuse: "Type de fichier non accept\xE9 : @nom@.",
   zone_texte: "Texte",
@@ -27219,6 +27220,87 @@ function createEditor({ element: element2, source, ui: ui2 = null, tierces = [],
   return editor;
 }
 
+// src/editor/soumission.js
+var SoumissionRetenue = class {
+  /**
+   * @param {{ form: HTMLFormElement, enCours: () => boolean,
+   *           signaler: (texte: string, action: { libelle: string, faire: () => void }) => void,
+   *           effacer: () => void, abandonner: () => void }} options
+   */
+  constructor({ form, enCours, signaler, effacer, abandonner }) {
+    Object.assign(this, { form, enCours, signaler, effacer, abandonner });
+    this.attente = false;
+    this.bouton = null;
+    this.onSubmit = (event) => {
+      if (!this.retenir(event.submitter)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    form.addEventListener("submit", this.onSubmit, true);
+    this.onPreSerialize = (event, $form, options, veto) => {
+      if (this.retenir(form.clk) && veto) veto.veto = true;
+    };
+    const bibliotheques = [...new Set([globalThis.jQuery, globalThis.cQuery].filter(Boolean))];
+    this.$forms = bibliotheques.map(($) => $(form));
+    for (const $form of this.$forms) $form.on("form-pre-serialize.ttsimages", this.onPreSerialize);
+  }
+  /** Vrai si la soumission est retenue (envois en cours) ; le bouton est gardé pour la relance. */
+  retenir(bouton) {
+    if (!this.enCours()) return false;
+    this.attente = true;
+    this.bouton = bouton ?? null;
+    this.signaler(label("image_envoi_en_cours"), { libelle: label("image_enregistrer_sans_attendre"), faire: () => this.sansAttendre() });
+    return true;
+  }
+  /** À chaque fin d'envoi : la soumission retenue repart après le dernier. */
+  verifier() {
+    if (this.attente && !this.enCours()) this.relancer();
+  }
+  /**
+   * « Enregistrer sans attendre » : abandonner() prévient l'instance (surChangement), dont le
+   * verifier() relance déjà la soumission ; le relancer() qui suit ne fait alors plus rien. Il ne sert
+   * que s'il n'y avait plus d'envoi à abandonner.
+   */
+  sansAttendre() {
+    this.abandonner();
+    this.relancer();
+  }
+  /**
+   * Relance unique de la soumission retenue. requestSubmit reprend la voie d'origine : le submit relance
+   * ajaxSubmit() d'un formulaire AJAX. jquery.form ne sérialise le bouton que s'il est form.clk, que
+   * son écouteur de clic remet à null 100 ms après le clic : il est rétabli le temps de la relance
+   * (ajaxSubmit sérialise de façon synchrone, dans l'écouteur submit).
+   */
+  relancer() {
+    if (!this.attente || this.detruite) return;
+    this.attente = false;
+    this.effacer();
+    const bouton = this.bouton?.isConnected && this.bouton.form === this.form ? this.bouton : null;
+    this.bouton = null;
+    if (!bouton) {
+      this.form.requestSubmit();
+      return;
+    }
+    this.form.clk = bouton;
+    try {
+      this.form.requestSubmit(bouton);
+    } finally {
+      if (this.form.clk === bouton) this.form.clk = null;
+    }
+  }
+  /**
+   * Éditeur détruit (crayon fermé, rechargement AJAX) : la soumission retenue est annulée, aucune
+   * relance ne part ensuite, même quand l'abandon des envois appelle encore verifier().
+   */
+  destroy() {
+    this.detruite = true;
+    this.attente = false;
+    this.bouton = null;
+    this.form.removeEventListener("submit", this.onSubmit, true);
+    for (const $form of this.$forms) $form.off("form-pre-serialize.ttsimages", this.onPreSerialize);
+  }
+};
+
 // src/editor/TextareaBridge.js
 var TextareaBridge = class {
   /**
@@ -28898,15 +28980,28 @@ var Instance = class {
     this.editor.on("transaction", this.majBarre);
     this.content.after(this.notes.element);
     this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
+    let soumission = null;
     this.images = new CollerImages({
       textarea,
       editor: this.editor,
       services: () => this.services,
       mode: () => this.bridge.mode,
       signaler: (texte2) => this.etat.signaler(texte2),
-      effacer: () => this.etat.effacer()
+      effacer: () => this.etat.effacer(),
+      surChangement: () => {
+        this.toolbar.maj();
+        soumission?.verifier();
+      }
     });
     this.ui.collerImages = (view, event) => this.images.collerVisuel(view, event);
+    soumission = textarea.form ? new SoumissionRetenue({
+      form: textarea.form,
+      enCours: () => this.images.enCours() > 0,
+      signaler: (texte2, action) => this.etat.signaler(texte2, action),
+      effacer: () => this.etat.effacer(),
+      abandonner: () => this.images.abandonner()
+    }) : null;
+    this.soumission = soumission;
     textarea.before(this.wrapper);
     this.wrapper.append(textarea, this.etat.element);
     textarea.hidden = true;
@@ -28971,6 +29066,7 @@ var Instance = class {
     instances.delete(this);
     while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
     this.notes.destroy();
+    this.soumission?.destroy();
     this.images.destroy();
     this.etat.destroy();
     this.editor.off("transaction", this.majBarre);

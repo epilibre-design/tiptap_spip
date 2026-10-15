@@ -121,6 +121,7 @@ export const DEFAUTS = {
 	image_envoi: 'Envoi de l’image…',
 	image_echec: 'L’image n’a pas pu être envoyée (session expirée ou connexion perdue).',
 	image_envoi_en_cours: 'Une image est en cours d’envoi.',
+	image_enregistrer_sans_attendre: 'Enregistrer sans attendre',
 	image_trop_grosse: 'Image trop volumineuse : @nom@.',
 	image_type_refuse: 'Type de fichier non accepté : @nom@.',
 	zone_texte: 'Texte',

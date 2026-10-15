@@ -225,4 +225,55 @@ describe('CollerImages (spec 10 §1, §3)', () => {
 		instance.editor.commands.setTextSelection(3);
 		expect(coller(instance.editor.view.dom, presse({ files: [png()] })).defaultPrevented).toBe(false);
 	});
+
+	it('soumission pendant l\'envoi : retenue, puis partie avec le <docN>', async () => {
+		const instance = monterInstance('Texte', services({ id_document: 8, raccourci: 'doc8' }));
+		instance.editor.commands.setTextSelection(6);
+		const parties = [];
+		instance.textarea.form.addEventListener('submit', (e) => {
+			if (!e.defaultPrevented) parties.push(instance.textarea.value);
+			e.preventDefault();
+		});
+		coller(instance.editor.view.dom, presse({ files: [fichier('', 'image/png')] }));
+		instance.textarea.form.querySelector('button[type=submit]').click();
+		expect(parties).toEqual([]);
+		await vi.waitFor(() => expect(parties).toEqual(['Texte<doc8>']));
+	});
+
+	it('soumission retenue puis fermeture du crayon (destroy sans restauration) : rien n\'est soumis', async () => {
+		const s = services({ id_document: 10, raccourci: 'doc10' });
+		const instance = monterInstance('Texte', s);
+		const parties = [];
+		const form = instance.textarea.form;
+		form.addEventListener('submit', (e) => {
+			if (!e.defaultPrevented) parties.push(instance.textarea.value);
+			e.preventDefault();
+		});
+		coller(instance.editor.view.dom, presse({ files: [fichier('', 'image/png')] }));
+		form.querySelector('button[type=submit]').click();
+		instance.destroy({ restore: false });
+		await tick();
+		await tick();
+		expect(parties).toEqual([]);
+		expect(s.call.mock.calls[0][2].signal.aborted).toBe(true);
+	});
+
+	it('Enregistrer sans attendre (vrai câblage) : une seule soumission, sans l\'image ni marqueur', async () => {
+		const s = services({ id_document: 9, raccourci: 'doc9' });
+		const instance = monterInstance('Texte', s, { mode: 'source' });
+		instance.textarea.setSelectionRange(5, 5);
+		const parties = [];
+		instance.textarea.form.addEventListener('submit', (e) => {
+			if (!e.defaultPrevented) parties.push(instance.textarea.value);
+			e.preventDefault();
+		});
+		coller(instance.textarea, presse({ files: [fichier('', 'image/png')] }));
+		instance.textarea.form.querySelector('button[type=submit]').click();
+		instance.etat.element.querySelector('.tts-etat__message button').click();
+		expect(parties).toEqual(['Texte']);
+		await tick();
+		await tick();
+		expect(parties).toEqual(['Texte']);
+		expect(s.call.mock.calls[0][2].signal.aborted).toBe(true);
+	});
 });

@@ -77,6 +77,7 @@ return [
 	'idiome_raccourci' => 'Raccourci (<:module:cle:>)',
 	'idiome_retirer' => 'Supprimer l’idiome',
 	'image_echec' => 'L’image n’a pas pu être envoyée (session expirée ou connexion perdue).',
+	'image_enregistrer_sans_attendre' => 'Enregistrer sans attendre',
 	'image_envoi' => 'Envoi de l’image…',
 	'image_envoi_en_cours' => 'Une image est en cours d’envoi.',
 	'image_trop_grosse' => 'Image trop volumineuse : @nom@.',
