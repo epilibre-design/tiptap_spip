@@ -121,7 +121,14 @@ function tiptap_spip_operations(): array {
 	return ['previsu_modele', 'titre_lien', 'rechercher', 'glossaire', 'idiomes'];
 }
 
-/** Vrai si $raccourci est exactement un raccourci de glossaire (_RACCOURCI_GLOSSAIRE du core, ancrée). */
+/**
+ * Vrai si $raccourci est exactement un raccourci de glossaire.
+ *
+ * Provenance des expressions de cette fonction et de tiptap_spip_nom_glossaire() : _RACCOURCI_GLOSSAIRE
+ * (ancrée ici) et _RACCOURCI_GLOSES de TextWheel (plugins-dist/textwheel/inc/lien.php, SPIP 4.4.21),
+ * © Arnaud Martin, Antoine Pitrou, Philippe Rivière, Emmanuel Saint-James, Collectif SPIP, licence
+ * GPL-3.0-or-later. Adaptation du 2026-10-12.
+ */
 function tiptap_spip_est_glossaire(string $raccourci): bool {
 	return (bool) preg_match('/^\[\?+\s*([^][<>]+)\]$/', $raccourci);
 }
@@ -198,7 +205,13 @@ function tiptap_spip_url_glossaire(string $raccourci, string $objet = '', int $i
 	return is_string($url) && $url !== '' ? $url : null;
 }
 
-/** Vrai si $cle est la clé d'un idiome <:module:cle:> (regex de Idiomes::collecter(), module facultatif). */
+/**
+ * Vrai si $cle est la clé d'un idiome <:module:cle:> (module facultatif).
+ *
+ * Provenance : expression $preg_idiome de Idiomes (ecrire/src/Texte/Collecteur/Idiomes.php, SPIP 4.4.21),
+ * © Arnaud Martin, Antoine Pitrou, Philippe Rivière, Emmanuel Saint-James, licence GNU GPL. Adaptation du
+ * 2026-10-12 : réduite à la clé, ancrée.
+ */
 function tiptap_spip_est_cle_idiome(string $cle): bool {
 	return (bool) preg_match('/^(?:[a-z0-9_]+:)?[a-z0-9_]+$/i', $cle);
 }
@@ -322,8 +335,12 @@ function tiptap_spip_liste(?string $json, int $max, int $longueur): ?array {
 
 /**
  * Applique à un texte les traitements SPIP d'un champ, puis safehtml().
- * Reprise de traitements_previsu() du porte-plume (et de markdown_editor), qui peut être absent, avec un
- * contexte de modèle limité à l'objet édité : $contexte vient des arguments signés du formulaire.
+ *
+ * Provenance : traitements_previsu() du plugin Porte-plume (plugins-dist/porte_plume/
+ * porte_plume_fonctions.php, SPIP 4.4.21), de Matthieu Marcillaud et du Collectif SPIP, licence
+ * GPL-3.0-or-later. Adaptation du 2026-10-11 : le porte-plume pouvant être absent, la fonction est
+ * recopiée ; le contexte des modèles est limité à l'objet édité ($contexte vient des arguments signés
+ * du formulaire) au lieu d'une pile vide ; propre() reçoit ce contexte ; la connexion est la principale.
  *
  * @param array $contexte  ['objet' => …, 'id_objet' => …] et id_<objet>
  */
@@ -357,7 +374,12 @@ function tiptap_spip_traitements_previsu(string $texte, string $nom_champ, strin
 	return safehtml($texte);
 }
 
-/** Évalue le PHP d'un modèle prévisualisé (cf. tiptap_spip_traitements_previsu()). */
+/**
+ * Évalue le PHP d'un modèle prévisualisé (cf. tiptap_spip_traitements_previsu()).
+ *
+ * Provenance : traitements_previsu_php_modeles_eval() du plugin Porte-plume (même source et même
+ * licence que tiptap_spip_traitements_previsu()), recopiée sans modification de fond le 2026-10-11.
+ */
 function tiptap_spip_eval_php_modeles($php) {
 	ob_start();
 	try {

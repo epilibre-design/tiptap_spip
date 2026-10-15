@@ -12,7 +12,12 @@ const cle = new PluginKey('coloration');
 
 /**
  * Alias → fichier de grammaire de Coloration Code (assets/highlightjs/languages/), repris de sa
- * table (coloration_code__on_demand.js, version 1.2.1) pour résoudre les mêmes noms que le site.
+ * table pour résoudre les mêmes noms que le site.
+ *
+ * Provenance : table aliases de coloration_code__on_demand.js du plugin Coloration Code 1.2.1, de
+ * bricebou, licence GPL-3 ; ses alias sont ceux des grammaires de highlight.js (© Ivan Sagalaev,
+ * licence BSD-3-Clause). Adaptation du 2026-10-14 : les alias qui désignent leur propre fichier sont
+ * omis, et `as` désigne angelscript (la table d'origine le déclare deux fois, la seconde l'emporte).
  */
 const FICHIERS = {
 	as: 'angelscript', apacheconf: 'apache', osascript: 'applescript', ino: 'arduino', arm: 'armasm',

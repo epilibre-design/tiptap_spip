@@ -12,7 +12,11 @@
 	<auteur>Gilles VINCENT</auteur>
 
 	<credit lien="https://tiptap.dev">Tiptap</credit>
-	<credit lien="https://remixicon.com">Remix Icon (Apache-2.0)</credit>
+	<credit lien="https://remixicon.com">Remix Icon 4.8.0 (Apache-2.0)</credit>
+	<credit lien="https://www.spip.net">SPIP et TextWheel, Collectif SPIP (expressions et règles du parseur)</credit>
+	<credit lien="https://git.spip.net/spip/porte_plume">Porte-plume, Matthieu Marcillaud (prévisualisation)</credit>
+	<credit lien="https://git.spip.net/spip-contrib-extensions/coloration_code">Coloration Code, bricebou (alias des langages)</credit>
+	<!-- détail des reprises et des inspirations : CREDITS.md -->
 	<licence lien="https://spdx.org/licenses/GPL-3.0-or-later.html">GPL-3.0-or-later</licence>
 
 	<utilise nom="porte_plume" />

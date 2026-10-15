@@ -6,7 +6,11 @@ import { nommer } from './collerImage.js';
  * position du dépôt, et partage avec le dépôt expérimental de Crayons.
  */
 
-/** Extension telle que medias la cherche (corriger_extension de ecrire/inc/documents.php). */
+/**
+ * Extension telle que medias la cherche. Provenance : table de corriger_extension()
+ * (ecrire/inc/documents.php, SPIP 4.4.21), © Arnaud Martin, Antoine Pitrou, Philippe Rivière,
+ * Emmanuel Saint-James, licence GNU GPL ; recopiée en JavaScript le 2026-10-15.
+ */
 const CORRECTIONS = { htm: 'html', jpeg: 'jpg', tiff: 'tif', aif: 'aiff', mpeg: 'mpg' };
 export const corrigerExtension = (extension) => {
 	const e = extension.replace(/[^a-z0-9]/gi, '');

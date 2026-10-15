@@ -3,6 +3,12 @@
  * Chaque constante cite son origine PHP : ne la modifier qu'en suivant le core.
  * Les modificateurs PHP sont traduits : U (ungreedy) → quantificateurs paresseux,
  * s → s, i → i, m → m. Toutes sont globales (g) : utiliser matchAll().
+ *
+ * Provenance : expressions et liste des codes de langue du core de SPIP 4.4.21 (ecrire/) et du plugin
+ * TextWheel (plugins-dist/textwheel/), © Arnaud Martin, Antoine Pitrou, Philippe Rivière, Emmanuel
+ * Saint-James, Collectif SPIP, licence GNU GPL (TextWheel : GPL-3.0-or-later). Adaptation du
+ * 2026-10-11 : traduction de PCRE en JavaScript ; formes ancrées (…_SEUL) pour analyser un raccourci
+ * entier ; <math> ajouté à _PROTEGE_BLOCS ; \s de _NOTES_RACCOURCI limité aux blancs ASCII.
  */
 
 // ecrire/src/Texte/Collecteur/Modeles.php — <modeleN|params>

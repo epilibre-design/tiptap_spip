@@ -109,17 +109,21 @@ Copie locale : `/src/plugins/markdown_editor` (v1.0.1, Tiptap **2.27**, `tiptap-
   l'historique d'annulation et de la sélection).
 - Pas de tests JS ; l'aller-retour Markdown n'est pas vérifié.
 
-### Ce qu'on réutilise
+### Ce dont on s'inspire
 
-| Élément | Réutilisation |
-|---------|---------------|
-| Regex des modèles, attributs `spip_model`, `generateSpipModelAttributes` | Reprise, adaptée Tiptap 3 |
-| NodeView de prévisualisation + `traitements_previsu` | Reprise ; l'action `compiler_modele` est remplacée par le formulaire CVT |
-| Formulaire `inserer_modeles` (Saisies + YAML) | Mutualisé (cf. question ouverte Q3) |
-| Action `analyser_lien` + décorations titre auto | Logique reprise, mais servie par le formulaire CVT de l'éditeur (cf. [02](02-architecture.md) §5) |
-| `SpipMulti*`, `SpipLang`, `SpipHtml` | Logique reprise, parse/sérialisation réécrits pour SPIP |
-| Registre `Toolbar` et composants de boutons | Repris, portés Tiptap 3 |
-| Câblage `importmap` / `header_prive`, `09_…_config.js.html` | Repris |
+markdown_editor ne déclare pas de licence. tiptap_spip s'inspire de sa conception sans reprendre son code :
+les deux comparaisons de code faites le 2026-10-15 (lignes et jetons, JS et PHP) n'ont relevé aucune copie.
+Crédit et détail : `CREDITS.md`.
+
+| Élément de markdown_editor | Dans tiptap_spip |
+|----------------------------|------------------|
+| Regex des modèles, attributs `spip_model`, `generateSpipModelAttributes` | Conception reprise ; regex prise au core (`Modeles.php`), attribut `model` réécrit (ordre et forme brute des paramètres) |
+| NodeView de prévisualisation + `traitements_previsu` | Conception reprise ; `traitements_previsu()` vient du porte-plume, d'où markdown_editor tient aussi la sienne ; l'action `compiler_modele` est remplacée par le formulaire CVT |
+| Formulaire `inserer_modeles` (Saisies + YAML) | Plugin Insérer modèles utilisé s'il est présent (question Q3) |
+| Action `analyser_lien` + décorations titre auto | Idée reprise, servie par le formulaire CVT de l'éditeur (cf. [02](02-architecture.md) §5), code réécrit |
+| `SpipMulti*`, `SpipLang`, `SpipHtml` | Idée des nœuds reprise ; structure, parse et sérialisation réécrits pour SPIP |
+| Registre `Toolbar` et composants de boutons | Conception reprise (registre de composants), code réécrit pour Tiptap 3 |
+| Câblage `importmap` / `header_prive`, `09_…_config.js.html` | Même mécanisme de SPIP (pipelines, configuration dans `spipConfig`), code réécrit |
 
 Tout ce qui repose sur `tiptap-markdown` / markdown-it (règles `setup(markdownit)`, `storage.markdown`)
 **n'est pas réutilisable** : remplacé par le parseur/sérialiseur SPIP ([04](04-parseur-serialiseur.md)).

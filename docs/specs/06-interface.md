@@ -23,7 +23,7 @@ garde son `name`, ses classes et sa place dans le formulaire.
 ## 2. Barre d'outils
 
 Déclarative, décrite côté PHP par le pipeline `tiptap_spip_toolbars` et rendue par le registre de
-composants repris de markdown_editor (`Toolbar.registerComponent`).
+composants, dont la conception s'inspire de celui de markdown_editor (`Toolbar.registerComponent`).
 
 **Réalisation (lot L5.1)** :
 - **Une seule déclaration**, `src/ui/barres.json`, importée par le bundle et lue par PHP

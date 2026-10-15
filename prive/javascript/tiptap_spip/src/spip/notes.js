@@ -13,6 +13,11 @@ const BLOCS = new Set(['paragraph', 'bulletList', 'orderedList', 'spipModelBlock
  * Le nom se cherche dans le texte que voit le core, où liens, modèles et glossaire sont déjà
  * remplacés : `[[<doc1>]]` est une note automatique qui contient un modèle.
  *
+ * Provenance de la règle du nom : traiter_raccourci_notes() de TextWheel (plugins-dist/textwheel/inc/
+ * notes.php, SPIP 4.4.21), © Arnaud Martin, Antoine Pitrou, Philippe Rivière,
+ * Emmanuel Saint-James, Collectif SPIP, licence GPL-3.0-or-later. Adaptation du 2026-10-11 :
+ * traduite en JavaScript ; un nom que la regex du core lirait autrement n'est pas représentable.
+ *
  * @param {string} src  raccourci entier
  * @param {string} [masked]  même texte, raccourcis traités avant les notes masqués (même longueur)
  * @returns {{ name: string|null, content: object[], lead: string, trail: string } | null}

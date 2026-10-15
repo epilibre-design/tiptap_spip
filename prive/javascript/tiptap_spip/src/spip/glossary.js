@@ -6,6 +6,11 @@ import { RE_GLOSES, RE_GLOSSAIRE_SEUL } from './regex.js';
  * (plugins-dist/textwheel/inc/lien.php) : le terme est isolé de ses accessoires (#glossaire et
  * numéro, puis |bulle et {lang} comme dans un lien), où qu'ils soient.
  *
+ * Provenance : découpage de traiter_raccourci_glossaire() de TextWheel (plugins-dist/textwheel/inc/
+ * lien.php, SPIP 4.4.21), © Arnaud Martin, Antoine Pitrou, Philippe Rivière,
+ * Emmanuel Saint-James, Collectif SPIP, licence GPL-3.0-or-later. Adaptation du 2026-10-11 :
+ * traduite en JavaScript, sans calcul de l'URL de la définition.
+ *
  * @param {string} src  raccourci entier
  * @returns {{ term: string, attrs: { glossaire: ?string, numero: ?string, bulle: ?string, hreflang: ?string } } | null}
  */

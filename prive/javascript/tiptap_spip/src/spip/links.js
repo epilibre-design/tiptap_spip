@@ -10,6 +10,12 @@ import { LANGUES, RE_ATTRIBUTS_LIEN } from './regex.js';
  * Le core met le code (backticks, <code>, <cadre>…) à l'abri avant de découper : le découpage se
  * fait donc sur `masked`, où ce code est masqué, et les morceaux sont repris dans `part`.
  *
+ * Provenance : traiter_raccourci_lien_atts() de TextWheel (plugins-dist/textwheel/inc/lien.php,
+ * SPIP 4.4.21), © Arnaud Martin, Antoine Pitrou, Philippe Rivière,
+ * Emmanuel Saint-James, Collectif SPIP, licence GPL-3.0-or-later. Adaptation du 2026-10-11 : traduite en
+ * JavaScript, découpage sur le texte masqué, {} final (langue du contexte) non représentable, langue
+ * cherchée dans LANGUES au lieu de traduire_nom_langue(), forme |langue sans accolades non reprise.
+ *
  * @param {string} part
  * @param {string} [masked]  même texte, code masqué (même longueur)
  * @returns {{ text: string, bulle: string|null, hreflang: string|null } | null}
