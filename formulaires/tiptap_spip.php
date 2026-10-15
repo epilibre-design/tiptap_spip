@@ -151,7 +151,10 @@ function tiptap_spip_previsu_modele(string $objet, int $id_objet, string $champ,
 		include_spip('base/objets');
 		$contexte = ['objet' => $objet, 'id_objet' => $id_objet, id_table_objet($objet) => $id_objet];
 	}
-	// pas d'indirection PHP dans les modèles de formulaire
+	// pas d'indirection PHP dans les modèles de formulaire. Provenance de cet encadrement :
+	// action_porte_plume_previsu_dist() du plugin Porte-plume (plugins-dist/porte_plume/action/
+	// porte_plume_previsu.php, SPIP 4.4.21), de Matthieu Marcillaud et du Collectif SPIP, licence
+	// GPL-3.0-or-later ; adaptation du 2026-10-11 : autour de tiptap_spip_traitements_previsu().
 	$GLOBALS['_FORCER_EXECUTER_DIRECTEMENT_BALISE_DYNAMIQUE'] = true;
 	$html = tiptap_spip_traitements_previsu($modele, strtoupper($champ), $objet, $contexte);
 	unset($GLOBALS['_FORCER_EXECUTER_DIRECTEMENT_BALISE_DYNAMIQUE']);
