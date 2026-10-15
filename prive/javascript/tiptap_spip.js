@@ -24977,6 +24977,10 @@ var DEFAUTS = {
   brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
   modele_aria: "Mod\xE8le @modele@",
   image_envoi: "Envoi de l\u2019image\u2026",
+  image_echec: "L\u2019image n\u2019a pas pu \xEAtre envoy\xE9e (session expir\xE9e ou connexion perdue).",
+  image_envoi_en_cours: "Une image est en cours d\u2019envoi.",
+  image_trop_grosse: "Image trop volumineuse : @nom@.",
+  image_type_refuse: "Type de fichier non accept\xE9 : @nom@.",
   zone_texte: "Texte",
   appliquer: "Appliquer",
   annuler: "Annuler"
@@ -25688,6 +25692,26 @@ var plugin = (ui2) => new Plugin({
     handlePaste: (view, event) => ui2?.collerImages?.(view, event) ?? false
   }
 });
+function ajouterMarqueurs(view, ids) {
+  const pos = view.state.selection.from;
+  view.dispatch(view.state.tr.setMeta(cleMarqueurs, { ajouter: ids.map((id) => ({ id, pos })) }).setMeta("addToHistory", false));
+}
+var positionMarqueur = (state, id) => cleMarqueurs.getState(state)?.get(id) ?? null;
+function retirerMarqueurs(view, ids) {
+  view.dispatch(view.state.tr.setMeta(cleMarqueurs, { retirer: ids }).setMeta("addToHistory", false));
+}
+function remplacerMarqueur(editor, id, source) {
+  const pos = positionMarqueur(editor.state, id);
+  if (pos === null) return false;
+  return editor.chain().command(({ tr }) => {
+    tr.setMeta(cleMarqueurs, { retirer: [id] });
+    return true;
+  }).insertContentAt(pos, { type: "spipModel", attrs: { model: parseModel(source) } }, { updateSelection: false }).run();
+}
+function progressionMarqueur(view, id, ratio) {
+  const barre = view.dom.querySelector(`[data-tts-envoi="${id}"] progress`);
+  if (barre && ratio !== null) barre.value = ratio;
+}
 var SpipPasteImage = Extension.create({
   name: "spipPasteImage",
   addOptions: () => ({ ui: null }),
@@ -26892,114 +26916,6 @@ function allerRetour(source, extensions = []) {
   };
 }
 
-// src/editor/createEditor.js
-function createEditor({ element: element2, source, ui: ui2 = null, tierces = [], extensions = coreExtensions({ ui: ui2, tierces }), editorProps = {} }) {
-  const regles = reglesSpip(extensions);
-  const content = toEditorJSON(source, getSchema(extensions), regles);
-  const editor = new Editor({
-    element: element2,
-    extensions,
-    content,
-    editorProps,
-    enableContentCheck: true,
-    onContentError: ({ error }) => {
-      throw error;
-    }
-  });
-  editor.tiptapSpip = { regles, tierces };
-  return editor;
-}
-
-// src/editor/TextareaBridge.js
-var TextareaBridge = class {
-  /**
-   * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor, delay?: number }} options
-   */
-  constructor({ textarea, editor, delay = 150 }) {
-    this.textarea = textarea;
-    this.editor = editor;
-    this.delay = delay;
-    this.mode = "visual";
-    this.timer = null;
-    this.dispatching = false;
-    this.sourceDirty = false;
-    this.onUpdate = () => this.schedule();
-    this.onFlush = () => this.flush();
-    this.onInput = () => {
-      if (!this.dispatching && this.mode === "source") this.sourceDirty = true;
-    };
-    editor.on("update", this.onUpdate);
-    editor.on("blur", this.onFlush);
-    textarea.addEventListener("input", this.onInput);
-    textarea.form?.addEventListener("submit", this.onFlush, true);
-    const $ = globalThis.jQuery;
-    this.$form = $ && textarea.form ? $(textarea.form) : null;
-    this.$form?.on("form-pre-serialize.tts", this.onFlush);
-    globalThis.window?.addEventListener("beforeunload", this.onFlush);
-  }
-  schedule() {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(this.onFlush, this.delay);
-  }
-  /** Écrit la sérialisation dans le textarea si elle diffère, avec événements input et change. */
-  flush() {
-    clearTimeout(this.timer);
-    this.timer = null;
-    if (this.mode !== "visual" || this.editor.isDestroyed) return;
-    const value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
-    if (value === this.textarea.value) return;
-    this.textarea.value = value;
-    this.dispatching = true;
-    try {
-      this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
-      this.textarea.dispatchEvent(new Event("change", { bubbles: true }));
-    } finally {
-      this.dispatching = false;
-    }
-  }
-  /** Recharge l'éditeur depuis le textarea, sans émettre de mise à jour (pas de réécriture). */
-  load() {
-    const json = toEditorJSON(this.textarea.value, this.editor.schema, this.editor.tiptapSpip?.regles);
-    this.editor.commands.setContent(json, { emitUpdate: false });
-  }
-  /**
-   * Bascule visuel ⇄ source. Au retour en visuel, l'éditeur est rechargé une seule fois si la
-   * source a changé. Renvoie false si la source n'est pas représentable (on reste en source).
-   * @param {'visual'|'source'} mode
-   * @returns {boolean}
-   */
-  setMode(mode) {
-    if (mode === this.mode) return true;
-    if (mode === "source") {
-      this.flush();
-      this.mode = "source";
-      this.sourceDirty = false;
-      return true;
-    }
-    if (this.sourceDirty) {
-      try {
-        this.load();
-      } catch (error) {
-        console.warn("tiptap_spip : source non repr\xE9sentable, mode source conserv\xE9", error);
-        return false;
-      }
-    }
-    this.mode = "visual";
-    this.sourceDirty = false;
-    return true;
-  }
-  destroy() {
-    this.flush();
-    this.editor.off("update", this.onUpdate);
-    this.editor.off("blur", this.onFlush);
-    this.textarea.removeEventListener("input", this.onInput);
-    this.textarea.form?.removeEventListener("submit", this.onFlush, true);
-    this.$form?.off("form-pre-serialize.tts", this.onFlush);
-    globalThis.window?.removeEventListener("beforeunload", this.onFlush);
-    this.editor.destroy();
-  }
-};
-
 // src/services/cvt.js
 var ServiceUnavailable = class extends Error {
   constructor(message = "services de l'\xE9diteur indisponibles") {
@@ -27132,6 +27048,264 @@ var Services = class _Services {
       signal?.addEventListener("abort", abandonner, { once: true });
       xhr.send(body);
     });
+  }
+};
+
+// src/editor/collerImage.js
+var EXTENSIONS = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
+var deux = (n) => String(n).padStart(2, "0");
+function nommer(fichier, date = /* @__PURE__ */ new Date()) {
+  const extension = EXTENSIONS[fichier.type] ?? fichier.name.split(".").pop();
+  const capture = !fichier.name || /^image\.\w+$/i.test(fichier.name);
+  const base2 = capture ? `capture-${date.getFullYear()}${deux(date.getMonth() + 1)}${deux(date.getDate())}-${deux(date.getHours())}${deux(date.getMinutes())}${deux(date.getSeconds())}` : fichier.name.replace(/\.[^.]*$/, "");
+  return new File([fichier], `${base2}.${extension}`, { type: fichier.type, lastModified: fichier.lastModified });
+}
+function imageSeule(html) {
+  const body = new DOMParser().parseFromString(html, "text/html").body;
+  const images = body.querySelectorAll("img");
+  if (images.length !== 1 || body.textContent.trim() !== "") return false;
+  return [...body.querySelectorAll("*")].every((el) => el === images[0] || el.contains(images[0]));
+}
+function trierPressePapiers(donnees, { types, taille }) {
+  const fichiers = [...donnees?.files ?? []];
+  if (!fichiers.length) return null;
+  const html = donnees.getData("text/html");
+  if (html ? !imageSeule(html) : donnees.getData("text/plain").trim() !== "") return null;
+  const envoyer = [];
+  const refuses = [];
+  for (const fichier of fichiers) {
+    if (!types.includes(fichier.type)) refuses.push({ fichier, raison: "type" });
+    else if (taille && fichier.size > taille) refuses.push({ fichier, raison: "taille" });
+    else envoyer.push(fichier);
+  }
+  return { envoyer, refuses };
+}
+var compteur = 0;
+var nouvelId = () => `tts-img-${Date.now().toString(36)}-${++compteur}`;
+var marqueurSource = (id) => `<!-- envoi ${id} -->`;
+var CollerImages = class {
+  /**
+   * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor,
+   *           services: () => ?import('../services/cvt.js').Services, mode: () => 'visual'|'source',
+   *           signaler: (texte: string) => void, effacer: () => void, surChangement?: () => void }} options
+   *        services : lus à chaque collage (ils peuvent arriver après l'éditeur) ;
+   *        surChangement : appelé à chaque début et fin d'envoi
+   */
+  constructor({ textarea, editor, services, mode, signaler, effacer, surChangement = () => {
+  } }) {
+    Object.assign(this, { textarea, editor, services, mode, signaler, effacer, surChangement });
+    this.envois = /* @__PURE__ */ new Map();
+    this.onPaste = (event) => {
+      if (this.mode() === "source" && this.coller(event.clipboardData, "source")) event.preventDefault();
+    };
+    textarea.addEventListener("paste", this.onPaste);
+  }
+  enCours() {
+    return this.envois.size;
+  }
+  /** handlePaste de l'éditeur visuel (sous-éditeurs de note ou de multi : collage habituel). */
+  collerVisuel(view, event) {
+    if (view !== this.editor.view || view.state.selection.$from.parent.type.spec.code) return false;
+    return this.coller(event.clipboardData, "visual");
+  }
+  /**
+   * @returns {boolean} vrai si le collage est pris en charge (le collage habituel n'a pas lieu)
+   */
+  coller(donnees, mode) {
+    const services = this.services();
+    const config2 = services?.available ? services.images() : null;
+    const tri = config2 && trierPressePapiers(donnees, config2);
+    if (!tri) return false;
+    if (tri.refuses.length) {
+      this.signaler(tri.refuses.map(({ fichier, raison }) => label(raison === "type" ? "image_type_refuse" : "image_trop_grosse").replace("@nom@", fichier.name || "image")).join(" "));
+    } else {
+      this.effacer();
+    }
+    if (!tri.envoyer.length) return false;
+    const envois = tri.envoyer.map((fichier) => ({ id: nouvelId(), fichier: nommer(fichier), mode, controleur: new AbortController() }));
+    if (mode === "visual") {
+      ajouterMarqueurs(this.editor.view, envois.map((e) => e.id));
+    } else {
+      const { selectionStart, selectionEnd } = this.textarea;
+      this.textarea.setRangeText(envois.map((e) => marqueurSource(e.id)).join(""), selectionStart, selectionEnd, "end");
+      this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    for (const envoi of envois) {
+      this.envois.set(envoi.id, envoi);
+      this.emettre("image-recue", { fichier: envoi.fichier });
+      this.envoyer(services, envoi);
+    }
+    this.surChangement();
+    return true;
+  }
+  async envoyer(services, envoi) {
+    const { signal } = envoi.controleur;
+    try {
+      const resultat = await services.call("deposer_image", {}, {
+        fichier: envoi.fichier,
+        signal,
+        progression: (ratio) => envoi.mode === "visual" && progressionMarqueur(this.editor.view, envoi.id, ratio)
+      });
+      if (signal.aborted) return;
+      this.inserer(envoi, `<${resultat.raccourci}>`);
+      this.emettre("image-inseree", { fichier: envoi.fichier, id_document: resultat.id_document, raccourci: resultat.raccourci });
+    } catch (erreur) {
+      if (signal.aborted || erreur?.name === "AbortError") return;
+      this.retirer(envoi);
+      const message = erreur instanceof ServiceUnavailable || !erreur?.message ? label("image_echec") : erreur.message;
+      this.signaler(message);
+      this.emettre("image-erreur", { fichier: envoi.fichier, message });
+    } finally {
+      if (this.envois.delete(envoi.id)) this.surChangement();
+    }
+  }
+  /** Remplace le marqueur par le raccourci ; marqueur supprimé par le rédacteur : rien. */
+  inserer(envoi, raccourci) {
+    if (envoi.mode === "visual") {
+      remplacerMarqueur(this.editor, envoi.id, raccourci);
+      return;
+    }
+    this.remplacerSource(envoi.id, raccourci);
+  }
+  retirer(envoi) {
+    if (envoi.mode === "visual") {
+      if (!this.editor.isDestroyed) retirerMarqueurs(this.editor.view, [envoi.id]);
+      return;
+    }
+    this.remplacerSource(envoi.id, "");
+  }
+  /** Remplace le texte provisoire d'un envoi, sans toucher à la sélection ni aux autres marqueurs. */
+  remplacerSource(id, texte2) {
+    const marqueur = marqueurSource(id);
+    const debut = this.textarea.value.indexOf(marqueur);
+    if (debut < 0) return;
+    this.textarea.setRangeText(texte2, debut, debut + marqueur.length, "preserve");
+    this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  emettre(nom, detail) {
+    this.textarea.dispatchEvent(new CustomEvent(`tiptap-spip:${nom}`, { bubbles: true, detail }));
+  }
+  /** Abandonne les envois en cours et retire leurs marqueurs (« Enregistrer sans attendre », destruction). */
+  abandonner() {
+    const envois = [...this.envois.values()];
+    this.envois.clear();
+    for (const envoi of envois) {
+      envoi.controleur.abort();
+      this.retirer(envoi);
+    }
+    if (envois.length) this.surChangement();
+  }
+  destroy() {
+    this.abandonner();
+    this.textarea.removeEventListener("paste", this.onPaste);
+  }
+};
+
+// src/editor/createEditor.js
+function createEditor({ element: element2, source, ui: ui2 = null, tierces = [], extensions = coreExtensions({ ui: ui2, tierces }), editorProps = {} }) {
+  const regles = reglesSpip(extensions);
+  const content = toEditorJSON(source, getSchema(extensions), regles);
+  const editor = new Editor({
+    element: element2,
+    extensions,
+    content,
+    editorProps,
+    enableContentCheck: true,
+    onContentError: ({ error }) => {
+      throw error;
+    }
+  });
+  editor.tiptapSpip = { regles, tierces };
+  return editor;
+}
+
+// src/editor/TextareaBridge.js
+var TextareaBridge = class {
+  /**
+   * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor, delay?: number }} options
+   */
+  constructor({ textarea, editor, delay = 150 }) {
+    this.textarea = textarea;
+    this.editor = editor;
+    this.delay = delay;
+    this.mode = "visual";
+    this.timer = null;
+    this.dispatching = false;
+    this.sourceDirty = false;
+    this.onUpdate = () => this.schedule();
+    this.onFlush = () => this.flush();
+    this.onInput = () => {
+      if (!this.dispatching && this.mode === "source") this.sourceDirty = true;
+    };
+    editor.on("update", this.onUpdate);
+    editor.on("blur", this.onFlush);
+    textarea.addEventListener("input", this.onInput);
+    textarea.form?.addEventListener("submit", this.onFlush, true);
+    const $ = globalThis.jQuery;
+    this.$form = $ && textarea.form ? $(textarea.form) : null;
+    this.$form?.on("form-pre-serialize.tts", this.onFlush);
+    globalThis.window?.addEventListener("beforeunload", this.onFlush);
+  }
+  schedule() {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(this.onFlush, this.delay);
+  }
+  /** Écrit la sérialisation dans le textarea si elle diffère, avec événements input et change. */
+  flush() {
+    clearTimeout(this.timer);
+    this.timer = null;
+    if (this.mode !== "visual" || this.editor.isDestroyed) return;
+    const value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
+    if (value === this.textarea.value) return;
+    this.textarea.value = value;
+    this.dispatching = true;
+    try {
+      this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      this.textarea.dispatchEvent(new Event("change", { bubbles: true }));
+    } finally {
+      this.dispatching = false;
+    }
+  }
+  /** Recharge l'éditeur depuis le textarea, sans émettre de mise à jour (pas de réécriture). */
+  load() {
+    const json = toEditorJSON(this.textarea.value, this.editor.schema, this.editor.tiptapSpip?.regles);
+    this.editor.commands.setContent(json, { emitUpdate: false });
+  }
+  /**
+   * Bascule visuel ⇄ source. Au retour en visuel, l'éditeur est rechargé une seule fois si la
+   * source a changé. Renvoie false si la source n'est pas représentable (on reste en source).
+   * @param {'visual'|'source'} mode
+   * @returns {boolean}
+   */
+  setMode(mode) {
+    if (mode === this.mode) return true;
+    if (mode === "source") {
+      this.flush();
+      this.mode = "source";
+      this.sourceDirty = false;
+      return true;
+    }
+    if (this.sourceDirty) {
+      try {
+        this.load();
+      } catch (error) {
+        console.warn("tiptap_spip : source non repr\xE9sentable, mode source conserv\xE9", error);
+        return false;
+      }
+    }
+    this.mode = "visual";
+    this.sourceDirty = false;
+    return true;
+  }
+  destroy() {
+    this.flush();
+    this.editor.off("update", this.onUpdate);
+    this.editor.off("blur", this.onFlush);
+    this.textarea.removeEventListener("input", this.onInput);
+    this.textarea.form?.removeEventListener("submit", this.onFlush, true);
+    this.$form?.off("form-pre-serialize.tts", this.onFlush);
+    globalThis.window?.removeEventListener("beforeunload", this.onFlush);
+    this.editor.destroy();
   }
 };
 
@@ -28724,6 +28898,15 @@ var Instance = class {
     this.editor.on("transaction", this.majBarre);
     this.content.after(this.notes.element);
     this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
+    this.images = new CollerImages({
+      textarea,
+      editor: this.editor,
+      services: () => this.services,
+      mode: () => this.bridge.mode,
+      signaler: (texte2) => this.etat.signaler(texte2),
+      effacer: () => this.etat.effacer()
+    });
+    this.ui.collerImages = (view, event) => this.images.collerVisuel(view, event);
     textarea.before(this.wrapper);
     this.wrapper.append(textarea, this.etat.element);
     textarea.hidden = true;
@@ -28768,6 +28951,10 @@ var Instance = class {
   }
   /** @param {{ focus?: boolean }} options  focus : donner le focus à la zone affichée */
   toggleMode({ focus: focus2 = true } = {}) {
+    if (this.images.enCours()) {
+      this.etat.signaler(label("image_envoi_en_cours"));
+      return;
+    }
     const mode = this.bridge.mode === "visual" ? "source" : "visual";
     if (!this.bridge.setMode(mode)) return;
     const source = mode === "source";
@@ -28784,6 +28971,7 @@ var Instance = class {
     instances.delete(this);
     while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
     this.notes.destroy();
+    this.images.destroy();
     this.etat.destroy();
     this.editor.off("transaction", this.majBarre);
     if (this.pleinEcran()) this.togglePleinEcran(false);

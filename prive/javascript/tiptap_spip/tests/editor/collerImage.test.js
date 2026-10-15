@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nommer, trierPressePapiers } from '../../src/editor/collerImage.js';
+import { instances, tiptap_spip_init } from '../../src/main.js';
+import { ServiceError, ServiceUnavailable } from '../../src/services/cvt.js';
 
 const CONFIG = { types: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'], taille: 1000 };
 const fichier = (nom, type, taille = 10) => new File([new Uint8Array(taille)], nom, { type });
@@ -73,5 +75,154 @@ describe('trierPressePapiers (spec 10 §3)', () => {
 		const gros = fichier('gros.png', 'image/png', 1001);
 		expect(trierPressePapiers(presse({ files: [gros, jpg] }), CONFIG)).toEqual({ envoyer: [jpg], refuses: [{ fichier: gros, raison: 'taille' }] });
 		expect(trierPressePapiers(presse({ files: [gros] }), { ...CONFIG, taille: 0 }).envoyer).toEqual([gros]);
+	});
+});
+
+const tick = () => new Promise((r) => setTimeout(r, 0));
+
+/** Services simulés : annonce et réponses de deposer_image, dans l'ordre. */
+const services = (...reponses) => ({
+	// conteneur des services à la demande, retiré à la destruction de l'instance
+	container: document.createElement('div'),
+	available: true,
+	images: () => CONFIG,
+	call: vi.fn(async (operation, params, { fichier, signal, progression }) => {
+		const r = reponses.shift();
+		await tick();
+		if (signal?.aborted) throw new DOMException('abandon', 'AbortError');
+		progression?.(1);
+		if (r instanceof Error) throw r;
+		return r;
+	}),
+});
+
+/** Éditeur monté par tiptap_spip_init, services remplacés par `s`. */
+const monterInstance = (source, s, { mode = 'visual' } = {}) => {
+	document.body.innerHTML = `<form><textarea class="inserer_barre_edition" name="texte">${source}</textarea><button type="submit">Enregistrer</button></form>`;
+	tiptap_spip_init();
+	const instance = [...instances][0];
+	instance.services = s;
+	if (mode === 'source') instance.toggleMode({ focus: false });
+	return instance;
+};
+
+/** Événement paste avec un presse-papiers donné. */
+const coller = (cible, donnees) => {
+	const event = new Event('paste', { bubbles: true, cancelable: true });
+	Object.defineProperty(event, 'clipboardData', { value: donnees });
+	cible.dispatchEvent(event);
+	return event;
+};
+
+afterEach(() => {
+	for (const instance of [...instances]) instance.destroy();
+	document.body.innerHTML = '';
+	localStorage.clear();
+});
+
+describe('CollerImages (spec 10 §1, §3)', () => {
+	const png = () => fichier('', 'image/png');
+
+	it('visuel : deux images → deux appels dans l\'ordre, deux <docN>, événements', async () => {
+		const s = services({ id_document: 1, raccourci: 'doc1' }, { id_document: 2, raccourci: 'doc2' });
+		const instance = monterInstance('Texte', s);
+		instance.editor.commands.setTextSelection(6);
+		const recues = [];
+		const inserees = [];
+		instance.textarea.addEventListener('tiptap-spip:image-recue', (e) => recues.push(e.detail.fichier.name));
+		instance.textarea.addEventListener('tiptap-spip:image-inseree', (e) => inserees.push(e.detail.raccourci));
+		const event = coller(instance.editor.view.dom, presse({ files: [png(), fichier('b.jpg', 'image/jpeg')] }));
+		expect(event.defaultPrevented).toBe(true);
+		expect(instance.images.enCours()).toBe(2);
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		expect(s.call.mock.calls.map(([op, , { fichier: f }]) => [op, f.name.replace(/\d{8}-\d{6}/, 'D')])).toEqual([['deposer_image', 'capture-D.png'], ['deposer_image', 'b.jpg']]);
+		instance.bridge.flush();
+		expect(instance.textarea.value).toBe('Texte<doc1><doc2>');
+		expect(recues).toHaveLength(2);
+		expect(inserees).toEqual(['doc1', 'doc2']);
+	});
+
+	it('services en chargement : collage habituel ; collage suivant envoyé une fois les services là', async () => {
+		const instance = monterInstance('Texte', null);
+		expect(coller(instance.editor.view.dom, presse({ files: [png()] })).defaultPrevented).toBe(false);
+		instance.services = services({ id_document: 3, raccourci: 'doc3' });
+		expect(coller(instance.editor.view.dom, presse({ files: [png()] })).defaultPrevented).toBe(true);
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		instance.bridge.flush();
+		expect(instance.textarea.value).toContain('<doc3>');
+	});
+
+	it('opération indisponible ou services hors service : collage habituel', () => {
+		const instance = monterInstance('Texte', { ...services(), images: () => null });
+		expect(coller(instance.editor.view.dom, presse({ files: [png()] })).defaultPrevented).toBe(false);
+		instance.services = { ...services(), available: false };
+		expect(coller(instance.editor.view.dom, presse({ files: [png()] })).defaultPrevented).toBe(false);
+	});
+
+	it('refus avant envoi : message, sans bloquer l\'autre image', async () => {
+		const s = services({ id_document: 4, raccourci: 'doc4' });
+		const instance = monterInstance('Texte', s);
+		coller(instance.editor.view.dom, presse({ files: [fichier('c.pdf', 'application/pdf'), png()] }));
+		expect(instance.etat.message.textContent).toBe('Type de fichier non accepté : c.pdf.');
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		expect(s.call).toHaveBeenCalledTimes(1);
+	});
+
+	it('échec : marqueur retiré, rien inséré, message du serveur, événement image-erreur', async () => {
+		const instance = monterInstance('Texte', services(new ServiceError({ message_erreur: 'Ce type d’image n’est pas accepté.' })));
+		const erreurs = [];
+		instance.textarea.addEventListener('tiptap-spip:image-erreur', (e) => erreurs.push(e.detail.message));
+		coller(instance.editor.view.dom, presse({ files: [png()] }));
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		expect(instance.editor.view.dom.querySelector('.tts-envoi')).toBeNull();
+		instance.bridge.flush();
+		expect(instance.textarea.value).toBe('Texte');
+		expect(instance.etat.message.textContent).toBe('Ce type d’image n’est pas accepté.');
+		expect(erreurs).toEqual(['Ce type d’image n’est pas accepté.']);
+	});
+
+	it('session expirée : message générique', async () => {
+		const instance = monterInstance('Texte', services(new ServiceUnavailable()));
+		coller(instance.editor.view.dom, presse({ files: [png()] }));
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		expect(instance.etat.message.textContent).toBe('L’image n’a pas pu être envoyée (session expirée ou connexion perdue).');
+	});
+
+	it('mode source : marqueurs distincts dans le textarea, remplacés chacun par son <docN>', async () => {
+		const instance = monterInstance('Texte', services({ id_document: 5, raccourci: 'doc5' }, new ServiceError({ message_erreur: 'Refus' })), { mode: 'source' });
+		instance.textarea.setSelectionRange(5, 5);
+		coller(instance.textarea, presse({ files: [png(), png()] }));
+		expect(instance.textarea.value).toMatch(/^Texte<!-- envoi tts-img-[\w-]+ --><!-- envoi tts-img-[\w-]+ -->$/);
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		expect(instance.textarea.value).toBe('Texte<doc5>');
+		// le retour en visuel relit la source
+		instance.toggleMode({ focus: false });
+		expect(instance.editor.view.dom.querySelector('.tts-model')).not.toBeNull();
+	});
+
+	it('bascule de mode refusée pendant un envoi', async () => {
+		const instance = monterInstance('Texte', services({ id_document: 6, raccourci: 'doc6' }));
+		coller(instance.editor.view.dom, presse({ files: [png()] }));
+		instance.toggleMode({ focus: false });
+		expect(instance.mode()).toBe('visual');
+		expect(instance.etat.message.textContent).toBe('Une image est en cours d’envoi.');
+		await vi.waitFor(() => expect(instance.images.enCours()).toBe(0));
+		instance.toggleMode({ focus: false });
+		expect(instance.mode()).toBe('source');
+	});
+
+	it('destruction pendant un envoi : abandon, rien inséré', async () => {
+		const s = services({ id_document: 7, raccourci: 'doc7' });
+		const instance = monterInstance('Texte', s);
+		coller(instance.editor.view.dom, presse({ files: [png()] }));
+		const { signal } = s.call.mock.calls[0][2];
+		instance.destroy();
+		expect(signal.aborted).toBe(true);
+	});
+
+	it('collage dans un bloc de code : collage habituel', () => {
+		const instance = monterInstance('<code class="php">\n$a;\n</code>', services());
+		instance.editor.commands.setTextSelection(3);
+		expect(coller(instance.editor.view.dom, presse({ files: [png()] })).defaultPrevented).toBe(false);
 	});
 });
