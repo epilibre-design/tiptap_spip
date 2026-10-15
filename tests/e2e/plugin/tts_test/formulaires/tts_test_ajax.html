@@ -1,0 +1,13 @@
+<div class="formulaire_spip formulaire_tts_test_ajax">
+	[<p class="reponse_formulaire reponse_formulaire_ok" role="status">(#ENV*{message_ok})</p>]
+	[(#ENV{editable}|oui)
+	<form method="post" action="#ENV{action}"><div>
+		#ACTION_FORMULAIRE
+		<textarea name="texte" rows="5">#ENV{texte}</textarea>
+		<p class="boutons">
+			<button type="submit" name="brouillon" value="b">Brouillon</button>
+			<button type="submit" name="publier" value="p">Publier</button>
+		</p>
+	</div></form>
+	]
+</div>

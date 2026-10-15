@@ -20,6 +20,8 @@ export const activer = (...prefixes) => php(['activer', ...prefixes]);
 export const publier = (id) => php(['publier', String(id)]);
 export const configurer = (cle, valeur) => php(['config', cle, valeur]);
 export const effacerConfig = (cle) => php(['effacer_config', cle]);
+export const lireConfig = (cle) => php(['lire_config', cle]);
+export const documents = (objet, id) => JSON.parse(php(['documents', objet, String(id)]));
 
 /** Fins de ligne telles que le navigateur les soumet. */
 export const crlf = (s) => s.replace(/\r?\n/g, '\r\n');

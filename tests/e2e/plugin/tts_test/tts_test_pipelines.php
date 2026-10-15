@@ -4,9 +4,10 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 	return;
 }
 
-/** Le formulaire tts_test édite le texte de l'article passé en argument. */
+/** Les formulaires tts_test et tts_test_ajax éditent le texte de l'article passé en argument. */
 function tts_test_tiptap_spip_contextes($contextes) {
 	$contextes['tts_test'] = 'tts_test_contexte';
+	$contextes['tts_test_ajax'] = 'tts_test_contexte';
 	return $contextes;
 }
 

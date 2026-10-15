@@ -142,3 +142,17 @@ function faq_tiptap_spip_extensions(array $flux): array {
     par mégarde.
   - Le rendu reste à la charge du plugin. Une syntaxe en forme de modèle (`<faq|q=…>`) doit être
     transformée avant les modèles (`pre_echappe_html_propre`), car SPIP les traite avant `pre_propre`.
+
+## 6. Événements des images collées (lot L7.1)
+
+Le collage d'images ([10](10-coller-images.md)) émet sur le textarea des événements `CustomEvent`, qui
+remontent le DOM (`bubbles`). Leur `detail` :
+
+| Événement | `detail` |
+|-----------|----------|
+| `tiptap-spip:image-recue` | `{ fichier }` : le `File` envoyé, déjà renommé (`capture-…`) |
+| `tiptap-spip:image-inseree` | `{ fichier, id_document, raccourci }` (`raccourci` = `doc12`) |
+| `tiptap-spip:image-erreur` | `{ fichier, message }` : message du serveur, ou message générique si le service ne répond plus |
+
+Un envoi abandonné (éditeur détruit, « Enregistrer sans attendre ») n'émet ni `image-inseree` ni
+`image-erreur`.

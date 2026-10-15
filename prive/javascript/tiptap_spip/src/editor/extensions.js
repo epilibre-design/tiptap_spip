@@ -24,6 +24,7 @@ import { serializeIdiome } from '../spip/multi.js';
 import { SpipAnomalies } from './anomalies.js';
 import { coloration, colorationActive } from './coloration.js';
 import { SpipEdition } from './edition.js';
+import { SpipPasteImage } from './marqueurEnvoi.js';
 import { apercu, partieAffichee } from './texte.js';
 import { label as libelle } from '../ui/labels.js';
 
@@ -762,6 +763,7 @@ function extensionsDuCoeur({ headingLevels, ui }) {
 		SpipEdition,
 		SpipAnomalies,
 		SpipUi.configure({ ui }),
+		SpipPasteImage.configure({ ui }),
 	];
 }
 

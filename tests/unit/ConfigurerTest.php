@@ -26,6 +26,7 @@ final class ConfigurerTest extends TestCase
 
 		$this->assertSame('non', $valeurs['public']);
 		$this->assertSame('oui', $valeurs['crayons']);
+		$this->assertSame('oui', $valeurs['coller_images']);
 		$this->assertSame('visual', $valeurs['mode']);
 		$this->assertSame([2, 3, 4], $valeurs['niveaux']);
 		$this->assertSame(['article' => ['texte'], 'auteur' => ['bio'], 'syndic_article' => []], $valeurs['champs']);
@@ -59,10 +60,17 @@ final class ConfigurerTest extends TestCase
 		$this->assertTrue($retour['editable']);
 		// objet sans case cochée : aucun champ ; glossaires sans case cochée : aucun glossaire nommé
 		$this->assertSame(
-			['public' => 'oui', 'crayons' => 'non', 'mode' => 'source', 'niveaux' => [2, 5], 'champs' => ['article' => ['texte', 'ps'], 'auteur' => []], 'glossaires' => []],
+			['public' => 'oui', 'crayons' => 'non', 'coller_images' => 'non', 'mode' => 'source', 'niveaux' => [2, 5], 'champs' => ['article' => ['texte', 'ps'], 'auteur' => []], 'glossaires' => []],
 			$GLOBALS['_test_config']['tiptap_spip']
 		);
 		$this->assertSame(['texte', 'ps'], tiptap_spip_champs('article'));
+	}
+
+	public function testTraiterCollerImagesCoche(): void {
+		$GLOBALS['_test_request'] = ['coller_images' => 'oui', 'mode' => 'visual', 'niveaux' => ['2']];
+		formulaires_configurer_tiptap_spip_traiter_dist();
+
+		$this->assertSame('oui', $GLOBALS['_test_config']['tiptap_spip']['coller_images']);
 	}
 
 }

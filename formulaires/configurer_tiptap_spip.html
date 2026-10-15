@@ -23,6 +23,17 @@
 			</div>
 		</fieldset>
 		<fieldset>
+			<legend><:tiptap_spip:cfg_documents:></legend>
+			<div class="editer-groupe">
+				<div class="editer editer_coller_images">
+					<div class="choix">
+						<input type="checkbox" class="checkbox" name="coller_images" id="tts_cfg_coller_images" value="oui"[ (#ENV{coller_images}|=={oui}|oui)checked="checked"] />
+						<label for="tts_cfg_coller_images"><:tiptap_spip:cfg_coller_images:></label>
+					</div>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
 			<legend><:tiptap_spip:cfg_champs:></legend>
 			<p class="explication"><:tiptap_spip:cfg_champs_explication:></p>
 			[<span class="erreur_message">(#ENV*{erreurs/champs})</span>]

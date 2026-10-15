@@ -27,7 +27,7 @@ function tiptap_spip_spip5(): bool {
  * défaut. `champs` (objet → champs équipés) et `glossaires` (glossaires nommés proposés) valent
  * null tant qu'ils n'ont pas été choisis : tous les candidats.
  *
- * @return array{public: string, crayons: string, mode: string, niveaux: int[], champs: ?array, glossaires: ?string[]}
+ * @return array{public: string, crayons: string, coller_images: string, mode: string, niveaux: int[], champs: ?array, glossaires: ?string[]}
  */
 function tiptap_spip_config(): array {
 	include_spip('inc/config');
@@ -47,6 +47,8 @@ function tiptap_spip_config(): array {
 	return [
 		'public' => ($meta['public'] ?? '') === 'oui' ? 'oui' : 'non',
 		'crayons' => ($meta['crayons'] ?? '') === 'oui' ? 'oui' : 'non',
+		// collage d'images (spec 10 §6) : actif sauf s'il a été décoché
+		'coller_images' => ($meta['coller_images'] ?? '') === 'non' ? 'non' : 'oui',
 		'mode' => ($meta['mode'] ?? '') === 'source' ? 'source' : 'visual',
 		'niveaux' => $niveaux ?: TIPTAP_SPIP_NIVEAUX_DEFAUT,
 		'champs' => $champs,

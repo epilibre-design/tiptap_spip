@@ -5899,13 +5899,13 @@ var Configuration = class {
     this.pluginsByKey = /* @__PURE__ */ Object.create(null);
     this.fields = baseFields.slice();
     if (plugins)
-      plugins.forEach((plugin) => {
-        if (this.pluginsByKey[plugin.key])
-          throw new RangeError("Adding different instances of a keyed plugin (" + plugin.key + ")");
-        this.plugins.push(plugin);
-        this.pluginsByKey[plugin.key] = plugin;
-        if (plugin.spec.state)
-          this.fields.push(new FieldDesc(plugin.key, plugin.spec.state, plugin));
+      plugins.forEach((plugin2) => {
+        if (this.pluginsByKey[plugin2.key])
+          throw new RangeError("Adding different instances of a keyed plugin (" + plugin2.key + ")");
+        this.plugins.push(plugin2);
+        this.pluginsByKey[plugin2.key] = plugin2;
+        if (plugin2.spec.state)
+          this.fields.push(new FieldDesc(plugin2.key, plugin2.spec.state, plugin2));
       });
   }
 };
@@ -5940,8 +5940,8 @@ var EditorState = class _EditorState {
   filterTransaction(tr, ignore = -1) {
     for (let i2 = 0; i2 < this.config.plugins.length; i2++)
       if (i2 != ignore) {
-        let plugin = this.config.plugins[i2];
-        if (plugin.spec.filterTransaction && !plugin.spec.filterTransaction.call(plugin, tr, this))
+        let plugin2 = this.config.plugins[i2];
+        if (plugin2.spec.filterTransaction && !plugin2.spec.filterTransaction.call(plugin2, tr, this))
           return false;
       }
     return true;
@@ -5960,10 +5960,10 @@ var EditorState = class _EditorState {
     for (; ; ) {
       let haveNew = false;
       for (let i2 = 0; i2 < this.config.plugins.length; i2++) {
-        let plugin = this.config.plugins[i2];
-        if (plugin.spec.appendTransaction) {
+        let plugin2 = this.config.plugins[i2];
+        if (plugin2.spec.appendTransaction) {
           let n = seen ? seen[i2].n : 0, oldState = seen ? seen[i2].state : this;
-          let tr = n < trs.length && plugin.spec.appendTransaction.call(plugin, n ? trs.slice(n) : trs, oldState, newState);
+          let tr = n < trs.length && plugin2.spec.appendTransaction.call(plugin2, n ? trs.slice(n) : trs, oldState, newState);
           if (tr && newState.filterTransaction(tr, i2)) {
             tr.setMeta("appendedTransaction", rootTr);
             if (!seen) {
@@ -6044,9 +6044,9 @@ var EditorState = class _EditorState {
       for (let prop in pluginFields) {
         if (prop == "doc" || prop == "selection")
           throw new RangeError("The JSON fields `doc` and `selection` are reserved");
-        let plugin = pluginFields[prop], state = plugin.spec.state;
+        let plugin2 = pluginFields[prop], state = plugin2.spec.state;
         if (state && state.toJSON)
-          result[prop] = state.toJSON.call(plugin, this[plugin.key]);
+          result[prop] = state.toJSON.call(plugin2, this[plugin2.key]);
       }
     return result;
   }
@@ -6075,9 +6075,9 @@ var EditorState = class _EditorState {
       } else {
         if (pluginFields)
           for (let prop in pluginFields) {
-            let plugin = pluginFields[prop], state = plugin.spec.state;
-            if (plugin.key == field.name && state && state.fromJSON && Object.prototype.hasOwnProperty.call(json, prop)) {
-              instance[field.name] = state.fromJSON.call(plugin, config2, json[prop], instance);
+            let plugin2 = pluginFields[prop], state = plugin2.spec.state;
+            if (plugin2.key == field.name && state && state.fromJSON && Object.prototype.hasOwnProperty.call(json, prop)) {
+              instance[field.name] = state.fromJSON.call(plugin2, config2, json[prop], instance);
               return;
             }
           }
@@ -7453,7 +7453,7 @@ var ViewDesc = class {
   }
   // Used to check whether a given description corresponds to a
   // widget/mark/node.
-  matchesWidget(widget) {
+  matchesWidget(widget2) {
     return false;
   }
   matchesMark(mark2) {
@@ -7831,8 +7831,8 @@ var ViewDesc = class {
   }
 };
 var WidgetViewDesc = class extends ViewDesc {
-  constructor(parent, widget, view, pos) {
-    let self, dom = widget.type.toDOM;
+  constructor(parent, widget2, view, pos) {
+    let self, dom = widget2.type.toDOM;
     if (typeof dom == "function")
       dom = dom(view, () => {
         if (!self)
@@ -7840,7 +7840,7 @@ var WidgetViewDesc = class extends ViewDesc {
         if (self.parent)
           return self.parent.posBeforeChild(self);
       });
-    if (!widget.type.spec.raw) {
+    if (!widget2.type.spec.raw) {
       let elt = isElt(dom) ? dom : document.createElement("span");
       if (elt != dom)
         elt.appendChild(dom);
@@ -7849,12 +7849,12 @@ var WidgetViewDesc = class extends ViewDesc {
       elt.classList.add("ProseMirror-widget");
     }
     super(parent, [], dom, null);
-    this.widget = widget;
-    this.widget = widget;
+    this.widget = widget2;
+    this.widget = widget2;
     self = this;
   }
-  matchesWidget(widget) {
-    return this.dirty == NOT_DIRTY && widget.type.eq(this.widget.type);
+  matchesWidget(widget2) {
+    return this.dirty == NOT_DIRTY && widget2.type.eq(this.widget.type);
   }
   parseRule() {
     return { ignore: true };
@@ -8052,12 +8052,12 @@ var NodeViewDesc = class _NodeViewDesc extends ViewDesc {
     let compositionInChild = composition && composition.pos < 0;
     let updater = new ViewTreeUpdater(this, localComposition && localComposition.node, view);
     let addBuffers = this.node.inlineContent, atBufferPos = addBuffers && this.node.isBlock;
-    iterDeco(this.node, this.innerDeco, (widget, i2, insideNode) => {
-      if (widget.spec.marks)
-        updater.syncToMarks(widget.spec.marks, inline, view, i2);
-      else if (widget.type.side >= 0 && !insideNode)
+    iterDeco(this.node, this.innerDeco, (widget2, i2, insideNode) => {
+      if (widget2.spec.marks)
+        updater.syncToMarks(widget2.spec.marks, inline, view, i2);
+      else if (widget2.type.side >= 0 && !insideNode)
         updater.syncToMarks(i2 == this.node.childCount ? Mark.none : this.node.child(i2).marks, inline, view, i2);
-      updater.placeWidget(widget, view, off);
+      updater.placeWidget(widget2, view, off);
     }, (child, outerDeco, innerDeco, i2) => {
       updater.syncToMarks(child.marks, inline, view, i2);
       if (atBufferPos && child.isAtom && !child.isText)
@@ -8592,12 +8592,12 @@ var ViewTreeUpdater = class {
     this.top.children.splice(this.index++, 0, desc);
     this.changed = true;
   }
-  placeWidget(widget, view, pos) {
+  placeWidget(widget2, view, pos) {
     let next = this.index < this.top.children.length ? this.top.children[this.index] : null;
-    if (next && next.matchesWidget(widget) && (widget == next.widget || !next.widget.type.toDOM.parentNode)) {
+    if (next && next.matchesWidget(widget2) && (widget2 == next.widget || !next.widget.type.toDOM.parentNode)) {
       this.index++;
     } else {
-      let desc = new WidgetViewDesc(this.top, widget, view, pos);
+      let desc = new WidgetViewDesc(this.top, widget2, view, pos);
       this.top.children.splice(this.index++, 0, desc);
       this.changed = true;
     }
@@ -8689,23 +8689,23 @@ function iterDeco(parent, deco, onWidget, onNode) {
   }
   let decoIndex = 0, active = [], restNode = null;
   for (let parentIndex = 0; ; ) {
-    let widget, widgets;
+    let widget2, widgets;
     while (decoIndex < locals.length && locals[decoIndex].to == offset) {
       let next = locals[decoIndex++];
       if (next.widget) {
-        if (!widget)
-          widget = next;
+        if (!widget2)
+          widget2 = next;
         else
-          (widgets || (widgets = [widget])).push(next);
+          (widgets || (widgets = [widget2])).push(next);
       }
     }
-    if (widget) {
+    if (widget2) {
       if (widgets) {
         widgets.sort(compareSide);
         for (let i2 = 0; i2 < widgets.length; i2++)
           onWidget(widgets[i2], parentIndex, !!restNode);
       } else {
-        onWidget(widget, parentIndex, !!restNode);
+        onWidget(widget2, parentIndex, !!restNode);
       }
     }
     let child, index;
@@ -11805,14 +11805,14 @@ var EditorView = class {
       this.prevDirectPlugins = this.directPlugins;
       this.destroyPluginViews();
       for (let i2 = 0; i2 < this.directPlugins.length; i2++) {
-        let plugin = this.directPlugins[i2];
-        if (plugin.spec.view)
-          this.pluginViews.push(plugin.spec.view(this));
+        let plugin2 = this.directPlugins[i2];
+        if (plugin2.spec.view)
+          this.pluginViews.push(plugin2.spec.view(this));
       }
       for (let i2 = 0; i2 < this.state.plugins.length; i2++) {
-        let plugin = this.state.plugins[i2];
-        if (plugin.spec.view)
-          this.pluginViews.push(plugin.spec.view(this));
+        let plugin2 = this.state.plugins[i2];
+        if (plugin2.spec.view)
+          this.pluginViews.push(plugin2.spec.view(this));
       }
     } else {
       for (let i2 = 0; i2 < this.pluginViews.length; i2++) {
@@ -12124,8 +12124,8 @@ function changedNodeViews(a, b) {
     nB++;
   return nA != nB;
 }
-function checkStateComponent(plugin) {
-  if (plugin.spec.state || plugin.spec.filterTransaction || plugin.spec.appendTransaction)
+function checkStateComponent(plugin2) {
+  if (plugin2.spec.state || plugin2.spec.filterTransaction || plugin2.spec.appendTransaction)
     throw new RangeError("Plugins passed directly to the view must not have a state component");
 }
 
@@ -14783,9 +14783,9 @@ var toggleWrap = (typeOrName, attributes = {}) => ({ state, commands }) => {
 var undoInputRule = () => ({ state, dispatch }) => {
   const plugins = state.plugins;
   for (let i2 = 0; i2 < plugins.length; i2 += 1) {
-    const plugin = plugins[i2];
+    const plugin2 = plugins[i2];
     let undoable;
-    if (plugin.spec.isInputRules && (undoable = plugin.getState(state))) {
+    if (plugin2.spec.isInputRules && (undoable = plugin2.getState(state))) {
       if (dispatch) {
         const tr = state.tr;
         const toUndo = undoable.transform;
@@ -15703,7 +15703,7 @@ function createRuleTransaction(config2) {
   };
 }
 function applyRule(config2) {
-  const { editor, from: from2, to, text: text2, rule, match, plugin, insertText } = config2;
+  const { editor, from: from2, to, text: text2, rule, match, plugin: plugin2, insertText } = config2;
   const { view } = editor;
   const { inputTransaction, tr } = createRuleTransaction({
     editor,
@@ -15739,7 +15739,7 @@ function applyRule(config2) {
   }
   closeHistory(tr);
   tr.setMeta("inputRule", true);
-  if (rule.undoable) tr.setMeta(plugin, {
+  if (rule.undoable) tr.setMeta(plugin2, {
     transform: tr,
     from: from2,
     to: inputEnd,
@@ -15756,7 +15756,7 @@ function matchesDocument($from, match, text2) {
 }
 function run$1(config2) {
   var _ref;
-  const { editor, from: from2, to, text: text2, rules, plugin, insertText } = config2;
+  const { editor, from: from2, to, text: text2, rules, plugin: plugin2, insertText } = config2;
   const { view } = editor;
   if (view.composing) return false;
   const $from = view.state.doc.resolve(from2);
@@ -15772,7 +15772,7 @@ function run$1(config2) {
       text: text2,
       rule,
       match,
-      plugin,
+      plugin: plugin2,
       insertText
     })) return true;
   }
@@ -15780,13 +15780,13 @@ function run$1(config2) {
 }
 function inputRulesPlugin(props) {
   const { editor, rules } = props;
-  const plugin = new Plugin({
+  const plugin2 = new Plugin({
     state: {
       init() {
         return null;
       },
       apply(tr, prev, state) {
-        const stored = tr.getMeta(plugin);
+        const stored = tr.getMeta(plugin2);
         if (stored) return stored;
         const simulatedInputMeta = tr.getMeta("applyInputRules");
         if (!!simulatedInputMeta) setTimeout(() => {
@@ -15801,7 +15801,7 @@ function inputRulesPlugin(props) {
             to,
             text: text2,
             rules,
-            plugin
+            plugin: plugin2
           });
         });
         return tr.selectionSet || tr.docChanged ? null : prev;
@@ -15815,7 +15815,7 @@ function inputRulesPlugin(props) {
           to,
           text: text2,
           rules,
-          plugin,
+          plugin: plugin2,
           insertText: true
         });
       },
@@ -15828,7 +15828,7 @@ function inputRulesPlugin(props) {
             to: $cursor.pos,
             text: "",
             rules,
-            plugin
+            plugin: plugin2
           });
         });
         return false;
@@ -15842,14 +15842,14 @@ function inputRulesPlugin(props) {
           to: $cursor.pos,
           text: "\n",
           rules,
-          plugin
+          plugin: plugin2
         });
         return false;
       }
     },
     isInputRules: true
   });
-  return plugin;
+  return plugin2;
 }
 var Extendable = class {
   constructor(config2 = {}) {
@@ -17219,8 +17219,8 @@ var Editor = class extends EventEmitter {
   * @param handlePlugins Control how to merge the plugin into the existing plugins.
   * @returns The new editor state
   */
-  registerPlugin(plugin, handlePlugins) {
-    const plugins = isFunction(handlePlugins) ? handlePlugins(plugin, [...this.state.plugins]) : [...this.state.plugins, plugin];
+  registerPlugin(plugin2, handlePlugins) {
+    const plugins = isFunction(handlePlugins) ? handlePlugins(plugin2, [...this.state.plugins]) : [...this.state.plugins, plugin2];
     const state = this.state.reconfigure({ plugins });
     this.view.updateState(state);
     return state;
@@ -17237,7 +17237,7 @@ var Editor = class extends EventEmitter {
     let plugins = prevPlugins;
     [].concat(nameOrPluginKeyToRemove).forEach((nameOrPluginKey) => {
       const name = typeof nameOrPluginKey === "string" ? `${nameOrPluginKey}$` : nameOrPluginKey.key;
-      plugins = plugins.filter((plugin) => !plugin.key.startsWith(name));
+      plugins = plugins.filter((plugin2) => !plugin2.key.startsWith(name));
     });
     if (prevPlugins.length === plugins.length) return;
     const state = this.state.reconfigure({ plugins });
@@ -22992,12 +22992,12 @@ function updateColumnsOnResize(node2, colgroup, table, defaultCellMinWidth, over
 }
 var columnResizingPluginKey = new PluginKey("tableColumnResizing");
 function columnResizing({ handleWidth = 5, cellMinWidth = 25, defaultCellMinWidth = 100, View = TableView, lastColumnResizable = true } = {}) {
-  const plugin = new Plugin({
+  const plugin2 = new Plugin({
     key: columnResizingPluginKey,
     state: {
       init(_, state) {
         var _plugin$spec;
-        const nodeViews = (_plugin$spec = plugin.spec) === null || _plugin$spec === void 0 || (_plugin$spec = _plugin$spec.props) === null || _plugin$spec === void 0 ? void 0 : _plugin$spec.nodeViews;
+        const nodeViews = (_plugin$spec = plugin2.spec) === null || _plugin$spec === void 0 || (_plugin$spec = _plugin$spec.props) === null || _plugin$spec === void 0 ? void 0 : _plugin$spec.nodeViews;
         const tableName = tableNodeTypes(state.schema).table.name;
         if (View && nodeViews) nodeViews[tableName] = (node2, view) => {
           return new View(node2, defaultCellMinWidth, view);
@@ -23031,7 +23031,7 @@ function columnResizing({ handleWidth = 5, cellMinWidth = 25, defaultCellMinWidt
       nodeViews: {}
     }
   });
-  return plugin;
+  return plugin2;
 }
 var ResizeState = class ResizeState2 {
   constructor(activeHandle, dragging) {
@@ -24772,14 +24772,14 @@ var TrailingNode = Extension.create({
   },
   addProseMirrorPlugins() {
     var _this$editor$schema$t;
-    const plugin = new PluginKey(this.name);
+    const plugin2 = new PluginKey(this.name);
     const defaultNode = this.options.node || ((_this$editor$schema$t = this.editor.schema.topNodeType.contentMatch.defaultType) === null || _this$editor$schema$t === void 0 ? void 0 : _this$editor$schema$t.name) || "paragraph";
     const disabledNodes = Object.entries(this.editor.schema.nodes).map(([, value]) => value).filter((node2) => (this.options.notAfter || []).concat(defaultNode).includes(node2.name));
     return [new Plugin({
-      key: plugin,
+      key: plugin2,
       appendTransaction: (transactions, __, state) => {
         const { doc: doc4, tr, schema } = state;
-        const shouldInsertNodeAtEnd = plugin.getState(state);
+        const shouldInsertNodeAtEnd = plugin2.getState(state);
         const endPosition = doc4.content.size;
         const type = schema.nodes[defaultNode];
         if (transactions.some((transaction) => transaction.getMeta("skipTrailingNode"))) return;
@@ -24976,6 +24976,12 @@ var DEFAUTS = {
   brut_source: "Source SPIP, relue quand on applique",
   brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
   modele_aria: "Mod\xE8le @modele@",
+  image_envoi: "Envoi de l\u2019image\u2026",
+  image_echec: "L\u2019image n\u2019a pas pu \xEAtre envoy\xE9e (session expir\xE9e ou connexion perdue).",
+  image_envoi_en_cours: "Une image est en cours d\u2019envoi.",
+  image_enregistrer_sans_attendre: "Enregistrer sans attendre",
+  image_trop_grosse: "Image trop volumineuse : @nom@.",
+  image_type_refuse: "Type de fichier non accept\xE9 : @nom@.",
   zone_texte: "Texte",
   appliquer: "Appliquer",
   annuler: "Annuler"
@@ -25651,6 +25657,70 @@ var SpipEdition = Extension.create({
   })]
 });
 
+// src/editor/marqueurEnvoi.js
+var cleMarqueurs = new PluginKey("spipUploadPlaceholder");
+function widget(id) {
+  const element2 = document.createElement("span");
+  element2.className = "tts-envoi";
+  element2.dataset.ttsEnvoi = id;
+  element2.contentEditable = "false";
+  const barre = document.createElement("progress");
+  barre.max = 1;
+  element2.append(label("image_envoi"), " ", barre);
+  return element2;
+}
+var plugin = (ui2) => new Plugin({
+  key: cleMarqueurs,
+  state: {
+    init: () => /* @__PURE__ */ new Map(),
+    apply(tr, marqueurs) {
+      const meta = tr.getMeta(cleMarqueurs);
+      if (!tr.docChanged && !meta) return marqueurs;
+      const suite = /* @__PURE__ */ new Map();
+      for (const [id, pos] of marqueurs) suite.set(id, tr.mapping.map(pos));
+      for (const { id, pos } of meta?.ajouter ?? []) suite.set(id, pos);
+      for (const id of meta?.retirer ?? []) suite.delete(id);
+      return suite;
+    }
+  },
+  props: {
+    decorations(state) {
+      const marqueurs = cleMarqueurs.getState(state);
+      if (!marqueurs.size) return null;
+      return DecorationSet.create(state.doc, [...marqueurs].map(([id, pos]) => Decoration.widget(pos, () => widget(id), { key: id })));
+    },
+    // collage d'images (spec 10 §3) : décidé à chaque collage par l'instance (services, disponibilité)
+    handlePaste: (view, event) => ui2?.collerImages?.(view, event) ?? false
+  }
+});
+function ajouterMarqueurs(view, ids) {
+  const pos = view.state.selection.to;
+  view.dispatch(view.state.tr.setMeta(cleMarqueurs, { ajouter: ids.map((id) => ({ id, pos })) }).setMeta("addToHistory", false));
+}
+var positionMarqueur = (state, id) => cleMarqueurs.getState(state)?.get(id) ?? null;
+function retirerMarqueurs(view, ids) {
+  view.dispatch(view.state.tr.setMeta(cleMarqueurs, { retirer: ids }).setMeta("addToHistory", false));
+}
+function remplacerMarqueur(editor, id, source) {
+  const pos = positionMarqueur(editor.state, id);
+  if (pos === null) return false;
+  return editor.chain().command(({ tr }) => {
+    tr.setMeta(cleMarqueurs, { retirer: [id] });
+    return true;
+  }).insertContentAt(pos, { type: "spipModel", attrs: { model: parseModel(source) } }, { updateSelection: false }).run();
+}
+function progressionMarqueur(view, id, ratio) {
+  const barre = view.dom.querySelector(`[data-tts-envoi="${id}"] progress`);
+  if (barre && ratio !== null) barre.value = ratio;
+}
+var SpipPasteImage = Extension.create({
+  name: "spipPasteImage",
+  addOptions: () => ({ ui: null }),
+  addProseMirrorPlugins() {
+    return [plugin(this.options.ui)];
+  }
+});
+
 // src/editor/extensions.js
 var hidden = (fallback = null, keepOnSplit = true) => ({ default: fallback, rendered: false, keepOnSplit });
 var TOP_BLOCKS = [
@@ -26254,7 +26324,8 @@ function extensionsDuCoeur({ headingLevels, ui: ui2 }) {
     UndoRedo,
     SpipEdition,
     SpipAnomalies,
-    SpipUi.configure({ ui: ui2 })
+    SpipUi.configure({ ui: ui2 }),
+    SpipPasteImage.configure({ ui: ui2 })
   ];
 }
 var NoteDocument = SpipDocument.extend({ content: "(paragraph | bulletList | orderedList | spipModelBlock)+" });
@@ -26846,6 +26917,294 @@ function allerRetour(source, extensions = []) {
   };
 }
 
+// src/services/cvt.js
+var ServiceUnavailable = class extends Error {
+  constructor(message = "services de l'\xE9diteur indisponibles") {
+    super(message);
+    this.name = "ServiceUnavailable";
+  }
+};
+var ServiceError = class extends Error {
+  constructor(erreurs) {
+    super(erreurs.message_erreur || Object.values(erreurs).join(" "));
+    this.name = "ServiceError";
+    this.erreurs = erreurs;
+  }
+};
+var abandon = () => new DOMException("envoi abandonn\xE9", "AbortError");
+var texte = (html) => new DOMParser().parseFromString(String(html), "text/html").body.textContent.trim();
+var lireJSON = (doc4, selecteur2) => {
+  const script = doc4.querySelector(selecteur2);
+  return script ? JSON.parse(script.textContent) : null;
+};
+function parseResponse(html) {
+  if (!html || !html.includes("ajax-form-is-ok")) return null;
+  const doc4 = new DOMParser().parseFromString(html, "text/html");
+  const form = doc4.querySelector("form");
+  if (!form) return null;
+  const ok = lireJSON(doc4, "script.tts-resultat");
+  const brutes = lireJSON(doc4, "script.tts-erreurs");
+  const erreurs = brutes ? Object.fromEntries(Object.entries(brutes).map(([k, v]) => [k, texte(v)])) : null;
+  return { form, operation: ok?.operation, resultat: ok?.resultat, erreurs };
+}
+var Services = class _Services {
+  /**
+   * Formulaire de services d'un textarea : conteneur dont l'identifiant d'instance est celui du
+   * formulaire d'édition du textarea, et le champ son name.
+   * @param {HTMLTextAreaElement} textarea
+   * @param {{ fetch?: typeof fetch }} [options]
+   * @returns {Services|null} null : pas de services (mode dégradé)
+   */
+  static forTextarea(textarea, options) {
+    const id = textarea.form?.dataset.ttsInstance;
+    if (!id) return null;
+    const container = [...document.querySelectorAll(".tts-services")].find((c) => c.dataset.ttsInstance === id && c.dataset.ttsChamp === textarea.name);
+    return container?.querySelector("form") ? new _Services(container, options) : null;
+  }
+  /** @param {HTMLElement} container  élément .tts-services */
+  constructor(container, { fetch = globalThis.fetch?.bind(globalThis), xhr = () => new XMLHttpRequest() } = {}) {
+    this.container = container;
+    this.fetch = fetch;
+    this.xhr = xhr;
+    this.available = true;
+    this.queue = Promise.resolve();
+  }
+  /**
+   * Collage d'images (spec 10 §6) : configuration annoncée par charger() sur le formulaire courant,
+   * null si deposer_image est indisponible.
+   * @returns {{ types: string[], extensions: Record<string, string>, taille: number } | null}
+   */
+  images() {
+    const brut2 = this.container.querySelector("form")?.dataset.ttsImages;
+    if (!brut2) return null;
+    try {
+      return JSON.parse(brut2);
+    } catch {
+      return null;
+    }
+  }
+  /**
+   * Appelle une opération ; les appels sont sérialisés (chacun repart du formulaire renouvelé
+   * par la réponse précédente).
+   * @param {string} operation  previsu_modele, titre_lien, rechercher, deposer_image…
+   * @param {object} params  valeurs non chaînes envoyées en JSON
+   * @param {{ fichier?: File, progression?: (ratio: number|null) => void, signal?: AbortSignal }} [options]
+   *        fichier : envoyé dans le champ « fichier », par XMLHttpRequest (progression) ;
+   *        signal : abandon de l'appel, en attente ou en cours (AbortError)
+   * @returns {Promise<any>} résultat de l'opération
+   */
+  call(operation, params = {}, options = {}) {
+    const run2 = () => this.send(operation, params, options);
+    const promise = this.queue.then(run2, run2);
+    this.queue = promise.catch(() => {
+    });
+    return promise;
+  }
+  async send(operation, params, { fichier = null, progression = null, signal = null } = {}) {
+    if (signal?.aborted) throw abandon();
+    if (!this.available) throw new ServiceUnavailable();
+    const form = this.container.querySelector("form");
+    const body = new FormData(form);
+    body.set("var_ajax", "form");
+    body.set("operation", operation);
+    for (const [key, value] of Object.entries(params)) {
+      body.set(key, typeof value === "string" ? value : JSON.stringify(value));
+    }
+    if (fichier) body.set("fichier", fichier, fichier.name);
+    const url = form.getAttribute("action");
+    let reponse;
+    try {
+      const html = fichier ? await this.envoyer(url, body, { progression, signal }) : await (await this.fetch(url, { method: "POST", body, credentials: "same-origin" })).text();
+      reponse = parseResponse(html);
+    } catch (erreur) {
+      if (erreur?.name === "AbortError") throw erreur;
+      reponse = null;
+    }
+    if (!reponse) {
+      this.available = false;
+      throw new ServiceUnavailable();
+    }
+    form.replaceWith(document.importNode(reponse.form, true));
+    if (reponse.erreurs) throw new ServiceError(reponse.erreurs);
+    return reponse.resultat;
+  }
+  /**
+   * POST par XMLHttpRequest, seule voie qui donne la progression d'un envoi (fetch ne la donne pas).
+   * @returns {Promise<string>} réponse ; rejet TypeError (réseau) ou AbortError
+   */
+  envoyer(url, body, { progression, signal }) {
+    return new Promise((resolve, reject) => {
+      const xhr = this.xhr();
+      const abandonner = () => xhr.abort();
+      const fin = (suite) => {
+        signal?.removeEventListener("abort", abandonner);
+        suite();
+      };
+      xhr.open("POST", url);
+      xhr.withCredentials = true;
+      if (progression) xhr.upload.onprogress = (e) => progression(e.lengthComputable ? e.loaded / e.total : null);
+      xhr.onload = () => fin(() => resolve(xhr.responseText));
+      xhr.onerror = () => fin(() => reject(new TypeError("\xE9chec de l'envoi")));
+      xhr.onabort = () => fin(() => reject(abandon()));
+      signal?.addEventListener("abort", abandonner, { once: true });
+      xhr.send(body);
+    });
+  }
+};
+
+// src/editor/collerImage.js
+var EXTENSIONS = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
+var deux = (n) => String(n).padStart(2, "0");
+function nommer(fichier, date = /* @__PURE__ */ new Date(), extensions = {}) {
+  const extension = extensions[fichier.type] ?? EXTENSIONS[fichier.type] ?? fichier.name.split(".").pop();
+  const capture = !fichier.name || /^image\.\w+$/i.test(fichier.name);
+  const base2 = capture ? `capture-${date.getFullYear()}${deux(date.getMonth() + 1)}${deux(date.getDate())}-${deux(date.getHours())}${deux(date.getMinutes())}${deux(date.getSeconds())}` : fichier.name.replace(/\.[^.]*$/, "");
+  return new File([fichier], `${base2}.${extension}`, { type: fichier.type, lastModified: fichier.lastModified });
+}
+function imageSeule(html) {
+  const body = new DOMParser().parseFromString(html, "text/html").body;
+  const images = body.querySelectorAll("img");
+  if (images.length !== 1 || body.textContent.trim() !== "") return false;
+  return [...body.querySelectorAll("*")].every((el) => el === images[0] || el.contains(images[0]));
+}
+function trierPressePapiers(donnees, { types, taille }) {
+  const fichiers = [...donnees?.files ?? []];
+  if (!fichiers.length) return null;
+  const html = donnees.getData("text/html");
+  if (html ? !imageSeule(html) : donnees.getData("text/plain").trim() !== "") return null;
+  const envoyer = [];
+  const refuses = [];
+  for (const fichier of fichiers) {
+    if (!types.includes(fichier.type)) refuses.push({ fichier, raison: "type" });
+    else if (taille && fichier.size > taille) refuses.push({ fichier, raison: "taille" });
+    else envoyer.push(fichier);
+  }
+  return { envoyer, refuses };
+}
+var compteur = 0;
+var nouvelId = () => `tts-img-${Date.now().toString(36)}-${++compteur}`;
+var marqueurSource = (id) => `<!-- envoi ${id} -->`;
+var CollerImages = class {
+  /**
+   * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor,
+   *           services: () => ?import('../services/cvt.js').Services, mode: () => 'visual'|'source',
+   *           signaler: (texte: string) => void, effacer: () => void, surChangement?: () => void }} options
+   *        services : lus à chaque collage (ils peuvent arriver après l'éditeur) ;
+   *        surChangement : appelé à chaque début et fin d'envoi
+   */
+  constructor({ textarea, editor, services, mode, signaler, effacer, surChangement = () => {
+  } }) {
+    Object.assign(this, { textarea, editor, services, mode, signaler, effacer, surChangement });
+    this.envois = /* @__PURE__ */ new Map();
+    this.onPaste = (event) => {
+      if (this.mode() === "source" && this.coller(event.clipboardData, "source")) event.preventDefault();
+    };
+    textarea.addEventListener("paste", this.onPaste);
+  }
+  enCours() {
+    return this.envois.size;
+  }
+  /** handlePaste de l'éditeur visuel (sous-éditeurs de note ou de multi : collage habituel). */
+  collerVisuel(view, event) {
+    if (view !== this.editor.view || view.state.selection.$from.parent.type.spec.code) return false;
+    return this.coller(event.clipboardData, "visual");
+  }
+  /**
+   * @returns {boolean} vrai si le collage est pris en charge (le collage habituel n'a pas lieu)
+   */
+  coller(donnees, mode) {
+    const services = this.services();
+    const config2 = services?.available ? services.images() : null;
+    const tri = config2 && trierPressePapiers(donnees, config2);
+    if (!tri) return false;
+    if (tri.refuses.length) {
+      this.signaler(tri.refuses.map(({ fichier, raison }) => label(raison === "type" ? "image_type_refuse" : "image_trop_grosse").replace("@nom@", fichier.name || "image")).join(" "));
+    } else {
+      this.effacer();
+    }
+    if (!tri.envoyer.length) return false;
+    const envois = tri.envoyer.map((fichier) => ({ id: nouvelId(), fichier: nommer(fichier, /* @__PURE__ */ new Date(), config2.extensions), mode, controleur: new AbortController() }));
+    if (mode === "visual") {
+      ajouterMarqueurs(this.editor.view, envois.map((e) => e.id));
+    } else {
+      const fin = this.textarea.selectionEnd;
+      this.textarea.setRangeText(envois.map((e) => marqueurSource(e.id)).join(""), fin, fin, "preserve");
+      this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    for (const envoi of envois) {
+      this.envois.set(envoi.id, envoi);
+      this.emettre("image-recue", { fichier: envoi.fichier });
+      this.envoyer(services, envoi);
+    }
+    this.surChangement();
+    return true;
+  }
+  async envoyer(services, envoi) {
+    const { signal } = envoi.controleur;
+    try {
+      const resultat = await services.call("deposer_image", {}, {
+        fichier: envoi.fichier,
+        signal,
+        progression: (ratio) => envoi.mode === "visual" && progressionMarqueur(this.editor.view, envoi.id, ratio)
+      });
+      if (signal.aborted) return;
+      if (!this.inserer(envoi, `<${resultat.raccourci}>`)) return;
+      this.emettre("image-inseree", { fichier: envoi.fichier, id_document: resultat.id_document, raccourci: resultat.raccourci });
+    } catch (erreur) {
+      if (signal.aborted || erreur?.name === "AbortError") return;
+      this.retirer(envoi);
+      const message = erreur instanceof ServiceUnavailable || !erreur?.message ? label("image_echec") : erreur.message;
+      this.signaler(message);
+      this.emettre("image-erreur", { fichier: envoi.fichier, message });
+    } finally {
+      if (this.envois.delete(envoi.id)) this.surChangement();
+    }
+  }
+  /**
+   * Remplace le marqueur par le raccourci.
+   * @returns {boolean} false si le marqueur n'existe plus (supprimé par le rédacteur) : rien d'inséré
+   */
+  inserer(envoi, raccourci) {
+    return envoi.mode === "visual" ? remplacerMarqueur(this.editor, envoi.id, raccourci) : this.remplacerSource(envoi.id, raccourci);
+  }
+  retirer(envoi) {
+    if (envoi.mode === "visual") {
+      if (!this.editor.isDestroyed) retirerMarqueurs(this.editor.view, [envoi.id]);
+      return;
+    }
+    this.remplacerSource(envoi.id, "");
+  }
+  /**
+   * Remplace le texte provisoire d'un envoi, sans toucher à la sélection ni aux autres marqueurs.
+   * @returns {boolean} false si le texte provisoire n'est plus là
+   */
+  remplacerSource(id, texte2) {
+    const marqueur = marqueurSource(id);
+    const debut = this.textarea.value.indexOf(marqueur);
+    if (debut < 0) return false;
+    this.textarea.setRangeText(texte2, debut, debut + marqueur.length, "preserve");
+    this.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  }
+  emettre(nom, detail) {
+    this.textarea.dispatchEvent(new CustomEvent(`tiptap-spip:${nom}`, { bubbles: true, detail }));
+  }
+  /** Abandonne les envois en cours et retire leurs marqueurs (« Enregistrer sans attendre », destruction). */
+  abandonner() {
+    const envois = [...this.envois.values()];
+    this.envois.clear();
+    for (const envoi of envois) {
+      envoi.controleur.abort();
+      this.retirer(envoi);
+    }
+    if (envois.length) this.surChangement();
+  }
+  destroy() {
+    this.abandonner();
+    this.textarea.removeEventListener("paste", this.onPaste);
+  }
+};
+
 // src/editor/createEditor.js
 function createEditor({ element: element2, source, ui: ui2 = null, tierces = [], extensions = coreExtensions({ ui: ui2, tierces }), editorProps = {} }) {
   const regles = reglesSpip(extensions);
@@ -26863,6 +27222,87 @@ function createEditor({ element: element2, source, ui: ui2 = null, tierces = [],
   editor.tiptapSpip = { regles, tierces };
   return editor;
 }
+
+// src/editor/soumission.js
+var SoumissionRetenue = class {
+  /**
+   * @param {{ form: HTMLFormElement, enCours: () => boolean,
+   *           signaler: (texte: string, action: { libelle: string, faire: () => void }) => void,
+   *           effacer: () => void, abandonner: () => void }} options
+   */
+  constructor({ form, enCours, signaler, effacer, abandonner }) {
+    Object.assign(this, { form, enCours, signaler, effacer, abandonner });
+    this.attente = false;
+    this.bouton = null;
+    this.onSubmit = (event) => {
+      if (!this.retenir(event.submitter)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    form.addEventListener("submit", this.onSubmit, true);
+    this.onPreSerialize = (event, $form, options, veto) => {
+      if (this.retenir(form.clk) && veto) veto.veto = true;
+    };
+    const bibliotheques = [...new Set([globalThis.jQuery, globalThis.cQuery].filter(Boolean))];
+    this.$forms = bibliotheques.map(($) => $(form));
+    for (const $form of this.$forms) $form.on("form-pre-serialize.ttsimages", this.onPreSerialize);
+  }
+  /** Vrai si la soumission est retenue (envois en cours) ; le bouton est gardé pour la relance. */
+  retenir(bouton) {
+    if (!this.enCours()) return false;
+    this.attente = true;
+    this.bouton = bouton ?? null;
+    this.signaler(label("image_envoi_en_cours"), { libelle: label("image_enregistrer_sans_attendre"), faire: () => this.sansAttendre() });
+    return true;
+  }
+  /** À chaque fin d'envoi : la soumission retenue repart après le dernier. */
+  verifier() {
+    if (this.attente && !this.enCours()) this.relancer();
+  }
+  /**
+   * « Enregistrer sans attendre » : abandonner() prévient l'instance (surChangement), dont le
+   * verifier() relance déjà la soumission ; le relancer() qui suit ne fait alors plus rien. Il ne sert
+   * que s'il n'y avait plus d'envoi à abandonner.
+   */
+  sansAttendre() {
+    this.abandonner();
+    this.relancer();
+  }
+  /**
+   * Relance unique de la soumission retenue. requestSubmit reprend la voie d'origine : le submit relance
+   * ajaxSubmit() d'un formulaire AJAX. jquery.form ne sérialise le bouton que s'il est form.clk, que
+   * son écouteur de clic remet à null 100 ms après le clic : il est rétabli le temps de la relance
+   * (ajaxSubmit sérialise de façon synchrone, dans l'écouteur submit).
+   */
+  relancer() {
+    if (!this.attente || this.detruite) return;
+    this.attente = false;
+    this.effacer();
+    const bouton = this.bouton?.isConnected && this.bouton.form === this.form ? this.bouton : null;
+    this.bouton = null;
+    if (!bouton) {
+      this.form.requestSubmit();
+      return;
+    }
+    this.form.clk = bouton;
+    try {
+      this.form.requestSubmit(bouton);
+    } finally {
+      if (this.form.clk === bouton) this.form.clk = null;
+    }
+  }
+  /**
+   * Éditeur détruit (crayon fermé, rechargement AJAX) : la soumission retenue est annulée, aucune
+   * relance ne part ensuite, même quand l'abandon des envois appelle encore verifier().
+   */
+  destroy() {
+    this.detruite = true;
+    this.attente = false;
+    this.bouton = null;
+    this.form.removeEventListener("submit", this.onSubmit, true);
+    for (const $form of this.$forms) $form.off("form-pre-serialize.ttsimages", this.onPreSerialize);
+  }
+};
 
 // src/editor/TextareaBridge.js
 var TextareaBridge = class {
@@ -26951,96 +27391,6 @@ var TextareaBridge = class {
     this.$form?.off("form-pre-serialize.tts", this.onFlush);
     globalThis.window?.removeEventListener("beforeunload", this.onFlush);
     this.editor.destroy();
-  }
-};
-
-// src/services/cvt.js
-var ServiceUnavailable = class extends Error {
-  constructor(message = "services de l'\xE9diteur indisponibles") {
-    super(message);
-    this.name = "ServiceUnavailable";
-  }
-};
-var ServiceError = class extends Error {
-  constructor(erreurs) {
-    super(erreurs.message_erreur || Object.values(erreurs).join(" "));
-    this.name = "ServiceError";
-    this.erreurs = erreurs;
-  }
-};
-var texte = (html) => new DOMParser().parseFromString(String(html), "text/html").body.textContent.trim();
-var lireJSON = (doc4, selecteur2) => {
-  const script = doc4.querySelector(selecteur2);
-  return script ? JSON.parse(script.textContent) : null;
-};
-function parseResponse(html) {
-  if (!html || !html.includes("ajax-form-is-ok")) return null;
-  const doc4 = new DOMParser().parseFromString(html, "text/html");
-  const form = doc4.querySelector("form");
-  if (!form) return null;
-  const ok = lireJSON(doc4, "script.tts-resultat");
-  const brutes = lireJSON(doc4, "script.tts-erreurs");
-  const erreurs = brutes ? Object.fromEntries(Object.entries(brutes).map(([k, v]) => [k, texte(v)])) : null;
-  return { form, operation: ok?.operation, resultat: ok?.resultat, erreurs };
-}
-var Services = class _Services {
-  /**
-   * Formulaire de services d'un textarea : conteneur dont l'identifiant d'instance est celui du
-   * formulaire d'édition du textarea, et le champ son name.
-   * @param {HTMLTextAreaElement} textarea
-   * @param {{ fetch?: typeof fetch }} [options]
-   * @returns {Services|null} null : pas de services (mode dégradé)
-   */
-  static forTextarea(textarea, options) {
-    const id = textarea.form?.dataset.ttsInstance;
-    if (!id) return null;
-    const container = [...document.querySelectorAll(".tts-services")].find((c) => c.dataset.ttsInstance === id && c.dataset.ttsChamp === textarea.name);
-    return container?.querySelector("form") ? new _Services(container, options) : null;
-  }
-  /** @param {HTMLElement} container  élément .tts-services */
-  constructor(container, { fetch = globalThis.fetch?.bind(globalThis) } = {}) {
-    this.container = container;
-    this.fetch = fetch;
-    this.available = true;
-    this.queue = Promise.resolve();
-  }
-  /**
-   * Appelle une opération ; les appels sont sérialisés (chacun repart du formulaire renouvelé
-   * par la réponse précédente).
-   * @param {string} operation  previsu_modele, titre_lien, rechercher
-   * @param {object} params  valeurs non chaînes envoyées en JSON
-   * @returns {Promise<any>} résultat de l'opération
-   */
-  call(operation, params = {}) {
-    const run2 = () => this.send(operation, params);
-    const promise = this.queue.then(run2, run2);
-    this.queue = promise.catch(() => {
-    });
-    return promise;
-  }
-  async send(operation, params) {
-    if (!this.available) throw new ServiceUnavailable();
-    const form = this.container.querySelector("form");
-    const body = new FormData(form);
-    body.set("var_ajax", "form");
-    body.set("operation", operation);
-    for (const [key, value] of Object.entries(params)) {
-      body.set(key, typeof value === "string" ? value : JSON.stringify(value));
-    }
-    let reponse;
-    try {
-      const res = await this.fetch(form.getAttribute("action"), { method: "POST", body, credentials: "same-origin" });
-      reponse = parseResponse(await res.text());
-    } catch {
-      reponse = null;
-    }
-    if (!reponse) {
-      this.available = false;
-      throw new ServiceUnavailable();
-    }
-    form.replaceWith(document.importNode(reponse.form, true));
-    if (reponse.erreurs) throw new ServiceError(reponse.erreurs);
-    return reponse.resultat;
   }
 };
 
@@ -28469,14 +28819,18 @@ var StatusBar = class {
     this.element.setAttribute("aria-label", label("etat"));
     this.mots = document.createElement("span");
     this.mots.className = "tts-etat__mots";
-    const annonce = document.createElement("span");
-    annonce.setAttribute("aria-live", "polite");
+    this.annonce = document.createElement("span");
+    this.annonce.setAttribute("aria-live", "polite");
     this.anomalies = document.createElement("button");
     this.anomalies.type = "button";
     this.anomalies.className = "tts-etat__anomalies";
     this.anomalies.addEventListener("click", () => this.suivante());
-    annonce.append(this.anomalies);
-    this.element.append(this.mots, annonce);
+    this.annonce.append(this.anomalies);
+    this.message = document.createElement("span");
+    this.message.className = "tts-etat__message";
+    this.message.setAttribute("role", "status");
+    this.message.hidden = true;
+    this.element.append(this.message, this.mots, this.annonce);
     this.source = false;
     this.render = ({ transaction }) => {
       if (transaction.docChanged) this.afficher();
@@ -28484,13 +28838,37 @@ var StatusBar = class {
     editor.on("transaction", this.render);
     this.afficher();
   }
-  /** Mode source : barre masquée. */
+  /** Mode source : seul le message reste affiché. */
   setMode(source) {
     this.source = source;
     this.afficher();
   }
+  /**
+   * Message dans la barre, avec éventuellement un bouton d'action ; remplace le précédent.
+   * @param {string} texte
+   * @param {{ libelle: string, faire: () => void }} [action]
+   */
+  signaler(texte2, action = null) {
+    this.message.replaceChildren(texte2);
+    if (action) {
+      const bouton = document.createElement("button");
+      bouton.type = "button";
+      bouton.textContent = action.libelle;
+      bouton.addEventListener("click", () => action.faire());
+      this.message.append(" ", bouton);
+    }
+    this.message.hidden = false;
+    this.afficher();
+  }
+  effacer() {
+    this.message.replaceChildren();
+    this.message.hidden = true;
+    this.afficher();
+  }
   afficher() {
-    this.element.hidden = this.source;
+    this.element.hidden = this.source && this.message.hidden;
+    this.mots.hidden = this.source;
+    this.annonce.hidden = this.source;
     if (this.source) return;
     const { doc: doc4 } = this.editor.state;
     const mots = doc4.textBetween(0, doc4.content.size, " ", " ").match(/\S+/g)?.length ?? 0;
@@ -28605,6 +28983,28 @@ var Instance = class {
     this.editor.on("transaction", this.majBarre);
     this.content.after(this.notes.element);
     this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
+    let soumission = null;
+    this.images = new CollerImages({
+      textarea,
+      editor: this.editor,
+      services: () => this.services,
+      mode: () => this.bridge.mode,
+      signaler: (texte2) => this.etat.signaler(texte2),
+      effacer: () => this.etat.effacer(),
+      surChangement: () => {
+        this.toolbar.maj();
+        soumission?.verifier();
+      }
+    });
+    this.ui.collerImages = (view, event) => this.images.collerVisuel(view, event);
+    soumission = textarea.form ? new SoumissionRetenue({
+      form: textarea.form,
+      enCours: () => this.images.enCours() > 0,
+      signaler: (texte2, action) => this.etat.signaler(texte2, action),
+      effacer: () => this.etat.effacer(),
+      abandonner: () => this.images.abandonner()
+    }) : null;
+    this.soumission = soumission;
     textarea.before(this.wrapper);
     this.wrapper.append(textarea, this.etat.element);
     textarea.hidden = true;
@@ -28649,6 +29049,10 @@ var Instance = class {
   }
   /** @param {{ focus?: boolean }} options  focus : donner le focus à la zone affichée */
   toggleMode({ focus: focus2 = true } = {}) {
+    if (this.images.enCours()) {
+      this.etat.signaler(label("image_envoi_en_cours"));
+      return;
+    }
     const mode = this.bridge.mode === "visual" ? "source" : "visual";
     if (!this.bridge.setMode(mode)) return;
     const source = mode === "source";
@@ -28665,6 +29069,8 @@ var Instance = class {
     instances.delete(this);
     while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
     this.notes.destroy();
+    this.soumission?.destroy();
+    this.images.destroy();
     this.etat.destroy();
     this.editor.off("transaction", this.majBarre);
     if (this.pleinEcran()) this.togglePleinEcran(false);

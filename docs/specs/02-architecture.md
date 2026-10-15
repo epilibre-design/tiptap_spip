@@ -251,7 +251,12 @@ Champ `operation` + paramètres, validés dans `verifier()` (liste blanche, tail
 | `rechercher` | `q`, `objets` (liste JSON) | `q` de 2 à 100 caractères, objets parmi `article, rubrique, breve, document, auteur, mot, site` | `[{objet, id, titre, raccourci}]` (`raccourci` = `article12`), filtré par `autoriser('voir')` **avant** de retenir les résultats (des objets invisibles en tête ne masquent pas les suivants), hors poubelle, 20 résultats max, les plus récemment modifiés d'abord (`maj`) tous types confondus : une suite par type, lue par pages de 50, fusionnée par `maj` |
 | `idiomes` | `cles` (liste JSON de `module:cle` ou `cle`) | 1 à 50 clés, ≤ 100 caractères, forme de la regex de `Idiomes::collecter()` | `[{cle, texte}]` : traduction par `inc_traduire` dans la langue de l'objet édité (sinon celle du site), sans balises ; `texte` nul pour une chaîne absente (SPIP laisse alors le raccourci) — **lot L4.2** |
 
-Opération prévue au lot L7.1 : `deposer_image` (un appel par image collée, appels sérialisés), cf. [10](10-coller-images.md) §5.
+| `deposer_image` | `fichier` (dans `$_FILES`) | un seul fichier, envoi PHP complet, extension et type réel (`finfo`) concordants et acceptés par `spip_types_documents` ; opération disponible (medias actif, réglage `coller_images`, `autoriser('joindredocument')`) ; messages dans `message_erreur` | `{id_document, raccourci}` (`raccourci` = `doc12`) ; document ajouté en mode `document`, lié à l'objet (ou à `-id_auteur` pour un objet nouveau) — **lot L7.1**, cf. [10](10-coller-images.md) §5 |
+
+`charger()` annonce la disponibilité de `deposer_image`, les types acceptés et la taille maximale dans
+l'attribut `data-tts-images` du `<form>` de services, renouvelé à chaque réponse. Un appel avec fichier
+(`deposer_image`, un appel par image, dans la même file sérialisée) passe par `XMLHttpRequest` : progression
+de l'envoi et abandon (`AbortSignal`) ; un abandon n'est pas une panne du service.
 
 Réalisé au lot L2.2 (`formulaires/tiptap_spip.php`, `src/services/cvt.js`). Constats sur SPIP 4.4 :
 

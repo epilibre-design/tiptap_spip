@@ -38,6 +38,11 @@ function test_reset_globals(): void {
 		'TITRE' => ['supprimer_numero(typo(%s, "TYPO", $connect, $Pile[0]))'],
 		'NOM_SITE' => ['typo(%s, "TYPO", $connect, $Pile[0])'],
 	];
+	$GLOBALS['_test_autoriser'] = static fn () => true;
+	$GLOBALS['_test_sql'] = [];
+	$GLOBALS['_test_plugins'] = ['medias'];
+	$GLOBALS['_test_fonctions'] = [];
+	$GLOBALS['visiteur_session'] = ['id_auteur' => 1];
 }
 
 test_reset_globals();
@@ -134,6 +139,41 @@ if (!function_exists('url_absolue')) {
 if (!function_exists('protocole_implicite')) {
 	function protocole_implicite(string $url): string {
 		return preg_replace(',^https?:,', '', $url);
+	}
+}
+
+if (!function_exists('autoriser')) {
+	/** Simulation : décision de $GLOBALS['_test_autoriser'], qui reçoit les arguments. */
+	function autoriser(string $faire, $type = '', $id = null, $qui = null, $opt = null): bool {
+		return (bool) ($GLOBALS['_test_autoriser'])($faire, $type, $id);
+	}
+}
+
+if (!function_exists('sql_allfetsel')) {
+	/** Simulation : lignes de $GLOBALS['_test_sql'][table], sans interpréter la requête. */
+	function sql_allfetsel($select = [], $from = [], $where = [], $groupby = [], $orderby = [], $limit = ''): array {
+		return $GLOBALS['_test_sql'][$from] ?? [];
+	}
+}
+
+if (!function_exists('corriger_extension')) {
+	/** Simulation : ecrire/inc/documents.php. */
+	function corriger_extension($ext) {
+		$ext = preg_replace(',[^a-z0-9],i', '', $ext);
+		return ['htm' => 'html', 'jpeg' => 'jpg', 'tiff' => 'tif', 'aif' => 'aiff', 'mpeg' => 'mpg'][$ext] ?? $ext;
+	}
+}
+
+if (!function_exists('test_plugin_actif')) {
+	function test_plugin_actif(string $plugin): bool {
+		return in_array($plugin, $GLOBALS['_test_plugins'], true);
+	}
+}
+
+if (!function_exists('charger_fonction')) {
+	/** Simulation : fonction de $GLOBALS['_test_fonctions']["dossier/nom"]. */
+	function charger_fonction(string $nom, string $dossier = 'exec', bool $continue = false) {
+		return $GLOBALS['_test_fonctions']["$dossier/$nom"] ?? ($continue ? false : throw new RuntimeException("$dossier/$nom non simulée"));
 	}
 }
 
