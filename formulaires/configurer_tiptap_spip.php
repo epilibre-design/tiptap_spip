@@ -33,6 +33,7 @@ function formulaires_configurer_tiptap_spip_charger_dist() {
 	return [
 		'public' => $config['public'],
 		'crayons' => $config['crayons'],
+		'coller_images' => $config['coller_images'],
 		'mode' => $config['mode'],
 		'niveaux' => $config['niveaux'],
 		'champs' => tiptap_spip_champs_par_objet(),
@@ -82,6 +83,7 @@ function formulaires_configurer_tiptap_spip_traiter_dist() {
 	ecrire_config('tiptap_spip', [
 		'public' => _request('public') === 'oui' ? 'oui' : 'non',
 		'crayons' => _request('crayons') === 'oui' ? 'oui' : 'non',
+		'coller_images' => _request('coller_images') === 'oui' ? 'oui' : 'non',
 		'mode' => _request('mode') === 'source' ? 'source' : 'visual',
 		'niveaux' => array_values(array_intersect(TIPTAP_SPIP_NIVEAUX, array_map('intval', tiptap_spip_cases(_request('niveaux'))))),
 		'champs' => $champs,

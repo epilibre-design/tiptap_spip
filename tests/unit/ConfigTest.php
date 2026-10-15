@@ -13,9 +13,16 @@ final class ConfigTest extends TestCase
 
 	public function testDefautsSansConfiguration(): void {
 		$this->assertSame(
-			['public' => 'non', 'crayons' => 'non', 'mode' => 'visual', 'niveaux' => [2, 3, 4], 'champs' => null, 'glossaires' => null],
+			['public' => 'non', 'crayons' => 'non', 'coller_images' => 'oui', 'mode' => 'visual', 'niveaux' => [2, 3, 4], 'champs' => null, 'glossaires' => null],
 			tiptap_spip_config()
 		);
+	}
+
+	public function testCollerImagesDesactivableSeulementParNon(): void {
+		$GLOBALS['_test_config']['tiptap_spip'] = ['coller_images' => 'non'];
+		$this->assertSame('non', tiptap_spip_config()['coller_images']);
+		$GLOBALS['_test_config']['tiptap_spip'] = ['coller_images' => 'autre'];
+		$this->assertSame('oui', tiptap_spip_config()['coller_images']);
 	}
 
 	public function testValeursInvalidesRemplaceesParLesDefauts(): void {
