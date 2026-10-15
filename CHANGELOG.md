@@ -6,6 +6,9 @@
   que lorsque le texte contient des notes.
 - Le formulaire d'une note n'a plus de boutons au-dessus de sa zone de texte (gras, italique, lien,
   glossaire, modèle) : seulement la zone de texte, avec Appliquer, Supprimer la note et Annuler.
+- Le panneau des notes sous l'éditeur est lisible : texte gris foncé sur une zone gris clair, séparée
+  du texte par un filet, avec un survol discret. Dans l'espace privé, les notes s'affichaient en blanc
+  sur blanc.
 
 ## [1.2.0] - 2026-10-15
 
