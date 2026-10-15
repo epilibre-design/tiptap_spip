@@ -29008,6 +29008,7 @@ var SELECTOR = [
   "textarea.inserer_barre_edition",
   "textarea.inserer_barre_forum",
   '.formulaire_spip textarea[name="texte"]',
+  "form[data-tts-champs] textarea",
   "textarea[data-tts-toolbar]"
 ].join(", ");
 var CRAYONS = ".formulaire_crayon textarea.crayon-active";

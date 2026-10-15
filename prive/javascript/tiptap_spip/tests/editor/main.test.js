@@ -384,6 +384,16 @@ describe('tiptap_spip_init', () => {
 		expect(document.querySelector('textarea[name=chapo]').classList.contains('no_barre')).toBe(false);
 	});
 
+	it('formulaire d\'objet : les champs de data-tts-champs sont équipés sans les classes du porte-plume', () => {
+		page(`<form class="formulaire_spip" data-tts-champs="texte descriptif">
+			<textarea name="descriptif">a</textarea>
+			<textarea name="texte">b</textarea>
+			<textarea name="notes">c</textarea>
+		</form>`);
+		tiptap_spip_init();
+		expect([...instances].map((i) => i.textarea.name)).toEqual(['descriptif', 'texte']);
+	});
+
 	it('crayons : seulement les champs configurés des objets connus', () => {
 		const crayon = (cle, nom, champ) => `<form class="formulaire_crayon"><input class="crayon-id" value="${cle}"><input type="hidden" name="name_${cle}" value="${nom}"><textarea class="crayon-active" name="content_${cle}_${champ}">x</textarea></form>`;
 		page(crayon('w1', 'article-texte-1', 'texte') + crayon('w2', 'article-chapo-1', 'chapo') + crayon('w3', 'livre-resume-2', 'resume'));

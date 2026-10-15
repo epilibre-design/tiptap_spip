@@ -24,6 +24,9 @@
 
 ### Corrigé
 
+- Champs équipés : les champs cochés dans la configuration (descriptif, chapeau, post-scriptum,
+  biographie…) s'ouvrent bien dans l'éditeur, et pas seulement le Texte. Ils étaient ignorés
+  faute de porter les classes du porte-plume (#7).
 - Crayons : un texte modifié sans saisie au clavier (document ou modèle inséré, fichier déposé…) puis
   enregistré aussitôt, sans quitter l'éditeur, partait avec l'ancien texte. Il est maintenant bien
   enregistré.
