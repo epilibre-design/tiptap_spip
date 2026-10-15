@@ -21,7 +21,8 @@ for (const fichier of ['base.spip', 'melanges.spip', 'blancs.spip', 'liens.spip'
 		const source = readFileSync(`${repo}tests/corpus/${fichier}`, 'utf8');
 		const id = await editer(page, source);
 		await expect(page.locator('textarea[name=texte]')).toBeHidden();
-		await expect(page.locator('.markItUp')).toHaveCount(0);
+		// porte-plume retiré du texte ; les autres champs (chapeau…) peuvent le garder
+		await expect(page.locator('.editer_texte .markItUp')).toHaveCount(0);
 		await enregistrer(page);
 
 		const temoin = await editer(page, source, { sansEditeur: true });

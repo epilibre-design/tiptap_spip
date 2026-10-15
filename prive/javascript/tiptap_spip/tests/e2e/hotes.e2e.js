@@ -23,7 +23,8 @@ const servicesCharges = (page) => page.locator('#tts-services .tts-services').co
 
 /** Article publié ouvert dans le site public, session d'administrateur. */
 async function articlePublic(page, source, { chapo } = {}) {
-	const id = await editer(page, source);
+	// crayon du chapeau : champs équipés de la configuration par défaut, pas le seul texte de editer()
+	const id = await editer(page, source, { champs: chapo ? 'defaut' : 'texte' });
 	if (chapo) ecrireTexte(id, chapo, 'chapo');
 	publier(id);
 	await page.goto(`/spip.php?page=article&id_article=${id}&var_mode=calcul`);

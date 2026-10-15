@@ -29,20 +29,30 @@ export const crlf = (s) => s.replace(/\r?\n/g, '\r\n');
 export const configure = (test) => test.skip(!process.env.TTS_SITE || !process.env.TTS_URL, 'TTS_SITE et TTS_URL requis');
 
 /**
+ * Champs équipés des articles pendant les tests : le seul texte, un éditeur par page, même sur un site
+ * qui affiche le chapeau ou le post-scriptum. Clé effacée en fin de suite (nettoyage.js).
+ */
+export const CHAMPS_ARTICLE = 'tiptap_spip/champs/article';
+
+/**
  * Crée un article, ouvre une session et charge sa page d'édition.
- * @param {{ sansEditeur?: boolean, source?: boolean, avant?: (id: number) => void, titre?: string, auteur?: number }} options
+ * @param {{ sansEditeur?: boolean, source?: boolean, avant?: (id: number) => void, titre?: string, auteur?: number, champs?: 'texte'|'defaut'|'garder' }} options
  *        sansEditeur : bundle bloqué, textarea natif ; source : éditeur attendu en mode source ; avant : préparation après la création de
  *        l'article (document lié…) ; titre : titre de l'article (défaut « Test tiptap_spip ») ;
- *        auteur : auteur de l'article et de la session (1, l'administrateur, par défaut)
+ *        auteur : auteur de l'article et de la session (1, l'administrateur, par défaut) ;
+ *        champs : champs équipés des articles, le seul texte (défaut), ceux de la configuration par
+ *        défaut (réglage effacé) ou ceux de la configuration en place (garder)
  */
-export async function editer(page, source, { sansEditeur = false, source: modeSource = false, avant, titre = 'Test tiptap_spip', auteur = 1 } = {}) {
+export async function editer(page, source, { sansEditeur = false, source: modeSource = false, avant, titre = 'Test tiptap_spip', auteur = 1, champs = 'texte' } = {}) {
+	if (champs === 'texte') configurer(CHAMPS_ARTICLE, 'texte');
+	else if (champs === 'defaut') effacerConfig(CHAMPS_ARTICLE);
 	const { id_article: id, cookie } = JSON.parse(php(['preparer', 'tts-e2e', titre, String(auteur)], source));
 	avant?.(id);
 	const url = new URL(process.env.TTS_URL);
 	await page.context().addCookies([{ name: 'spip_session', value: cookie, domain: url.hostname, path: '/' }]);
 	if (sansEditeur) await page.route(/tiptap_spip(\.min)?\.js/, (route) => route.abort());
 	await page.goto(`/ecrire/?exec=article_edit&id_article=${id}`);
-	if (!sansEditeur) await expect(page.locator(modeSource ? '.tts-editor textarea' : '.tts-editor .ProseMirror')).toBeVisible();
+	if (!sansEditeur) await expect(page.locator(modeSource ? '.tts-editor textarea' : '.tts-editor .ProseMirror').first()).toBeVisible();
 	return id;
 }
 
