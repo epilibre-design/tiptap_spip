@@ -33,9 +33,16 @@ const reduiteATort = (liste) => liste.evaluate((l) => {
 	return l.scrollHeight > l.clientHeight && rect.bottom < window.innerHeight - 20 && rect.top > 20;
 });
 
-/** Ouvre chaque menu de la barre et vérifie qu'il est entièrement affiché. */
+/**
+ * Texte des tests : avec un multi, pour que le menu de la langue affichée (masqué sans multi) soit
+ * présent et vérifié comme les autres.
+ */
+const TEXTE = 'Texte <multi>[fr]un[en]one</multi>';
+
+/** Ouvre chaque menu affiché de la barre et vérifie qu'il est entièrement affiché. */
 async function chaqueMenu(page, { pleinEcran = false } = {}) {
-	const menus = page.locator('.tts-editor .tts-toolbar .tts-menu > button');
+	// un menu masqué (langue affichée sans multi, outil absent) ne s'ouvre pas : il n'est pas parcouru
+	const menus = page.locator('.tts-editor .tts-toolbar .tts-menu:not([hidden]) > button');
 	const n = await menus.count();
 	expect(n).toBeGreaterThan(0);
 	for (let k = 0; k < n; k++) {
@@ -56,7 +63,8 @@ async function chaqueMenu(page, { pleinEcran = false } = {}) {
 for (const largeur of [640, 1440]) {
 	test(`fenêtre de ${largeur} px : chaque menu ouvert est entièrement affiché`, async ({ page }) => {
 		await page.setViewportSize({ width: largeur, height: 700 });
-		await editer(page, 'Texte');
+		await editer(page, TEXTE);
+		await expect(page.locator('.tts-toolbar .tts-menu:not([hidden]) > button[aria-label^="Langue affichée"]')).toHaveCount(1);
 		await chaqueMenu(page);
 	});
 }
@@ -66,7 +74,7 @@ for (const largeur of [640, 1440]) {
 for (const hauteur of [420, 220]) {
 	test(`plein écran, fenêtre de ${hauteur} px de haut : chaque menu tient dans la fenêtre, sans réduction inutile`, async ({ page }) => {
 		await page.setViewportSize({ width: 1000, height: hauteur });
-		await editer(page, 'Texte');
+		await editer(page, TEXTE);
 		await page.locator('.ProseMirror').click();
 		await page.keyboard.press('F11');
 		await expect(page.locator('.tts-editor--plein-ecran')).toBeVisible();
