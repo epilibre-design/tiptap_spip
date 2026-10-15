@@ -1,5 +1,10 @@
 ## [Non publié]
 
+### Corrigé
+
+- Le panneau « Notes (0) » ne s'affiche plus sous l'éditeur d'un texte sans note : il n'apparaît
+  que lorsque le texte contient des notes.
+
 ## [1.2.0] - 2026-10-15
 
 ### Ajouté

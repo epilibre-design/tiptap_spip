@@ -462,6 +462,11 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	font-size: 0.9em;
 }
 
+/* sans note : masqué, même si le reset de l'espace privé affiche details en block */
+.tts-notes[hidden] {
+	display: none;
+}
+
 .tts-notes__liste {
 	margin: 0.25em 0 0;
 	padding-left: 0;
