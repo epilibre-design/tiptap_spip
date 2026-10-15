@@ -19,7 +19,6 @@
 	<!-- détail des reprises et des inspirations : CREDITS.md -->
 	<licence lien="https://spdx.org/licenses/GPL-3.0-or-later.html">GPL-3.0-or-later</licence>
 
-	<utilise nom="porte_plume" />
 	<!-- catalogue des modèles : formulaires YAML en modalbox -->
 	<utilise nom="inserer_modeles" />
 	<!-- coloration syntaxique des blocs de code : highlight.js et thème du plugin -->
