@@ -39,11 +39,13 @@ test('réglages enregistrés : champ décoché laissé au porte-plume, mode sour
 	await expect(form.getByRole('group', { name: 'Articles' }).getByLabel('Chapeau')).not.toBeChecked();
 
 	await editer(page, 'Texte', { source: true, champs: 'garder', avant: (id) => ecrireTexte(id, 'Chapeau', 'chapo') });
-	// texte équipé, ouvert en mode source ; chapeau laissé au porte-plume
-	await expect(page.locator('.tts-editor')).toHaveCount(1);
+	// texte équipé, ouvert en mode source ; chapeau laissé au porte-plume (les autres champs affichés
+	// par le site, descriptif ou post-scriptum, restent équipés)
+	const texte = page.locator('.editer_texte');
+	await expect(texte.locator('.tts-editor')).toHaveCount(1);
 	await expect(page.locator('textarea[name=chapo]')).not.toHaveAttribute('data-tts-mounted');
-	await page.locator('.tts-outil[aria-label=Source]').click();
-	await page.locator('.tts-outil[aria-label=Titre]').click();
+	await texte.locator('.tts-outil[aria-label=Source]').click();
+	await texte.locator('.tts-outil[aria-label=Titre]').click();
 	await expect(page.locator('.tts-menu--titre [role=menuitemradio]')).toHaveText(['Paragraphe', 'Intertitre', 'Titre de niveau 4', 'Titre de niveau 5']);
 
 	// formulaire invalide : aucun niveau
