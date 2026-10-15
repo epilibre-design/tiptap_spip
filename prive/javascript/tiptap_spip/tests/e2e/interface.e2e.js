@@ -153,6 +153,8 @@ const finDuTexte = async (page) => {
 
 test('notes : insérer au clavier, modifier, supprimer depuis l\'interface ; source enregistrée', async ({ page }) => {
 	const id = await editer(page, 'Un texte');
+	// sans note : pas de panneau « Notes (0) »
+	await expect(page.locator('.tts-notes')).toBeHidden();
 	const note = page.locator('.tts-popover--note');
 	const sousEditeur = note.locator('.tts-note__texte .ProseMirror');
 	await finDuTexte(page);

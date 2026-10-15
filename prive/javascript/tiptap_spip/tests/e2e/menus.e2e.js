@@ -88,6 +88,8 @@ test('menu Tableau près du bas du formulaire : ses actions restent affichées',
 	await editer(page, long);
 	await page.evaluate(() => {
 		const formulaire = document.querySelector('.cadre-formulaire-editer .formulaire_spip:has(.tts-toolbar)');
+		// éditeur en bas du formulaire : sans les champs que le site affiche après le texte (post-scriptum…)
+		for (const champ of formulaire.querySelectorAll('.editer_texte ~ .editer')) champ.remove();
 		const suite = document.createElement('div');
 		suite.style.height = '3000px';
 		formulaire.closest('.cadre-formulaire-editer').after(suite);

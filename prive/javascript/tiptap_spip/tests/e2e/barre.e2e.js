@@ -12,7 +12,8 @@ const LONG = Array.from({ length: 80 }, (_, k) => `Paragraphe ${k + 1} d'un text
 test('page défilée : la barre reste affichée en haut de la fenêtre', async ({ page }) => {
 	await page.setViewportSize({ width: 1200, height: 700 });
 	await editer(page, LONG);
-	await page.evaluate(() => window.scrollBy(0, 1200));
+	// défilement depuis l'éditeur : les champs affichés au-dessus (surtitre, chapeau…) varient selon le site
+	await page.evaluate(() => window.scrollTo(0, document.querySelector('.tts-editor').getBoundingClientRect().top + window.scrollY + 900));
 	const barre = page.locator('.tts-editor .tts-toolbar');
 	const etat = await barre.evaluate((b) => {
 		const r = b.getBoundingClientRect();
