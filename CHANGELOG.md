@@ -5,7 +5,9 @@
 - Coller une ou plusieurs images (capture d'écran, image copiée), ou glisser-déposer des fichiers de tout
   type accepté par SPIP, dans l'éditeur, visuel ou source : chaque fichier devient un document de l'objet,
   inséré en `<docN>` à l'endroit du collage ou du dépôt. Réglage « Coller des images et déposer des
-  documents » dans la configuration de l'éditeur (actif par défaut).
+  documents » dans la configuration de l'éditeur (actif par défaut). Dans un crayon où l'envoi de
+  documents de Crayons est activé, un dépôt sur l'éditeur, visuel ou source, passe aussi par l'éditeur
+  (un seul envoi, `<docN>` inséré) ; le panneau latéral de Crayons garde sa propre zone de dépôt.
 - Guide d’utilisation des passages multilingues, avec captures du formulaire Multi en français et
   en anglais.
 - Nom, slogan et description du plugin dans la liste des plugins (`lang/paquet-tiptap_spip_fr.php`).
@@ -19,9 +21,9 @@
 
 ### Corrigé
 
-- Crayons : une modification faite sans saisie (insertion d'un document, d'un modèle…) puis enregistrée
-  aussitôt est bien enregistrée. Le texte est recopié sur le `form-pre-serialize` de la copie de jQuery
-  propre à Crayons (`cQuery`), et plus seulement sur celui de jQuery.
+- Crayons : un texte modifié sans saisie au clavier (document ou modèle inséré, fichier déposé…) puis
+  enregistré aussitôt, sans quitter l'éditeur, partait avec l'ancien texte. Il est maintenant bien
+  enregistré.
 - Code en ligne près d'un backtick ou d'une balise `<code>` restés bruts, même dans un autre
   paragraphe : le texte enregistré relit désormais le même contenu (le code s'écrit en `<code>`,
   éventuellement coupé, ou avec d'autres backticks).
