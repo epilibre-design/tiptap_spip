@@ -182,7 +182,6 @@ class Instance {
 		// glisser-déposer de fichiers (spec 10 §8)
 		this.depot = new DepotFichiers({
 			wrapper: this.wrapper,
-			textarea,
 			editor: this.editor,
 			envois: this.envois,
 			services: () => this.services,

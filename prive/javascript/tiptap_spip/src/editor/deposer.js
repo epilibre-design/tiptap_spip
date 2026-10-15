@@ -54,24 +54,19 @@ const porteFichiers = (event) => [...(event.dataTransfer?.types ?? [])].includes
  * voit pas un glisser de fichiers au-dessus de l'éditeur. dragleave remonte : en entrant dans
  * l'éditeur, elle retire son état de survol. Tout survol ou dépôt
  * de fichiers est annulé (preventDefault), même refusé : sinon le navigateur ouvrirait le fichier à la
- * place de la page. Seule exception : le mode source d'un textarea .uploader, dont Crayons
- * (crayons/upload) gère le dépôt : l'événement lui parvient intact, l'éditeur retire seulement son
- * état de survol (glisser venu de la barre d'outils).
+ * place de la page. Le textarea de la zone en fait partie : en mode source, les écouteurs que
+ * crayons/upload y pose ne voient pas le glisser, l'éditeur seul traite le dépôt.
  */
 export class DepotFichiers {
 	/**
-	 * @param {{ wrapper: HTMLElement, textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor,
+	 * @param {{ wrapper: HTMLElement, editor: import('@tiptap/core').Editor,
 	 *           envois: import('./envois.js').Envois, services: () => ?import('../services/cvt.js').Services,
 	 *           mode: () => 'visual'|'source', signaler: (texte: string) => void }} options
 	 */
-	constructor({ wrapper, textarea, editor, envois, services, mode, signaler }) {
-		Object.assign(this, { wrapper, textarea, editor, envois, services, mode, signaler });
+	constructor({ wrapper, editor, envois, services, mode, signaler }) {
+		Object.assign(this, { wrapper, editor, envois, services, mode, signaler });
 		this.onSurvol = (event) => {
-			if (!this.concerne(event)) {
-				// textarea réservé à Crayons : l'indication de l'éditeur ne s'y applique plus
-				if (porteFichiers(event)) this.survol(false);
-				return;
-			}
+			if (!porteFichiers(event)) return;
 			event.preventDefault();
 			// les zones de dépôt englobantes (Bigup, boîte Documents : #contenu) ne voient pas un glisser
 			// que l'éditeur prend : leur état de survol resterait affiché, le dépôt ne leur parvenant pas
@@ -84,10 +79,7 @@ export class DepotFichiers {
 			if (!this.wrapper.contains(event.relatedTarget)) this.survol(false);
 		};
 		this.onDepot = (event) => {
-			if (!this.concerne(event)) {
-				if (porteFichiers(event)) this.survol(false);
-				return;
-			}
+			if (!porteFichiers(event)) return;
 			event.preventDefault();
 			event.stopPropagation();
 			this.survol(false);
@@ -97,16 +89,6 @@ export class DepotFichiers {
 		wrapper.addEventListener('dragover', this.onSurvol, true);
 		wrapper.addEventListener('dragleave', this.onSortie, true);
 		wrapper.addEventListener('drop', this.onDepot, true);
-	}
-
-	/**
-	 * Glisser de fichiers, sauf sur le textarea géré par Crayons en mode source (crayons/upload y a lié
-	 * ses gestionnaires). Ailleurs dans la zone (barre d'outils, barre d'état), Crayons n'écoute pas :
-	 * le dépôt reste à l'éditeur, qui l'annule au moins.
-	 */
-	concerne(event) {
-		if (!porteFichiers(event)) return false;
-		return !(this.mode() === 'source' && event.target === this.textarea && this.textarea.classList.contains('uploader'));
 	}
 
 	survol(actif) {

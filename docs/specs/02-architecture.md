@@ -411,7 +411,8 @@ Tiptap n'utilise pas d'iframe : la zone d'édition fait partie du DOM de la page
   Un crayon enregistré ou annulé quitte le DOM : son éditeur est détruit.
 - **Glisser-déposer avec Crayons** (lot L7.2) : son option expérimentale `crayons/upload` installe déjà un
   gestionnaire `drop` sur le textarea `article.texte`. En mode visuel, la zone Tiptap reçoit le dépôt à la place
-  du textarea masqué ; en mode source, Tiptap laisse le dépôt à Crayons (textarea de classe `uploader`), pour
-  qu'un fichier ne soit envoyé qu'une fois. Comportement et tests : [10](10-coller-images.md) §8.
+  du textarea masqué ; en mode source, ses écouteurs en capture sur la zone arrêtent le glisser avant le
+  textarea : un fichier n'est envoyé qu'une fois, par Tiptap. Le panneau latéral de Crayons garde sa zone de
+  dépôt. Comportement et tests : [10](10-coller-images.md) §8.
 - **Styles** : classe `tts-styles-contenu` sur `.tts-editor` (privé par défaut, ou `data-tts-styles`) ;
   `css/tiptap_spip_contenu.css` est chargée partout mais ne s'applique qu'à cette classe.

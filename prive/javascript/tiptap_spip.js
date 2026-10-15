@@ -26991,17 +26991,14 @@ function trierDepot(donnees, config2) {
 var porteFichiers = (event) => [...event.dataTransfer?.types ?? []].includes("Files");
 var DepotFichiers = class {
   /**
-   * @param {{ wrapper: HTMLElement, textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor,
+   * @param {{ wrapper: HTMLElement, editor: import('@tiptap/core').Editor,
    *           envois: import('./envois.js').Envois, services: () => ?import('../services/cvt.js').Services,
    *           mode: () => 'visual'|'source', signaler: (texte: string) => void }} options
    */
-  constructor({ wrapper, textarea, editor, envois, services, mode, signaler }) {
-    Object.assign(this, { wrapper, textarea, editor, envois, services, mode, signaler });
+  constructor({ wrapper, editor, envois, services, mode, signaler }) {
+    Object.assign(this, { wrapper, editor, envois, services, mode, signaler });
     this.onSurvol = (event) => {
-      if (!this.concerne(event)) {
-        if (porteFichiers(event)) this.survol(false);
-        return;
-      }
+      if (!porteFichiers(event)) return;
       event.preventDefault();
       event.stopPropagation();
       if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
@@ -27011,10 +27008,7 @@ var DepotFichiers = class {
       if (!this.wrapper.contains(event.relatedTarget)) this.survol(false);
     };
     this.onDepot = (event) => {
-      if (!this.concerne(event)) {
-        if (porteFichiers(event)) this.survol(false);
-        return;
-      }
+      if (!porteFichiers(event)) return;
       event.preventDefault();
       event.stopPropagation();
       this.survol(false);
@@ -27024,15 +27018,6 @@ var DepotFichiers = class {
     wrapper.addEventListener("dragover", this.onSurvol, true);
     wrapper.addEventListener("dragleave", this.onSortie, true);
     wrapper.addEventListener("drop", this.onDepot, true);
-  }
-  /**
-   * Glisser de fichiers, sauf sur le textarea géré par Crayons en mode source (crayons/upload y a lié
-   * ses gestionnaires). Ailleurs dans la zone (barre d'outils, barre d'état), Crayons n'écoute pas :
-   * le dépôt reste à l'éditeur, qui l'annule au moins.
-   */
-  concerne(event) {
-    if (!porteFichiers(event)) return false;
-    return !(this.mode() === "source" && event.target === this.textarea && this.textarea.classList.contains("uploader"));
   }
   survol(actif) {
     this.wrapper.classList.toggle("tts-editor--depot", actif);
@@ -29128,7 +29113,6 @@ var Instance = class {
     this.ui.collerImages = (view, event) => this.envois.collerVisuel(view, event);
     this.depot = new DepotFichiers({
       wrapper: this.wrapper,
-      textarea,
       editor: this.editor,
       envois: this.envois,
       services: () => this.services,
