@@ -1,5 +1,7 @@
 ## [Non publié]
 
+## [1.2.0] - 2026-10-15
+
 ### Ajouté
 
 - Coller une ou plusieurs images (capture d'écran, image copiée), ou glisser-déposer des fichiers de tout
@@ -26,7 +28,7 @@
 
 - Champs équipés : les champs cochés dans la configuration (descriptif, chapeau, post-scriptum,
   biographie…) s'ouvrent bien dans l'éditeur, et pas seulement le Texte. Ils étaient ignorés
-  faute de porter les classes du porte-plume (#7).
+  faute de porter les classes du porte-plume.
 - Crayons : un texte modifié sans saisie au clavier (document ou modèle inséré, fichier déposé…) puis
   enregistré aussitôt, sans quitter l'éditeur, partait avec l'ancien texte. Il est maintenant bien
   enregistré.
@@ -76,6 +78,7 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.1.0...HEAD
+[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/epilibre-design/tiptap_spip/releases/tag/1.0.0
