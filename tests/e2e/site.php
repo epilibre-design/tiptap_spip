@@ -26,12 +26,16 @@
  *     active des plugins présents dans plugins/ (Crayons, tts_test).
  *   SPIP_ROOT=<site> php tests/e2e/site.php config <clé> <valeur>
  *     écrit une configuration (ecrire_config), par exemple tiptap_spip/public oui.
+ *   SPIP_ROOT=<site> php tests/e2e/site.php lire_config <clé>
+ *     écrit une configuration (lire_config).
+ *   SPIP_ROOT=<site> php tests/e2e/site.php documents <objet> <id_objet>
+ *     documents liés à l'objet, en JSON : [{"id_document": …, "mode": …, "extension": …}].
  */
 
 $root = rtrim((string) getenv('SPIP_ROOT'), '/');
 $commande = $argv[1] ?? '';
-if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'modifier', 'document', 'auteur', 'inserer', 'publier', 'activer', 'config', 'effacer_config'], true)) {
-	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | modifier <id_article> [champ] | document <id_article> | auteur <statut> | inserer <table> <champs JSON> | publier <id_article> | activer <préfixe>… | config <clé> <valeur> | effacer_config <clé>\n");
+if ($root === '' || !is_dir($root . '/ecrire') || !in_array($commande, ['preparer', 'texte', 'modifier', 'document', 'auteur', 'inserer', 'publier', 'activer', 'config', 'effacer_config', 'lire_config', 'documents'], true)) {
+	fwrite(STDERR, "Usage : SPIP_ROOT=<site jetable> php tests/e2e/site.php preparer <agent> [titre] [id_auteur] | texte <id_article> | modifier <id_article> [champ] | document <id_article> | auteur <statut> | inserer <table> <champs JSON> | publier <id_article> | activer <préfixe>… | config <clé> <valeur> | effacer_config <clé> | lire_config <clé> | documents <objet> <id_objet>\n");
 	exit(2);
 }
 
@@ -66,6 +70,25 @@ if ($commande === 'activer') {
 if ($commande === 'config') {
 	include_spip('inc/config');
 	ecrire_config((string) ($argv[2] ?? ''), (string) ($argv[3] ?? ''));
+	exit(0);
+}
+
+if ($commande === 'lire_config') {
+	include_spip('inc/config');
+	echo (string) lire_config((string) ($argv[2] ?? ''), '');
+	exit(0);
+}
+
+if ($commande === 'documents') {
+	// documents liés à un objet, dans l'ordre de création
+	$lignes = sql_allfetsel(
+		'd.id_document, d.mode, d.extension',
+		'spip_documents AS d JOIN spip_documents_liens AS l ON l.id_document = d.id_document',
+		['l.objet = ' . sql_quote((string) ($argv[2] ?? '')), 'l.id_objet = ' . (int) ($argv[3] ?? 0)],
+		'',
+		'd.id_document'
+	);
+	echo json_encode(array_map(static fn ($l) => ['id_document' => (int) $l['id_document'], 'mode' => $l['mode'], 'extension' => $l['extension']], $lignes));
 	exit(0);
 }
 
