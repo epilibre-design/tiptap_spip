@@ -27000,6 +27000,7 @@ var DepotFichiers = class {
     this.onSurvol = (event) => {
       if (!this.concerne(event)) return;
       event.preventDefault();
+      event.stopPropagation();
       if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
       this.survol(true);
     };

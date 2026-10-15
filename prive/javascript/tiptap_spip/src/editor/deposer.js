@@ -49,7 +49,10 @@ const porteFichiers = (event) => [...(event.dataTransfer?.types ?? [])].includes
 
 /**
  * Glisser-déposer de fichiers sur la zone d'une instance (spec 10 §8). Écouteurs en capture sur le
- * wrapper : ils passent avant ProseMirror, qui ne voit pas un dépôt de fichiers. Tout survol ou dépôt
+ * wrapper : ils passent avant ProseMirror, qui ne voit pas un dépôt de fichiers, et arrêtent la
+ * propagation : une zone de dépôt englobante (Bigup étend celle de la boîte Documents à #contenu) ne
+ * voit pas un glisser de fichiers au-dessus de l'éditeur. dragleave remonte : en entrant dans
+ * l'éditeur, elle retire son état de survol. Tout survol ou dépôt
  * de fichiers est annulé (preventDefault), même refusé : sinon le navigateur ouvrirait le fichier à la
  * place de la page. Seule exception : le mode source d'un textarea .uploader, dont Crayons
  * (crayons/upload) gère le dépôt : rien n'est fait, l'événement lui parvient intact.
@@ -65,6 +68,9 @@ export class DepotFichiers {
 		this.onSurvol = (event) => {
 			if (!this.concerne(event)) return;
 			event.preventDefault();
+			// les zones de dépôt englobantes (Bigup, boîte Documents : #contenu) ne voient pas un glisser
+			// que l'éditeur prend : leur état de survol resterait affiché, le dépôt ne leur parvenant pas
+			event.stopPropagation();
 			if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
 			this.survol(true);
 		};

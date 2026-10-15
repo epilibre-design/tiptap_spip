@@ -117,6 +117,21 @@ describe('DepotFichiers (spec 10 §8)', () => {
 		expect(wrapper.classList.contains('tts-editor--depot')).toBe(false);
 	});
 
+	it('glisser de fichiers sur l\'éditeur : invisible pour les zones de dépôt englobantes (Bigup sur #contenu)', () => {
+		const instance = monterInstance('Texte', services({ id_document: 7, raccourci: 'doc7' }));
+		const vus = [];
+		for (const type of ['dragenter', 'dragover', 'dragleave', 'drop']) document.body.addEventListener(type, () => vus.push(type));
+		const surface = instance.editor.view.dom;
+		glisser(surface, 'dragenter');
+		glisser(surface, 'dragover');
+		const sortie = new Event('dragleave', { bubbles: true });
+		Object.defineProperty(sortie, 'relatedTarget', { value: surface });
+		surface.dispatchEvent(sortie);
+		glisser(surface, 'drop', [fichier('a.pdf', 'application/pdf')]);
+		// dragleave remonte : une zone englobante retire son état de survol quand on entre dans l'éditeur
+		expect(vus).toEqual(['dragleave']);
+	});
+
 	it('glisser du texte (sans fichier) : laissé à ProseMirror, pas d\'état de survol', () => {
 		const instance = monterInstance('Texte', services());
 		const vus = [];
