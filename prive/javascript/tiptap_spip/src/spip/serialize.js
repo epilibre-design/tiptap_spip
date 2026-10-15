@@ -53,7 +53,8 @@ export function serialize(doc, { conservative = true, regles } = {}) {
 		const autre = ecrire(code);
 		if (redonne(autre)) return autre;
 	}
-	// aucune écriture ne relit le document : la première, sans rien changer à sa structure
+	// aucune écriture ne relit le document à l'identique (par exemple un code entouré d'espaces juste
+	// après un fragment brut <code>, que SPIP ne sait pas écrire) : la première est renvoyée telle quelle
 	return source;
 }
 
