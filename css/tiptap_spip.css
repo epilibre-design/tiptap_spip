@@ -604,7 +604,7 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	cursor: pointer;
 }
 
-/* Barre d'état : mots, anomalies. */
+/* Barre d'état : message, mots, anomalies. */
 .tts-etat {
 	display: flex;
 	gap: 1em;
@@ -617,8 +617,25 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 }
 
 .tts-etat[hidden],
-.tts-etat__anomalies[hidden] {
+.tts-etat__anomalies[hidden],
+.tts-etat [hidden] {
 	display: none;
+}
+
+/* message ponctuel (images collées, spec 10), à gauche des compteurs */
+.tts-etat__message {
+	margin-inline-end: auto;
+	color: #333;
+}
+
+.tts-etat__message button {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-decoration: underline;
+	cursor: pointer;
 }
 
 .tts-etat__anomalies {
