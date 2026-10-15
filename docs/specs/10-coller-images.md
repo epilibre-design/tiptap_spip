@@ -89,6 +89,8 @@ paragraphe copié depuis un traitement de texte aussi. Règle :
 | Fichiers image et non image, sans texte ni HTML | envoi des images acceptées dans l'ordre ; fichiers non image ignorés avec message « type non accepté » |
 | Fichier(s) non image ou image(s) de type hors liste blanche, sans image acceptée | collage habituel (rien n'est envoyé) ; message « type non accepté » |
 
+Collage dans un bloc de code (éditeur visuel) : collage habituel, rien n'est envoyé.
+
 La priorité est donnée au texte ou au HTML ordinaire, puis aux images acceptées. Un fichier refusé ne bloque
 pas les autres images du même collage. Chaque image part dans un appel `deposer_image` distinct : le formulaire
 CVT est renouvelé entre deux appels (§5).
@@ -109,6 +111,12 @@ modèle de l'exemple « upload » de ProseMirror. Conséquences :
 - le document ne contient jamais le marqueur : la sérialisation, le textarea et l'historique restent propres ;
 - si le texte autour est supprimé, la position se replie sur le point le plus proche ; si l'éditeur est
   détruit (fermeture d'un crayon, rechargement AJAX), l'envoi en cours est abandonné (`AbortController`).
+
+Tant qu'un envoi est en cours, la bascule visuel ⇄ source est refusée, avec le message « Une image est en
+cours d'envoi » : un marqueur appartient au mode où l'image a été collée, et ni la décoration du visuel ni
+le texte provisoire de la source ne survivraient à la bascule. En mode source, un marqueur supprimé à la
+main avant la fin de son envoi n'est pas remplacé : rien n'est inséré, le document reste lié (comme après
+un ajout par la boîte « Documents »).
 
 Tant qu'un envoi est en cours, la soumission du formulaire d'édition est retenue, avec le message « Une
 image est en cours d'envoi ». En mode source, c'est indispensable : sinon `<!-- envoi… -->` serait
@@ -178,8 +186,11 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
   `descriptif_site`) : indisponible. Opération indisponible : le collage habituel s'applique (§3).
 - **Forums** : jamais (barre `forum`, comme pour les modèles).
 - **CVT et fichiers** : `_request()` ne lit pas `$_FILES` ; le fichier est lu directement, sous le nom de champ
-  fixe `fichier`. À vérifier sur SPIP 4.2, 4.4 et 5 : le traitement AJAX d'un CVT (`var_ajax=form`) avec un
-  corps `multipart/form-data` envoyé par `fetch`/XHR (le JS de SPIP passe, lui, par `jquery.form`).
+  fixe `fichier`. Vérifié sur SPIP 4.2, 4.4 et 5 : le traitement AJAX d'un CVT (`var_ajax=form`) accepte un
+  corps `multipart/form-data` envoyé par `fetch` ou XHR.
+- **Messages d'erreur** : `verifier()` et `traiter()` rendent leur message dans `message_erreur`. Une erreur
+  rangée sous une autre clé ferait afficher par SPIP son message générique (« Votre saisie contient des
+  erreurs »). SPIP entoure ce message d'un `<span role='alert'>`, que `cvt.js` retire.
 
 ## 6. Configuration
 
@@ -187,8 +198,9 @@ Nouvelle ligne du tableau des opérations ([02](02-architecture.md) §5) :
 |-----|--------|-------|
 | `tiptap_spip/coller_images` | `oui` | active la capture du collage d'images |
 
-Le JS reçoit, dans la configuration de l'instance (`data-tts-*` du conteneur `.tts-services` ou réponse de
-`charger()`) : disponibilité de l'opération, liste blanche, taille maximale. Ces informations arrivent avec le
+Le JS reçoit de `charger()`, dans l'attribut `data-tts-images` du `<form>` de services (JSON
+`{types, taille}`, absent si l'opération est indisponible), la disponibilité de l'opération, la liste blanche
+et la taille maximale. Le formulaire est remplacé après chaque réponse : l'annonce reste à jour. Ces informations arrivent avec le
 formulaire de services, éventuellement après la création de l'éditeur (§3). Sans elles, pas de capture :
 le collage se comporte comme aujourd'hui.
 
@@ -200,6 +212,16 @@ le collage se comporte comme aujourd'hui.
 | Vitest (CVT) | réponses enregistrées de `deposer_image` (succès, type refusé, taille, non autorisé, session expirée) lues par `cvt.js` |
 | PHPUnit | `verifier()` : sans fichier, deux fichiers, extension/type réel discordants (PNG renommé `.php`), type absent de `spip_types_documents`, sans droit, objet nouveau d'un autre auteur ; disponibilité dans `charger()` : article avec `documents_objets` vide → disponible, objet absent de `documents_objets` → indisponible, sans objet → indisponible |
 | Playwright | sur `editer_article` existant : collage d'un PNG (`ClipboardEvent` avec `DataTransfer` contenant un `File`) → `<docN>` dans le textarea, document lié à l'article ; collage de deux PNG en un geste → deux `<docN>` dans l'ordre, deux documents liés ; même chose sur un article **nouveau**, puis enregistrement : documents rattachés à l'article créé ; mode source ; soumission pendant les envois retenue, par le bouton (soumission native) et par `ajaxSubmit()` (formulaire CVT en AJAX ; crayon, dont `ajaxForm` passe par `cQuery`), puis relancée après le dernier envoi, sans marqueur dans le texte enregistré ; éditeur chargé à la demande (services arrivés après l'éditeur) : collage envoyé ; collage d'un tableau HTML + PNG → tableau collé, rien envoyé. Sous Chromium, Firefox et WebKit |
+
+Réalisé (L7.1) : les cas PHPUnit qui dépendent du vrai SPIP (autorisation de medias, `documents_objets`,
+objet nouveau d'un autre auteur) sont vérifiés en e2e, par la page de services à la demande et par des
+appels réels. PHPUnit, où les fonctions du core sont simulées, couvre les fonctions de
+`inc/tiptap_spip_images.php`. Réponses enregistrées pour `cvt.js` : succès et type refusé. Les refus de
+taille et d'autorisation ne se provoquent pas depuis un formulaire signé : ils sont couverts par PHPUnit
+et par l'e2e.
+
+| Niveau | Cas |
+|--------|-----|
 | Playwright (L7.2) | avec `crayons/upload` activé : dépôt en mode visuel → un seul document par fichier, lié à l'article édité (`spip_documents_liens`), et un seul `<docN>` dans le texte ; dépôt en mode source → un seul envoi, par Crayons (raccourci dans son panneau, rien inséré dans le texte, aucune requête `deposer_image`) ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt ; dépôt refusé (type non accepté, services absents) → la page reste affichée, le texte édité est intact |
 
 ## 8. Hors périmètre et suites
@@ -253,3 +275,37 @@ Question tranchée, reprise dans [09](09-lots-roadmap.md) §3 :
 | # | Question | Proposition |
 |---|----------|-------------|
 | Q11 | Raccourci inséré pour une image collée : `<docN>` ou `<imgN>` ? | **Tranché (2026-10-14)** : `<docN>`, cohérent avec la boîte « Documents » de SPIP 4/5 ; pas de réglage |
+
+## 9. Réalisation (lot L7.1)
+
+Plan : `docs/superpowers/plans/2026-10-15-coller-images-l7-1.md`.
+
+- **Serveur** : `inc/tiptap_spip_images.php` (disponibilité, taille maximale, contrôle du fichier, ajout par
+  `action_ajouter_documents_dist(…, 'document')`) ; opération `deposer_image` et annonce `data-tts-images`
+  dans `formulaires/tiptap_spip.{php,html}` ; réglage `coller_images` dans la page de configuration.
+- **Client** :
+  - `src/services/cvt.js` : `images()`, envoi d'un fichier par XHR (progression, abandon), dans la file
+    sérialisée ;
+  - `src/editor/collerImage.js` : arbitrage du presse-papiers (`trierPressePapiers`), renommage
+    (`nommer`), envois et insertions (`CollerImages`) ;
+  - `src/editor/marqueurEnvoi.js` : extension `spipPasteImage`, plugin `spipUploadPlaceholder`. Le plugin
+    suit lui-même la position de chaque marqueur : une décoration de ProseMirror disparaîtrait avec le
+    texte supprimé autour d'elle, au lieu de se replier ;
+  - `src/editor/soumission.js` : soumission retenue. La relance est unique : « Enregistrer sans attendre »
+    et la fin des envois ne soumettent pas deux fois. Sans bouton mémorisé, elle passe par `requestSubmit()`
+    sans argument (`requestSubmit(null)` lève une exception). Elle rétablit `form.clk` le temps de la
+    relance : jquery.form ne sérialise que ce bouton, et le remet à `null` 100 ms après le clic. La
+    destruction de l'éditeur (crayon fermé) annule la soumission retenue ;
+  - barre d'état : zone de message, seule affichée en mode source.
+- **Écarts** : bascule de mode refusée pendant un envoi, collage habituel dans un bloc de code, marqueur
+  source supprimé à la main → rien inséré (§3) ; tests PHP dépendant du vrai SPIP passés en e2e (§7).
+- **Tests** :
+  - PHPUnit : 64 tests ;
+  - Vitest : suite verte, hors un échec qui existe déjà sur main (`tests/spip/invariants.test.js`, « texte
+    de 200 Ko », dans le parseur) ;
+  - e2e `images.e2e.js` (15 tests), sous Chromium, Firefox et WebKit : 45 réussis sur SPIP 4.4 et 4.2 ;
+    39 réussis et 6 sautés (pas de Crayons) sur SPIP 5. Le test du formulaire AJAX à deux boutons échoue
+    (`Bouton : aucun`) sans la restauration de `form.clk`.
+  - suite e2e complète sous Chromium, sur SPIP 4.4 : 68 réussis, 1 sauté, 4 échecs dans `menus.e2e.js`. Ces
+    échecs ne viennent pas de ce lot : le test ouvre chaque `.tts-menu > button`, y compris le menu de la
+    langue affichée, masqué sans multi depuis `32247a8`.
