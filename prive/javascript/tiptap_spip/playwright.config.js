@@ -7,6 +7,7 @@ export default defineConfig({
 	testMatch: '*.e2e.js',
 	timeout: 30_000,
 	workers: 1,
+	globalTeardown: './tests/e2e/nettoyage.js',
 	use: {
 		baseURL: process.env.TTS_URL,
 		userAgent: 'tts-e2e',

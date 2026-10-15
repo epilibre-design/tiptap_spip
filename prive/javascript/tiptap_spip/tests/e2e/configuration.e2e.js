@@ -2,7 +2,7 @@
 // SPIP JETABLE : réglages enregistrés dans la méta tiptap_spip, puis appliqués au formulaire
 // d'édition d'un article. Usage et serveur : cf. article.e2e.js.
 import { expect, test } from '@playwright/test';
-import { activer, configure, ecrireTexte, editer, effacerConfig } from './site.js';
+import { activer, configure, ecrireTexte, editer, effacerConfig, inserer } from './site.js';
 
 configure(test);
 // tts_test définit le glossaire nommé glossaire_tts()
@@ -10,8 +10,20 @@ test.beforeAll(() => activer('tts_test'));
 // les autres fichiers de tests partent de la configuration par défaut
 test.afterAll(() => effacerConfig('tiptap_spip'));
 
+test('formulaire de rubrique : descriptif et texte équipés, sans les classes du porte-plume (#7)', async ({ page }) => {
+	await editer(page, 'x', { champs: 'defaut' });
+	const id = inserer('spip_rubriques', { titre: 'Rubrique tts', descriptif: 'Descriptif', texte: 'Texte', statut: 'prepa' });
+	await page.goto(`/ecrire/?exec=rubrique_edit&id_rubrique=${id}`);
+	for (const champ of ['descriptif', 'texte']) {
+		await expect(page.locator(`textarea[name=${champ}]`)).toHaveAttribute('data-tts-mounted');
+	}
+	await expect(page.locator('.formulaire_editer_rubrique .tts-editor')).toHaveCount(2);
+	// barre du porte-plume (ou de Porte Plume Partout) jamais posée sur un champ équipé
+	await expect(page.locator('.formulaire_editer_rubrique .markItUpEditor')).toHaveCount(0);
+});
+
 test('réglages enregistrés : champ décoché laissé au porte-plume, mode source, niveaux du menu Titre', async ({ page }) => {
-	await editer(page, 'x');
+	await editer(page, 'x', { champs: 'defaut' });
 	// entrée du menu Configuration
 	await expect(page.locator('a[href*="exec=configurer_tiptap_spip"]').first()).toHaveText(/Éditeur visuel/);
 	await page.goto('/ecrire/?exec=configurer_tiptap_spip');
@@ -26,7 +38,7 @@ test('réglages enregistrés : champ décoché laissé au porte-plume, mode sour
 	await expect(form.locator('.reponse_formulaire_ok')).toBeVisible();
 	await expect(form.getByRole('group', { name: 'Articles' }).getByLabel('Chapeau')).not.toBeChecked();
 
-	await editer(page, 'Texte', { source: true, avant: (id) => ecrireTexte(id, 'Chapeau', 'chapo') });
+	await editer(page, 'Texte', { source: true, champs: 'garder', avant: (id) => ecrireTexte(id, 'Chapeau', 'chapo') });
 	// texte équipé, ouvert en mode source ; chapeau laissé au porte-plume
 	await expect(page.locator('.tts-editor')).toHaveCount(1);
 	await expect(page.locator('textarea[name=chapo]')).not.toHaveAttribute('data-tts-mounted');
