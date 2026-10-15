@@ -236,7 +236,7 @@ et par l'e2e.
 
 | Niveau | Cas |
 |--------|-----|
-| Playwright (L7.2) | avec `crayons/upload` activé : dépôt en mode visuel → un seul document par fichier, lié à l'article édité (`spip_documents_liens`), et un seul `<docN>` dans le texte ; dépôt en mode source → un seul envoi, par Crayons (raccourci dans son panneau, rien inséré dans le texte, aucun envoi par l'éditeur) ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt ; dépôt refusé (type non accepté, services absents) → la page reste affichée, le texte édité est intact |
+| Playwright (L7.2) | avec `crayons/upload` activé : dépôt en mode visuel → un seul document par fichier, lié à l'article édité (`spip_documents_liens`), et un seul `<docN>` dans le texte ; dépôt sur le textarea en mode source → un seul envoi, par l'éditeur (`<docN>` inséré, document lié, aucun envoi par Crayons, ni classe `hover` ni panneau ouvert) ; dépôt sur le panneau de Crayons → comportement Crayons ; Tiptap désactivé → comportement Crayons conservé ; état de survol retiré à la sortie de la zone et après dépôt ; dépôt refusé (type non accepté, services absents) → la page reste affichée, le texte édité est intact |
 
 ## 8. Hors périmètre et suites
 
@@ -270,8 +270,8 @@ Même chaîne d'envoi que le collage, étendue à tous les types de documents pa
   chargement, opération indisponible) appelle quand même `preventDefault()` sur `dragover` et `drop`. Sinon le
   navigateur ouvrirait le fichier à la place de la page, et l'édition en cours serait perdue. Le refus est
   signalé dans la barre d'état.
-- **Interception** : écouteurs en capture sur la zone de l'éditeur, avant ProseMirror. Seule exception : un
-  dépôt sur le textarea d'un crayon équipé par `crayons/upload`, en mode source (ci-dessous).
+- **Interception** : écouteurs en capture sur la zone de l'éditeur, avant ProseMirror et avant les
+  écouteurs posés sur ses éléments, dont le textarea d'un crayon équipé par `crayons/upload` (ci-dessous).
 
 ### Coexistence avec le dépôt expérimental de Crayons (lot L7.2)
 
@@ -290,16 +290,16 @@ Partage des dépôts, pour qu'un fichier ne soit envoyé qu'**une fois** :
 
 - **mode visuel** : Tiptap masque le textarea, déposer sur sa zone visible ne déclenche pas le gestionnaire de
   Crayons. Tiptap traite le dépôt : un document lié à l'article et un `<docN>` inséré dans le texte par fichier ;
-- **mode source** : le textarea est visible et Crayons y a déjà branché ses gestionnaires (par `cQuery`, avec
-  `return false`, avant le montage de l'éditeur). Tiptap **laisse Crayons gérer le dépôt sur ce textarea** :
-  l'éditeur ne fait rien (ni envoi, ni `preventDefault()`, ni arrêt de la propagation) quand la cible est le
-  textarea de classe `uploader`, que `uploader.js.html` pose. Il retire seulement son état de survol, affiché
-  si le glisser est passé par la barre d'outils. Un dépôt ailleurs dans la zone (barre d'outils,
-  barre d'état), que Crayons n'écoute pas, reste traité par l'éditeur. Le raccourci s'affiche alors dans le panneau de
-  Crayons, sans être inséré dans le texte : c'est le comportement de Crayons, gardé tel quel. Intercepter le
-  dépôt avant Crayons demanderait une capture sur un ancêtre pour `dragenter`, `dragover`, `dragleave` et
-  `drop` (sinon sa classe `hover` et son panneau restent ouverts) : écarté ;
-- **panneau latéral** de Crayons : sa propre zone de dépôt, inchangée ;
+- **mode source** : le textarea est visible et Crayons y a branché ses gestionnaires (par `cQuery`, avant le
+  montage de l'éditeur). Tiptap **traite aussi ce dépôt** : ses écouteurs en capture sur la zone de l'éditeur
+  arrêtent `dragenter`, `dragover` et `drop` avant le textarea, et les gestionnaires de Crayons ne les voient
+  pas. Le textarea ne prend pas la classe `hover` et le panneau reste fermé ; un `dragleave`, qui n'est pas
+  arrêté, ne fait que les remettre dans cet état. Un document lié à l'article et un `<docN>` inséré après la
+  sélection, comme en mode visuel. Choix fait après L7.2 (2026-10-15) : laisser ce dépôt à Crayons faisait
+  coexister deux mécanismes dans la même zone, et le raccourci de Crayons s'affichait dans son panneau sans
+  être inséré dans le texte ;
+- **panneau latéral** de Crayons : hors de la zone de l'éditeur, sa propre zone de dépôt, inchangée. C'est
+  une cible explicite de Crayons ; il liste aussi les derniers documents de l'article ;
 - **Tiptap désactivé** : Crayons garde son comportement.
 
 Vérifier ces cas avec `crayons/upload` activé (§7).
@@ -363,9 +363,9 @@ Plan : `docs/superpowers/plans/2026-10-15-deposer-documents-l7-2.md`.
     `dragenter` et `dragover` pris par l'éditeur, son calque restait affiché après un dépôt sur SPIP 4.2 et
     bloquait « Enregistrer » ;
   - Crayons 3.5.1 : `action_crayons_upload` répond 500 (`distant_table()` appelée avant
-    `include_spip('inc/crayons')`). Ce bug n'est pas le nôtre : les tests de coexistence vérifient que le
-    fichier part bien vers Crayons (ligne ajoutée au panneau, requête `crayons_upload`, texte intact), pas
-    le document créé ;
+    `include_spip('inc/crayons')`). Ce bug n'est pas le nôtre : les tests du panneau et de Tiptap désactivé
+    vérifient que le fichier part bien vers Crayons (ligne ajoutée au panneau, requête `crayons_upload`,
+    texte intact), pas le document créé ;
   - un crayon modifié sans que l'éditeur ait perdu le focus n'enregistrait pas le texte : Crayons soumet par
     `cQuery`, dont `form-pre-serialize` n'atteint pas un écouteur posé avec `jQuery`. Corrigé dans
     `TextareaBridge` (MR !28, fusionnée avant ce lot).

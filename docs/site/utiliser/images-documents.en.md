@@ -48,12 +48,11 @@ and inserts no shortcut.
 ## With Crayons
 
 Pasting images also works when editing an article with **Crayons**, if the visual editor is
-[enabled in Crayons](../configurer.md#choose-where-the-editor-appears). In visual mode, the
-editor handles dropped files too: documents are linked to the article and shortcuts are inserted
-into the text just as they are in the private area.
+[enabled in Crayons](../configurer.md#choose-where-the-editor-appears). In both modes, the editor
+handles files dropped onto its area: each document is linked to the article and its `<docN>`
+shortcut is inserted into the text. In source mode, it is placed after the selection.
 
-If the experimental **Crayons** upload feature (`crayons/upload`) is enabled, a drop **onto the
-source mode text field** remains handled by Crayons. Documents are linked to the article and
-their shortcuts appear in its side panel; they are not automatically inserted into the text.
-Crayons also handles drops on that panel. To insert shortcuts directly into the text, paste the
-images or use visual mode.
+If the experimental **Crayons** upload feature (`crayons/upload`) is enabled, its side panel
+remains a separate drop area. Crayons handles files dropped onto that panel; their shortcuts
+appear there and are not automatically inserted into the text. If the visual editor is disabled
+in Crayons, Crayons also keeps its usual behavior on the text field.
