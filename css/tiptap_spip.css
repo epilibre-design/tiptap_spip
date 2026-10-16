@@ -450,9 +450,14 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	z-index: 11;
 }
 
-/* Panneau des notes, sous l'éditeur. */
+/* Panneau des notes, sous l'éditeur : zone grise claire séparée du texte par un filet, comme la
+   barre d'outils et la barre d'état. Couleurs et police posées sur le bouton de chaque note : celles
+   des boutons de l'espace privé (texte blanc) ne doivent pas s'appliquer. */
 .tts-notes {
-	margin: 0.25em 0;
+	margin: 0;
+	border-top: 1px solid #ccc;
+	background: #fafafa;
+	color: #555;
 	font-size: 0.9em;
 }
 
@@ -461,29 +466,68 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	display: none;
 }
 
+.tts-notes > summary {
+	padding: 4px 8px;
+	color: #555;
+	font-weight: 600;
+	cursor: pointer;
+	user-select: none;
+	transition: color 0.15s, background-color 0.15s;
+}
+
+.tts-notes > summary:hover {
+	background: #f2f2f2;
+	color: #333;
+}
+
+.tts-notes > summary:focus-visible,
+.tts-notes .tts-notes__note:focus-visible {
+	outline: 2px solid #7a9cc6;
+	outline-offset: -2px;
+}
+
 .tts-notes__liste {
-	margin: 0.25em 0 0;
-	padding-left: 0;
+	margin: 0;
+	padding: 2px 4px 6px;
+	border-top: 1px solid #e6e6e6;
 	list-style: none;
 }
 
-.tts-notes__note {
+.tts-notes .tts-notes__note {
 	display: block;
 	width: 100%;
-	padding: 0.15em 0.3em;
-	text-align: left;
-	background: none;
+	margin: 0;
+	padding: 0.3em 0.5em;
 	border: 0;
+	border-radius: 3px;
+	background: none;
+	box-shadow: none;
+	color: #555;
+	font: inherit;
+	line-height: 1.4;
+	text-align: left;
+	text-transform: none;
 	cursor: pointer;
+	transition: color 0.15s, background-color 0.15s;
 }
 
-.tts-notes__note:hover,
-.tts-notes__note:focus {
-	background: #eef3fb;
+.tts-notes .tts-notes__note:hover,
+.tts-notes .tts-notes__note:focus-visible {
+	background: #efefef;
+	color: #333;
 }
 
 .tts-notes__appel {
+	margin-inline-end: 0.25em;
 	font-weight: bold;
+	color: #333;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tts-notes > summary,
+	.tts-notes .tts-notes__note {
+		transition: none;
+	}
 }
 
 /* Multilinguisme : langue en badge ; partie sans langue marquée d'un astérisque. */

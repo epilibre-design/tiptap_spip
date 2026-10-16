@@ -130,6 +130,35 @@ test('dialogue enfant d’une note : il reste devant et rend le focus à la note
 	await expect(note.locator('.tts-note__texte .ProseMirror')).toBeFocused();
 });
 
+test('panneau des notes lisible : contraste du texte, au repos et au survol (ticket #9)', async ({ page }) => {
+	await editer(page, 'Texte[[une note]] et[[<A> une autre]]');
+	const panneau = page.locator('.tts-notes');
+	await panneau.locator('summary').click();
+	const note = panneau.locator('.tts-notes__note').first();
+	await expect(note).toBeVisible();
+	// contraste WCAG du texte sur le premier fond opaque (axe le laisse indéterminé : pseudo-éléments
+	// des boutons de l'espace privé)
+	const contraste = (el) => {
+		const rgb = (c) => c.match(/[\d.]+/g).map(Number);
+		const lum = (c) => {
+			const [r, g, b] = rgb(c).slice(0, 3).map((v) => {
+				const s = v / 255;
+				return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+			});
+			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+		};
+		let fond = el;
+		while (fond && (rgb(getComputedStyle(fond).backgroundColor)[3] ?? 1) === 0) fond = fond.parentElement;
+		const [a, b] = [lum(getComputedStyle(el).color), lum(getComputedStyle(fond).backgroundColor)];
+		return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+	};
+	for (const el of [panneau.locator('summary'), note]) expect(await el.evaluate(contraste)).toBeGreaterThanOrEqual(4.5);
+	await note.hover();
+	expect(await note.evaluate(contraste)).toBeGreaterThanOrEqual(4.5);
+	// filet entre le texte et les notes
+	expect(await panneau.evaluate((el) => getComputedStyle(el).borderTopStyle)).toBe('solid');
+});
+
 test('note agrandie : le dialogue reste dans la fenêtre', async ({ page }) => {
 	await page.setViewportSize({ width: 1200, height: 700 });
 	const texteLong = Array.from({ length: 22 }, (_, k) => `Paragraphe ${k + 1} d'un article.`).join('\n\n');
