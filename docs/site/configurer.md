@@ -24,8 +24,8 @@ enregistrez la configuration. Ce réglage s’applique aussi à l’éditeur uti
 il ne désactive pas la fonction de dépôt propre à Crayons.
 
 Les fichiers envoyés sont ajoutés aux documents de l’objet édité et insérés dans le texte sous
-forme de raccourcis `<docN>`. Le plugin **Médias** et le droit de joindre des documents à l’objet
-restent nécessaires. Voir [Coller des images et déposer des fichiers](utiliser/images-documents.md).
+forme de raccourcis `<docN>`. Le droit de joindre des documents à l’objet reste nécessaire. Voir
+[Coller des images et déposer des fichiers](utiliser/images-documents.md).
 
 ## Régler l’édition
 

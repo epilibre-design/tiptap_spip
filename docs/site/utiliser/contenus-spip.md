@@ -19,6 +19,9 @@ d’édition et accepte notamment le gras, les liens et les listes. Un panneau s
 notes du texte ; cliquez sur l’une d’elles pour la modifier. Il est aussi possible de nommer une
 note ou de la placer sans appel dans le texte.
 
+Voir [Saisir des notes de bas de page](notes-de-bas-de-page.md) pour les étapes et les options du
+formulaire.
+
 **Glossaire** associe un terme à une définition : sélectionnez le mot, puis ouvrez **Glossaire**.
 Vous pouvez choisir un glossaire, préciser une bulle ou une langue, et vérifier la destination avec
 **Voir la définition**.

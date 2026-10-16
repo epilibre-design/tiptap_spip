@@ -9,8 +9,8 @@ son raccourci `<docN>` dans le texte.
 ![Une image ajoutée dans la zone d’édition visuelle](../medias/demo_dragdrop.png)
 
 !!! note "Avant de commencer"
-    Le plugin **Médias** doit être actif et l’option **Coller des images et déposer des documents**
-    doit être activée dans [la configuration de l’éditeur](../configurer.md#activer-ou-desactiver-lenvoi-de-fichiers). Il faut aussi avoir
+    L’option **Coller des images et déposer des documents** doit être activée dans
+    [la configuration de l’éditeur](../configurer.md#activer-ou-desactiver-lenvoi-de-fichiers). Il faut aussi avoir
     le droit de joindre des documents à l’article. Les types et tailles acceptés dépendent des
     réglages du site.
 

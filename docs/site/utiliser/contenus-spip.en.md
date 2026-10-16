@@ -17,6 +17,8 @@ In source mode, an internal link might be written `[Read the article->art12]`.
 supports bold text, links, lists, and more. A panel below the editor gathers the text's notes;
 click one to edit it. You can also name a note or place it without an in-text reference.
 
+See [Enter footnotes](notes-de-bas-de-page.md) for the dialog steps and options.
+
 **Glossary** associates a term with a definition: select the word, then open **Glossary**. You
 can choose a glossary, specify a tooltip or language, and check the destination with
 **View definition**.
