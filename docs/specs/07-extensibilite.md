@@ -68,7 +68,7 @@ window.tiptapSpip.registerToolbarComponent('FaqButton', FaqButton);
 |----------|-------|
 | `tiptap_spip_extensions` | Liste des scripts JS à charger (chemin, dépendances), injectés dans la config / l'importmap |
 | `tiptap_spip_toolbars` | Ajouter le bouton dans une ou plusieurs barres |
-| `tiptap_spip_i18n` | Ajouter des chaînes de langue à la config JS |
+| `tiptap_spip_i18n` | Ajouter des chaînes traduites à la configuration JS, dans la langue courante du fond ([spec 11](11-interface-multilingue.md)) |
 
 ```php
 function faq_tiptap_spip_extensions(array $flux): array {
@@ -133,7 +133,8 @@ function faq_tiptap_spip_extensions(array $flux): array {
   - `tiptap_spip_extensions` (`nom => ['src', 'dependances']`) : scripts ordonnés selon leurs
     dépendances, URL absolues dans la config JS (`extensions`) ;
   - `chargerExtensions()` les importe avant le premier `tiptap_spip_init()`, en SPIP 4 comme en SPIP 5 ;
-  - `tiptap_spip_i18n` : chaînes ajoutées aux libellés.
+  - `tiptap_spip_i18n` : chaînes ajoutées aux libellés dans la configuration JS ; leur traduction suit
+    la langue courante du fond ([spec 11](11-interface-multilingue.md)).
   - `pipeline()` de SPIP ne rend que `data` d'un flux `['args', 'data']`. Corrigé au passage pour
     `tiptap_spip_toolbars`, que le lot L5.1 ignorait.
 - **Limites :**

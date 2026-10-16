@@ -248,9 +248,10 @@ Lot L5.3 :
 
 ## 8. Internationalisation
 
-Toutes les chaînes viennent des fichiers de langue SPIP (`lang/tiptap_spip_fr.php`…), injectées dans la
-config JS (`spipConfig.tiptap_spip.i18n`). Aucune chaîne en dur dans le JS (à corriger par rapport à
-markdown_editor : bouton « Modifier », « Liste »…).
+Les chaînes viennent des fichiers de langue SPIP (`lang/tiptap_spip_fr.php`…), injectées dans la
+configuration JS de la page selon la langue de l'interface. La première phase ajoute l'anglais et
+précise la résolution de cette langue dans la [spec 11](11-interface-multilingue.md). Les valeurs
+françaises de `labels.js` restent un repli côté navigateur.
 
 ## 9. Style
 
