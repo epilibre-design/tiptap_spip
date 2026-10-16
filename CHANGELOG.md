@@ -7,6 +7,11 @@
   dans l'espace privé, langue de la page sur le site public). Les autres langues affichent le
   français. Les libellés de l'exemple FAQ sont aussi traduits.
 
+### Modifié
+
+- Documentation en français et en anglais : ajout d'un guide illustré pour saisir les notes de bas
+  de page et correction des prérequis indiqués pour l'envoi de fichiers.
+
 ### Corrigé
 
 - Le panneau « Notes (0) » ne s'affiche plus sous l'éditeur d'un texte sans note : il n'apparaît
