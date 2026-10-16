@@ -11,6 +11,14 @@ if (!defined('_ECRIRE_INC_VERSION')) {
 include_spip('inc/tiptap_spip_config');
 
 /**
+ * Filtre : chaîne JavaScript entre guillemets, insérable telle quelle dans un <script> (spec 11) :
+ * `"`, `'`, `<`, `>` et `&` encodés, donc ni fin de littéral ni `</script>`. Vide → `""`.
+ */
+function tiptap_spip_js_string(?string $texte): string {
+	return (string) json_encode((string) $texte, TIPTAP_SPIP_JSON);
+}
+
+/**
  * Filtre : encode une valeur en JSON insérable dans un <script type="application/json">.
  * Valeur vide → chaîne vide (le bloc n'est alors pas affiché).
  *
