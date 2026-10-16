@@ -4,6 +4,8 @@
 
 - Le panneau « Notes (0) » ne s'affiche plus sous l'éditeur d'un texte sans note : il n'apparaît
   que lorsque le texte contient des notes.
+- Le formulaire d'une note n'a plus de boutons au-dessus de sa zone de texte (gras, italique, lien,
+  glossaire, modèle) : seulement la zone de texte, avec Appliquer, Supprimer la note et Annuler.
 
 ## [1.2.0] - 2026-10-15
 

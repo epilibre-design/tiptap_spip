@@ -14,8 +14,8 @@ const vide = (content) => content.every((b) => b.type === 'paragraph' && !b.cont
 
 /**
  * Popover de note (spec 05 §1) : nom optionnel (vide : numérotée), case « Sans appel », texte dans
- * un sous-éditeur Tiptap (schéma de noteExtensions : sans notes, blocs permis dans une note) avec
- * une barre réduite. Le lien et le glossaire du sous-éditeur s'ouvrent en popovers enfants.
+ * un sous-éditeur Tiptap (schéma de noteExtensions : sans notes, blocs permis dans une note), sans
+ * barre d'outils. Le lien (Ctrl+K) et les modèles du sous-éditeur s'ouvrent en popovers enfants.
  *
  * Note sélectionnée (ou à `pos`) : modification ou suppression. Sinon insertion : comme le bouton
  * Note du porte-plume, un texte sélectionné dans un même bloc devient le texte de la note, qui le
@@ -74,19 +74,15 @@ export function openNotePopover(contexte, pos = null) {
 	sansAppel.addEventListener('change', majNom);
 	majNom();
 
-	// texte : barre réduite et sous-éditeur
+	// texte : sous-éditeur, sans barre d'outils
 	const bloc = document.createElement('div');
 	bloc.className = 'tts-popover__champ tts-note__bloc';
 	const titre = document.createElement('span');
 	titre.id = idUnique('tts-note');
 	titre.textContent = label('note_texte');
-	const barre = document.createElement('div');
-	barre.className = 'tts-note__barre';
-	barre.setAttribute('role', 'toolbar');
-	barre.setAttribute('aria-labelledby', titre.id);
 	const zone = document.createElement('div');
 	zone.className = 'tts-note__texte';
-	bloc.append(titre, barre, zone);
+	bloc.append(titre, zone);
 	popover.actions.before(bloc);
 
 	const enfant = () => ({ ...contexte, editor: sous, parent: popover });
@@ -124,22 +120,6 @@ export function openNotePopover(contexte, pos = null) {
 		modifie = true;
 		if (popover.flottant) popover.replacer();
 	});
-
-	for (const [texte, action] of [
-		[label('gras'), () => sous.chain().focus().toggleBold().run()],
-		[label('italique'), () => sous.chain().focus().toggleItalic().run()],
-		[label('lien'), () => sousUi.openLink()],
-		[label('glossaire'), () => sousUi.openGlossary()],
-		[label('modele'), () => sousUi.editModel(null)],
-	]) {
-		const b = document.createElement('button');
-		b.type = 'button';
-		b.textContent = texte;
-		// le sous-éditeur garde sa sélection
-		b.addEventListener('mousedown', (event) => event.preventDefault());
-		b.addEventListener('click', action);
-		barre.append(b);
-	}
 
 	const appliquer = () => {
 		const nouveau = sansAppel.checked ? '' : nom.value.trim() || null;
