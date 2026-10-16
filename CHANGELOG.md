@@ -1,5 +1,12 @@
 ## [Non publié]
 
+### Ajouté
+
+- Interface de l'éditeur en anglais : barre d'outils, menus, fenêtres, barre d'état, messages
+  d'erreur et page de configuration suivent la langue de l'interface SPIP (préférence de l'auteur
+  dans l'espace privé, langue de la page sur le site public). Les autres langues affichent le
+  français. Les libellés de l'exemple FAQ sont aussi traduits.
+
 ### Corrigé
 
 - Le panneau « Notes (0) » ne s'affiche plus sous l'éditeur d'un texte sans note : il n'apparaît
@@ -9,6 +16,11 @@
 - Le panneau des notes sous l'éditeur est lisible : texte gris foncé sur une zone gris clair, séparée
   du texte par un filet, avec un survol discret. Dans l'espace privé, les notes s'affichaient en blanc
   sur blanc.
+- Dans les crayons et les autres éditeurs sans formulaire SPIP, les erreurs renvoyées par le serveur
+  (recherche, modèle, glossaire…) s'affichent dans la langue de la page, et non plus dans celle
+  retenue par le navigateur ou un cookie de langue.
+- Un guillemet ou une balise `</script>` dans une traduction ne peut plus empêcher l'éditeur de
+  démarrer.
 
 ## [1.2.0] - 2026-10-15
 
