@@ -9,9 +9,9 @@ text.
 ![An image added to the visual editing area; screenshot of the French interface](../medias/demo_dragdrop.en.png)
 
 !!! note "Before you start"
-    The **Médias** plugin must be enabled, and **Paste images and drop documents** must be turned
-    on in the [editor settings](../configurer.md#enable-or-disable-file-uploads). You also need permission to attach documents
-    to the article. Accepted file types and size limits depend on the site's settings.
+    Check that **Paste images and drop documents** is enabled in the
+    [editor settings](../configurer.md#enable-or-disable-file-uploads). You also need permission to attach documents to the
+    article. Accepted file types and size limits depend on the site's settings.
 
 ## In visual mode
 

@@ -22,8 +22,8 @@ disable both features, then save the settings. This setting also applies to the 
 Crayons; it does not disable Crayons' own upload feature.
 
 Uploaded files are attached to the edited object and inserted into the text as `<docN>`
-shortcuts. The **Médias** plugin and permission to attach documents to that object are still
-required. See [Paste images and drop files](utiliser/images-documents.md).
+shortcuts. Permission to attach documents to that object is still required. See
+[Paste images and drop files](utiliser/images-documents.md).
 
 ## Set editing preferences
 
