@@ -1,5 +1,7 @@
 ## [Non publié]
 
+## [1.3.0] - 2026-10-17
+
 ### Ajouté
 
 - Interface de l'éditeur en anglais : barre d'outils, menus, fenêtres, barre d'état, messages
@@ -105,7 +107,8 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.2.0...HEAD
+[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/epilibre-design/tiptap_spip/releases/tag/1.0.0
