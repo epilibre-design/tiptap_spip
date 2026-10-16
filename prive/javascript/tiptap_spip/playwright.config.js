@@ -15,6 +15,7 @@ export default defineConfig({
 	projects: ['chromium', 'firefox', 'webkit'].map((nom) => ({
 		name: nom,
 		// userAgent fixe (la session SPIP en dépend) : celui du projet n'est pas repris
-		use: { ...devices[{ chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit: 'Desktop Safari' }[nom]], userAgent: 'tts-e2e' },
+		// locale française : sans langue d'auteur, SPIP suit Accept-Language (spec 11) ; les tests lisent les libellés français
+		use: { ...devices[{ chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit: 'Desktop Safari' }[nom]], userAgent: 'tts-e2e', locale: 'fr-FR' },
 	})),
 });

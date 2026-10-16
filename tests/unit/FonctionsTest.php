@@ -17,6 +17,16 @@ final class FonctionsTest extends TestCase
 		$this->assertSame('', tiptap_spip_json(''));
 	}
 
+	public function testChaineJsInsereeDansUnScript(): void {
+		$texte = "Lien \"cité\" l'été\\n\n</script><script>alert(1)</script> & co";
+		$js = tiptap_spip_js_string($texte);
+
+		$this->assertDoesNotMatchRegularExpression('/[<>&\'\n]|<\/script/', $js);
+		$this->assertSame($texte, json_decode($js));
+		$this->assertSame('""', tiptap_spip_js_string(''));
+		$this->assertSame('""', tiptap_spip_js_string(null));
+	}
+
 	public function testUnSeulModeleAvecIdOuParametres(): void {
 		foreach (['<doc12>', '<doc12|center>', '<img3 | left />', '<emb5|legende=<i>x</i>>', '<monmodele|a=b>'] as $modele) {
 			$this->assertTrue(tiptap_spip_est_modele($modele), $modele);

@@ -47,6 +47,10 @@ trois pipelines relient le plugin à l’éditeur :
 | `tiptap_spip_toolbars` | Le nom `faq` dans la barre `edition`, après le bloc de code |
 | `tiptap_spip_i18n` | Les libellés traduits pour le bouton et la fenêtre de saisie |
 
+Les libellés sont traduits avec `_T()` dans la langue de l’interface de la page : le plugin fournit
+`lang/tiptap_spip_faq_fr.php` et `lang/tiptap_spip_faq_en.php`. Une clé ajoutée par ce pipeline
+remplace la clé du même nom de l’éditeur : préfixez vos clés (`faq_…`) pour éviter d’en écraser une.
+
 Le script est enregistré avec `find_in_path('javascript/tiptap_spip_faq.js')`.
 Le CSS est chargé dans l’espace privé et sur le site public par `header_prive_css` et
 `insert_head_css`. Le plugin FAQ n’exige pas de reconstruire le JavaScript du plugin principal.
