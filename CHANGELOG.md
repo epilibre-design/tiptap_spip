@@ -7,6 +7,8 @@
   s'appuyer sur lui, et le bouton Source affiche une simple zone de texte). Les libellés cités
   correspondent à ceux de l'interface, notamment le bouton Multilingue et les réglages en anglais,
   et les pages anglaises montrent des captures de l'interface anglaise.
+- Interface en anglais : « catalog » remplace « catalogue » (menu du bouton Model et page de
+  configuration), comme dans la documentation.
 
 ## [1.3.0] - 2026-10-17
 
