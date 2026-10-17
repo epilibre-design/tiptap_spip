@@ -2,8 +2,8 @@ site_name: Éditeur visuel pour SPIP
 site_url: https://epilibre-design.github.io/tiptap_spip/
 site_description: Installer et utiliser l'éditeur visuel Tiptap avec les raccourcis natifs de SPIP.
 site_author: epilibre-design
-repo_url: https://github.com/epilibre-design/tiptap_spip
-repo_name: epilibre-design/tiptap_spip
+repo_url: https://git.spip.net/spip-contrib-extensions/tiptap_spip
+repo_name: spip-contrib-extensions/tiptap_spip
 docs_dir: docs/site
 site_dir: site
 
@@ -13,7 +13,7 @@ theme:
   font: false
   icon:
     logo: material/text-box-edit-outline
-    repo: fontawesome/brands/github
+    repo: fontawesome/brands/gitlab
   palette:
     - scheme: default
       primary: indigo
@@ -55,7 +55,9 @@ plugins:
           nav_translations:
             Accueil: Home
             Installer: Install
-            Installer le plugin: Install the plugin
+            Installation standard: Standard installation
+            Depuis une archive: From an archive
+            Depuis Git: From Git
             Plugins complémentaires: Optional plugins
             Premiers pas: Getting started
             Utiliser: Use the editor
@@ -100,10 +102,12 @@ extra:
 nav:
   - Accueil: index.md
   - Installer:
-      - Installer le plugin: installer.md
+      - Installation standard: installer.md
+      - Depuis une archive: installer/depuis-archive.md
+      - Depuis Git: installer/depuis-git.md
       - Plugins complémentaires: installer/plugins-complementaires.md
-  - Premiers pas: premiers-pas.md
   - Utiliser:
+      - Premiers pas: premiers-pas.md
       - Mettre en forme: utiliser/mise-en-forme.md
       - Contenus SPIP: utiliser/contenus-spip.md
       - Notes de bas de page: utiliser/notes-de-bas-de-page.md

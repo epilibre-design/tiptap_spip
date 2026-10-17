@@ -6,7 +6,7 @@ other document types allowed by your site, such as PDFs. Each uploaded file beco
 document linked to the article being edited. The editor inserts its `<docN>` shortcut into the
 text.
 
-![An image added to the visual editing area; screenshot of the French interface](../medias/demo_dragdrop.en.png)
+![An image added to the visual editing area](../medias/demo_dragdrop.en.png)
 
 !!! note "Before you start"
     Check that **Paste images and drop documents** is enabled in the
@@ -20,7 +20,7 @@ Place the cursor where you want the image. Copy one or more image files, then pr
 position while the upload runs. Once it finishes, the placeholder becomes a preview of the SPIP
 `<docN>` model. Selected text stays in place; the images are added after it.
 
-To drop files, drag one or more files onto the editor. The **Drop files** prompt appears while
+To drop files, drag one or more files onto the editor. The **Drop the files** prompt appears while
 you hover over it. Release the mouse where you want the files: they are processed in order and
 each gets its own shortcut. A drop on a code block puts the shortcuts after that block. You can
 drop images and other documents accepted by SPIP together.
@@ -37,7 +37,7 @@ text. It becomes `<docN>` when the upload succeeds. Selected text stays in place
 
 Drag and drop works in source mode as well. Shortcuts are inserted **after the text selection**,
 regardless of where the mouse is released in the source field: a text field does not give the
-editor a precise drop position. Hovering shows the same **Drop files** prompt.
+editor a precise drop position. Hovering shows the same **Drop the files** prompt.
 
 You can keep writing during an upload. Switching between visual and source modes is temporarily
 blocked so the placeholders stay in the right place. If you click **Save**, the editor waits for

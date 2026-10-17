@@ -1,16 +1,18 @@
 # Optional plugins
 
-**Porte-plume**, **Insérer modèles** and **Coloration Code** are optional: the visual editor works without them. You
-can activate them in SPIP's plugin manager.
+**Insérer modèles** and **Coloration Code** are optional: the visual editor works without them. You
+can activate them in SPIP's plugin manager. **Porte-plume**, which ships with SPIP, coexists with the
+visual editor.
 
 ## Porte-plume
 
-Tiptap recognizes fields equipped with Porte-plume's editing and forum toolbars. When the visual
-editor is active on a field, it takes their place. Porte-plume remains available on fields you
-exclude in the [configuration](../configurer.md).
+Porte-plume is one of the plugins that ship with SPIP. The visual editor does not rely on it: it
+recognizes fields equipped with Porte-plume's editing and forum toolbars, removes the toolbar and
+takes its place. Porte-plume remains available on fields you exclude in the
+[configuration](../configurer.md).
 
-Tiptap's **Source** button shows SPIP syntax, but it does not restore the Porte-plume toolbar
-on a field using the visual editor.
+The visual editor's **Source** button shows SPIP syntax in a plain text area, without the
+Porte-plume toolbar.
 
 Plugin documentation: [Porte-plume on SPIP-Contrib](https://contrib.spip.net/Porte-plume-3117) (in French).
 

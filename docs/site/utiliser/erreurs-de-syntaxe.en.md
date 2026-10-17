@@ -3,10 +3,10 @@
 An incomplete SPIP shortcut can change how text is rendered. The editor keeps the passage as
 source and marks some issues with a wavy underline. The count appears below the editor.
 
-![A syntax issue underlined in the editor, with an explanation](../medias/erreur_syntaxe.png)
+![A syntax issue underlined in the editor, with an explanation](../medias/erreur_syntaxe.en.png)
 
 Click the count to open the next issue. The dialog explains what may happen and shows the SPIP
-source to correct. Edit it, then click **Appliquer** (Apply).
+source to correct. Edit it, then click **Apply**.
 
 ## Shortcuts that are flagged
 

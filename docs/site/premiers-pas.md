@@ -15,7 +15,7 @@ traitements habituels de SPIP. Les textes déjà enregistrés peuvent être ouve
 ## Se repérer dans la barre
 
 Le menu **Titre** choisit un intertitre ; **Liste** crée des puces ou des numéros. Les boutons
-**Lien**, **Note**, **Glossaire**, **Modèle**, **Multi** et **Tableau** ouvrent les outils adaptés au
+**Lien**, **Note**, **Glossaire**, **Modèle**, **Multilingue** et **Tableau** ouvrent les outils adaptés au
 contenu. Survolez un bouton pour lire son nom et, lorsqu’il existe, son raccourci clavier.
 
 La barre reste visible pendant le défilement du formulaire. Les boutons disponibles dépendent du
@@ -29,7 +29,7 @@ texte source. Votre choix de mode est mémorisé dans ce navigateur ; un adminis
 choisir le [mode initial du site](configurer.md).
 
 Si un fragment particulier reste affiché comme du code dans la vue visuelle, ouvrez-le en cliquant
-dessus ou passez en **Source** pour le corriger. Les [anomalies de syntaxe](problemes.md) sont indiquées
+dessus ou passez en **Source** pour le corriger. Les [anomalies de syntaxe](utiliser/erreurs-de-syntaxe.md) sont indiquées
 sous l’éditeur.
 
 ## Agrandir la zone d’écriture

@@ -18,10 +18,10 @@ paragraphe ou un nouvel élément de liste, placez simplement le curseur à l’
 Le niveau **Intertitre** correspond au titre SPIP habituel. Les niveaux supplémentaires sont
 disponibles si l’administrateur les a conservés dans la [configuration](../configurer.md).
 
-Dans une liste, **Tab** indente un élément et **Maj+Tab** le désindente. 
+Dans une liste, **Tab** indente un élément et **Maj+Tab** le désindente.
 
-Pour un tableau, placez le curseur dans une cellule avant de rouvrir **Tableau** : 
-vous pouvez ajouter ou supprimer une ligne ou une colonne, ajouter une ligne d’en-tête, 
+Pour un tableau, placez le curseur dans une cellule avant de rouvrir **Tableau** :
+vous pouvez ajouter ou supprimer une ligne ou une colonne, ajouter une ligne d’en-tête,
 fusionner ou séparer des cellules.
 
 ![Édition d’un tableau](../medias/editeur_tableau.png)

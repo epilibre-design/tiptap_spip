@@ -34,5 +34,5 @@ après une modification importante d’un contenu complexe.
 
 Un plugin SPIP tiers peut déclarer comment lire et écrire **son** raccourci, ajouter un bouton et
 fournir le rendu public correspondant. L’[exemple FAQ](developper/faq.md) montre les deux côtés :
-le JavaScript pour l’édition et PHP pour le rendu SPIP. Les détails du parseur et des points
+le JavaScript pour l’édition et le PHP pour le rendu SPIP. Les détails du parseur et des points
 d’extension figurent dans les [spécifications du projet](https://github.com/epilibre-design/tiptap_spip/tree/main/docs/specs).

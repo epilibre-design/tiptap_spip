@@ -11,19 +11,19 @@ item, simply place the cursor where you want it.
 | Insert a quotation or code excerpt | **Quote** or **Code block** |
 | Align a paragraph | **Alignment** menu |
 | Insert quotation marks or special characters | **Quotation marks** and **Characters** menus |
-| Create a table | **Table** menu, then **Insert table** |
+| Create a table | **Table** menu, then **Insert a table** |
 
 ## Headings, lists, and tables
 
-**Intertitle** corresponds to the usual SPIP heading. Additional levels are available if the
+**Subheading** corresponds to the usual SPIP heading. Additional levels are available if the
 administrator kept them in the [configuration](../configurer.md).
 
-In a list, **Tab** indents an item and **Shift+Tab** outdents it. 
+In a list, **Tab** indents an item and **Shift+Tab** outdents it.
 
-In a table, place the cursor in a cell before reopening **Table**: 
+In a table, place the cursor in a cell before reopening **Table**:
 you can add or delete a row or column, add a header row, or merge or split cells.
 
-![Table edition](../medias/editeur_tableau.png)
+![Editing a table](../medias/editeur_tableau.en.png)
 
 ## A few keyboard shortcuts
 

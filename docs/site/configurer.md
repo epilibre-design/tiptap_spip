@@ -12,8 +12,8 @@ habituel de SPIP. Certains champs courts, tels que le titre, ne figurent pas dan
 
 L’éditeur fonctionne dans l’espace privé dès qu’un champ est coché. Les cases **Dans le site public**
 et **Dans les crayons** sont indépendantes et désactivées par défaut. Activez-les seulement si vous
-souhaitez aussi l’éditeur dans ces contextes. Le plugin **Crayons** doit bien sûr être présent pour
-utiliser la seconde option.
+souhaitez aussi l’éditeur dans ces contextes. Le plugin **Crayons** doit aussi être actif pour
+que la seconde option ait un effet.
 
 ## Activer ou désactiver l’envoi de fichiers
 
@@ -46,4 +46,4 @@ Enregistrez le formulaire, puis rouvrez une page d’édition pour vérifier les
 L’éditeur équipe les champs éditables dont SPIP traite le contenu avec les raccourcis typographiques,
 comme le champ **Texte**. Un champ personnalisé peut nécessiter une intégration par le plugin qui
 l’ajoute. Voir [Résoudre un problème](problemes.md) et, pour les développeurs,
-[Créer une extension](developper/faq.md).
+[Créer une extension FAQ](developper/faq.md).

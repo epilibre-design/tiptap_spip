@@ -10,7 +10,7 @@ return to SPIP syntax at any time.
 
 ## Where to start
 
-1. [Install the plugin](installer.md) from a ZIP archive or via FTP.
+1. [Install the plugin](installer.md) from the SPIP catalog, an archive, or Git.
 2. [Open an article and get started](premiers-pas.md).
 3. Explore the [formatting tools](utiliser/mise-en-forme.md) and
    [SPIP content tools](utiliser/contenus-spip.md).
@@ -21,5 +21,5 @@ If you manage the site, read about [configuration](configurer.md). If you develo
 [FAQ extension tutorial](developper/faq.md) starts from a working example.
 
 !!! info "Who is this documentation for?"
-    **Install**, **Getting started**, and **Use the editor** are for people who manage or write
+    **Install** and **Use the editor** are for people who manage or write
     content for a SPIP site. Technical details are under **Understand** and **Develop**.

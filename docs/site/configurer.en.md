@@ -6,13 +6,13 @@ browser.
 
 ## Choose where the editor appears
 
-**Enabled fields** lists compatible fields on your editable objects, such as an article's text,
+**Fields using the editor** lists compatible fields on your editable objects, such as an article's text,
 introduction, or postscript. Deselect a field to keep SPIP's usual editor there. Some short
 fields, such as the title, do not appear in this list.
 
 The editor works in the private area whenever a field is selected. **On the public site** and
-**In Crayons** are independent options, both disabled by default. Enable them if you want the
-editor in those contexts too. The **Crayons** plugin must be installed to use the latter option.
+**In crayons** are independent options, both disabled by default. Enable them if you want the
+editor in those contexts too. The **Crayons** plugin must also be active for the latter option to have any effect.
 
 ## Enable or disable file uploads
 
@@ -27,13 +27,13 @@ shortcuts. Permission to attach documents to that object is still required. See
 
 ## Set editing preferences
 
-- **Initial mode**: choose **Visual** or **Source**. If someone has already changed modes in
+- **Mode when opening**: choose **Visual** or **Source**. If someone has already changed modes in
   their browser, their remembered choice takes precedence next time.
-- **Available heading levels**: select the levels shown in the **Heading** menu. The
-  **Intertitle** level uses the classic SPIP shortcut; later levels use HTML heading tags.
-- **Available glossaries**: choose the named glossaries shown in the glossary dialog. Shortcuts
+- **Heading levels offered**: select the levels shown in the **Heading** menu. The
+  **Subheading** level uses the classic SPIP shortcut; later levels use HTML heading tags.
+- **Glossaries offered**: choose the named glossaries shown in the glossary dialog. Shortcuts
   already in your text remain readable.
-- **Available models**: if **Insérer modèles** is installed, configure its catalog in that
+- **Models offered**: if **Insérer modèles** is installed, configure its catalog in that
   plugin's settings. Otherwise, direct entry of the shortcut remains available.
 
 Save the form, then reopen an editing page to check the affected fields.
@@ -42,4 +42,4 @@ Save the form, then reopen an editing page to check the affected fields.
 
 The editor supports editable fields whose content SPIP processes with typographic shortcuts,
 such as **Text**. A custom field may need integration by the plugin that adds it. See
-[Troubleshoot](problemes.md) and, for developers, [Build an extension](developper/faq.md).
+[Troubleshoot](problemes.md) and, for developers, [Build a FAQ extension](developper/faq.md).
