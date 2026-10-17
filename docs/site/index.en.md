@@ -10,7 +10,7 @@ return to SPIP syntax at any time.
 
 ## Where to start
 
-1. [Install the plugin](installer.md) from the SPIP catalogue, an archive, or Git.
+1. [Install the plugin](installer.md) from the SPIP catalog, an archive, or Git.
 2. [Open an article and get started](premiers-pas.md).
 3. Explore the [formatting tools](utiliser/mise-en-forme.md) and
    [SPIP content tools](utiliser/contenus-spip.md).

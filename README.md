@@ -3,7 +3,7 @@
 Éditeur WYSIWYG pour SPIP, basé sur [Tiptap 3](https://tiptap.dev) / ProseMirror, qui lit et écrit
 **les raccourcis typographiques SPIP natifs** (`{{gras}}`, `{{{intertitre}}}`, `[texte->art12]`,
 `[[note]]`, `[?glossaire]`, `<doc12|center>`…). Il remplace le porte-plume sur les champs en syntaxe SPIP,
-comme le plugin [markdown_editor](../plugins/markdown_editor) le fait pour les champs en Markdown.
+comme le plugin [markdown_editor](https://git.spip.net/spip-contrib-extensions/markdown_editor) le fait pour les champs en Markdown.
 
 ## Documentation
 

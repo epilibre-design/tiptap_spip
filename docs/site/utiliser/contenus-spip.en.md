@@ -21,7 +21,7 @@ See [Enter footnotes](notes-de-bas-de-page.md) for the dialog steps and options.
 
 **Glossary** associates a term with a definition: select the word, then open **Glossary**. You
 can choose a glossary, specify a tooltip or language, and check the destination with
-**View definition**.
+**See the definition**.
 
 ## Images, documents, and other models
 
@@ -35,12 +35,12 @@ To upload files from the editor, see [Paste images and drop files](images-docume
 
 ## Multiple languages in one text
 
-The **Multi** button creates language-specific versions of a passage. See
+The **Multilingual** button creates language-specific versions of a passage. See
 [Use multis](multilinguisme.md) to enable the button, switch the displayed language while editing,
 and fill in the multi window.
 
 In the multi window, choose the language of each version from the list. It offers the languages
-enabled in that configuration; a language already present in the multi is still offered.
+enabled under **Configuration → Multilingual**; a language already present in the multi is still offered.
 **No language** is the version shown when no other one matches.
 
 ## If a passage appears as code

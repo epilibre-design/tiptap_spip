@@ -8,11 +8,11 @@ The [official Visual editor for SPIP page](https://plugins.spip.net/tiptap_spip.
 
 1. Sign in to the private area as a webmaster.
 2. Open **Configuration → Plugin management → Add plugins**.
-3. Search the catalogue for **Visual editor for SPIP** and install it.
+3. Search the catalog for **Visual editor for SPIP** and install it.
 4. Activate the plugin in the plugin manager. SPIP may ask for your webmaster password.
 
 You can also install it [from an archive](installer/depuis-archive.md) or [from Git](installer/depuis-git.md).
-[Porte-plume, Insérer modèles, and Coloration Code](installer/plugins-complementaires.md) are optional.
+The [optional plugins](installer/plugins-complementaires.md) Insérer modèles and Coloration Code are not required.
 
 ## Check the installation
 
@@ -20,7 +20,7 @@ Edit an article with a **Text** field: a toolbar and a visual writing area shoul
 
 The editor is enabled by default on compatible fields in the private area. It is configured separately for public-site forms and Crayons, where it is disabled by default. See [Configure the editor](configurer.md) if an expected field has no toolbar.
 
-!!! tip "Porte-plume remains available"
-    **Source** shows SPIP syntax, and fields you deselect in the configuration keep their usual editor.
+!!! tip "SPIP syntax stays accessible"
+    **Source** shows SPIP syntax in a plain text area. Fields you deselect in the configuration keep the Porte-plume toolbar.
 
 Continue with the [getting started guide](premiers-pas.md).

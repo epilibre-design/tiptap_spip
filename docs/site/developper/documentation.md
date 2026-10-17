@@ -27,8 +27,10 @@ documentation arrivent sur `main`. Dans les paramètres du dépôt GitHub, chois
 Pages → Build and deployment → GitHub Actions**. Le site est prévu à l’adresse
 `https://epilibre-design.github.io/tiptap_spip/`.
 
-Le dépôt de publication est `epilibre-design/tiptap_spip`. Les liens vers les sources et l’URL
-canonique du site dans `mkdocs.yml` utilisent ce dépôt et le préfixe `/tiptap_spip/`.
+Le site est publié depuis le dépôt GitHub `epilibre-design/tiptap_spip` : l’URL canonique de
+`mkdocs.yml` (`site_url`) utilise donc le préfixe `/tiptap_spip/`. Le lien vers le dépôt affiché par
+le site (`repo_url`) pointe en revanche vers le dépôt de travail,
+`spip-contrib-extensions/tiptap_spip` sur git.spip.net.
 
 Un build local ou une PR ne publie rien : la publication dépend de la fusion sur `main` et du
 paramétrage Pages du dépôt. Le workflow peut aussi être lancé manuellement depuis l’onglet

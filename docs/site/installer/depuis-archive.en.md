@@ -1,6 +1,6 @@
 # Install from an archive
 
-Use this method to install the plugin from a ZIP file. For a typical installation through SPIP's plugin catalogue, follow the [standard installation](../installer.md).
+Use this method to install the plugin from a ZIP file. For a typical installation through SPIP's plugin catalog, follow the [standard installation](../installer.md).
 
 ## Choose an archive
 
@@ -29,6 +29,6 @@ The [official SPIP plugin management guide](https://www.spip.net/fr_article6841.
 3. Upload **that folder** to `plugins/` at the root of your SPIP site. The file `paquet.xml` should then be at `plugins/tiptap_spip/paquet.xml`.
 4. In the private area, open **Configuration → Plugin management** and activate **Visual editor for SPIP**.
 
-FTP installation does not update the files automatically. To update, download a new archive, back up the site first, replace the plugin files, and check that the plugin remains active. See also the [SPIP FTP documentation](https://www.spip.net/fr_article6841.html#Methodes-alternatives-pour-gerer-les-plugins) (in French).
+FTP installation does not update the files automatically. To update, download a new archive, back up the site first, replace the plugin files, and check that the plugin remains active.
 
 After activation, follow the [getting started guide](../premiers-pas.md).

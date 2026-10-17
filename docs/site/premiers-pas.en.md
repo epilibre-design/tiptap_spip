@@ -14,7 +14,7 @@ processing. You can open and edit existing text without a migration step.
 ## Find your way around the toolbar
 
 The **Heading** menu chooses a heading level; **List** creates bullets or numbered items. The
-**Link**, **Note**, **Glossary**, **Model**, **Multi**, and **Table** buttons open tools for those
+**Link**, **Note**, **Glossary**, **Model**, **Multilingual**, and **Table** buttons open tools for those
 types of content. Hover over a button to see its name and keyboard shortcut, if it has one.
 
 The toolbar stays visible as you scroll through the form. Available buttons depend on the field:
@@ -28,7 +28,7 @@ is remembered in this browser; an administrator can also choose the site's
 [initial mode](configurer.md).
 
 If a particular fragment appears as code in the visual view, click it or switch to **Source** to
-correct it. [Syntax issues](problemes.md) are shown below the editor.
+correct it. [Syntax issues](utiliser/erreurs-de-syntaxe.md) are shown below the editor.
 
 ## Expand the writing area
 

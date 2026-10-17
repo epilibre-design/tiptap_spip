@@ -1,16 +1,18 @@
 # Plugins complémentaires
 
-**Porte-plume**, **Insérer modèles** et **Coloration Code** sont facultatifs : l’éditeur visuel fonctionne sans eux.
-Vous pouvez les activer dans la gestion des plugins de SPIP.
+**Insérer modèles** et **Coloration Code** sont facultatifs : l’éditeur visuel fonctionne sans eux.
+Vous pouvez les activer dans la gestion des plugins de SPIP. Le **porte-plume**, livré avec SPIP,
+cohabite avec l’éditeur visuel.
 
 ## Porte-plume
 
-Tiptap reconnaît les champs équipés des barres d’édition et de forum du porte-plume. Sur un champ
-où l’éditeur visuel est actif, il prend sa place. Le porte-plume reste disponible sur les champs que
-vous excluez dans la [configuration](../configurer.md).
+Le porte-plume fait partie des plugins livrés avec SPIP. L’éditeur visuel ne s’appuie pas sur lui :
+il reconnaît les champs équipés de ses barres d’édition et de forum, retire la barre et prend sa
+place. Le porte-plume reste disponible sur les champs que vous excluez dans la
+[configuration](../configurer.md).
 
-Le bouton **Source** de Tiptap affiche les raccourcis SPIP, mais ne rétablit pas la barre du
-porte-plume sur le champ équipé de l’éditeur visuel.
+Le bouton **Source** de l’éditeur visuel affiche les raccourcis SPIP dans une simple zone de texte,
+sans la barre du porte-plume.
 
 Documentation du plugin : [Porte-plume sur SPIP-Contrib](https://contrib.spip.net/Porte-plume-3117).
 

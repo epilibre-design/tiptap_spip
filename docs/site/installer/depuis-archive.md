@@ -29,6 +29,6 @@ Le [guide officiel de SPIP sur la gestion des plugins](https://www.spip.net/fr_a
 3. Envoyez **ce dossier** dans le répertoire `plugins/` à la racine de votre site SPIP. Le fichier `paquet.xml` doit alors se trouver à `plugins/tiptap_spip/paquet.xml`.
 4. Dans l’espace privé, ouvrez **Configuration → Gestion des plugins** et activez **Éditeur visuel pour SPIP**.
 
-Une installation par FTP ne met pas les fichiers à jour automatiquement. Pour une mise à jour, récupérez une nouvelle archive, sauvegardez d’abord le site, remplacez les fichiers du plugin, puis vérifiez qu’il reste actif. Consultez aussi la [documentation de SPIP sur le FTP](https://www.spip.net/fr_article6841.html#Methodes-alternatives-pour-gerer-les-plugins).
+Une installation par FTP ne met pas les fichiers à jour automatiquement. Pour une mise à jour, récupérez une nouvelle archive, sauvegardez d’abord le site, remplacez les fichiers du plugin, puis vérifiez qu’il reste actif.
 
 Après l’activation, suivez les [premiers pas](../premiers-pas.md).

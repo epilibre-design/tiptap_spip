@@ -38,12 +38,12 @@ Pour envoyer des fichiers depuis l’éditeur, voir [Coller des images et dépos
 
 ## Plusieurs langues dans un même texte
 
-Le bouton **Multi** crée des versions d’un passage selon la langue. Consultez
+Le bouton **Multilingue** crée des versions d’un passage selon la langue. Consultez
 [Utiliser les multis](multilinguisme.md) pour activer le bouton, changer la langue affichée pendant
 l’édition et remplir la fenêtre du multi.
 
 Dans la fenêtre du multi, choisissez la langue de chaque version dans la liste. Elle propose les
-langues activées dans cette configuration ; une langue déjà présente dans le multi reste
+langues activées dans **Configuration → Multilinguisme** ; une langue déjà présente dans le multi reste
 proposée. **Sans langue** correspond à la version affichée quand aucune autre ne convient.
 
 ## Si un passage s’affiche comme du code

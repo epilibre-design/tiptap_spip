@@ -12,7 +12,7 @@ La [page officielle d’Éditeur visuel pour SPIP](https://plugins.spip.net/tipt
 4. Activez le plugin dans la gestion des plugins. SPIP peut demander votre mot de passe de webmestre.
 
 Vous pouvez aussi l’installer [depuis une archive](installer/depuis-archive.md) ou [depuis Git](installer/depuis-git.md).
-Les plugins [Porte-plume, Insérer modèles et Coloration Code](installer/plugins-complementaires.md) sont facultatifs.
+Les [plugins complémentaires](installer/plugins-complementaires.md) Insérer modèles et Coloration Code sont facultatifs.
 
 ## Vérifier l’installation
 
@@ -20,7 +20,7 @@ Ouvrez la modification d’un article contenant un champ **Texte** : une barre d
 
 L’éditeur s’active par défaut dans les champs compatibles de l’espace privé. Son affichage dans les formulaires du site public et dans les crayons se règle séparément ; il est désactivé par défaut. Voir [Configurer l’éditeur](configurer.md) si un champ attendu n’affiche pas la barre.
 
-!!! tip "Le porte-plume reste disponible"
-    Le bouton **Source** affiche les raccourcis SPIP, et les champs que vous décochez dans la configuration conservent leur éditeur habituel.
+!!! tip "Les raccourcis SPIP restent accessibles"
+    Le bouton **Source** affiche les raccourcis SPIP dans une simple zone de texte. Les champs que vous décochez dans la configuration conservent la barre du porte-plume.
 
 Continuez avec les [premiers pas](premiers-pas.md).

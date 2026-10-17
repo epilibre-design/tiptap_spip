@@ -26,8 +26,10 @@ documentation changes reach `main`. In the GitHub repository settings, choose **
 Pages → Build and deployment → GitHub Actions**. The intended site URL is
 `https://epilibre-design.github.io/tiptap_spip/`.
 
-The publishing repository is `epilibre-design/tiptap_spip`. Source links and the canonical site
-URL in `mkdocs.yml` use that repository and the `/tiptap_spip/` prefix.
+The site is published from the GitHub repository `epilibre-design/tiptap_spip`, so the canonical
+URL in `mkdocs.yml` (`site_url`) uses the `/tiptap_spip/` prefix. The repository link shown by the
+site (`repo_url`) points instead to the working repository, `spip-contrib-extensions/tiptap_spip`
+on git.spip.net.
 
 A local build or pull request does not publish anything: publication depends on merging to
 `main` and configuring Pages in the repository. The workflow can also be run manually from the
