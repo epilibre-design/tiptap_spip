@@ -22,7 +22,7 @@ This choice helps you review and edit each version in the editor. It does not ch
 
 The first version uses the displayed language if it is enabled; otherwise it uses the first available language. A new version uses the first enabled language not already taken. **No language** is the default version, shown when no version matches the requested language.
 
-![Multi editor with a version without a language, an English version and a German version; screenshot of the French interface](../medias/edit_multi.en.png)
+![Multi editor with a version without a language, an English version and a German version](../medias/edit_multi.en.png)
 
 To change an inline multi, select it and open **Multilingual**. **Delete the multi** removes the shortcut while keeping the version currently displayed in the text.
 

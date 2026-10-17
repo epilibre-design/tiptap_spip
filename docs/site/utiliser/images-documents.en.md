@@ -6,7 +6,7 @@ other document types allowed by your site, such as PDFs. Each uploaded file beco
 document linked to the article being edited. The editor inserts its `<docN>` shortcut into the
 text.
 
-![An image added to the visual editing area; screenshot of the French interface](../medias/demo_dragdrop.en.png)
+![An image added to the visual editing area](../medias/demo_dragdrop.en.png)
 
 !!! note "Before you start"
     Check that **Paste images and drop documents** is enabled in the

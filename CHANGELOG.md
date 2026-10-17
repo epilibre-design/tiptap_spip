@@ -6,7 +6,7 @@
   à l'archive et à Git. Le rôle du porte-plume est précisé (l'éditeur visuel le remplace sans
   s'appuyer sur lui, et le bouton Source affiche une simple zone de texte). Les libellés cités
   correspondent à ceux de l'interface, notamment le bouton Multilingue et les réglages en anglais,
-  et les pages anglaises montrent leurs captures anglaises quand elles existent.
+  et les pages anglaises montrent des captures de l'interface anglaise.
 
 ## [1.3.0] - 2026-10-17
 

@@ -23,7 +23,7 @@ In a list, **Tab** indents an item and **Shift+Tab** outdents it.
 In a table, place the cursor in a cell before reopening **Table**:
 you can add or delete a row or column, add a header row, or merge or split cells.
 
-![Editing a table; screenshot of the French interface](../medias/editeur_tableau.en.png)
+![Editing a table](../medias/editeur_tableau.en.png)
 
 ## A few keyboard shortcuts
 
