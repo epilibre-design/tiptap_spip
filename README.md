@@ -7,9 +7,10 @@ comme le plugin [markdown_editor](../plugins/markdown_editor) le fait pour les c
 
 ## Documentation
 
-Le [guide utilisateur](https://epilibre-design.github.io/tiptap_spip/) explique l'installation par ZIP ou
-FTP, la prise en main, les réglages et l'utilisation de l'éditeur. Une page dédiée montre comment
-créer une extension à partir du plugin FAQ fourni dans `exemples/`.
+Le [guide utilisateur](https://epilibre-design.github.io/tiptap_spip/) explique l'installation depuis
+le catalogue SPIP, une archive ou Git, la prise en main, les réglages et l'utilisation de
+l'éditeur. Une page dédiée montre comment créer une extension à partir du plugin FAQ fourni
+dans `exemples/`.
 
 The [English user guide](https://epilibre-design.github.io/tiptap_spip/en/) covers installation,
 getting started, configuration, and using the editor.

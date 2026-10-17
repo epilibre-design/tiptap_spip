@@ -10,7 +10,7 @@ Le bouton **Source** permet de retrouver les raccourcis SPIP à tout moment.
 
 ## Par où commencer ?
 
-1. [Installer le plugin](installer.md) avec une archive ZIP ou par FTP.
+1. [Installer le plugin](installer.md) depuis le catalogue SPIP, une archive ou Git.
 2. [Ouvrir un article et faire ses premiers pas](premiers-pas.md).
 3. [Découvrir les outils de mise en forme](utiliser/mise-en-forme.md) et les
    [contenus propres à SPIP](utiliser/contenus-spip.md).
@@ -22,6 +22,6 @@ Si vous gérez le site, consultez les [réglages](configurer.md). Si vous dével
 la page [Créer une extension FAQ](developper/faq.md) part d’un exemple fonctionnel.
 
 !!! info "À qui s’adresse cette documentation ?"
-    Les pages **Installer**, **Premiers pas** et **Utiliser** sont destinées aux personnes qui
+    Les sections **Installer** et **Utiliser** sont destinées aux personnes qui
     administrent ou rédigent un site SPIP. Les détails techniques sont regroupés sous
     **Comprendre** et **Développer**.
