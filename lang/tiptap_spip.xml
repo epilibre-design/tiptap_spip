@@ -1,0 +1,12 @@
+<traduction
+	module="tiptap_spip"
+	id="tiptap_spip--tiptap_spip-542a1"
+	gestionnaire="salvatore"
+	url="https://trad.spip.net"
+	source="https://git.spip.net/spip-contrib-extensions/tiptap_spip.git"
+	reference="fr">
+	<langue code="en" url="https://trad.spip.net/tradlang_module/tiptap_spip-tiptap_spip?lang_cible=en" total="167" traduits="166" relire="0" modifs="0" nouveaux="1" pourcent="99.40">
+		<traducteur nom="jcvilleneuve" lien="https://trad.spip.net/auteur/jcvilleneuve" />
+	</langue>
+	<langue code="fr" url="https://trad.spip.net/tradlang_module/tiptap_spip-tiptap_spip?lang_cible=fr" total="167" traduits="167" relire="0" modifs="0" nouveaux="0" pourcent="100.00" />
+</traduction>

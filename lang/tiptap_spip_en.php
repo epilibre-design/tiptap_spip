@@ -1,8 +1,11 @@
 <?php
-
-// Ceci est un fichier langue de SPIP -- This is a SPIP language file
+// This is a SPIP language file  --  Ceci est un fichier langue de SPIP
+// extrait automatiquement de https://trad.spip.net/tradlang_module/tiptap_spip-tiptap_spip?lang_cible=en
+// ** ne pas modifier le fichier **
 
 return [
+
+	// A
 	'abbr' => 'Abbreviation',
 	'abbr_explication' => 'Expansion',
 	'abbr_invalide' => 'This abbreviation cannot be written as a shortcut (empty expansion, brackets, vertical bar…).',
@@ -14,11 +17,14 @@ return [
 	'anomalie_intertitre' => 'Subheading braces outside a complete subheading: when rendered, the rest becomes a subheading.',
 	'anomalie_ouverture' => 'Formatting opened but never closed: when rendered, it extends to the end of the paragraph.',
 	'appliquer' => 'Apply',
-	'barre_outils' => 'Toolbar',
+
+	// B
 	'brut' => 'SPIP source',
 	'brut_invalide' => 'This text cannot replace the source at this point.',
 	'brut_source' => 'SPIP source, read again when applied',
 	'bulle' => 'Tooltip',
+
+	// C
 	'cfg_activation' => 'Activation',
 	'cfg_champs' => 'Fields using the editor',
 	'cfg_champs_explication' => 'Fields of editorial objects that open in the visual editor. Unchecked fields keep the SPIP toolbar.',
@@ -45,8 +51,12 @@ return [
 	'champ_descriptif' => 'Description',
 	'champ_ps' => 'Postscript',
 	'champ_texte' => 'Text',
+
+	// D
 	'depot_indication' => 'Drop the files',
 	'depot_indisponible' => 'Adding files is not available here.',
+
+	// E
 	'enregistrer_sans_attendre' => 'Save without waiting',
 	'envoi_echec' => 'The file could not be sent (session expired or connection lost).',
 	'envoi_en_cours' => 'A file is being sent.',
@@ -71,8 +81,12 @@ return [
 	'etat_anomalies' => '@nb@ syntax issues',
 	'etat_mot' => '1 word',
 	'etat_mots' => '@nb@ words',
+
+	// F
 	'fichier_trop_gros' => 'File too large: @nom@.',
 	'fichier_type_refuse' => 'File type not accepted: @nom@.',
+
+	// G
 	'glossaire' => 'Glossary',
 	'glossaire_definition' => 'See the definition',
 	'glossaire_invalide' => 'This term or these settings cannot be written as a glossary shortcut.',
@@ -80,11 +94,15 @@ return [
 	'glossaire_numero' => 'Number',
 	'glossaire_retirer' => 'Remove from the glossary',
 	'gras' => 'Bold',
+
+	// I
 	'idiome' => 'Idiom',
 	'idiome_invalide' => 'This is not an idiom shortcut.',
 	'idiome_raccourci' => 'Shortcut (<:module:key:>)',
 	'idiome_retirer' => 'Delete the idiom',
 	'italique' => 'Italic',
+
+	// L
 	'langue' => 'Language',
 	'langue_affichee' => 'Displayed language',
 	'lien' => 'Link',
@@ -98,6 +116,8 @@ return [
 	'lien_ouvrir' => 'Open',
 	'lien_rechercher' => 'Search for content',
 	'lien_retirer' => 'Remove the link',
+
+	// M
 	'mode_source' => 'Source',
 	'modele' => 'Model',
 	'modele_aria' => 'Model @modele@',
@@ -115,6 +135,8 @@ return [
 	'multi_supprimer' => 'Delete the multi',
 	'multi_texte' => 'Text in this language',
 	'multi_vide' => 'The multi is empty.',
+
+	// N
 	'note' => 'Note',
 	'note_aria_sans_appel' => 'Note without a reference',
 	'note_invalide' => 'This note cannot be written as is (name or text).',
@@ -124,6 +146,8 @@ return [
 	'note_texte' => 'Note text',
 	'note_vide' => 'The note is empty.',
 	'notes' => 'Notes',
+
+	// O
 	'outil_align_aucun' => 'No alignment',
 	'outil_align_center' => 'Centered',
 	'outil_align_justify' => 'Justified',
@@ -167,7 +191,13 @@ return [
 	'outil_tableau_supprimer_ligne' => 'Delete the row',
 	'outil_titre' => 'Heading',
 	'outil_titre_niveau' => 'Level @niveau@ heading',
+
+	// S
 	'selection_invalide' => 'Select text within a single paragraph.',
+
+	// T
 	'terme' => 'Term',
+
+	// Z
 	'zone_texte' => 'Text',
 ];

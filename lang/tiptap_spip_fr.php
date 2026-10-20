@@ -1,28 +1,34 @@
 <?php
-
-// Ceci est un fichier langue de SPIP -- This is a SPIP language file
+// This is a SPIP language file  --  Ceci est un fichier langue de SPIP
+// Fichier source, a modifier dans https://git.spip.net/spip-contrib-extensions/tiptap_spip.git
 
 return [
+
+	// A
 	'abbr' => 'Abréviation',
 	'abbr_explication' => 'Explication',
 	'abbr_invalide' => 'Cette abréviation ne peut pas s’écrire en raccourci (explication vide, crochets, barre verticale…).',
 	'abbr_retirer' => 'Retirer l’abréviation',
 	'annuler' => 'Annuler',
-	'anomalie_balise' => 'Balise SPIP sans fermeture : au rendu, elle n’est pas traitée.',
-	'anomalie_citation' => '<quote> sans </quote> : au rendu, tout le texte qui suit passe en citation.',
-	'anomalie_fermeture' => 'Fermeture sans ouverture : au rendu, elle s’affiche telle quelle ou reste sans effet.',
-	'anomalie_intertitre' => 'Accolades d’intertitre hors d’un intertitre complet : au rendu, la suite devient un intertitre.',
-	'anomalie_ouverture' => 'Mise en forme ouverte sans être fermée : au rendu, elle s’étend jusqu’à la fin du paragraphe.',
+	'anomalie_balise' => 'Balise SPIP sans fermeture : au rendu, elle n’est pas traitée.',
+	'anomalie_citation' => '<quote> sans </quote> : au rendu, tout le texte qui suit passe en citation.',
+	'anomalie_fermeture' => 'Fermeture sans ouverture : au rendu, elle s’affiche telle quelle ou reste sans effet.',
+	'anomalie_intertitre' => 'Accolades d’intertitre hors d’un intertitre complet : au rendu, la suite devient un intertitre.',
+	'anomalie_ouverture' => 'Mise en forme ouverte sans être fermée : au rendu, elle s’étend jusqu’à la fin du paragraphe.',
 	'appliquer' => 'Appliquer',
+
+	// B
 	'barre_outils' => 'Barre d’outils',
 	'brut' => 'Source SPIP',
 	'brut_invalide' => 'Ce texte ne peut pas remplacer la source à cet endroit.',
 	'brut_source' => 'Source SPIP, relue quand on applique',
 	'bulle' => 'Bulle d’aide',
+
+	// C
 	'cfg_activation' => 'Activation',
 	'cfg_champs' => 'Champs équipés',
 	'cfg_champs_explication' => 'Champs des objets éditoriaux qui s’ouvrent dans l’éditeur visuel. Les champs décochés gardent la barre d’outils de SPIP.',
-	'cfg_coller_images' => 'Coller des images et déposer des documents : chaque fichier est ajouté aux documents de l’objet et inséré en &lt;docN&gt;',
+	'cfg_coller_images' => 'Coller des images et déposer des documents : chaque fichier est ajouté aux documents de l’objet et inséré en &lt;docN&gt;',
 	'cfg_crayons' => 'Dans les crayons (plugin Crayons)',
 	'cfg_documents' => 'Documents',
 	'cfg_edition' => 'Édition',
@@ -34,10 +40,10 @@ return [
 	'cfg_mode_source' => 'Source (raccourcis SPIP)',
 	'cfg_mode_visuel' => 'Visuel',
 	'cfg_modeles' => 'Modèles proposés',
-	'cfg_modeles_explication' => 'Le catalogue des modèles de l’éditeur est celui du plugin Insérer modèles : les modèles proposés se règlent dans <a href="@url@">sa configuration</a>.',
-	'cfg_modeles_sans_plugin' => 'Avec le plugin Insérer modèles, l’éditeur propose un catalogue des modèles et un formulaire pour chacun ; sans lui, un modèle se saisit par son raccourci.',
+	'cfg_modeles_explication' => 'Le catalogue des modèles de l’éditeur est celui du plugin Insérer modèles : les modèles proposés se règlent dans <a href="@url@">sa configuration</a>.',
+	'cfg_modeles_sans_plugin' => 'Avec le plugin Insérer modèles, l’éditeur propose un catalogue des modèles et un formulaire pour chacun ; sans lui, un modèle se saisit par son raccourci.',
 	'cfg_niveaux' => 'Niveaux de titres proposés',
-	'cfg_niveaux_explication' => 'L’intertitre s’écrit {{{…}}} ; les niveaux suivants s’écrivent en HTML (&lt;h3&gt;…&lt;/h3&gt;).',
+	'cfg_niveaux_explication' => 'L’intertitre s’écrit {{{…}}} ; les niveaux suivants s’écrivent en HTML (&lt;h3&gt;…&lt;/h3&gt;).',
 	'cfg_public' => 'Dans le site public (formulaires de forum et formulaires publics)',
 	'cfg_titre' => 'Éditeur visuel',
 	'champ_bio' => 'Biographie',
@@ -45,8 +51,12 @@ return [
 	'champ_descriptif' => 'Descriptif',
 	'champ_ps' => 'Post-scriptum',
 	'champ_texte' => 'Texte',
+
+	// D
 	'depot_indication' => 'Déposer les fichiers',
 	'depot_indisponible' => 'L’ajout de fichiers n’est pas disponible ici.',
+
+	// E
 	'enregistrer_sans_attendre' => 'Enregistrer sans attendre',
 	'envoi_echec' => 'Le fichier n’a pas pu être envoyé (session expirée ou connexion perdue).',
 	'envoi_en_cours' => 'Un fichier est en cours d’envoi.',
@@ -71,20 +81,28 @@ return [
 	'etat_anomalies' => '@nb@ anomalies de syntaxe',
 	'etat_mot' => '1 mot',
 	'etat_mots' => '@nb@ mots',
-	'fichier_trop_gros' => 'Fichier trop volumineux : @nom@.',
-	'fichier_type_refuse' => 'Type de fichier non accepté : @nom@.',
+
+	// F
+	'fichier_trop_gros' => 'Fichier trop volumineux : @nom@.',
+	'fichier_type_refuse' => 'Type de fichier non accepté : @nom@.',
+
+	// G
 	'glossaire' => 'Glossaire',
 	'glossaire_definition' => 'Voir la définition',
 	'glossaire_invalide' => 'Ce terme ou ces réglages ne peuvent pas s’écrire en raccourci de glossaire.',
-	'glossaire_nom' => 'Glossaire (vide : par défaut)',
+	'glossaire_nom' => 'Glossaire (vide : par défaut)',
 	'glossaire_numero' => 'Numéro',
 	'glossaire_retirer' => 'Retirer du glossaire',
 	'gras' => 'Gras',
+
+	// I
 	'idiome' => 'Idiome',
 	'idiome_invalide' => 'Ce n’est pas un raccourci d’idiome.',
-	'idiome_raccourci' => 'Raccourci (<:module:cle:>)',
+	'idiome_raccourci' => 'Raccourci (<:module:cle :>)',
 	'idiome_retirer' => 'Supprimer l’idiome',
 	'italique' => 'Italique',
+
+	// L
 	'langue' => 'Langue',
 	'langue_affichee' => 'Langue affichée',
 	'lien' => 'Lien',
@@ -98,6 +116,8 @@ return [
 	'lien_ouvrir' => 'Ouvrir',
 	'lien_rechercher' => 'Rechercher un contenu',
 	'lien_retirer' => 'Retirer le lien',
+
+	// M
 	'mode_source' => 'Source',
 	'modele' => 'Modèle',
 	'modele_aria' => 'Modèle @modele@',
@@ -115,15 +135,19 @@ return [
 	'multi_supprimer' => 'Supprimer le multi',
 	'multi_texte' => 'Texte dans cette langue',
 	'multi_vide' => 'Le multi est vide.',
+
+	// N
 	'note' => 'Note',
 	'note_aria_sans_appel' => 'Note sans appel',
 	'note_invalide' => 'Cette note ne peut pas s’écrire telle quelle (nom ou texte).',
-	'note_nom' => 'Nom (vide : numérotée)',
+	'note_nom' => 'Nom (vide : numérotée)',
 	'note_retirer' => 'Supprimer la note',
 	'note_sans_appel' => 'Sans appel',
 	'note_texte' => 'Texte de la note',
 	'note_vide' => 'La note est vide.',
 	'notes' => 'Notes',
+
+	// O
 	'outil_align_aucun' => 'Sans alignement',
 	'outil_align_center' => 'Centré',
 	'outil_align_justify' => 'Justifié',
@@ -167,7 +191,13 @@ return [
 	'outil_tableau_supprimer_ligne' => 'Supprimer la ligne',
 	'outil_titre' => 'Titre',
 	'outil_titre_niveau' => 'Titre de niveau @niveau@',
+
+	// S
 	'selection_invalide' => 'Sélectionnez du texte d’un même paragraphe.',
+
+	// T
 	'terme' => 'Terme',
+
+	// Z
 	'zone_texte' => 'Texte',
 ];
