@@ -7,7 +7,7 @@ return [
 
 	// A
 	'abbr' => 'Abbreviation',
-	'abbr_explication' => 'Expansion',
+	'abbr_explication' => 'Explanation', # MODIF
 	'abbr_invalide' => 'This abbreviation cannot be written as a shortcut (empty expansion, brackets, vertical bar…).',
 	'abbr_retirer' => 'Remove the abbreviation',
 	'annuler' => 'Cancel',
@@ -19,6 +19,7 @@ return [
 	'appliquer' => 'Apply',
 
 	// B
+	'barre_outils' => 'Toolbar',
 	'brut' => 'SPIP source',
 	'brut_invalide' => 'This text cannot replace the source at this point.',
 	'brut_source' => 'SPIP source, read again when applied',
