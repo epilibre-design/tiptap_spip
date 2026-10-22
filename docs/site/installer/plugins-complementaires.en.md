@@ -24,7 +24,7 @@ permissions.
 
 Without Insérer modèles, you can still enter a shortcut such as `<doc12|center>` directly. With
 the current version of this plugin, its catalog is unavailable on SPIP 5. See also
-[Insert SPIP content](../utiliser/contenus-spip.md#images-documents-and-other-models).
+[SPIP content](../utiliser/contenus-spip.md#images-documents-and-other-models).
 
 Plugin documentation: [Insérer modèles on SPIP-Contrib](https://contrib.spip.net/Plugin-Inserer-Modeles) (in French).
 

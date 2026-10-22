@@ -12,8 +12,7 @@ Le bouton **Source** permet de retrouver les raccourcis SPIP à tout moment.
 
 1. [Installer le plugin](installer.md) depuis le catalogue SPIP, une archive ou Git.
 2. [Ouvrir un article et faire ses premiers pas](premiers-pas.md).
-3. [Découvrir les outils de mise en forme](utiliser/mise-en-forme.md) et les
-   [contenus propres à SPIP](utiliser/contenus-spip.md).
+3. [Découvrir les outils de mise en forme et les contenus SPIP](utiliser/contenus-spip.md).
 
 Pour ajouter des images ou d’autres fichiers à un article, voir
 [Coller des images et déposer des fichiers](utiliser/images-documents.md).

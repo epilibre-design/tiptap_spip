@@ -61,13 +61,11 @@ plugins:
             Plugins complémentaires: Optional plugins
             Premiers pas: Getting started
             Utiliser: Use the editor
-            Mettre en forme: Format text
-            Contenus SPIP: SPIP content
+            Contenu SPIP: SPIP content
             Notes de bas de page: Footnotes
             Images et documents: Images and documents
             Multilinguisme: Multilingual content
             Erreurs de syntaxe: Syntax issues
-            Captures: Screenshots
             Configurer: Configure
             Résoudre un problème: Troubleshoot
             Comprendre: Understand
@@ -108,13 +106,11 @@ nav:
       - Plugins complémentaires: installer/plugins-complementaires.md
   - Utiliser:
       - Premiers pas: premiers-pas.md
-      - Mettre en forme: utiliser/mise-en-forme.md
-      - Contenus SPIP: utiliser/contenus-spip.md
+      - Contenu SPIP: utiliser/contenus-spip.md
       - Notes de bas de page: utiliser/notes-de-bas-de-page.md
       - Images et documents: utiliser/images-documents.md
       - Multilinguisme: utiliser/multilinguisme.md
       - Erreurs de syntaxe: utiliser/erreurs-de-syntaxe.md
-      - Captures: utiliser/captures.md
   - Configurer: configurer.md
   - Résoudre un problème: problemes.md
   - Comprendre:

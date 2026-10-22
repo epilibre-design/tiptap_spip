@@ -24,7 +24,7 @@ configurés dans le plugin et des droits de l’auteur.
 
 Sans Insérer modèles, vous pouvez toujours saisir directement un raccourci comme `<doc12|center>`.
 Avec la version actuelle de ce plugin, son catalogue n’est pas disponible sous SPIP 5. Voir aussi
-[Insérer des contenus SPIP](../utiliser/contenus-spip.md#images-documents-et-autres-modeles).
+[Contenu SPIP](../utiliser/contenus-spip.md#images-documents-et-autres-modeles).
 
 Documentation du plugin : [Insérer modèles sur SPIP-Contrib](https://contrib.spip.net/Plugin-Inserer-Modeles).
 
