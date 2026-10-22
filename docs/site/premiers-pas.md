@@ -16,9 +16,31 @@ traitements habituels de SPIP. Les textes déjà enregistrés peuvent être ouve
 
 ![Barre de l’éditeur avec ses groupes d’outils repérés de A à P](medias/barre-de-l-editeur.png)
 
-Le menu **Titre** choisit un intertitre ; **Liste** crée des puces ou des numéros. Les boutons
-**Lien**, **Note**, **Glossaire**, **Modèle**, **Multilingue** et **Tableau** ouvrent les outils adaptés au
-contenu. Survolez un bouton pour lire son nom et, lorsqu’il existe, son raccourci clavier.
+Les lettres de la capture repèrent les groupes d’outils suivants. Cliquez sur leur nom pour
+retrouver les explications détaillées.
+
+| Repère | Outils | À quoi ils servent |
+|---|---|---|
+| **A** | [Annuler / Rétablir](utiliser/contenus-spip.md#quelques-raccourcis-clavier) | Annuler la dernière modification ou rétablir une modification annulée. |
+| **B** | [Titres / Listes](utiliser/contenus-spip.md#titres-et-listes) | Transformer les paragraphes en intertitres, en listes à puces ou en listes numérotées ; indenter les éléments de liste. |
+| **C** | [Citation / Poésie](utiliser/contenus-spip.md#citations-et-poesie) | Présenter une citation ou conserver les retours à la ligne d’un passage en poésie. |
+| **D** | [Bloc de code](utiliser/contenus-spip.md#un-bloc-de-plusieurs-lignes) | Saisir un exemple de code sur plusieurs lignes, sans interpréter ses raccourcis SPIP. |
+| **E** | [Gras / Italique / Barré](utiliser/contenus-spip.md#mise-en-forme) | Appliquer ou retirer ces effets sur les mots sélectionnés. |
+| **F** | [Exposant / Indice](utiliser/contenus-spip.md#mise-en-forme) | Placer les caractères sélectionnés en exposant ou en indice. |
+| **G** | [Code](utiliser/contenus-spip.md#quelques-mots-de-code-dans-une-phrase) | Présenter un court extrait de code à l’intérieur d’une phrase. |
+| **H** | [Lien](utiliser/contenus-spip.md#liens-vers-une-page-ou-un-document) | Créer ou modifier un lien vers une adresse web, un article, une rubrique ou un document du site. |
+| **I** | [Note de bas de page](utiliser/notes-de-bas-de-page.md) | Insérer une note et modifier son contenu dans une fenêtre dédiée. |
+| **J** | [Glossaire](utiliser/contenus-spip.md#notes-et-glossaires) / Abréviation | Relier un terme à sa définition ; préciser la signification d’une abréviation. |
+| **K** | [Modèle](utiliser/contenus-spip.md#images-documents-et-autres-modeles) | Insérer un modèle SPIP par son raccourci ou par le catalogue, lorsqu’il est disponible. |
+| **L** | [Alignement](utiliser/contenus-spip.md#mise-en-forme) | Aligner les blocs de texte à gauche, au centre, à droite ou les justifier. |
+| **M** | [Tableau](utiliser/tableaux.md) | Créer un tableau et gérer ses lignes, colonnes, en-têtes et cellules fusionnées. |
+| **N** | [Guillemets / Caractères](utiliser/contenus-spip.md#mise-en-forme) | Entourer la sélection de guillemets ou insérer un caractère spécial. |
+| **O** | [Source](#passer-en-source-et-revenir) | Afficher et modifier les raccourcis SPIP de l’article, puis revenir au visuel. |
+| **P** | [Plein écran](#agrandir-la-zone-decriture) | Agrandir la zone de saisie pour écrire plus confortablement. |
+
+Survolez un bouton pour lire son nom et, lorsqu’il existe, son raccourci clavier.
+Selon la configuration et le contenu, la barre peut aussi proposer les outils
+[Multilingue et langue affichée](utiliser/multilinguisme.md), absents de cette capture.
 
 La barre reste visible pendant le défilement du formulaire. Les boutons disponibles dépendent du
 champ : un commentaire de forum, par exemple, a une barre plus courte qu’un article.

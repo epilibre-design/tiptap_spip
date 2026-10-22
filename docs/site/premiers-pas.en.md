@@ -15,9 +15,31 @@ processing. You can open and edit existing text without a migration step.
 
 ![Editor toolbar with tool groups labeled A to P](medias/barre-de-l-editeur.en.png)
 
-The **Heading** menu chooses a heading level; **List** creates bullets or numbered items. The
-**Link**, **Note**, **Glossary**, **Model**, **Multilingual**, and **Table** buttons open tools for those
-types of content. Hover over a button to see its name and keyboard shortcut, if it has one.
+The letters in the screenshot identify the following tool groups. Click a tool name for
+more detailed instructions.
+
+| Label | Tools | What they do |
+|---|---|---|
+| **A** | [Undo / Redo](utiliser/contenus-spip.md#a-few-keyboard-shortcuts) | Undo the last change or restore an undone change. |
+| **B** | [Headings / Lists](utiliser/contenus-spip.md#headings-and-lists) | Turn paragraphs into headings, bulleted lists, or numbered lists; indent list items. |
+| **C** | [Quote / Poetry](utiliser/contenus-spip.md#quotations-and-poetry) | Present a quotation or preserve line breaks in a poetry passage. |
+| **D** | [Code block](utiliser/contenus-spip.md#a-block-of-several-lines) | Enter a code example on several lines without interpreting its SPIP syntax. |
+| **E** | [Bold / Italic / Strikethrough](utiliser/contenus-spip.md#formatting) | Apply or remove these effects on selected words. |
+| **F** | [Superscript / Subscript](utiliser/contenus-spip.md#formatting) | Raise or lower selected characters. |
+| **G** | [Code](utiliser/contenus-spip.md#a-short-code-excerpt-within-a-sentence) | Display a short code excerpt within a sentence. |
+| **H** | [Link](utiliser/contenus-spip.md#links-to-a-page-or-document) | Create or edit a link to a web address, article, section, or site document. |
+| **I** | [Footnote](utiliser/notes-de-bas-de-page.md) | Insert a note and edit its content in a dedicated dialog. |
+| **J** | [Glossary](utiliser/contenus-spip.md#notes-and-glossaries) / Abbreviation | Link a term to its definition; provide the expansion of an abbreviation. |
+| **K** | [Model](utiliser/contenus-spip.md#images-documents-and-other-models) | Insert a SPIP model using its syntax or the catalog, when available. |
+| **L** | [Alignment](utiliser/contenus-spip.md#formatting) | Align text blocks to the left, center, or right, or justify them. |
+| **M** | [Table](utiliser/tableaux.md) | Create a table and manage rows, columns, headers, and merged cells. |
+| **N** | [Quotation marks / Characters](utiliser/contenus-spip.md#formatting) | Surround selected text with quotation marks or insert a special character. |
+| **O** | [Source](#switch-to-source-and-back) | View and edit the article's SPIP syntax, then return to visual mode. |
+| **P** | [Full screen](#expand-the-writing-area) | Expand the writing area for more space. |
+
+Hover over a button to see its name and keyboard shortcut, if it has one.
+Depending on the configuration and content, the toolbar may also offer
+[Multilingual and displayed-language tools](utiliser/multilinguisme.md), which are absent from this screenshot.
 
 The toolbar stays visible as you scroll through the form. Available buttons depend on the field:
 a forum comment, for example, has a shorter toolbar than an article.
