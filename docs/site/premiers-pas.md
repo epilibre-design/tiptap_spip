@@ -14,6 +14,8 @@ traitements habituels de SPIP. Les textes déjà enregistrés peuvent être ouve
 
 ## Se repérer dans la barre
 
+![Barre de l’éditeur avec ses groupes d’outils repérés de A à P](medias/barre-de-l-editeur.png)
+
 Le menu **Titre** choisit un intertitre ; **Liste** crée des puces ou des numéros. Les boutons
 **Lien**, **Note**, **Glossaire**, **Modèle**, **Multilingue** et **Tableau** ouvrent les outils adaptés au
 contenu. Survolez un bouton pour lire son nom et, lorsqu’il existe, son raccourci clavier.

@@ -13,6 +13,8 @@ processing. You can open and edit existing text without a migration step.
 
 ## Find your way around the toolbar
 
+![Editor toolbar with tool groups labeled A to P](medias/barre-de-l-editeur.en.png)
+
 The **Heading** menu chooses a heading level; **List** creates bullets or numbered items. The
 **Link**, **Note**, **Glossary**, **Model**, **Multilingual**, and **Table** buttons open tools for those
 types of content. Hover over a button to see its name and keyboard shortcut, if it has one.
