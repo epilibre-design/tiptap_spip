@@ -37,5 +37,4 @@ sous l’éditeur.
 Le bouton **Plein écran** agrandit l’éditeur ; appuyez sur **Échap** pour revenir au formulaire.
 Dans les fenêtres de lien ou de note, **Échap** ferme d’abord la fenêtre ouverte.
 
-Pour aller plus loin, voir [Mettre en forme](utiliser/mise-en-forme.md) et
-[Insérer des contenus SPIP](utiliser/contenus-spip.md).
+Pour aller plus loin, voir [Contenu SPIP](utiliser/contenus-spip.md).

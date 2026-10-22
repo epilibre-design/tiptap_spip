@@ -35,5 +35,4 @@ correct it. [Syntax issues](utiliser/erreurs-de-syntaxe.md) are shown below the 
 The **Full screen** button expands the editor; press **Esc** to return to the form. In a link or
 note dialog, **Esc** closes the open dialog first.
 
-For more, see [Format text](utiliser/mise-en-forme.md) and
-[Insert SPIP content](utiliser/contenus-spip.md).
+For more, see [SPIP content](utiliser/contenus-spip.md).

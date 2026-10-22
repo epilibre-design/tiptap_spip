@@ -12,8 +12,7 @@ return to SPIP syntax at any time.
 
 1. [Install the plugin](installer.md) from the SPIP catalog, an archive, or Git.
 2. [Open an article and get started](premiers-pas.md).
-3. Explore the [formatting tools](utiliser/mise-en-forme.md) and
-   [SPIP content tools](utiliser/contenus-spip.md).
+3. Explore the [formatting and SPIP content tools](utiliser/contenus-spip.md).
 
 To add images or other files to an article, see [Paste images and drop files](utiliser/images-documents.md).
 
