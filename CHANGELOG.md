@@ -1,7 +1,8 @@
-## [Non publié]
+## [1.3.1] - 2026-10-26
 
 ### Modifié
 
+- paquet.xml : le lien de la documentation pointe vers la page de contrib.spip.net.
 - Documentation : l'installation se fait d'abord depuis le catalogue SPIP, avec des pages dédiées
   à l'archive et à Git. Le rôle du porte-plume est précisé (l'éditeur visuel le remplace sans
   s'appuyer sur lui, et le bouton Source affiche une simple zone de texte). Les libellés cités
