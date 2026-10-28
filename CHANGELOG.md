@@ -1,5 +1,11 @@
 ## [1.3.1] - 2026-10-26
 
+### Corrigé
+
+- Une note nommée peut être rappelée en saisissant le même nom et en laissant son texte vide
+  (`[[<A>]]`). Les rappels importés restent modifiables et ne créent plus d’entrées vides dans
+  le panneau des notes (ticket #13).
+
 ### Modifié
 
 - paquet.xml : le lien de la documentation pointe vers la page de contrib.spip.net.

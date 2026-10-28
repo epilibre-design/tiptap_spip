@@ -1,5 +1,6 @@
 import { langueAffichee, notesDuDocument } from '../editor/extensions.js';
 import { apercu } from '../editor/texte.js';
+import { contenuNoteVide } from '../spip/notes.js';
 import { label } from './labels.js';
 
 /**
@@ -41,7 +42,9 @@ export class NotesPanel {
 	afficher() {
 		const { state } = this.editor;
 		this.langue = langueAffichee(state);
-		const notes = notesDuDocument(state.doc, this.langue);
+		// Les rappels gardent leur appel dans le texte, sans nouvelle note en bas de page.
+		const notes = notesDuDocument(state.doc, this.langue)
+			.filter(({ attrs }) => !attrs.name || !contenuNoteVide(attrs.content));
 		this.element.hidden = this.source || notes.length === 0;
 		this.resume.textContent = `${label('notes')} (${notes.length})`;
 		this.liste.replaceChildren(...notes.map(({ pos, attrs, multi, label: numero }) => {

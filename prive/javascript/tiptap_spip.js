@@ -17872,6 +17872,13 @@ var serializeIdiome = ({ module, cle: cle2 }) => `<:${module ? `${module}:` : ""
 
 // src/spip/notes.js
 var BLOCS = /* @__PURE__ */ new Set(["paragraph", "bulletList", "orderedList", "spipModelBlock"]);
+var contenuNoteVide = (content) => (content ?? []).every((bloc) => {
+  if (bloc.type !== "paragraph") return false;
+  return (bloc.content ?? []).every((n) => {
+    if (n.marks?.length) return false;
+    return n.type === "hardBreak" || n.type === "text" && /^[ \t\n\r\0\v]*$/.test(n.text);
+  });
+});
 function parseNote(src, masked = src) {
   const m = masked.match(RE_NOTE_SEULE);
   if (!m) return null;
@@ -19081,8 +19088,8 @@ function listBlocks(src, msk, regions, lines, L, first2) {
   lines.forEach((line, n) => {
     const m = L(first2 + n).match(RE_ITEM);
     if (m) {
-      const vide2 = L(first2 + n).slice(m[0].length).trim() === "";
-      items.push({ depth: m[1].length, type: m[1][0] === "*" ? "bulletList" : "orderedList", start: line.start + m[0].length, end: line.end, vide: vide2 });
+      const vide = L(first2 + n).slice(m[0].length).trim() === "";
+      items.push({ depth: m[1].length, type: m[1][0] === "*" ? "bulletList" : "orderedList", start: line.start + m[0].length, end: line.end, vide });
     } else if (RE_HR.test(L(first2 + n)) || heading(L(first2 + n)) !== null) {
       throw new Fallback();
     } else if (items[items.length - 1].vide) {
@@ -27694,9 +27701,9 @@ var CacheParLots = class {
    *        parametre : nom de la liste envoyée ; champ : clé de chaque résultat ; vide : résultat
    *        d'une clé absente de la réponse
    */
-  constructor(services, { operation, parametre, champ, vide: vide2, batch = 50 }) {
+  constructor(services, { operation, parametre, champ, vide, batch = 50 }) {
     this.services = services;
-    Object.assign(this, { operation, parametre, champ, vide: vide2, batch });
+    Object.assign(this, { operation, parametre, champ, vide, batch });
     this.cache = /* @__PURE__ */ new Map();
     this.pending = /* @__PURE__ */ new Map();
     this.scheduled = false;
@@ -28382,7 +28389,6 @@ function openIdiomePopover({ editor, wrapper }, pos = null) {
 }
 
 // src/ui/NotePopover.js
-var vide = (content) => content.every((b) => b.type === "paragraph" && !b.content?.length);
 function openNotePopover(contexte3, pos = null) {
   const { editor, wrapper } = contexte3;
   lireSelection(editor);
@@ -28471,7 +28477,7 @@ function openNotePopover(contexte3, pos = null) {
   const appliquer = () => {
     const nouveau = sansAppel.checked ? "" : nom.value.trim() || null;
     const texte2 = modifie || !origine ? sous.getJSON().content : origine;
-    if (vide(texte2)) {
+    if (contenuNoteVide(texte2) && !nouveau) {
       popover2.error(label("note_vide"));
       return false;
     }
@@ -28877,7 +28883,7 @@ var NotesPanel = class {
   afficher() {
     const { state } = this.editor;
     this.langue = langueAffichee(state);
-    const notes = notesDuDocument(state.doc, this.langue);
+    const notes = notesDuDocument(state.doc, this.langue).filter(({ attrs }) => !attrs.name || !contenuNoteVide(attrs.content));
     this.element.hidden = this.source || notes.length === 0;
     this.resume.textContent = `${label("notes")} (${notes.length})`;
     this.liste.replaceChildren(...notes.map(({ pos, attrs, multi, label: numero }) => {

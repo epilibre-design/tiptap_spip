@@ -90,6 +90,30 @@ test('notes : appels numérotés comme SPIP, renumérotés après suppression, e
 	expect(texte(id)).toBe('Un deux[[<A>nommée]] trois[[seconde]] quatre[[<>cachée]].');
 });
 
+test('rappel de note : même nom et texte vide, réédité puis enregistré (ticket #13)', async ({ page }) => {
+	const id = await editer(page, 'Premier[[<A>Une explication commune.]] Autre');
+	await page.locator('.tts-content .ProseMirror p').first().click();
+	await page.keyboard.press('End');
+	await selectionStable(page);
+	await page.locator('.tts-toolbar .tts-outil--note').click();
+	const note = page.locator('.tts-popover--note');
+	await note.locator('input[name=nom]').fill('A');
+	await note.locator('button[name=appliquer]').click();
+	await expect(note).toHaveCount(0);
+	const appels = page.locator('.tts-content .tts-note');
+	await expect(appels).toHaveCount(2);
+	await expect(appels.last()).toHaveAttribute('data-tts-label', 'A');
+	await expect(page.locator('.tts-notes summary')).toHaveText('Notes (1)');
+	await expect(page.locator('.tts-notes__note')).toHaveCount(1);
+	await appels.last().click();
+	await expect(note.locator('input[name=nom]')).toHaveValue('A');
+	await expect(note.locator('.tts-note__texte .ProseMirror')).toHaveText('');
+	await note.locator('button[name=appliquer]').click();
+	await expect(note).toHaveCount(0);
+	await enregistrer(page);
+	expect(texte(id)).toBe('Premier[[<A>Une explication commune.]] Autre[[<A>]]');
+});
+
 test('note en fin de contenu : le dialogue et ses actions restent visibles', async ({ page }) => {
 	await page.setViewportSize({ width: 1200, height: 700 });
 	const texteLong = Array.from({ length: 22 }, (_, k) => `Paragraphe ${k + 1} d'un article.`).join('\n\n');
