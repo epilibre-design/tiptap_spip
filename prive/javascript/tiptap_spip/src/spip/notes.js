@@ -4,10 +4,16 @@ import { RE_NOTE_SEULE } from './regex.js';
 /** Blocs qu'une note peut contenir (spec 03 §5). */
 const BLOCS = new Set(['paragraph', 'bulletList', 'orderedList', 'spipModelBlock']);
 
-/** Paragraphes vides, ou blancs nus supprimés à la relecture (pas les espaces insécables). */
-export const contenuNoteVide = (content) => (content ?? []).every((b) => b.type === 'paragraph'
-	&& (b.content ?? []).every((n) => !n.marks?.length
-		&& (n.type === 'hardBreak' || (n.type === 'text' && /^[ \t\n\r\0\v]*$/.test(n.text)))));
+/** Contenu vide à la relecture : paragraphes vides, blancs nus et sauts de ligne seuls. */
+export const contenuNoteVide = (content) => (content ?? []).every((bloc) => {
+	if (bloc.type !== 'paragraph') return false;
+	return (bloc.content ?? []).every((n) => {
+		// Les marques conservent les blancs dans la source (par exemple {{ }}).
+		if (n.marks?.length) return false;
+		// Une espace insécable est un contenu ; seuls les blancs rognés par SPIP sont vides.
+		return n.type === 'hardBreak' || (n.type === 'text' && /^[ \t\n\r\0\v]*$/.test(n.text));
+	});
+});
 
 /**
  * Note [[texte]], [[<nom>texte]], [[<>texte]], reconnue comme traiter_raccourci_notes() : un `<nom>`

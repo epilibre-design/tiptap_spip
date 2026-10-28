@@ -13,7 +13,8 @@ le formulaire SPIP.
 Le champ **Nom** est facultatif : laissez-le vide pour obtenir un appel numéroté automatiquement,
 comme **[1]**. Saisissez un nom pour afficher cet appel à la place du numéro, par exemple **[A]**.
 Cochez **Sans appel** pour conserver la note sans marque dans le texte ; le champ **Nom** est alors
-désactivé. Le texte est obligatoire sauf pour rappeler une note nommée.
+désactivé. Le texte est obligatoire sauf si un **Nom** est saisi, y compris un numéro pour rappeler
+une note automatique.
 
 ![Fenêtre de saisie d’une note nommée, appels de note dans le texte et panneau des notes sous l’éditeur](../medias/saisie_notes.png)
 

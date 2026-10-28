@@ -17872,7 +17872,13 @@ var serializeIdiome = ({ module, cle: cle2 }) => `<:${module ? `${module}:` : ""
 
 // src/spip/notes.js
 var BLOCS = /* @__PURE__ */ new Set(["paragraph", "bulletList", "orderedList", "spipModelBlock"]);
-var contenuNoteVide = (content) => (content ?? []).every((b) => b.type === "paragraph" && (b.content ?? []).every((n) => !n.marks?.length && (n.type === "hardBreak" || n.type === "text" && /^[ \t\n\r\0\v]*$/.test(n.text))));
+var contenuNoteVide = (content) => (content ?? []).every((bloc) => {
+  if (bloc.type !== "paragraph") return false;
+  return (bloc.content ?? []).every((n) => {
+    if (n.marks?.length) return false;
+    return n.type === "hardBreak" || n.type === "text" && /^[ \t\n\r\0\v]*$/.test(n.text);
+  });
+});
 function parseNote(src, masked = src) {
   const m = masked.match(RE_NOTE_SEULE);
   if (!m) return null;

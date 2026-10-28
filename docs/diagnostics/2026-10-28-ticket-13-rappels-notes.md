@@ -48,7 +48,7 @@ Un rappel numérique ne consomme pas de nouveau numéro automatique.
 
 ## Piste recommandée : 2
 
-Correction validée, avec simplification de la saisie demandée par l’utilisateur :
+Correction retenue :
 
 - Conserver les champs actuels du popover : un même nom et un texte vide
   suffisent à créer un rappel. Le rappel écrit seulement `[[<nom>]]`, sans
@@ -107,4 +107,3 @@ Playwright sur Chromium, Firefox et WebKit. Les bundles sont reconstruits.
 
 Le correctif autorise les notes nommées sans texte et filtre les rappels dans
 le panneau. Le parseur, le format de document et la numérotation sont conservés.
-La modification préexistante de `.gitignore` est conservée.

@@ -9,8 +9,8 @@ pas d’entrée dans le panneau des définitions. Le format et les ancres resten
 ceux de SPIP, avec retour vers le premier appel.
 
 **Contraintes :** ne pas exiger une cible dans le champ courant ; ne pas
-renuméroter les références numériques ; préserver les définitions homonymes,
-les multi et la modification préexistante de `.gitignore`.
+renuméroter les références numériques ; préserver les définitions homonymes et
+les multi.
 
 ## Étapes
 
@@ -25,7 +25,7 @@ les multi et la modification préexistante de `.gitignore`.
 - [x] Documenter la saisie et les limites des références numériques dans les
   guides français et anglais ; mettre à jour le diagnostic et le changelog.
 - [x] Exécuter la suite JavaScript, reconstruire les bundles, vérifier le diff
-  et vérifier le parcours dans un navigateur ; faire relire le correctif.
+  et vérifier le parcours dans un navigateur.
 
 Les chemins `src/` sont relatifs à `prive/javascript/tiptap_spip/`.
 
@@ -38,6 +38,6 @@ Les chemins `src/` sont relatifs à `prive/javascript/tiptap_spip/`.
 - Suite complète : 1 457 tests réussis, deux échecs préexistants dans
   `tests/ui/i18n.test.js`, reproduits depuis une archive de `HEAD` sans correctif.
   Ils concernent les différences de libellés français et la traduction anglaise
-  manquante `abbr_explication` ; aucun fichier de traduction n’est modifié ici.
+  manquante `abbr_explication`.
 - Bundles reconstruits ; parcours création/réédition/enregistrement vérifié
   dans Chromium, Firefox et WebKit sur le site SPIP jetable.

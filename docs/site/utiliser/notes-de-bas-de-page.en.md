@@ -12,7 +12,7 @@ then click **Apply**. Save the article with the SPIP form afterwards.
 The **Name** field is optional: leave it empty for an automatically numbered reference such as
 **[1]**. Enter a name to show it in place of the number, for example **[A]**. Check **No reference**
 to keep the note without a marker in the text; the **Name** field is then disabled. The note text
-is required except when referring to a named note.
+is required unless a **Name** is entered, including a number to refer to an automatic note.
 
 ![Dialog for a named footnote, reference markers in the text, and the Notes panel below the editor](../medias/saisie_notes.en.png)
 
