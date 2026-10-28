@@ -1,10 +1,12 @@
-## [1.3.1] - 2026-10-26
+## [1.3.2] - 2026-10-28
 
 ### Corrigé
 
 - Une note nommée peut être rappelée en saisissant le même nom et en laissant son texte vide
   (`[[<A>]]`). Les rappels importés restent modifiables et ne créent plus d’entrées vides dans
   le panneau des notes (ticket #13).
+
+## [1.3.1] - 2026-10-26
 
 ### Modifié
 
