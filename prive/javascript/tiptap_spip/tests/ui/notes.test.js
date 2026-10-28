@@ -125,6 +125,21 @@ describe('popover de note', () => {
 		expect(source()).toBe('a[[<B>Définition]]');
 	});
 
+	it('vider la dernière définition nommée la transforme en rappel et conserve les autres appels', () => {
+		const { ui } = monter('a[[<A>texte]] b[[<A>]]');
+		const panel = new NotesPanel({ editor, editNote: () => {} });
+		ui.editNote(notePos());
+		ecrireNote('');
+		valider();
+		expect(popovers()).toHaveLength(0);
+		expect(source()).toBe('a[[<A>]] b[[<A>]]');
+		expect([...wrapper.querySelectorAll('.tts-content .tts-note')].map((el) => el.dataset.ttsLabel))
+			.toEqual(['A', 'A']);
+		expect(panel.liste.children).toHaveLength(0);
+		expect(panel.element.hidden).toBe(true);
+		panel.destroy();
+	});
+
 	it('note sans appel vide refusée même si un nom a été saisi', () => {
 		const { ui } = monter('a');
 		ui.editNote(null);

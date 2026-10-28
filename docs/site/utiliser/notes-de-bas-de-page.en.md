@@ -37,6 +37,11 @@ Click its reference marker in the text or its entry in the **Notes** panel below
 Change its name, **No reference** option, or text, then click **Apply**. To remove it, click
 **Delete the note**. Clicking a repeated reference lets you edit or delete that marker only.
 Deleting the definition preserves its references; adjust them if needed.
+
+Clearing a note’s text while keeping its **Name**, then applying, turns it into a reference
+without a warning. If no other definition with that name exists in the article, its references
+no longer have any associated note text: restore a definition or remove the affected references.
+
 The panel updates as the notes change; it is hidden when there are no notes
 or when you switch to source mode.
 

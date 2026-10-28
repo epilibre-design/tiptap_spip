@@ -40,6 +40,11 @@ Cliquez sur l’appel dans le texte ou sur la note dans le panneau **Notes** sou
 son nom, son option **Sans appel** ou son texte, puis cliquez sur **Appliquer**. Pour l’enlever,
 cliquez sur **Supprimer la note**. Cliquer sur un rappel permet de modifier ou supprimer cet appel
 uniquement. Supprimer la définition conserve les rappels : ils restent à corriger si nécessaire.
+
+Effacer le texte d’une note en conservant son **Nom**, puis appliquer, la transforme en rappel
+sans avertissement. Si aucune autre définition de ce nom n’existe dans l’article, les appels
+n’ont plus de texte de note associé : rétablissez une définition ou supprimez les rappels concernés.
+
 Le panneau se met à jour avec les notes du texte ; il est masqué
 quand il n’y en a aucune ou quand vous passez en mode source.
 

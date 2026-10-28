@@ -70,6 +70,13 @@ Correction retenue :
 Cliquer sur un rappel ouvre ce rappel pour modification ou suppression ;
 cliquer sur une définition dans le panneau permet de modifier son contenu.
 
+Vider le texte d’une définition en conservant son nom la transforme en rappel,
+sans avertissement. Ce comportement est volontaire : la règle de saisie reste
+identique pour une nouvelle note et une note éditée, et une définition peut
+exister dans un autre champ. Si la dernière définition de l’article est ainsi
+vidée, les appels subsistent mais n’ont plus de texte associé. Cette conséquence
+est documentée dans les guides utilisateur et couverte par un test d’interface.
+
 ## Vérifications effectuées
 
 Commande depuis `prive/javascript/tiptap_spip/` :
