@@ -1,6 +1,7 @@
 import { Editor, getSchema } from '@tiptap/core';
 import { schemaJSON } from '../editor/content.js';
 import { noteExtensions, noteSelectionnee } from '../editor/extensions.js';
+import { contenuNoteVide } from '../spip/notes.js';
 import { noteSeRelit } from '../spip/valider.js';
 import { label } from './labels.js';
 import { openLinkPopover } from './LinkPopover.js';
@@ -8,9 +9,6 @@ import { openGlossaryPopover } from './MarkPopover.js';
 import { openModelPopover } from './ModelPopover.js';
 import { openRawPopover } from './RawPopover.js';
 import { idUnique, lireSelection, Popover, suivrePosition } from './popover.js';
-
-/** Contenu de note sans texte ni objet : paragraphes vides seulement. */
-const vide = (content) => content.every((b) => b.type === 'paragraph' && !b.content?.length);
 
 /**
  * Popover de note (spec 05 §1) : nom optionnel (vide : numérotée), case « Sans appel », texte dans
@@ -124,7 +122,8 @@ export function openNotePopover(contexte, pos = null) {
 	const appliquer = () => {
 		const nouveau = sansAppel.checked ? '' : nom.value.trim() || null;
 		const texte = modifie || !origine ? sous.getJSON().content : origine;
-		if (vide(texte)) {
+		// Un nom sans texte rappelle une note : [[<A>]] ou [[<1>]].
+		if (contenuNoteVide(texte) && !nouveau) {
 			popover.error(label('note_vide'));
 			return false;
 		}

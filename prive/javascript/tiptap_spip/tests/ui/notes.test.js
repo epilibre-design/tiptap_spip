@@ -74,6 +74,76 @@ describe('popover de note', () => {
 		expect(erreur().textContent).toBe('La note est vide.');
 	});
 
+	it('deux notes de même nom : la seconde sans texte crée un rappel', () => {
+		const { ui } = monter('Un puis deux');
+		editor.commands.setTextSelection(apres('Un'));
+		ui.editNote(null);
+		remplir('nom', 'A');
+		ecrireNote('Une explication commune.');
+		valider();
+		editor.commands.setTextSelection(apres('deux'));
+		ui.editNote(null);
+		remplir('nom', 'A');
+		valider();
+		expect(popovers()).toHaveLength(0);
+		expect(source()).toBe('Un[[<A>Une explication commune.]] puis deux[[<A>]]');
+		expect(wrapper.querySelectorAll('.tts-content .tts-note')).toHaveLength(2);
+	});
+
+	it.each(['A', '1', '0', 'absente'])('rappel importé %s : réapplication sans changement', (nom) => {
+		const initial = `Avant[[ <${nom}> ]] après`;
+		const { ui } = monter(initial);
+		ui.editNote(notePos());
+		valider();
+		expect(popovers()).toHaveLength(0);
+		expect(source()).toBe(initial);
+	});
+
+	it.each([{ type: 'text', text: ' ' }, { type: 'text', text: '\t' }, { type: 'hardBreak' }])('rappel contenant seulement des blancs (%j) : aucune définition vide', (blanc) => {
+		const { ui } = monter('a[[<A>définition]] b');
+		const panel = new NotesPanel({ editor, editNote: () => {} });
+		editor.commands.setTextSelection(apres(' b'));
+		ui.editNote(null);
+		remplir('nom', 'A');
+		sousEditeur().commands.setContent({ type: 'doc', content: [{ type: 'paragraph', content: [blanc] }] }, { emitUpdate: true });
+		valider();
+		expect(popovers()).toHaveLength(0);
+		expect(wrapper.querySelectorAll('.tts-content .tts-note')).toHaveLength(2);
+		expect(panel.resume.textContent).toBe('Notes (1)');
+		panel.destroy();
+	});
+
+	it('rappel : on peut modifier le nom ou ajouter son propre texte', () => {
+		const { ui } = monter('a[[<A>]]');
+		ui.editNote(notePos());
+		remplir('nom', 'B');
+		valider();
+		expect(source()).toBe('a[[<B>]]');
+		ui.editNote(notePos());
+		ecrireNote('Définition');
+		valider();
+		expect(source()).toBe('a[[<B>Définition]]');
+	});
+
+	it('note sans appel vide refusée même si un nom a été saisi', () => {
+		const { ui } = monter('a');
+		ui.editNote(null);
+		remplir('nom', 'A');
+		remplir('sans_appel', true);
+		valider();
+		expect(erreur().textContent).toBe('La note est vide.');
+		expect(source()).toBe('a');
+	});
+
+	it('rappel dont le nom ne se relit pas : refus sans modifier le document', () => {
+		const { ui } = monter('a[[<A>]]');
+		ui.editNote(notePos());
+		remplir('nom', 'a>b');
+		valider();
+		expect(erreur().textContent).toBe('Cette note ne peut pas s’écrire telle quelle (nom ou texte).');
+		expect(source()).toBe('a[[<A>]]');
+	});
+
 	it('note existante ouverte puis appliquée sans changement : restituée à l\'identique', () => {
 		const { ui } = monter('Avant[[ Premier.\n\n\nSecond.]] après');
 		ui.editNote(notePos());
@@ -163,6 +233,68 @@ describe('panneau des notes', () => {
 		return panel;
 	};
 	const items = (panel) => [...panel.liste.querySelectorAll('li')].map((li) => li.textContent);
+
+	it('trois appels nommés : une seule définition dans le panneau', () => {
+		monter('Premier[[<A>Une explication commune.]] Autre[[<A>]] Encore[[<A>]]');
+		const panel = new NotesPanel({ editor, editNote: () => {} });
+		expect(wrapper.querySelectorAll('.tts-content .tts-note')).toHaveLength(3);
+		expect(items(panel)).toEqual(['[A] Une explication commune.']);
+		expect(panel.resume.textContent).toBe('Notes (1)');
+		panel.destroy();
+	});
+
+	it('une note avec un objet ou une espace insécable garde sa définition', () => {
+		monter('a[[<A><doc1>]] b[[<B>~]] c[[<C>{{ }}]] d[[<D>]]');
+		const panel = new NotesPanel({ editor, editNote: () => {} });
+		expect(panel.resume.textContent).toBe('Notes (3)');
+		expect([...panel.liste.querySelectorAll('.tts-notes__appel')].map((el) => el.textContent))
+			.toEqual(['[A]', '[B]', '[C]']);
+		panel.destroy();
+	});
+
+	it('rappels numériques sans effet sur la numérotation, définitions homonymes conservées', () => {
+		monter('a[[première]] b[[<1>]] c[[seconde]] d[[<A>un]] e[[<A>deux]] f[[<A>]]');
+		const panel = new NotesPanel({ editor, editNote: () => {} });
+		expect(items(panel)).toEqual(['[1] première', '[2] seconde', '[A] un', '[A] deux']);
+		expect([...wrapper.querySelectorAll('.tts-content .tts-note')].map((el) => el.dataset.ttsLabel))
+			.toEqual(['1', '1', '2', 'A', 'A', 'A']);
+		panel.destroy();
+	});
+
+	it('suppression de définition : rappel conservé, panneau masqué ; annulation : définition rétablie', () => {
+		monter('a[[<A>texte]] b[[<A>]]');
+		const panel = new NotesPanel({ editor, editNote: () => {} });
+		editor.commands.deleteRange({ from: notePos(), to: notePos() + 1 });
+		expect(source()).toBe('a b[[<A>]]');
+		expect(panel.element.hidden).toBe(true);
+		editor.commands.undo();
+		expect(items(panel)).toEqual(['[A] texte']);
+		expect(panel.element.hidden).toBe(false);
+		editor.commands.redo();
+		expect(panel.element.hidden).toBe(true);
+		panel.destroy();
+	});
+
+	it('retour de source sans update : les rappels seuls ne produisent pas de panneau', () => {
+		const panel = panneau();
+		const note = { type: 'spipNote', attrs: { name: 'A', content: [{ type: 'paragraph' }] } };
+		editor.commands.setContent({ type: 'doc', content: [{ type: 'paragraph', content: [note] }] }, { emitUpdate: false });
+		expect(panel.element.hidden).toBe(true);
+		expect(items(panel)).toEqual([]);
+		panel.destroy();
+	});
+
+	it('multi : seuls les textes des notes de la langue affichée apparaissent', () => {
+		monter('x <multi>[fr]a[[<A>définition FR]] b[[<A>]][en]c[[<A>]]</multi>');
+		editor.commands.setLangueAffichee('fr');
+		const panel = new NotesPanel({ editor, editNote: () => {} });
+		expect(items(panel)).toEqual(['[A] définition FR']);
+		editor.commands.setLangueAffichee('en');
+		expect(panel.element.hidden).toBe(true);
+		editor.commands.setLangueAffichee('fr');
+		expect(items(panel)).toEqual(['[A] définition FR']);
+		panel.destroy();
+	});
 
 	it('notes dans l\'ordre, avec leur appel et leur texte', () => {
 		const panel = panneau();
