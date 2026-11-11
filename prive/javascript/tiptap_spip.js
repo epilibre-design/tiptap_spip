@@ -26449,6 +26449,9 @@ var Popover = class _Popover {
       if (event.key === "Escape") {
         event.preventDefault();
         this.close();
+      } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && event.target.tagName === "TEXTAREA") {
+        event.preventDefault();
+        this.form.requestSubmit();
       } else if (event.key === "Tab" && !event.defaultPrevented) {
         this.pieger(event);
       }
@@ -26471,6 +26474,14 @@ var Popover = class _Popover {
     if (type === "checkbox") input.checked = Boolean(value);
     else input.value = value ?? "";
     return this.field(texte2, input);
+  }
+  /** Zone de texte libellée, pour une saisie sur plusieurs lignes (Ctrl/Cmd+Entrée valide). */
+  textarea(texte2, { value = "", name, rows = 3 } = {}) {
+    const zone = document.createElement("textarea");
+    zone.name = name ?? "";
+    zone.rows = rows;
+    zone.value = value ?? "";
+    return this.field(texte2, zone);
   }
   /** Bouton d'action ; type submit pour l'action principale. */
   button(texte2, onClick, { submit = false, name } = {}) {
@@ -27596,7 +27607,7 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
   const { selection } = editor.state;
   const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
   const popover2 = new Popover({ editor, wrapper, parent, titre: label("modele"), className: "tts-popover--modele", onSubmit: () => appliquer() });
-  const raccourci = popover2.input(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci" });
+  const raccourci = popover2.textarea(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci", rows: 5 });
   const appliquer = () => {
     const model = parseModel(raccourci.value.trim());
     if (!model) {

@@ -1,6 +1,6 @@
 /**
  * Popover de l'éditeur : petit dialogue ancré dans .tts-editor, près de la sélection. Échap ferme,
- * Entrée valide (spec 06 §4), Tab reste dans le popover (piège de focus, spec 06 §7), le focus revient
+ * Entrée valide (spec 06 §4), Ctrl/Cmd+Entrée dans une zone de texte, Tab reste dans le popover (piège de focus, spec 06 §7), le focus revient
  * à l'éditeur à la fermeture.
  *
  * Un popover peut en ouvrir un autre (lien depuis le sous-éditeur d'une note) : l'enfant s'ouvre
@@ -55,6 +55,10 @@ export class Popover {
 			if (event.key === 'Escape') {
 				event.preventDefault();
 				this.close();
+			} else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && event.target.tagName === 'TEXTAREA') {
+				// dans une zone de texte, Entrée passe à la ligne : Ctrl/Cmd+Entrée valide
+				event.preventDefault();
+				this.form.requestSubmit();
 			} else if (event.key === 'Tab' && !event.defaultPrevented) {
 				this.pieger(event);
 			}
@@ -79,6 +83,15 @@ export class Popover {
 		if (type === 'checkbox') input.checked = Boolean(value);
 		else input.value = value ?? '';
 		return this.field(texte, input);
+	}
+
+	/** Zone de texte libellée, pour une saisie sur plusieurs lignes (Ctrl/Cmd+Entrée valide). */
+	textarea(texte, { value = '', name, rows = 3 } = {}) {
+		const zone = document.createElement('textarea');
+		zone.name = name ?? '';
+		zone.rows = rows;
+		zone.value = value ?? '';
+		return this.field(texte, zone);
 	}
 
 	/** Bouton d'action ; type submit pour l'action principale. */

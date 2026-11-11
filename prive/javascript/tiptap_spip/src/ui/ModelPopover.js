@@ -38,7 +38,8 @@ export function openModelPopover({ editor, wrapper, parent }, pos = null) {
 	const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
 
 	const popover = new Popover({ editor, wrapper, parent, titre: label('modele'), className: 'tts-popover--modele', onSubmit: () => appliquer() });
-	const raccourci = popover.input(label('modele_raccourci'), { value: courant?.node.attrs.model?.source ?? '', name: 'raccourci' });
+	// zone de texte : un raccourci peut s'écrire sur plusieurs lignes, un paramètre par ligne (ticket #15)
+	const raccourci = popover.textarea(label('modele_raccourci'), { value: courant?.node.attrs.model?.source ?? '', name: 'raccourci', rows: 5 });
 
 	const appliquer = () => {
 		const model = parseModel(raccourci.value.trim());
