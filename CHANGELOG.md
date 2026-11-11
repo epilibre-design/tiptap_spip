@@ -1,3 +1,9 @@
+## [Non publié]
+
+### Modifié
+
+- paquet.xml : le plugin déclare PHP 8.1 comme version minimale, comme composer.json.
+
 ## [1.3.2] - 2026-10-28
 
 ### Corrigé
