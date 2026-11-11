@@ -235,6 +235,41 @@ describe('popover de modèle', () => {
 		expect(source()).toBe('Texte\n\nUn <img3> mot\n\n<doc12|center>');
 	});
 
+	it('raccourci sur plusieurs lignes : zone de texte, source gardée telle quelle (ticket #15)', () => {
+		const multi = '<doc12\n|center\n|titre=Un titre>';
+		monter('Texte\n\nUn  mot');
+		editor.commands.setTextSelection(editor.state.doc.content.size - 1);
+		editor.commands.splitBlock();
+		openModelPopover({ editor, wrapper });
+		expect(champ('raccourci').tagName).toBe('TEXTAREA');
+		remplir('raccourci', multi);
+		valider();
+		expect(source()).toBe(`Texte\n\nUn  mot\n\n${multi}`);
+		openModelPopover({ editor, wrapper }, apres('mot') + 1);
+		expect(champ('raccourci').value).toBe(multi);
+	});
+
+	it('zone de texte : Entrée passe à la ligne, Ctrl+Entrée ou Cmd+Entrée valide', () => {
+		const touche = (options) => {
+			const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...options });
+			champ('raccourci').dispatchEvent(event);
+			return event;
+		};
+		monter('Texte');
+		editor.commands.setTextSelection(apres('Texte'));
+		openModelPopover({ editor, wrapper });
+		remplir('raccourci', '<img3>');
+		expect(touche({}).defaultPrevented).toBe(false);
+		expect(wrapper.querySelector('.tts-popover')).not.toBeNull();
+		touche({ ctrlKey: true });
+		expect(wrapper.querySelector('.tts-popover')).toBeNull();
+		openModelPopover({ editor, wrapper });
+		remplir('raccourci', '<img4>');
+		touche({ metaKey: true });
+		expect(wrapper.querySelector('.tts-popover')).toBeNull();
+		expect(source()).toBe('Texte<img3><img4>');
+	});
+
 	it('raccourci invalide : erreur, rien n\'est inséré', () => {
 		monter('Texte');
 		openModelPopover({ editor, wrapper });

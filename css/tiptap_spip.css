@@ -396,9 +396,15 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	font-size: 0.85em;
 }
 
-.tts-popover__champ input:not([type="checkbox"]) {
+.tts-popover__champ input:not([type="checkbox"]),
+.tts-popover__champ textarea {
 	width: 100%;
 	box-sizing: border-box;
+}
+
+.tts-popover__champ textarea {
+	resize: vertical;
+	font-family: monospace;
 }
 
 .tts-popover__suggestions {
