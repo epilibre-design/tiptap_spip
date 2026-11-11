@@ -168,6 +168,33 @@ describe('tiptap_spip_init', () => {
 		]);
 	});
 
+	it('formulaire d\'un modèle : tout textarea équipé de la barre modele, pas le raccourci produit', () => {
+		page(`<div class="ajax formulaire_spip formulaire_inserer_modeles"><form>
+			<textarea name="texte">a</textarea>
+			<textarea name="contenu" class="inserer_barre_forum">b</textarea>
+			<textarea readonly class="code_modele">&lt;encadre|texte=a&gt;</textarea>
+		</form></div>`);
+		tiptap_spip_init();
+		expect(instances.size).toBe(2);
+		expect(document.querySelector('.code_modele').dataset.ttsMounted).toBeUndefined();
+		for (const barre of document.querySelectorAll('.tts-toolbar')) {
+			expect(barre.querySelector('.tts-outil--gras, .tts-outil--citation')).not.toBeNull();
+			expect(barre.querySelector('.tts-outil--lien, .tts-outil--note, .tts-outil--modele, .tts-outil--abbr, .tts-outil--tableau')).toBeNull();
+		}
+	});
+
+	it('formulaire d\'un modèle : |, < et > en entités dans le textarea, | relu depuis &#124;', () => {
+		page('<div class="formulaire_inserer_modeles"><form><textarea name="texte">a &amp;#124; b</textarea></form></div>');
+		tiptap_spip_init();
+		const [instance] = instances;
+		const textarea = document.querySelector('textarea');
+		expect(textarea.value).toBe('a &#124; b');
+		expect(instance.editor.getText()).toBe('a | b');
+		instance.editor.chain().setTextSelection(instance.editor.state.doc.content.size - 1).insertContent(' -> c').run();
+		instance.bridge.flush();
+		expect(textarea.value).toBe('a &#124; b -&gt; c');
+	});
+
 	it('barre déclarée par la configuration (pipeline tiptap_spip_toolbars)', () => {
 		globalThis.spipConfig = { tiptap_spip: { toolbars: { edition: ['gras', 'note'] } } };
 		page('<textarea class="inserer_barre_edition">a</textarea>');

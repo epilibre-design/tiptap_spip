@@ -9,5 +9,6 @@
 		"source", "pleinEcran"
 	],
 	"forum": ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
-	"minimale": ["gras", "italique", "lien", "|", "source"]
+	"minimale": ["gras", "italique", "lien", "|", "source"],
+	"modele": ["gras", "italique", "exposant", "|", "liste", "citation", "|", "source"]
 }

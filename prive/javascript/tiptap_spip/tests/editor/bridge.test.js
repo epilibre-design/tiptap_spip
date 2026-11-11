@@ -146,3 +146,36 @@ describe('TextareaBridge', () => {
 		bridge = null;
 	});
 });
+
+describe('TextareaBridge avec un codec (paramètre de modèle)', () => {
+	const codec = { lire: (v) => v.replaceAll('&#124;', '|'), ecrire: (s) => s.replaceAll('|', '&#124;') };
+	const monter = (value) => {
+		document.body.innerHTML = '<form><textarea name="texte"></textarea><div id="ed"></div></form>';
+		form = document.querySelector('form');
+		textarea = form.querySelector('textarea');
+		textarea.value = value;
+		const editor = createEditor({ element: document.getElementById('ed'), source: codec.lire(value) });
+		bridge = new TextareaBridge({ textarea, editor, codec });
+	};
+
+	it('écrit la sérialisation codée, relit la valeur décodée', () => {
+		monter('a &#124; b');
+		typeAtEnd(' | c');
+		bridge.flush();
+		expect(textarea.value).toBe('a &#124; b &#124; c');
+		textarea.value = 'x &#124; y';
+		bridge.load();
+		expect(bridge.editor.getText()).toBe('x | y');
+	});
+
+	it('mode source : la source saisie est codée à la soumission', () => {
+		monter('a');
+		bridge.setMode('source');
+		textarea.value = 'a | b';
+		textarea.dispatchEvent(new Event('input'));
+		form.dispatchEvent(new Event('submit'));
+		expect(textarea.value).toBe('a &#124; b');
+		expect(bridge.setMode('visual')).toBe(true);
+		expect(bridge.editor.getText()).toBe('a | b');
+	});
+});

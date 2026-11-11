@@ -1,5 +1,14 @@
 ## [Non publié]
 
+### Modifié
+
+- Dans le formulaire d’un modèle (plugin Insérer modèles), chaque zone de texte reçoit une barre
+  d’outils réduite : gras, italique, exposant, liste, citation et source. Les liens, notes,
+  abréviations, tableaux et modèles, que le raccourci d’un modèle ne peut pas contenir, n’y
+  sont plus proposés.
+- Dans ces zones, `|`, `<` et `>` sont écrits en entités HTML (`&#124;`, `&lt;`, `&gt;`) : ils ne
+  coupent plus le raccourci produit, et SPIP les affiche tels quels.
+
 ## [1.3.3] - 2026-11-11
 
 ### Modifié

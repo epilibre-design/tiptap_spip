@@ -65,6 +65,7 @@ Barres fournies :
 | `edition` | tout le porte-plume par défaut (tableau ci-dessous) + annuler/rétablir, titres (niveaux configurés, 2 à 4 par défaut), alignement, exposant/indice, **glossaire**, **modèle**, multi, tableau (menu contextuel lignes/colonnes/fusions), bascule source, plein écran |
 | `forum` | gras, italique, lien, citation, liste, code, source ; pas de modèles ni de notes par défaut |
 | `minimale` | gras, italique, lien, source (pour `descriptif`, `ps`…) |
+| `modele` | gras, italique, exposant, liste, citation, source : paramètres d'un modèle dans le formulaire du plugin Insérer modèles ; pas de lien, note, abréviation, tableau ni modèle, que le raccourci ne peut pas contenir |
 
 Correspondance avec la barre `edition` du porte-plume SPIP 4.4 (`porte_plume/barre_outils/edition.php`) :
 
@@ -84,7 +85,8 @@ Correspondance avec la barre `edition` du porte-plume SPIP 4.4 (`porte_plume/bar
 `espace_si_accolade` (porte-plume) ajoute des espaces quand la sélection touche une accolade ; le sérialiseur
 traite le même cas par ses séparateurs de sécurité ([04](04-parseur-serialiseur.md) §3).
 
-Le choix de la barre suit `data-tts-toolbar="nom"`, sinon la classe du textarea (`inserer_barre_edition`,
+Le choix de la barre suit `data-tts-toolbar="nom"`, sinon `modele` dans le formulaire d'un modèle
+(`.formulaire_inserer_modeles`, tout textarea sauf le raccourci produit, en lecture seule), sinon la classe du textarea (`inserer_barre_edition`,
 `inserer_barre_forum`), sinon l'hôte ([02](02-architecture.md) §6 : `forum` dans un formulaire de forum,
 `edition` pour `texte` et `chapo`, `minimale` pour les autres champs). Une barre inconnue donne `minimale`.
 

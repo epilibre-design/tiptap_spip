@@ -28,16 +28,23 @@ export function contexte(textarea) {
 	return { objet: '', id: 0, champ: textarea.name };
 }
 
+/** Formulaire d'insertion d'un modèle (plugin Insérer modèles) : son textarea est un paramètre du raccourci. */
+export const FORMULAIRE_MODELE = '.formulaire_inserer_modeles';
+export const dansFormulaireModele = (textarea) => Boolean(textarea.closest(FORMULAIRE_MODELE));
+
 /**
  * Barre d'outils d'un textarea (spec 02 §6, « Barre d'outils par hôte ») : data-tts-toolbar, sinon
- * classe du porte-plume (inserer_barre_edition, inserer_barre_forum), sinon forum dans un formulaire
- * de forum, edition pour les champs texte et chapo, minimale pour les autres.
+ * modele dans le formulaire d'un modèle, sinon classe du porte-plume (inserer_barre_edition,
+ * inserer_barre_forum), sinon forum dans un formulaire de forum, edition pour les champs texte et
+ * chapo, minimale pour les autres.
  *
  * @param {HTMLTextAreaElement} textarea
  * @returns {string}
  */
 export function barreDuTextarea(textarea) {
 	if (textarea.dataset.ttsToolbar) return textarea.dataset.ttsToolbar;
+	// avant les classes du porte-plume (option inserer_barre d'une saisie) : leurs liens casseraient le raccourci
+	if (dansFormulaireModele(textarea)) return 'modele';
 	if (textarea.classList.contains('inserer_barre_edition')) return 'edition';
 	if (textarea.classList.contains('inserer_barre_forum') || textarea.closest('.formulaire_forum')) return 'forum';
 	return ['texte', 'chapo'].includes(contexte(textarea).champ) ? 'edition' : 'minimale';

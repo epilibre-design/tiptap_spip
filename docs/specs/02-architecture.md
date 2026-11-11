@@ -369,7 +369,8 @@ entre instances.
 
 ### Barre d'outils par hôte
 
-La barre vient de la classe ou de `data-tts-toolbar` ; à défaut, l'adaptateur choisit : `edition` pour les
+La barre vient de `data-tts-toolbar`, sinon `modele` dans le formulaire du plugin Insérer modèles, sinon
+de la classe ; à défaut, l'adaptateur choisit : `edition` pour les
 champs `texte` et `chapo`, `minimale` pour les autres champs, `forum` pour les formulaires de forum.
 
 ### Styles

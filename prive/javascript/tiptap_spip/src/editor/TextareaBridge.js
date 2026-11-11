@@ -8,10 +8,14 @@ import { toEditorJSON } from './content.js';
  */
 export class TextareaBridge {
 	/**
-	 * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor, delay?: number }} options
+	 * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor, delay?: number,
+	 *           codec?: { lire: (valeur: string) => string, ecrire: (source: string) => string } }} options
+	 *        codec : passage de la valeur du textarea à la source SPIP (lire) et retour (ecrire,
+	 *        idempotent : appliqué aussi à la source saisie en mode source)
 	 */
-	constructor({ textarea, editor, delay = 150 }) {
+	constructor({ textarea, editor, delay = 150, codec = null }) {
 		this.textarea = textarea;
+		this.codec = codec;
 		this.editor = editor;
 		this.delay = delay;
 		this.mode = 'visual';
@@ -44,12 +48,23 @@ export class TextareaBridge {
 		this.timer = setTimeout(this.onFlush, this.delay);
 	}
 
-	/** Écrit la sérialisation dans le textarea si elle diffère, avec événements input et change. */
+	/**
+	 * Écrit la sérialisation dans le textarea si elle diffère, avec événements input et change. En
+	 * mode source, le codec s'applique à la source saisie.
+	 */
 	flush() {
 		clearTimeout(this.timer);
 		this.timer = null;
-		if (this.mode !== 'visual' || this.editor.isDestroyed) return;
-		const value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
+		if (this.editor.isDestroyed) return;
+		let value;
+		if (this.mode === 'visual') {
+			value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
+			if (this.codec) value = this.codec.ecrire(value);
+		} else if (this.codec) {
+			value = this.codec.ecrire(this.textarea.value);
+		} else {
+			return;
+		}
 		if (value === this.textarea.value) return;
 		this.textarea.value = value;
 		this.dispatching = true;
@@ -63,7 +78,8 @@ export class TextareaBridge {
 
 	/** Recharge l'éditeur depuis le textarea, sans émettre de mise à jour (pas de réécriture). */
 	load() {
-		const json = toEditorJSON(this.textarea.value, this.editor.schema, this.editor.tiptapSpip?.regles);
+		const source = this.codec ? this.codec.lire(this.textarea.value) : this.textarea.value;
+		const json = toEditorJSON(source, this.editor.schema, this.editor.tiptapSpip?.regles);
 		this.editor.commands.setContent(json, { emitUpdate: false });
 	}
 
