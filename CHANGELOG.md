@@ -1,5 +1,7 @@
 ## [Non publié]
 
+## [1.3.3] - 2026-11-11
+
 ### Modifié
 
 - Le raccourci d’un modèle se saisit dans une zone de texte de 5 lignes, plus large, que l’on
@@ -136,7 +138,10 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.0...HEAD
+[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.3...HEAD
+[1.3.3]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.2...1.3.3
+[1.3.2]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.1...1.3.2
+[1.3.1]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.0...1.3.1
 [1.3.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.0.0...1.1.0
