@@ -39,7 +39,7 @@ export function openModelPopover({ editor, wrapper, parent }, pos = null) {
 
 	const popover = new Popover({ editor, wrapper, parent, titre: label('modele'), className: 'tts-popover--modele', onSubmit: () => appliquer() });
 	// zone de texte : un raccourci peut s'écrire sur plusieurs lignes, un paramètre par ligne (ticket #15)
-	const raccourci = popover.textarea(label('modele_raccourci'), { value: courant?.node.attrs.model?.source ?? '', name: 'raccourci' });
+	const raccourci = popover.textarea(label('modele_raccourci'), { value: courant?.node.attrs.model?.source ?? '', name: 'raccourci', rows: 5 });
 
 	const appliquer = () => {
 		const model = parseModel(raccourci.value.trim());

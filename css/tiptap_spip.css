@@ -403,8 +403,19 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 }
 
 .tts-popover__champ textarea {
-	resize: vertical;
+	min-width: 100%;
+	max-width: calc(100vw - 3em);
+	resize: both;
 	font-family: monospace;
+}
+
+/* le popover de modèle s'élargit avec sa zone de saisie (ticket #15) */
+.tts-popover.tts-popover--modele {
+	max-width: none;
+}
+
+.tts-popover--modele textarea {
+	width: 40em;
 }
 
 .tts-popover__suggestions {

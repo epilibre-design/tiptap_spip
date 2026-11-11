@@ -2,9 +2,10 @@
 
 ### Modifié
 
-- Le raccourci d’un modèle se saisit dans une zone de texte : il peut s’écrire sur plusieurs
-  lignes, un paramètre par ligne. Entrée passe à la ligne, Ctrl+Entrée (Cmd+Entrée sur Mac) ou
-  le bouton Appliquer valide (ticket #15).
+- Le raccourci d’un modèle se saisit dans une zone de texte de 5 lignes, plus large, que l’on
+  peut agrandir en hauteur et en largeur : il peut s’écrire sur plusieurs lignes, un paramètre
+  par ligne. Entrée passe à la ligne, Ctrl+Entrée (Cmd+Entrée sur Mac) ou le bouton Appliquer
+  valide (ticket #15).
 - paquet.xml : le plugin déclare PHP 8.1 comme version minimale, comme composer.json.
 
 ## [1.3.2] - 2026-10-28

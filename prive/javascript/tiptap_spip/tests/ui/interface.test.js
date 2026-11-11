@@ -242,11 +242,24 @@ describe('popover de modèle', () => {
 		editor.commands.splitBlock();
 		openModelPopover({ editor, wrapper });
 		expect(champ('raccourci').tagName).toBe('TEXTAREA');
+		expect(champ('raccourci').rows).toBe(5);
 		remplir('raccourci', multi);
 		valider();
 		expect(source()).toBe(`Texte\n\nUn  mot\n\n${multi}`);
 		openModelPopover({ editor, wrapper }, apres('mot') + 1);
 		expect(champ('raccourci').value).toBe(multi);
+	});
+
+	it('raccourci long sur une ligne, paramètres sans valeur et # compris : posé tel quel', () => {
+		const long = '<bouton|cible=auteur|id_auteur=1|nom=oui|style=btn-shadow|picto=accessible-icon fab|animation=fade-in|gradient|saut=oui|coulfond=#272AA5>';
+		monter('Texte\n\nfin');
+		editor.commands.setTextSelection(editor.state.doc.content.size - 1);
+		editor.commands.splitBlock();
+		openModelPopover({ editor, wrapper });
+		remplir('raccourci', long);
+		valider();
+		expect(wrapper.querySelector('.tts-popover')).toBeNull();
+		expect(source()).toBe(`Texte\n\nfin\n\n${long}`);
 	});
 
 	it('zone de texte : Entrée passe à la ligne, Ctrl+Entrée ou Cmd+Entrée valide', () => {

@@ -27607,7 +27607,7 @@ function openModelPopover({ editor, wrapper, parent }, pos = null) {
   const { selection } = editor.state;
   const courant = selection instanceof NodeSelection && /^spipModel(Block)?$/.test(selection.node.type.name) ? selection : null;
   const popover2 = new Popover({ editor, wrapper, parent, titre: label("modele"), className: "tts-popover--modele", onSubmit: () => appliquer() });
-  const raccourci = popover2.textarea(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci" });
+  const raccourci = popover2.textarea(label("modele_raccourci"), { value: courant?.node.attrs.model?.source ?? "", name: "raccourci", rows: 5 });
   const appliquer = () => {
     const model = parseModel(raccourci.value.trim());
     if (!model) {
