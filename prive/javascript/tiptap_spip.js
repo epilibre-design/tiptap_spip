@@ -27688,12 +27688,22 @@ function ouvrirCatalogue({ editor, url, pos = null, parametres = null }) {
   const $ = globalThis.jQuery;
   if (typeof $?.modalbox !== "function") return false;
   if ($.markItUp) $.markItUp.focused = null;
+  const prerempli = parametres ? [...new Set(parametres.keys())].filter((cle2) => cle2 !== "formulaire_modele") : [];
+  const nettoyerAction = () => {
+    for (const form of document.querySelectorAll(".formulaire_inserer_modeles form[action]")) {
+      const action = new URL(form.getAttribute("action"), document.baseURI);
+      const avant = action.searchParams.size;
+      for (const cle2 of prerempli) action.searchParams.delete(cle2);
+      if (action.searchParams.size !== avant) form.setAttribute("action", action.href);
+    }
+  };
   let observateur = null;
   const arreter = () => {
     observateur?.disconnect();
     observateur = null;
   };
   const lire = () => {
+    if (prerempli.length) nettoyerAction();
     const code2 = document.getElementById("code_modele_modalbox")?.value.trim();
     if (!code2) return;
     arreter();

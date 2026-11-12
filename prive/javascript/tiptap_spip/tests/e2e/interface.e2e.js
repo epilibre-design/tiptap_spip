@@ -62,8 +62,9 @@ test('bouton Modèle : raccourci inséré en bloc, prévisualisé, enregistré',
 	await page.locator('.tts-toolbar .tts-outil--modele').click();
 	// avec le plugin Insérer modèles, le bouton ouvre un menu : saisie brute (catalogue.e2e.js pour l'autre)
 	if (await page.locator('.tts-menu--modele').count()) await page.getByRole('menuitem', { name: DEFAUTS.modele_saisir }).click();
-	await page.locator('.tts-popover input[name=raccourci]').fill(`<doc${doc}|center>`);
-	await page.keyboard.press('Enter');
+	await page.locator('.tts-popover textarea[name=raccourci]').fill(`<doc${doc}|center>`);
+	// zone de texte : Entrée passe à la ligne, Ctrl+Entrée valide (ticket #15)
+	await page.keyboard.press('Control+Enter');
 	await expect(page.locator('.tts-model-block img')).toBeVisible();
 	await enregistrer(page);
 	expect(texte(id)).toBe(crlf(`Texte\n\n<doc${doc}|center>`));

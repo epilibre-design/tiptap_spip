@@ -9,6 +9,13 @@
 - Dans ces zones, `|`, `<` et `>` sont écrits en entités HTML (`&#124;`, `&lt;`, `&gt;`) : ils ne
   coupent plus le raccourci produit, et SPIP les affiche tels quels.
 
+### Corrigé
+
+- Un modèle dont un paramètre tient sur plusieurs lignes (texte avec des paragraphes) se modifie
+  à nouveau par son formulaire Insérer modèles : la saisie n’était pas prise en compte, et le
+  raccourci gardait sa valeur d’origine. SPIP laissait cette valeur dans l’adresse du
+  formulaire, et elle l’emportait sur la saisie.
+
 ## [1.3.3] - 2026-11-11
 
 ### Modifié
