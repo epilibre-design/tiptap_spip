@@ -66,7 +66,7 @@ test('Modifier : paramètre sans champ dans le formulaire, saisie brute (rien n\
 	await articleAvecDocument(page, (d) => `<doc${d}|left|inconnu=1>`);
 	await page.locator('.tts-model-block').hover();
 	await page.locator('.tts-model-block .tts-model__modifier').click();
-	await expect(page.locator('.tts-popover input[name=raccourci]')).toHaveValue(/\|inconnu=1>$/);
+	await expect(page.locator('.tts-popover textarea[name=raccourci]')).toHaveValue(/\|inconnu=1>$/);
 	await expect(page.locator('.lity')).toHaveCount(0);
 });
 
@@ -81,4 +81,21 @@ test('plein écran : barre au-dessus du bandeau de SPIP, modalbox du catalogue a
 	await expect(choix).toBeVisible();
 	// le choix est cliquable : rien de l'éditeur plein écran ne le recouvre
 	await choix.click({ trial: true });
+});
+
+test('Modifier deux fois un modèle dont un paramètre tient sur plusieurs lignes : chaque saisie est gardée', async ({ page }) => {
+	// modèle tts_encadre du plugin de test : étiquette, texte (textarea), couleur
+	const id = await editer(page, '<tts_encadre|etiquette=Repère|texte=du texte\n\nSur plusieurs lignes|couleur=violet>');
+	for (const ajout of [' un', ' deux']) {
+		await page.locator('.tts-model-block').hover();
+		await page.locator('.tts-model-block .tts-model__modifier').click();
+		await expect(boite(page).locator('.ProseMirror')).toBeVisible();
+		await boite(page).locator('.ProseMirror').click();
+		await page.keyboard.press('Control+End');
+		await page.keyboard.type(ajout);
+		await boite(page).locator('button[name=inserer]').click();
+		await expect(page.locator('.lity')).toHaveCount(0);
+	}
+	await enregistrer(page);
+	expect(texte(id)).toBe(crlf('<tts_encadre|etiquette=Repère|texte=du texte\n\nSur plusieurs lignes un deux|couleur=violet>'));
 });

@@ -27439,10 +27439,14 @@ var SoumissionRetenue = class {
 // src/editor/TextareaBridge.js
 var TextareaBridge = class {
   /**
-   * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor, delay?: number }} options
+   * @param {{ textarea: HTMLTextAreaElement, editor: import('@tiptap/core').Editor, delay?: number,
+   *           codec?: { lire: (valeur: string) => string, ecrire: (source: string) => string } }} options
+   *        codec : passage de la valeur du textarea à la source SPIP (lire) et retour (ecrire,
+   *        idempotent : appliqué aussi à la source saisie en mode source)
    */
-  constructor({ textarea, editor, delay = 150 }) {
+  constructor({ textarea, editor, delay = 150, codec = null }) {
     this.textarea = textarea;
+    this.codec = codec;
     this.editor = editor;
     this.delay = delay;
     this.mode = "visual";
@@ -27467,12 +27471,23 @@ var TextareaBridge = class {
     clearTimeout(this.timer);
     this.timer = setTimeout(this.onFlush, this.delay);
   }
-  /** Écrit la sérialisation dans le textarea si elle diffère, avec événements input et change. */
+  /**
+   * Écrit la sérialisation dans le textarea si elle diffère, avec événements input et change. En
+   * mode source, le codec s'applique à la source saisie.
+   */
   flush() {
     clearTimeout(this.timer);
     this.timer = null;
-    if (this.mode !== "visual" || this.editor.isDestroyed) return;
-    const value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
+    if (this.editor.isDestroyed) return;
+    let value;
+    if (this.mode === "visual") {
+      value = serialize(this.editor.getJSON(), { regles: this.editor.tiptapSpip?.regles ?? [] });
+      if (this.codec) value = this.codec.ecrire(value);
+    } else if (this.codec) {
+      value = this.codec.ecrire(this.textarea.value);
+    } else {
+      return;
+    }
     if (value === this.textarea.value) return;
     this.textarea.value = value;
     this.dispatching = true;
@@ -27485,7 +27500,8 @@ var TextareaBridge = class {
   }
   /** Recharge l'éditeur depuis le textarea, sans émettre de mise à jour (pas de réécriture). */
   load() {
-    const json = toEditorJSON(this.textarea.value, this.editor.schema, this.editor.tiptapSpip?.regles);
+    const source = this.codec ? this.codec.lire(this.textarea.value) : this.textarea.value;
+    const json = toEditorJSON(source, this.editor.schema, this.editor.tiptapSpip?.regles);
     this.editor.commands.setContent(json, { emitUpdate: false });
   }
   /**
@@ -27575,12 +27591,20 @@ function contexte2(textarea) {
   }
   return { objet: "", id: 0, champ: textarea.name };
 }
+var FORMULAIRE_MODELE = ".formulaire_inserer_modeles";
+var dansFormulaireModele = (textarea) => Boolean(textarea.closest(FORMULAIRE_MODELE));
 function barreDuTextarea(textarea) {
   if (textarea.dataset.ttsToolbar) return textarea.dataset.ttsToolbar;
+  if (dansFormulaireModele(textarea)) return "modele";
   if (textarea.classList.contains("inserer_barre_edition")) return "edition";
   if (textarea.classList.contains("inserer_barre_forum") || textarea.closest(".formulaire_forum")) return "forum";
   return ["texte", "chapo"].includes(contexte2(textarea).champ) ? "edition" : "minimale";
 }
+
+// src/spip/parametre.js
+var ENTITES = { "|": "&#124;", "<": "&lt;", ">": "&gt;" };
+var echapperParametre = (texte2) => texte2.replace(/<[a-z/!][^<>]*>|[|<>]/gi, (m) => m.length > 1 ? m.replaceAll("|", ENTITES["|"]) : ENTITES[m]);
+var lireParametre = (texte2) => texte2.replace(/&#(?:124|x7c);/gi, "|");
 
 // src/ui/ModelPopover.js
 function poserModele(editor, model, pos = null) {
@@ -27664,12 +27688,22 @@ function ouvrirCatalogue({ editor, url, pos = null, parametres = null }) {
   const $ = globalThis.jQuery;
   if (typeof $?.modalbox !== "function") return false;
   if ($.markItUp) $.markItUp.focused = null;
+  const prerempli = parametres ? [...new Set(parametres.keys())].filter((cle2) => cle2 !== "formulaire_modele") : [];
+  const nettoyerAction = () => {
+    for (const form of document.querySelectorAll(".formulaire_inserer_modeles form[action]")) {
+      const action = new URL(form.getAttribute("action"), document.baseURI);
+      const avant = action.searchParams.size;
+      for (const cle2 of prerempli) action.searchParams.delete(cle2);
+      if (action.searchParams.size !== avant) form.setAttribute("action", action.href);
+    }
+  };
   let observateur = null;
   const arreter = () => {
     observateur?.disconnect();
     observateur = null;
   };
   const lire = () => {
+    if (prerempli.length) nettoyerAction();
     const code2 = document.getElementById("code_modele_modalbox")?.value.trim();
     if (!code2) return;
     arreter();
@@ -28586,7 +28620,8 @@ var barres_default = {
     "pleinEcran"
   ],
   forum: ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
-  minimale: ["gras", "italique", "lien", "|", "source"]
+  minimale: ["gras", "italique", "lien", "|", "source"],
+  modele: ["gras", "italique", "exposant", "|", "liste", "citation", "|", "source"]
 };
 
 // src/ui/composants.js
@@ -29008,7 +29043,9 @@ var SELECTOR = [
   "textarea.inserer_barre_forum",
   '.formulaire_spip textarea[name="texte"]',
   "form[data-tts-champs] textarea",
-  "textarea[data-tts-toolbar]"
+  "textarea[data-tts-toolbar]",
+  // paramètres d'un modèle (plugin Insérer modèles), quel que soit leur nom ; pas le raccourci produit
+  ".formulaire_inserer_modeles textarea:not([readonly])"
 ].join(", ");
 var CRAYONS = ".formulaire_crayon textarea.crayon-active";
 var selecteur = () => {
@@ -29077,15 +29114,16 @@ var Instance = class {
     });
     this.ui = creerInterface({ editor: () => this.editor, wrapper: this.wrapper, services: this.servicesPrets, catalogue: catalogueDe(textarea) });
     const nomBarre = barreDuTextarea(textarea);
+    const codec = dansFormulaireModele(textarea) ? { lire: lireParametre, ecrire: echapperParametre } : void 0;
     this.editor = createEditor2({
       element: this.content,
-      source: textarea.value,
+      source: codec ? codec.lire(textarea.value) : textarea.value,
       ui: this.ui,
       tierces: extensionsTierces(nomBarre),
       // zone éditable nommée comme le champ SPIP (spec 06 §7)
       editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em`, "aria-label": nomDuChamp(textarea), "aria-multiline": "true" } }
     });
-    this.bridge = new TextareaBridge({ textarea, editor: this.editor });
+    this.bridge = new TextareaBridge({ textarea, editor: this.editor, codec });
     this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
     const barres = config().toolbars ?? barres_default;
     this.toolbar = new Toolbar({

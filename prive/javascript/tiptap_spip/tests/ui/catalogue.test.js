@@ -148,6 +148,24 @@ describe('ouvrirCatalogue', () => {
 		expect(source()).toBe('Voir <doc12|center> ici');
 	});
 
+	it('modification : l\'action du formulaire chargé perd les paramètres de préremplissage, même sur plusieurs lignes', async () => {
+		monter('<encadre|texte=a\n\nb|couleur=violet>');
+		const parametres = new URLSearchParams({ formulaire_modele: 'encadre', texte: 'a\n\nb', couleur: 'violet' });
+		ouvrirCatalogue({ editor, url: URL_MODALBOX, pos: 0, parametres });
+		// SPIP (parametre_url) ne retire pas de l'action un paramètre dont la valeur a un saut de ligne :
+		// _request() lirait au POST la valeur d'origine, dans l'URL, avant celle saisie
+		const boite = document.createElement('div');
+		boite.className = 'formulaire_spip formulaire_inserer_modeles';
+		boite.innerHTML = `<form action="${URL_MODALBOX.replace('http://site.test', '')}&amp;texte=a%0A%0Ab" method="post"></form>`;
+		document.body.append(boite);
+		await tick();
+
+		const action = new URL(boite.querySelector('form').getAttribute('action'), 'http://site.test/');
+		expect(action.searchParams.has('texte')).toBe(false);
+		expect(action.searchParams.get('id_objet')).toBe('3');
+		expect(action.pathname).toBe('/spip.php');
+	});
+
 	it('fermée sans insertion : rien ne change, plus rien n\'est observé', async () => {
 		monter('Texte');
 		ouvrirCatalogue({ editor, url: URL_MODALBOX });

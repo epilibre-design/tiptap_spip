@@ -1,0 +1,14 @@
+nom: 'Encadré'
+parametres:
+  - saisie: 'hidden'
+    options: {nom: 'modele', defaut: 'tts_encadre'}
+  - saisie: 'input'
+    options: {nom: 'etiquette', label: 'Étiquette', explication: 'En capitales, par exemple LE REPÈRE ESSENTIEL.', obligatoire: 'oui'}
+  - saisie: 'textarea'
+    options: {nom: 'texte', label: 'Texte', rows: 4, obligatoire: 'oui'}
+  - saisie: 'radio'
+    options:
+      nom: 'couleur'
+      label: 'Couleur'
+      defaut: 'violet'
+      data: {violet: 'Violet (repère)', sable: 'Sable (mise en garde)'}

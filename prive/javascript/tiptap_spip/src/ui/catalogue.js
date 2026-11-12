@@ -88,12 +88,26 @@ export function ouvrirCatalogue({ editor, url, pos = null, parametres = null }) 
 	// le plugin insérerait aussi le raccourci dans la zone du porte-plume qui avait le focus
 	if ($.markItUp) $.markItUp.focused = null;
 
+	// SPIP retire de l'action du formulaire les paramètres d'URL qui sont ses champs, sauf une valeur
+	// sur plusieurs lignes (parametre_url() : « . » sans le modificateur s). Restée dans l'URL, elle
+	// l'emporterait au POST sur la valeur saisie (_request() lit $_GET avant $_POST) : on la retire.
+	const prerempli = parametres ? [...new Set(parametres.keys())].filter((cle) => cle !== 'formulaire_modele') : [];
+	const nettoyerAction = () => {
+		for (const form of document.querySelectorAll('.formulaire_inserer_modeles form[action]')) {
+			const action = new URL(form.getAttribute('action'), document.baseURI);
+			const avant = action.searchParams.size;
+			for (const cle of prerempli) action.searchParams.delete(cle);
+			if (action.searchParams.size !== avant) form.setAttribute('action', action.href);
+		}
+	};
+
 	let observateur = null;
 	const arreter = () => {
 		observateur?.disconnect();
 		observateur = null;
 	};
 	const lire = () => {
+		if (prerempli.length) nettoyerAction();
 		const code = document.getElementById('code_modele_modalbox')?.value.trim();
 		if (!code) return;
 		arreter();

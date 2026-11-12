@@ -6,7 +6,8 @@ import { Envois } from './editor/envois.js';
 import { SoumissionRetenue } from './editor/soumission.js';
 import { TextareaBridge } from './editor/TextareaBridge.js';
 import { servicesALaDemande } from './hosts/aLaDemande.js';
-import { barreDuTextarea, contexte as contexteHote } from './hosts/contexte.js';
+import { barreDuTextarea, contexte as contexteHote, dansFormulaireModele } from './hosts/contexte.js';
+import { echapperParametre, lireParametre } from './spip/parametre.js';
 import { Services } from './services/cvt.js';
 import { catalogueDe } from './ui/catalogue.js';
 import { creerInterface } from './ui/interface.js';
@@ -29,6 +30,8 @@ const SELECTOR = [
 	'.formulaire_spip textarea[name="texte"]',
 	'form[data-tts-champs] textarea',
 	'textarea[data-tts-toolbar]',
+	// paramètres d'un modèle (plugin Insérer modèles), quel que soit leur nom ; pas le raccourci produit
+	'.formulaire_inserer_modeles textarea:not([readonly])',
 ].join(', ');
 
 /** Textareas des crayons (plugin Crayons), équipés si la configuration l'active (tiptap_spip/crayons). */
@@ -140,16 +143,18 @@ class Instance {
 
 		// barre du textarea : elle décide aussi des extensions tierces (registerExtension, toolbars)
 		const nomBarre = barreDuTextarea(textarea);
+		// paramètre d'un modèle : |, < et > en entités dans le textarea (src/spip/parametre.js)
+		const codec = dansFormulaireModele(textarea) ? { lire: lireParametre, ecrire: echapperParametre } : undefined;
 		// l'éditeur est créé avant de toucher au DOM : en cas d'échec, rien n'a changé
 		this.editor = createEditor({
 			element: this.content,
-			source: textarea.value,
+			source: codec ? codec.lire(textarea.value) : textarea.value,
 			ui: this.ui,
 			tierces: extensionsTierces(nomBarre),
 			// zone éditable nommée comme le champ SPIP (spec 06 §7)
 			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em`, 'aria-label': nomDuChamp(textarea), 'aria-multiline': 'true' } },
 		});
-		this.bridge = new TextareaBridge({ textarea, editor: this.editor });
+		this.bridge = new TextareaBridge({ textarea, editor: this.editor, codec });
 		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
 		// barre d'outils déclarée (spec 06 §2) : celle de la configuration (pipeline tiptap_spip_toolbars),
 		// sinon celle du bundle ; une barre inconnue donne la barre minimale
