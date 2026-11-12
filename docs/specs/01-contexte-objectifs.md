@@ -55,12 +55,18 @@ On veut un éditeur **WYSIWYG** (ou au moins WYSIWYM) qui :
 ### Configuration de référence
 
 L'éditeur implémente la sémantique des raccourcis **du core SPIP** (TextWheel de la version installée), et
-seulement elle. C'est sa configuration connue. Un texte est interprété comme le core l'interpréterait :
+seulement elle, à une exception près : les intertitres hiérarchiques (ci-dessous). C'est sa configuration connue. Un texte est interprété comme le core l'interpréterait :
 avec un plugin qui ajoute des raccourcis (typoenluminee, Couteau suisse…), ces raccourcis sont vus comme le
 core les voit (du texte, ou d'autres raccourcis du core). Par exemple `{{{**Titre}}}` est un intertitre dont le
 texte est « **Titre ». C'est le comportement attendu, pas une perte : l'éditeur ne prétend pas gérer une
 configuration qu'il ne connaît pas. Un site qui dépend de tels raccourcis désactive l'éditeur sur les champs
 concernés, ou fournit une extension ([07](07-extensibilite.md)).
+
+Exception (ticket #17) : les intertitres `{{{*…}}}` … `{{{*****…}}}` des plugins Enluminures typographiques
+et Intertitres hiérarchiques, très répandus. Quand l'un d'eux est actif, le serveur transmet le niveau que
+chaque nombre d'étoiles donne au rendu, et l'éditeur lit et écrit ces raccourcis comme des titres
+([03](03-schema-json.md), « Intertitres »). Leurs autres raccourcis restent hors de la configuration de
+référence.
 
 ### Exclus (v1)
 
@@ -69,7 +75,7 @@ concernés, ou fournit une extension ([07](07-extensibilite.md)).
 - Upload de documents par glisser-déposer (lot ultérieur, cf. [09](09-lots-roadmap.md)) ; le collage d'une ou
   plusieurs images est spécifié à part ([10](10-coller-images.md), lot L7.1).
 - Syntaxes ajoutées par des plugins tiers (typoenluminee, Couteau suisse…) : hors de la configuration de
-  référence (cf. ci-dessus). Ce qu'elles apportent (titres hiérarchisés, alignements) est couvert par du
+  référence (cf. ci-dessus), sauf les intertitres hiérarchiques. Ce qu'elles apportent (titres hiérarchisés, alignements) est couvert par du
   HTML simple.
 - Champs en Markdown : ils restent gérés par markdown_editor (cf. §5).
 

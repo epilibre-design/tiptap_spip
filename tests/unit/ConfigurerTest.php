@@ -37,6 +37,25 @@ final class ConfigurerTest extends TestCase
 		$this->assertSame(['descriptif' => 'tiptap_spip:champ_descriptif', 'chapo' => 'tiptap_spip:champ_chapo', 'texte' => 'tiptap_spip:champ_texte', 'ps' => 'tiptap_spip:champ_ps'], $valeurs['_objets']['article']['champs']);
 		$this->assertSame([2, 3, 4, 5, 6], $valeurs['_niveaux']);
 		$this->assertSame(['mots', 'wikipedia'], $valeurs['_glossaires']);
+		$this->assertSame(2, $valeurs['_intertitre']);
+		$this->assertSame('tiptap_spip:cfg_niveaux_explication', $valeurs['_niveaux_explication']);
+	}
+
+	public function testChargerAvecDesIntertitresHierarchiques(): void {
+		$GLOBALS['_test_plugins'][] = 'typoenluminee';
+		$GLOBALS['_test_config']['bte/titraille3open'] = '<p>';
+		$valeurs = formulaires_configurer_tiptap_spip_charger_dist();
+
+		$this->assertSame([3, 4, 6], $valeurs['niveaux']);
+		$this->assertSame(3, $valeurs['_intertitre']);
+		$this->assertSame(
+			'tiptap_spip:cfg_niveaux_explication_intertitres ' . json_encode(['raccourcis' => implode(', ', [
+				'{{{…}}} : tiptap_spip:outil_titre_niveau {"niveau":3}',
+				'{{{**…}}} : tiptap_spip:outil_titre_niveau {"niveau":4}',
+				'{{{****…}}} : tiptap_spip:outil_titre_niveau {"niveau":6}',
+			])]),
+			$valeurs['_niveaux_explication']
+		);
 	}
 
 	public function testVerifierRefuseLesValeursHorsListe(): void {

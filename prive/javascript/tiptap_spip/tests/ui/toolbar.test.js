@@ -117,6 +117,17 @@ describe('composants', () => {
 		expect(outil('gras').getAttribute('aria-pressed')).toBe('false');
 	});
 
+	it('menu Titre avec des intertitres hiérarchiques : niveaux du serveur, intertitre au niveau de {{{…}}}', () => {
+		globalThis.spipConfig = { tiptap_spip: { niveaux: [3, 4, 5, 6], intertitres: { 1: 3, 2: 4, 3: 5, 4: 6, 5: null } } };
+		barre('edition', { src: 'Texte' });
+		editor.commands.setTextSelection(apres('Tex'));
+		touche(outil('titre'), 'ArrowDown');
+		const items = [...wrapper.querySelectorAll('.tts-menu--titre [role=menuitemradio]')];
+		expect(items.map((i) => i.textContent)).toEqual(['Paragraphe', 'Intertitre', 'Titre de niveau 4', 'Titre de niveau 5', 'Titre de niveau 6']);
+		items[2].click();
+		expect(source()).toBe('{{{**Texte}}}');
+	});
+
 	it('menu Titre au clavier : ↓ ouvre, ↓ puis Entrée choisit, Échap ferme et rend le focus', () => {
 		barre('edition', { src: 'Texte' });
 		editor.commands.setTextSelection(apres('Tex'));

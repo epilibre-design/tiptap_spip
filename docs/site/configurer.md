@@ -34,6 +34,10 @@ forme de raccourcis `<docN>`. Le droit de joindre des documents à l’objet res
 - **Niveaux de titres proposés** : sélectionnez les niveaux qui apparaîtront dans le menu **Titre**.
   Le niveau **Intertitre** utilise le raccourci SPIP classique ; les niveaux suivants utilisent
   des balises HTML de titre.
+  Avec le plugin **Enluminures typographiques** ou **Intertitres hiérarchiques**, l’éditeur suit
+  leurs raccourcis : `{{{…}}}` pour l’intertitre, `{{{**…}}}`, `{{{***…}}}`… pour les niveaux
+  suivants, chacun affiché au niveau que le site lui donne. Tant que vous n’avez pas choisi de
+  niveaux, le menu propose tous ceux de ces raccourcis.
 - **Glossaires proposés** : choisissez les glossaires nommés à afficher dans la fenêtre du
   glossaire. Les raccourcis déjà présents dans vos textes restent lisibles.
 - **Modèles proposés** : si le plugin **Insérer modèles** est installé, son catalogue se règle

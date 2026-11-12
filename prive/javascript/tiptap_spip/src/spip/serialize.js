@@ -1,6 +1,7 @@
 import { serializeAbbr } from './abbr.js';
 import { delimiteursRegle, ecrireRegle } from './aides.js';
 import { serializeGlossary } from './glossary.js';
+import { ecrireIntertitre } from './intertitres.js';
 import { canon, MARK_ORDER, node, sameMark, text } from './json.js';
 import { linkEnd } from './links.js';
 import { serializeModel } from './models.js';
@@ -182,9 +183,8 @@ export function serializeBlock(b) {
 		case 'paragraph':
 			return serializeInline(b.content, { lineStart: true });
 		case 'heading':
-			return a.level === 2
-				? `{{{${serializeInline(b.content, { html: true, uneLigne: true })}}}}`
-				: `<h${a.level}>${serializeInline(b.content, { uneLigne: true })}</h${a.level}>`;
+			return ecrireIntertitre(a.level, serializeInline(b.content, { html: true, uneLigne: true }))
+				?? `<h${a.level}>${serializeInline(b.content, { uneLigne: true })}</h${a.level}>`;
 		case 'horizontalRule':
 			return '----';
 		case 'bulletList':

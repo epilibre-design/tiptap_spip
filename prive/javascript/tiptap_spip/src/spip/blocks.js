@@ -1,5 +1,6 @@
 import { lireRegle } from './aides.js';
 import { parseInline } from './inline.js';
+import { lireIntertitre, niveauHtmlLu } from './intertitres.js';
 import { node, text } from './json.js';
 import { parseModel } from './models.js';
 import { BARRE_FINALE, parseMulti } from './multi.js';
@@ -156,19 +157,23 @@ function inlineOf(src, msk, regions, s, e, options) {
 // (wheels/spip/spip-listes.json) de TextWheel, SPIP 4.4.21, Collectif SPIP, licence GPL-3.0-or-later.
 // Adaptation du 2026-10-11 : appliquées à une ligne isolée.
 const RE_HR = /^(?:-{4,}|_{4,})[ \t\r]*$/;
-const RE_H2 = /^\{\{\{(?!\{)(.*?)\}\}\}[ \t\r]*$/;
-const RE_HN = /^<h([3-6])>(.*)<\/h\1>[ \t\r]*$/;
+const RE_HN = /^<h([2-6])>(.*)<\/h\1>[ \t\r]*$/;
 const RE_ITEM = /^-(\*+|#+)(?![*#]) ?/;
 
 function special(line) {
 	return RE_HR.test(line) || RE_ITEM.test(line) || heading(line) !== null;
 }
 
+/** Intertitre de la ligne : raccourci (cf. intertitres.js) ou <hN> sans attribut. */
 function heading(line) {
-	let m = line.match(RE_H2);
-	if (m && !/\{\{|\}\}/.test(m[1])) return { level: 2, offset: 3, length: m[1].length };
-	m = line.match(RE_HN);
-	if (m) return { level: Number(m[1]), offset: 4, length: m[2].length };
+	const h = lireIntertitre(line);
+	if (h) {
+		// rendu qui n'est pas un titre de l'éditeur (strong d'Enluminures typographiques, titre numéroté…)
+		if (!h.level) throw new Fallback();
+		return h;
+	}
+	const m = line.match(RE_HN);
+	if (m && niveauHtmlLu(Number(m[1]))) return { level: Number(m[1]), offset: 4, length: m[2].length };
 	return null;
 }
 

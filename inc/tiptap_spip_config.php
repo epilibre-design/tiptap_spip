@@ -15,6 +15,54 @@ const TIPTAP_SPIP_JSON = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_
 const TIPTAP_SPIP_NIVEAUX = [2, 3, 4, 5, 6];
 const TIPTAP_SPIP_NIVEAUX_DEFAUT = [2, 3, 4];
 
+/** Balises par défaut des intertitres d'Enluminures typographiques (typoenluminee_pre_propre()). */
+const TIPTAP_SPIP_TYPOENLUMINEE = [1 => '<h3 class="spip">', 2 => '<h4 class="spip">', 3 => '<h5 class="spip">', 4 => '<h6 class="spip">', 5 => '<strong class="spip titraille5">'];
+
+/**
+ * Intertitres hiérarchiques `{{{*…}}}` … `{{{*****…}}}` (`{{{…}}}` vaut `{{{*…}}}`) : niveau du titre
+ * h2 à h6 que donne chaque nombre d'étoiles (1 à 5), null pour un autre rendu ; null sans plugin qui
+ * les rend.
+ * - Enluminures typographiques : balises de sa configuration (bte/titrailleNopen), ou des globales
+ *   debut_intertitre, debut_intertitre_2… si config_intertitre est posée. Il l'emporte sur le
+ *   suivant : il remplace les raccourcis avant TextWheel (pipeline pre_propre).
+ * - Intertitres hiérarchiques (porte_plume_intertitres) : niveau de la globale debut_intertitre
+ *   (h2 sinon), plus une étoile par niveau.
+ *
+ * @return ?array<int, ?int>
+ */
+function tiptap_spip_intertitres(): ?array {
+	$niveau = static fn ($n) => $n >= 2 && $n <= 6 ? $n : null;
+	$table = [];
+	if (test_plugin_actif('typoenluminee')) {
+		include_spip('inc/config');
+		foreach (TIPTAP_SPIP_TYPOENLUMINEE as $k => $defaut) {
+			$balise = isset($GLOBALS['config_intertitre'])
+				? ($GLOBALS['debut_intertitre' . ($k > 1 ? "_$k" : '')] ?? $defaut)
+				: lire_config("bte/titraille{$k}open", $defaut);
+			$table[$k] = preg_match('/^\s*<h([1-6])\b/i', (string) $balise, $m) ? $niveau((int) $m[1]) : null;
+		}
+		return $table;
+	}
+	if (test_plugin_actif('porte_plume_intertitres')) {
+		$base = preg_match('/[h](\d)/s', (string) ($GLOBALS['debut_intertitre'] ?? ''), $m) ? (int) $m[1] : 2;
+		for ($k = 1; $k <= 5; $k++) {
+			$table[$k] = $niveau($base + $k - 1);
+		}
+		return $table;
+	}
+	return null;
+}
+
+/**
+ * Niveaux de titres proposés par défaut : ceux des intertitres hiérarchiques, sinon 2 à 4.
+ *
+ * @return int[]
+ */
+function tiptap_spip_niveaux_defaut(): array {
+	$niveaux = array_values(array_intersect(TIPTAP_SPIP_NIVEAUX, (array) tiptap_spip_intertitres()));
+	return $niveaux ?: TIPTAP_SPIP_NIVEAUX_DEFAUT;
+}
+
 /**
  * SPIP 5 ou plus récent.
  */
@@ -50,7 +98,7 @@ function tiptap_spip_config(): array {
 		// collage d'images (spec 10 §6) : actif sauf s'il a été décoché
 		'coller_images' => ($meta['coller_images'] ?? '') === 'non' ? 'non' : 'oui',
 		'mode' => ($meta['mode'] ?? '') === 'source' ? 'source' : 'visual',
-		'niveaux' => $niveaux ?: TIPTAP_SPIP_NIVEAUX_DEFAUT,
+		'niveaux' => $niveaux ?: tiptap_spip_niveaux_defaut(),
 		'champs' => $champs,
 		'glossaires' => is_array($meta['glossaires'] ?? null) ? $noms($meta['glossaires']) : null,
 	];
@@ -123,6 +171,7 @@ function tiptap_spip_config_js($valeur = null): string {
 		'crayons' => $config['crayons'] === 'oui',
 		'mode' => $config['mode'],
 		'niveaux' => $config['niveaux'],
+		'intertitres' => tiptap_spip_intertitres(),
 		'champs' => (object) tiptap_spip_champs_par_objet(),
 		'multilingue' => tiptap_spip_multilingue(),
 		'langues' => tiptap_spip_langues(),

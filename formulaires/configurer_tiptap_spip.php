@@ -40,8 +40,26 @@ function formulaires_configurer_tiptap_spip_charger_dist() {
 		'glossaires' => tiptap_spip_glossaires_proposes(),
 		'_objets' => $objets,
 		'_niveaux' => TIPTAP_SPIP_NIVEAUX,
+		'_intertitre' => (tiptap_spip_intertitres() ?? [1 => 2])[1],
+		'_niveaux_explication' => tiptap_spip_niveaux_explication(),
 		'_glossaires' => tiptap_spip_glossaires(),
 	];
+}
+
+/**
+ * Explication du choix des niveaux : leur écriture, en raccourcis des intertitres hiérarchiques
+ * s'il y a lieu (tiptap_spip_intertitres()).
+ */
+function tiptap_spip_niveaux_explication(): string {
+	$table = tiptap_spip_intertitres();
+	if ($table === null) {
+		return _T('tiptap_spip:cfg_niveaux_explication');
+	}
+	$raccourcis = [];
+	foreach (array_filter($table) as $k => $niveau) {
+		$raccourcis[] = '{{{' . ($k > 1 ? str_repeat('*', $k) : '') . '…}}} : ' . _T('tiptap_spip:outil_titre_niveau', ['niveau' => $niveau]);
+	}
+	return _T('tiptap_spip:cfg_niveaux_explication_intertitres', ['raccourcis' => implode(', ', $raccourcis)]);
 }
 
 /** Valeurs cochées d'une liste de cases (tableau de chaînes, sinon vide). */

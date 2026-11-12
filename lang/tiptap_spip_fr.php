@@ -44,6 +44,7 @@ return [
 	'cfg_modeles_sans_plugin' => 'Avec le plugin Insérer modèles, l’éditeur propose un catalogue des modèles et un formulaire pour chacun ; sans lui, un modèle se saisit par son raccourci.',
 	'cfg_niveaux' => 'Niveaux de titres proposés',
 	'cfg_niveaux_explication' => 'L’intertitre s’écrit {{{…}}} ; les niveaux suivants s’écrivent en HTML (&lt;h3&gt;…&lt;/h3&gt;).',
+	'cfg_niveaux_explication_intertitres' => 'Avec les intertitres hiérarchiques, les titres s’écrivent en raccourcis (@raccourcis@) ; les autres niveaux s’écrivent en HTML (&lt;h2&gt;…&lt;/h2&gt;).',
 	'cfg_public' => 'Dans le site public (formulaires de forum et formulaires publics)',
 	'cfg_titre' => 'Éditeur visuel',
 	'champ_bio' => 'Biographie',
