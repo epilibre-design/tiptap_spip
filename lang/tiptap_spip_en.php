@@ -7,12 +7,12 @@ return [
 
 	// A
 	'abbr' => 'Abbreviation',
-	'abbr_explication' => 'Explanation', # MODIF
+	'abbr_explication' => 'Explanation',
 	'abbr_invalide' => 'This abbreviation cannot be written as a shortcut (empty expansion, brackets, vertical bar…).',
 	'abbr_retirer' => 'Remove the abbreviation',
 	'annuler' => 'Cancel',
 	'anomalie_balise' => 'SPIP tag without a closing tag: it is not processed when rendered.',
-	'anomalie_citation' => '<quote> without </quote>: when rendered, all the text that follows becomes a quotation.',
+	'anomalie_citation' => '<quote>without</quote>: when rendered, all the text that follows becomes a quotation.',
 	'anomalie_fermeture' => 'Closing without opening: when rendered, it is shown as is or has no effect.',
 	'anomalie_intertitre' => 'Subheading braces outside a complete subheading: when rendered, the rest becomes a subheading.',
 	'anomalie_ouverture' => 'Formatting opened but never closed: when rendered, it extends to the end of the paragraph.',
