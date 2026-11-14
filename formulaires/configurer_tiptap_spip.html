@@ -68,12 +68,12 @@
 				</div>
 				<div class="editer editer_niveaux[ (#ENV*{erreurs/niveaux}|oui)erreur]" role="group" aria-labelledby="tts_cfg_niveaux">
 					<div class="label" id="tts_cfg_niveaux"><:tiptap_spip:cfg_niveaux:></div>
-					<p class="explication"><:tiptap_spip:cfg_niveaux_explication:></p>
+					<p class="explication">#ENV*{_niveaux_explication}</p>
 					[<span class="erreur_message">(#ENV*{erreurs/niveaux})</span>]
 					<BOUCLE_niveaux(DATA){source tableau, #ENV{_niveaux}}>
 					<div class="choix">
 						<input type="checkbox" class="checkbox" name="niveaux\[\]" id="tts_cfg_niveau_#VALEUR" value="#VALEUR"[ (#ENV{niveaux}|find{#VALEUR}|oui)checked="checked"] />
-						<label for="tts_cfg_niveau_#VALEUR">[(#VALEUR|=={2}|?{<:tiptap_spip:outil_intertitre:>,<:tiptap_spip:outil_titre_niveau{niveau=#VALEUR}:>})]</label>
+						<label for="tts_cfg_niveau_#VALEUR">[(#VALEUR|=={#ENV{_intertitre}}|?{<:tiptap_spip:outil_intertitre:>,<:tiptap_spip:outil_titre_niveau{niveau=#VALEUR}:>})]</label>
 					</div>
 					</BOUCLE_niveaux>
 				</div>

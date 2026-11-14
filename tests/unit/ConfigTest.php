@@ -40,6 +40,46 @@ final class ConfigTest extends TestCase
 		$this->assertSame([2, 3, 4], tiptap_spip_config()['niveaux']);
 	}
 
+	public function testSansPluginDIntertitresHierarchiques(): void {
+		$this->assertNull(tiptap_spip_intertitres());
+		$this->assertSame([2, 3, 4], tiptap_spip_niveaux_defaut());
+	}
+
+	public function testIntertitresDEnluminuresTypographiques(): void {
+		$GLOBALS['_test_plugins'][] = 'typoenluminee';
+		$this->assertSame([1 => 3, 2 => 4, 3 => 5, 4 => 6, 5 => null], tiptap_spip_intertitres());
+		$this->assertSame([3, 4, 5, 6], tiptap_spip_config()['niveaux']);
+
+		// balises de sa configuration : un rendu qui n'est pas un titre h2 à h6 vaut null
+		$GLOBALS['_test_config']['bte/titraille1open'] = '<h2 class="spip">';
+		$GLOBALS['_test_config']['bte/titraille2open'] = '<p class="chapeau">';
+		$GLOBALS['_test_config']['bte/titraille4open'] = '<h1>';
+		$this->assertSame([1 => 2, 2 => null, 3 => 5, 4 => null, 5 => null], tiptap_spip_intertitres());
+
+		// globales debut_intertitre… si config_intertitre est posée
+		$GLOBALS['config_intertitre'] = true;
+		$GLOBALS['debut_intertitre'] = '<h4 class="spip">';
+		$this->assertSame([1 => 4, 2 => 4, 3 => 5, 4 => 6, 5 => null], tiptap_spip_intertitres());
+
+		// niveaux choisis dans la configuration de l'éditeur : conservés
+		$GLOBALS['_test_config']['tiptap_spip'] = ['niveaux' => [2, 3]];
+		$this->assertSame([2, 3], tiptap_spip_config()['niveaux']);
+	}
+
+	public function testIntertitresHierarchiques(): void {
+		$GLOBALS['_test_plugins'][] = 'porte_plume_intertitres';
+		$this->assertSame([1 => 2, 2 => 3, 3 => 4, 4 => 5, 5 => 6], tiptap_spip_intertitres());
+		$this->assertSame([2, 3, 4, 5, 6], tiptap_spip_niveaux_defaut());
+
+		// niveau de départ de la globale debut_intertitre ; au-delà de h6, un div
+		$GLOBALS['debut_intertitre'] = '<h3 class="spip">';
+		$this->assertSame([1 => 3, 2 => 4, 3 => 5, 4 => 6, 5 => null], tiptap_spip_intertitres());
+
+		// Enluminures typographiques l'emporte : il remplace les raccourcis avant TextWheel
+		$GLOBALS['_test_plugins'][] = 'typoenluminee';
+		$this->assertSame([1 => 3, 2 => 4, 3 => 5, 4 => 6, 5 => null], tiptap_spip_intertitres());
+	}
+
 	public function testChampsCandidatsTraitesParPropre(): void {
 		$this->assertSame(
 			['article' => ['descriptif', 'chapo', 'texte', 'ps'], 'auteur' => ['bio'], 'syndic_article' => []],
@@ -62,9 +102,13 @@ final class ConfigTest extends TestCase
 		$GLOBALS['_test_config']['tiptap_spip'] = ['crayons' => 'oui', 'mode' => 'source', 'niveaux' => [2, 5], 'champs' => ['auteur' => []]];
 
 		$this->assertSame(
-			'{"public":false,"crayons":true,"mode":"source","niveaux":[2,5],"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]},"multilingue":false,"langues":[]}',
+			'{"public":false,"crayons":true,"mode":"source","niveaux":[2,5],"intertitres":null,"champs":{"article":["descriptif","chapo","texte","ps"],"auteur":[],"syndic_article":[]},"multilingue":false,"langues":[]}',
 			tiptap_spip_config_js()
 		);
+
+		// table des intertitres hiérarchiques : un objet pour le JS (clés 1 à 5)
+		$GLOBALS['_test_plugins'][] = 'typoenluminee';
+		$this->assertStringContainsString('"intertitres":{"1":3,"2":4,"3":5,"4":6,"5":null}', tiptap_spip_config_js());
 	}
 
 	public function testMultilingueAPartirDeDeuxLangues(): void {

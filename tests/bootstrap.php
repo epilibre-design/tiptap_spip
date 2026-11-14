@@ -41,6 +41,7 @@ function test_reset_globals(): void {
 	$GLOBALS['_test_autoriser'] = static fn () => true;
 	$GLOBALS['_test_sql'] = [];
 	$GLOBALS['_test_plugins'] = ['medias'];
+	unset($GLOBALS['config_intertitre'], $GLOBALS['debut_intertitre'], $GLOBALS['debut_intertitre_2']);
 	$GLOBALS['_test_fonctions'] = [];
 	$GLOBALS['visiteur_session'] = ['id_auteur' => 1];
 }

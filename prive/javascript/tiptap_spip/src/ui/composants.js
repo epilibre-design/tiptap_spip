@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { ALIGNEMENTS, alignementActif, selectionAlignee } from '../editor/edition.js';
 import { aDesMultis, langueAffichee, languesDuDocument } from '../editor/extensions.js';
+import { niveauIntertitre } from '../spip/intertitres.js';
 import { boutonOutil, habiller, menuOutil } from './boutons.js';
 import { ICONES } from './icones.js';
 import { label } from './labels.js';
@@ -96,7 +97,7 @@ const COMPOSANTS = {
 				element(editor, 'outil_paragraphe', (c) => c.setParagraph(), { coche: 'radio', icone: 'paragraphe', actif: () => editor.isActive('paragraph') }),
 				...proposes.map((level) => ({
 					...element(editor, 'outil_titre', (c) => c.setHeading({ level }), { coche: 'radio', actif: () => editor.isActive('heading', { level }) }),
-					libelle: level === 2 ? label('outil_intertitre') : label('outil_titre_niveau').replace('@niveau@', level),
+					libelle: level === niveauIntertitre() ? label('outil_intertitre') : label('outil_titre_niveau').replace('@niveau@', level),
 				})),
 			],
 		});

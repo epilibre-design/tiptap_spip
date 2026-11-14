@@ -286,6 +286,9 @@ conserve tel quel et dont il traite quand même les raccourcis inline.
 - Menu « Titre » de la barre : niveaux configurés (défaut 2 à 4). Raccourcis clavier `Mod-Alt-2` … `Mod-Alt-6`.
 - Le parseur ne reconnaît que `<hN>` **sans attribut**, seul dans son bloc ; un `<h3 class="x">` reste
   un nœud brut (préservé, éditable en source).
+- Exception : quand Enluminures typographiques ou Intertitres hiérarchiques est actif, leurs raccourcis
+  `{{{**…}}}`… sont lus et écrits (cf. [03](03-schema-json.md), « Intertitres hiérarchiques ») ; ils ne
+  sont pas en conflit avec le core.
 
 ### Alignements
 

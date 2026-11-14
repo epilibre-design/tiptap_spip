@@ -45,6 +45,7 @@ return [
 	'cfg_modeles_sans_plugin' => 'With the Insérer modèles plugin, the editor offers a model catalog and a form for each model; without it, a model is entered by its shortcut.',
 	'cfg_niveaux' => 'Heading levels offered',
 	'cfg_niveaux_explication' => 'The subheading is written {{{…}}}; the following levels are written in HTML (&lt;h3&gt;…&lt;/h3&gt;).',
+	'cfg_niveaux_explication_intertitres' => 'With hierarchical subheadings, headings are written as shortcuts (@raccourcis@); other levels are written in HTML (&lt;h2&gt;…&lt;/h2&gt;).',
 	'cfg_public' => 'On the public site (forum forms and public forms)',
 	'cfg_titre' => 'Visual editor',
 	'champ_bio' => 'Biography',

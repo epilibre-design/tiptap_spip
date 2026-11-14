@@ -18098,6 +18098,41 @@ function regionsIn(regions, start, end) {
   return dedans;
 }
 
+// src/config.js
+var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
+
+// src/spip/intertitres.js
+var RE_INTERTITRE = /^\{\{\{(?!\{)(.*?)\}\}\}[ \t\r]*$/;
+function tableIntertitres() {
+  const table = config().intertitres;
+  return table && typeof table === "object" ? table : null;
+}
+var niveauValide = (n) => Number.isInteger(n) && n >= 2 && n <= 6 ? n : null;
+var niveauIntertitre = () => {
+  const table = tableIntertitres();
+  return table ? niveauValide(table[1]) : 2;
+};
+function lireIntertitre(line) {
+  const m = line.match(RE_INTERTITRE);
+  if (!m || /\{\{|\}\}/.test(m[1])) return null;
+  const table = tableIntertitres();
+  if (!table) return { level: 2, offset: 3, length: m[1].length };
+  const etoiles = /^\**/.exec(m[1])[0].length;
+  const apres = m[1].slice(etoiles);
+  if (etoiles > 5 || apres.startsWith("#")) return { level: null, offset: 0, length: 0 };
+  const debut = etoiles ? etoiles + /^[ \t]*/.exec(apres)[0].length : 0;
+  return { level: niveauValide(table[Math.max(etoiles, 1)]), offset: 3 + debut, length: m[1].length - debut };
+}
+var niveauHtmlLu = (level) => (tableIntertitres() ? level >= 2 : level >= 3) && level <= 6;
+function ecrireIntertitre(level, contenu) {
+  const table = tableIntertitres();
+  if (!table) return level === 2 ? `{{{${contenu}}}}` : null;
+  const etoiles = [1, 2, 3, 4, 5].find((k) => niveauValide(table[k]) === level);
+  if (!etoiles) return null;
+  if (etoiles === 1) return /^[*#]/.test(contenu) ? null : `{{{${contenu}}}}`;
+  return /^[*#\s]/.test(contenu) ? null : `{{{${"*".repeat(etoiles)}${contenu}}}}`;
+}
+
 // src/spip/serialize.js
 var regleEcrite = (nom, type) => {
   const regle = regleDe(nom);
@@ -18207,7 +18242,7 @@ function serializeBlock(b) {
     case "paragraph":
       return serializeInline(b.content, { lineStart: true });
     case "heading":
-      return a.level === 2 ? `{{{${serializeInline(b.content, { html: true, uneLigne: true })}}}}` : `<h${a.level}>${serializeInline(b.content, { uneLigne: true })}</h${a.level}>`;
+      return ecrireIntertitre(a.level, serializeInline(b.content, { html: true, uneLigne: true })) ?? `<h${a.level}>${serializeInline(b.content, { uneLigne: true })}</h${a.level}>`;
     case "horizontalRule":
       return "----";
     case "bulletList":
@@ -19036,17 +19071,19 @@ function inlineOf(src, msk, regions, s, e, options) {
   return parseInline(src.slice(s, e), msk.slice(s, e), regionsIn(regions, s, e), options);
 }
 var RE_HR = /^(?:-{4,}|_{4,})[ \t\r]*$/;
-var RE_H2 = /^\{\{\{(?!\{)(.*?)\}\}\}[ \t\r]*$/;
-var RE_HN = /^<h([3-6])>(.*)<\/h\1>[ \t\r]*$/;
+var RE_HN = /^<h([2-6])>(.*)<\/h\1>[ \t\r]*$/;
 var RE_ITEM = /^-(\*+|#+)(?![*#]) ?/;
 function special(line) {
   return RE_HR.test(line) || RE_ITEM.test(line) || heading(line) !== null;
 }
 function heading(line) {
-  let m = line.match(RE_H2);
-  if (m && !/\{\{|\}\}/.test(m[1])) return { level: 2, offset: 3, length: m[1].length };
-  m = line.match(RE_HN);
-  if (m) return { level: Number(m[1]), offset: 4, length: m[2].length };
+  const h2 = lireIntertitre(line);
+  if (h2) {
+    if (!h2.level) throw new Fallback();
+    return h2;
+  }
+  const m = line.match(RE_HN);
+  if (m && niveauHtmlLu(Number(m[1]))) return { level: Number(m[1]), offset: 4, length: m[2].length };
   return null;
 }
 function runBlocks(src, msk, regions) {
@@ -25258,9 +25295,6 @@ var SpipAnomalies = Extension.create({
   })]
 });
 
-// src/config.js
-var config = () => globalThis.spipConfig?.tiptap_spip ?? {};
-
 // src/editor/coloration.js
 var cle = new PluginKey("coloration");
 var FICHIERS = {
@@ -28691,7 +28725,7 @@ var COMPOSANTS = {
         element(editor, "outil_paragraphe", (c) => c.setParagraph(), { coche: "radio", icone: "paragraphe", actif: () => editor.isActive("paragraph") }),
         ...proposes.map((level) => ({
           ...element(editor, "outil_titre", (c) => c.setHeading({ level }), { coche: "radio", actif: () => editor.isActive("heading", { level }) }),
-          libelle: level === 2 ? label("outil_intertitre") : label("outil_titre_niveau").replace("@niveau@", level)
+          libelle: level === niveauIntertitre() ? label("outil_intertitre") : label("outil_titre_niveau").replace("@niveau@", level)
         }))
       ]
     });

@@ -31,6 +31,10 @@ shortcuts. Permission to attach documents to that object is still required. See
   their browser, their remembered choice takes precedence next time.
 - **Heading levels offered**: select the levels shown in the **Heading** menu. The
   **Subheading** level uses the classic SPIP shortcut; later levels use HTML heading tags.
+  With the **Enluminures typographiques** or **Intertitres hiérarchiques** plugin, the editor
+  follows their shortcuts: `{{{…}}}` for the subheading, `{{{**…}}}`, `{{{***…}}}`… for the
+  following levels, each shown at the level the site gives it. Until you choose levels, the
+  menu offers all the levels of these shortcuts.
 - **Glossaries offered**: choose the named glossaries shown in the glossary dialog. Shortcuts
   already in your text remain readable.
 - **Models offered**: if **Insérer modèles** is installed, configure its catalog in that

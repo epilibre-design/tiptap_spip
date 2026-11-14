@@ -1,5 +1,13 @@
 ## [Non publié]
 
+### Ajouté
+
+- Intertitres hiérarchiques des plugins Enluminures typographiques et Intertitres hiérarchiques
+  (ticket #17) : `{{{**…}}}`, `{{{***…}}}`… sont lus et écrits comme des titres, au niveau que le
+  site leur donne. Avec Enluminures typographiques, `{{{…}}}` est ainsi un titre de niveau 3, et
+  non plus 2. Le menu **Titre** propose par défaut les niveaux de ces raccourcis. Les titres
+  numérotés (`{{{#…}}}`) et les rendus qui ne sont pas des titres restent en source.
+
 ## [1.3.4] - 2026-11-12
 
 ### Modifié

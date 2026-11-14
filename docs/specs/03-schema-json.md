@@ -71,6 +71,21 @@ l'ordre de déclaration ; un autre ordre ferait diverger `getJSON()` de l'emprei
 raccourcis inline. Le niveau 1 n'est pas proposé (réservé au titre de la page). Les niveaux disponibles
 sont configurables (défaut : 2 à 4).
 
+*Intertitres hiérarchiques* (plugins Enluminures typographiques et Intertitres hiérarchiques, ticket #17) :
+`tiptap_spip_intertitres()` transmet au JS (`config().intertitres`) le niveau rendu par `{{{*…}}}` (ou
+`{{{…}}}`) à `{{{*****…}}}`, clés 1 à 5, null pour un rendu qui n'est pas un `h2`…`h6`. Enluminures
+typographiques : balises de sa configuration (`bte/titrailleNopen`, défaut `h3` à `h6` puis un `strong`) ;
+Intertitres hiérarchiques : niveau de `$GLOBALS['debut_intertitre']` (`h2`) plus une étoile par niveau.
+Avec cette table (`src/spip/intertitres.js`) :
+- un raccourci dont le rendu n'est pas un titre, six étoiles ou plus, un titre numéroté (`{{{#…}}}`) :
+  segment brut ;
+- les blancs après les étoiles ne font pas partie du titre (`{{{** Titre}}}`, écrit par le porte-plume
+  d'Intertitres hiérarchiques) ;
+- écriture : `{{{…}}}` pour le premier niveau, sinon le moins d'étoiles qui donne le niveau ; un niveau sans
+  raccourci, ou un contenu qui commence par `*`, `#` (ou un blanc, avec des étoiles), s'écrit en `<hN>` ;
+- `<h2>`…`<h6>` sans attribut sont tous lus comme des titres ;
+- menu **Titre** : par défaut, les niveaux de la table ; « Intertitre » désigne celui de `{{{…}}}`.
+
 **Alignements** : pas de raccourci SPIP ; on écrit un `<div>` avec une classe dédiée (cf.
 [05](05-extensions-spip.md) §8). On reprend les classes déjà définies par la dist (`squelettes-dist/css/typo.css`) et par
 Bootstrap : `text-left`, `text-center`, `text-right`, `text-justify`.
