@@ -1,5 +1,7 @@
 ## [Non publié]
 
+## [1.3.5] - 2026-11-14
+
 ### Ajouté
 
 - Intertitres hiérarchiques des plugins Enluminures typographiques et Intertitres hiérarchiques
@@ -164,7 +166,8 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.4...HEAD
+[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.5...HEAD
+[1.3.5]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.4...1.3.5
 [1.3.4]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.3...1.3.4
 [1.3.3]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.2...1.3.3
 [1.3.2]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.1...1.3.2
