@@ -33,6 +33,16 @@ Les sources du site MkDocs sont dans `docs/site/`. Pour le construire localement
 | 09 | [Lots et feuille de route](docs/specs/09-lots-roadmap.md) | Découpage, priorités, questions ouvertes |
 | 10 | [Coller des images, déposer des documents](docs/specs/10-coller-images.md) | Collage d'images et glisser-déposer de documents : un document SPIP et un `<docN>` par fichier |
 
+## Utilisation de l'IA
+
+Selon l'[échelle DALIA](https://daliascale.org/fr/) :
+
+- **D4** (généré par IA, dirigé par l'humain) pour le prototypage initial, avant la 1.0 : l'IA a
+  réalisé le travail de conception et de production, l'humain donnait les consignes et jugeait les
+  résultats ;
+- **D3** (création guidée) pour les évolutions depuis la 1.0 : l'humain et l'IA travaillent en
+  partenaires, dans une collaboration plus étroite.
+
 ## Licence et crédits
 
 GPL-3.0-or-later ([LICENSE](LICENSE)). Le code adapté de SPIP, de TextWheel, du porte-plume et de Coloration

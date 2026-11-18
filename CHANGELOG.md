@@ -1,5 +1,14 @@
 ## [Non publié]
 
+## [1.3.6] - 2026-11-18
+
+### Documentation
+
+- Précision de l'utilisation de l'IA lors de la conception et l'amélioration de tiptap-spip.
+  L'échelle DALIA distingue la phase de prototypage initial de la phase de maintenance et
+  perfectionnement, dans lesquelles l'utilisation de l'IA a changé. Le README et la page
+  « Les principes de l'éditeur » du site de documentation la présentent.
+
 ## [1.3.5] - 2026-11-14
 
 ### Ajouté
@@ -166,7 +175,8 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.5...HEAD
+[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.6...HEAD
+[1.3.6]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.5...1.3.6
 [1.3.5]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.4...1.3.5
 [1.3.4]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.3...1.3.4
 [1.3.3]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.2...1.3.3

@@ -36,3 +36,13 @@ provide the corresponding public rendering. The [FAQ example](developper/faq.md)
 JavaScript for editing and PHP for SPIP rendering. Parser and extension point details are in the
 [project specifications](https://github.com/epilibre-design/tiptap_spip/tree/main/docs/specs)
 (in French).
+
+## Use of AI
+
+The editor’s design and documentation relied on artificial intelligence. On the
+[DALIA scale](https://daliascale.org/):
+
+- **D4** (AI-generated, human-directed) for the initial prototype, before version 1.0: the AI did
+  the design and production work, while a human gave instructions and judged the results;
+- **D3** (guided creation) for changes since version 1.0: the human and the AI work as partners,
+  in closer collaboration.

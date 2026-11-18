@@ -36,3 +36,14 @@ Un plugin SPIP tiers peut déclarer comment lire et écrire **son** raccourci, a
 fournir le rendu public correspondant. L’[exemple FAQ](developper/faq.md) montre les deux côtés :
 le JavaScript pour l’édition et le PHP pour le rendu SPIP. Les détails du parseur et des points
 d’extension figurent dans les [spécifications du projet](https://github.com/epilibre-design/tiptap_spip/tree/main/docs/specs).
+
+## Utilisation de l’IA
+
+La conception et la documentation de l’éditeur se sont appuyées sur l’intelligence artificielle.
+Selon l’[échelle DALIA](https://daliascale.org/fr/) :
+
+- **D4** (généré par IA, dirigé par l’humain) pour le prototypage initial, avant la version 1.0 :
+  l’IA a réalisé le travail de conception et de production, l’humain donnait les consignes et
+  jugeait les résultats ;
+- **D3** (création guidée) pour les évolutions depuis la version 1.0 : l’humain et l’IA travaillent
+  en partenaires, dans une collaboration plus étroite.
