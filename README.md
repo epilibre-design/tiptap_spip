@@ -33,6 +33,12 @@ Les sources du site MkDocs sont dans `docs/site/`. Pour le construire localement
 | 09 | [Lots et feuille de route](docs/specs/09-lots-roadmap.md) | Découpage, priorités, questions ouvertes |
 | 10 | [Coller des images, déposer des documents](docs/specs/10-coller-images.md) | Collage d'images et glisser-déposer de documents : un document SPIP et un `<docN>` par fichier |
 
+## Utilisation de l'IA
+
+Selon l'[échelle DALIA](https://daliascale.org/fr/) : **D3** pour le prototypage initial (avant la
+1.0), dont les étapes de conception ont été supervisées par l'humain ; **D4** pour les évolutions
+depuis la 1.0, qui font l'objet d'une collaboration plus étroite.
+
 ## Licence et crédits
 
 GPL-3.0-or-later ([LICENSE](LICENSE)). Le code adapté de SPIP, de TextWheel, du porte-plume et de Coloration
