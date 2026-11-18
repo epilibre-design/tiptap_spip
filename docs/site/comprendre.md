@@ -39,8 +39,8 @@ d’extension figurent dans les [spécifications du projet](https://github.com/e
 
 ## Utilisation de l’IA
 
-La conception de l’éditeur s’est appuyée sur l’intelligence artificielle. Selon
-l’[échelle DALIA](https://daliascale.org/fr/) :
+La conception et la documentation de l’éditeur se sont appuyées sur l’intelligence artificielle.
+Selon l’[échelle DALIA](https://daliascale.org/fr/) :
 
 - **D3** pour le prototypage initial (avant la version 1.0), dont les étapes de conception ont été
   supervisées par l’humain ;

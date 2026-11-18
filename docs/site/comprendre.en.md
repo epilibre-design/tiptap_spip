@@ -39,7 +39,7 @@ JavaScript for editing and PHP for SPIP rendering. Parser and extension point de
 
 ## Use of AI
 
-The editor was designed with the help of artificial intelligence. On the
+The editor’s design and documentation relied on artificial intelligence. On the
 [DALIA scale](https://daliascale.org/):
 
 - **D3** for the initial prototype (before version 1.0), whose design steps were supervised by a
