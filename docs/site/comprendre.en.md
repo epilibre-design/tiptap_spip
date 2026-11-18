@@ -42,6 +42,7 @@ JavaScript for editing and PHP for SPIP rendering. Parser and extension point de
 The editor’s design and documentation relied on artificial intelligence. On the
 [DALIA scale](https://daliascale.org/):
 
-- **D3** for the initial prototype (before version 1.0), whose design steps were supervised by a
-  human;
-- **D4** for changes since version 1.0, which involve closer collaboration.
+- **D4** (AI-generated, human-directed) for the initial prototype, before version 1.0: the AI did
+  the design and production work, while a human gave instructions and judged the results;
+- **D3** (guided creation) for changes since version 1.0: the human and the AI work as partners,
+  in closer collaboration.

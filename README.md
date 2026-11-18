@@ -35,9 +35,13 @@ Les sources du site MkDocs sont dans `docs/site/`. Pour le construire localement
 
 ## Utilisation de l'IA
 
-Selon l'[échelle DALIA](https://daliascale.org/fr/) : **D3** pour le prototypage initial (avant la
-1.0), dont les étapes de conception ont été supervisées par l'humain ; **D4** pour les évolutions
-depuis la 1.0, qui font l'objet d'une collaboration plus étroite.
+Selon l'[échelle DALIA](https://daliascale.org/fr/) :
+
+- **D4** (généré par IA, dirigé par l'humain) pour le prototypage initial, avant la 1.0 : l'IA a
+  réalisé le travail de conception et de production, l'humain donnait les consignes et jugeait les
+  résultats ;
+- **D3** (création guidée) pour les évolutions depuis la 1.0 : l'humain et l'IA travaillent en
+  partenaires, dans une collaboration plus étroite.
 
 ## Licence et crédits
 
