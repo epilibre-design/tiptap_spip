@@ -1,6 +1,6 @@
 # Optional plugins
 
-**Insérer modèles** and **Coloration Code** are optional: the visual editor works without them. You
+**Insérer modèles**, **Coloration Code**, and **Markdown** are optional: the visual editor works without them. You
 can activate them in SPIP's plugin manager. **Porte-plume**, which ships with SPIP, coexists with the
 visual editor.
 
@@ -40,3 +40,16 @@ editor does not highlight code: it only shows the language of ```` ```php ```` b
 right corner, as SPIP does.
 
 Plugin documentation: [Coloration Code on SPIP-Contrib](https://contrib.spip.net/Coloration-Code) (in French).
+
+## Markdown
+
+This plugin lets you write Markdown in a SPIP text, between `<md>` and `</md>`. When it is active,
+the visual editor shows each `<md>…</md>` block as a plain-text block labeled “Markdown”: you edit
+its Markdown as is. The toolbar's bold, italic, and link buttons do not apply there: they would
+write SPIP shortcuts, which Markdown would display as is. The block must start with exactly
+`<md>` (no attributes) and stand in its own paragraph; otherwise, it stays as source.
+
+If the plugin is set to use Markdown as the default syntax, the visual editor does not take over
+the text field, which is in Markdown; the markdown_editor plugin can equip it.
+
+Plugin documentation: [Markdown on git.spip.net](https://git.spip.net/spip-contrib-extensions/markdown) (in French).

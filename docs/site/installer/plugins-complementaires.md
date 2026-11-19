@@ -1,6 +1,6 @@
 # Plugins complémentaires
 
-**Insérer modèles** et **Coloration Code** sont facultatifs : l’éditeur visuel fonctionne sans eux.
+**Insérer modèles**, **Coloration Code** et **Markdown** sont facultatifs : l’éditeur visuel fonctionne sans eux.
 Vous pouvez les activer dans la gestion des plugins de SPIP. Le **porte-plume**, livré avec SPIP,
 cohabite avec l’éditeur visuel.
 
@@ -39,3 +39,17 @@ Un bloc sans langage reste en texte brut. Sans Coloration Code, l’éditeur ne 
 il affiche seulement le langage des blocs ```` ```php ```` en haut à droite, comme SPIP.
 
 Documentation du plugin : [Coloration Code sur SPIP-Contrib](https://contrib.spip.net/Coloration-Code).
+
+## Markdown
+
+Ce plugin permet d’écrire du Markdown dans un texte SPIP, entre `<md>` et `</md>`. Quand il est
+actif, l’éditeur visuel affiche chaque bloc `<md>…</md>` comme un bloc de texte brut marqué
+« Markdown » : vous y modifiez le Markdown tel quel. Le gras, l’italique ou les liens de la barre
+ne s’y appliquent pas : ils écriraient des raccourcis SPIP, que le Markdown afficherait tels
+quels. Le bloc doit commencer exactement par `<md>` (sans attribut) et occuper son propre
+paragraphe ; sinon, il reste en source.
+
+Si le plugin est réglé sur la syntaxe Markdown par défaut, l’éditeur visuel ne s’installe pas sur
+le champ texte, qui est en Markdown ; le plugin markdown_editor peut l’équiper.
+
+Documentation du plugin : [Markdown sur git.spip.net](https://git.spip.net/spip-contrib-extensions/markdown).

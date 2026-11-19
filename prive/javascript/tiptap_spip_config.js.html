@@ -14,6 +14,8 @@ Object.assign(window.spipConfig, {
 		modeles: [(#VAL|tiptap_spip_catalogue_modeles_json)],
 		[(#REM) coloration syntaxique des blocs de code avec le plugin Coloration Code ]
 		coloration_code: [(#PLUGIN{coloration_code}|?{true,false})],
+		[(#REM) blocs <md> du plugin Markdown lus en texte brut (spec 05 §6) ]
+		markdown: [(#PLUGIN{markdown}|?{true,false})],
 		i18n: {
 			mode_source: <:tiptap_spip:mode_source|tiptap_spip_js_string:>,
 			lien: <:tiptap_spip:lien|tiptap_spip_js_string:>,

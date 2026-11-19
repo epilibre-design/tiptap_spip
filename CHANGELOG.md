@@ -1,5 +1,12 @@
 ## [Non publié]
 
+### Ajouté
+
+- Blocs `<md>…</md>` du plugin Markdown : quand le plugin est actif, l'éditeur les affiche en
+  texte brut marqué « Markdown », au lieu de lire leur contenu comme des raccourcis SPIP. Le
+  Markdown s'y modifie tel quel, et la barre n'y écrit plus de raccourcis SPIP que le Markdown
+  afficherait tels quels.
+
 ## [1.3.6] - 2026-11-18
 
 ### Documentation

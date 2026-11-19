@@ -12,7 +12,7 @@ The [official Visual editor for SPIP page](https://plugins.spip.net/tiptap_spip.
 4. Activate the plugin in the plugin manager. SPIP may ask for your webmaster password.
 
 You can also install it [from an archive](installer/depuis-archive.md) or [from Git](installer/depuis-git.md).
-The [optional plugins](installer/plugins-complementaires.md) Insérer modèles and Coloration Code are not required.
+The [optional plugins](installer/plugins-complementaires.md) Insérer modèles, Coloration Code, and Markdown are not required.
 
 ## Check the installation
 

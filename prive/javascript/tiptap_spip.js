@@ -25251,6 +25251,20 @@ var idiomeView = (ui2) => ({ node: node2 }) => {
   };
 };
 
+// src/spip/markdown.js
+var MARKDOWN = "spipMarkdown";
+var markdownTokenizer = {
+  level: "protect",
+  priority: 0,
+  start: "<md>",
+  match: /<md>([\s\S]*?)<\/md>/
+};
+var parseMarkdown = (m) => node(MARKDOWN, null, m[1] === "" ? void 0 : [text(m[1])]);
+function renderMarkdown(n) {
+  const contenu = (n.content ?? []).map((t) => t.text ?? "").join("");
+  return `<md>${contenu.replace(/<\/md>/gi, "&lt;/md>")}</md>`;
+}
+
 // src/spip/anomalies.js
 var MISE_EN_FORME = "strong|i|del|sup|sub|code";
 var BLOCS2 = "quote|multi|cadre|frame|poesie|poetry|html|math";
@@ -25779,6 +25793,7 @@ var TOP_BLOCKS = [
   "spipCadre",
   "spipHtml",
   "spipMath",
+  "spipMarkdown",
   "spipRaw",
   "spipModelBlock",
   "spipMultiBlock"
@@ -25848,6 +25863,8 @@ var verbatimBlock2 = (name, className) => Node3.create({
 var SpipCadre = verbatimBlock2("spipCadre", "spip_cadre");
 var SpipHtml = verbatimBlock2("spipHtml", "tts-html");
 var SpipMath = verbatimBlock2("spipMath", "tts-math");
+var SpipMarkdownEcrit = verbatimBlock2(MARKDOWN, "tts-markdown").extend({ renderSpip: renderMarkdown });
+var SpipMarkdownLu = SpipMarkdownEcrit.extend({ spipTokenizer: markdownTokenizer, parseSpip: parseMarkdown });
 var SpipPoesie = Node3.create({
   name: "spipPoesie",
   group: "block",
@@ -26296,8 +26313,8 @@ var SpipUi = Extension.create({
     })];
   }
 });
-function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui: ui2 = null, tierces = [] } = {}) {
-  return avecTierces(extensionsDuCoeur({ headingLevels, ui: ui2 }), tierces);
+function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui: ui2 = null, tierces = [], markdown = Boolean(config().markdown) } = {}) {
+  return avecTierces(extensionsDuCoeur({ headingLevels, ui: ui2, markdown }), tierces);
 }
 function avecTierces(extensions, tierces) {
   const ajoutees = [];
@@ -26313,7 +26330,7 @@ function avecTierces(extensions, tierces) {
   }
   return [...resultat, ...ajoutees];
 }
-function extensionsDuCoeur({ headingLevels, ui: ui2 }) {
+function extensionsDuCoeur({ headingLevels, ui: ui2, markdown }) {
   const withView = (node2, view, enabled) => enabled ? node2.extend({ addNodeView: () => view(ui2) }) : node2;
   return [
     SpipDocument,
@@ -26337,6 +26354,7 @@ function extensionsDuCoeur({ headingLevels, ui: ui2 }) {
     SpipCadre,
     SpipHtml,
     SpipMath,
+    markdown ? SpipMarkdownLu : SpipMarkdownEcrit,
     SpipRaw,
     SpipRawInline,
     withView(SpipLinkAuto, linkAutoView, Boolean(ui2?.titles)),

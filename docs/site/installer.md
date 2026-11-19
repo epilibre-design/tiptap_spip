@@ -12,7 +12,7 @@ La [page officielle d’Éditeur visuel pour SPIP](https://plugins.spip.net/tipt
 4. Activez le plugin dans la gestion des plugins. SPIP peut demander votre mot de passe de webmestre.
 
 Vous pouvez aussi l’installer [depuis une archive](installer/depuis-archive.md) ou [depuis Git](installer/depuis-git.md).
-Les [plugins complémentaires](installer/plugins-complementaires.md) Insérer modèles et Coloration Code sont facultatifs.
+Les [plugins complémentaires](installer/plugins-complementaires.md) Insérer modèles, Coloration Code et Markdown sont facultatifs.
 
 ## Vérifier l’installation
 

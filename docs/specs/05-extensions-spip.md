@@ -244,7 +244,7 @@ Lot L4.2 :
 - **Validation :** codes de la regex du core, une seule partie sans langue, multi relu à l'identique (`multiSeRelit`). Une partie ouverte et non modifiée garde son contenu d'origine. « Supprimer le multi » garde le texte de la langue affichée. Lien et glossaire d'une partie s'ouvrent en popovers enfants.
 - **Idiomes :** traduction calculée par SPIP (opération `idiomes`, par lots, cache) affichée à la place du raccourci, qui passe en infobulle. Clic ou `Entrée` : popover du raccourci brut, validé par le parseur, et suppression.
 
-## 6. Blocs protégés — `codeBlock`, `spipCadre`, `spipHtml`, `spipMath`, `spipPoesie`
+## 6. Blocs protégés — `codeBlock`, `spipCadre`, `spipHtml`, `spipMath`, `spipMarkdown`, `spipPoesie`
 
 - Code : backticks (`` `x` `` → mark `code`, ```` ```php … ``` ```` → `codeBlock` avec `language`) et forme
   historique `<code>` (inline ou bloc), `<cadre>` : texte brut, aucun raccourci interprété, attributs de la
@@ -253,6 +253,20 @@ Lot L4.2 :
 - `<html>` : inspiré de `SpipHtml.js`, texte brut éditable avec coloration minimale ; jamais interprété
   dans l'éditeur.
 - `<math>` : texte brut ; aperçu optionnel si le site fournit un rendu (hors v1).
+- `<md>` du plugin [Markdown](https://git.spip.net/spip-contrib-extensions/markdown), en syntaxe SPIP
+  par défaut : texte brut (`src/spip/markdown.js`), lu seulement si le plugin est actif
+  (`spipConfig.tiptap_spip.markdown`) ; sans lui, `<md>` n'est qu'une balise et son contenu du SPIP.
+  - Lecture : règle de niveau `protect` du cœur (mécanisme de la spec 07 §5), car le plugin met ces
+    blocs de côté au pipeline `pre_echappe_html_propre`, avant les backticks et les blocs protégés.
+    Seule la forme exacte `<md>…</md>` est lue, et seulement si elle occupe tout son segment ; le
+    plugin ne convertit ni `<md class>` ni `<MD>`, et un bloc au milieu d'un paragraphe reste brut.
+  - Écriture : `<md>` + texte + `</md>` ; un `</md>` saisi (toute casse) est écrit `&lt;/md>`, que
+    Markdown affiche `</md>`.
+  - Limites : le code en backticks est repéré avant la règle. Un backtick qui chevauche la fermeture
+    `</md>` empêche la lecture du bloc, qui reste brut (sans perte). Le mode « Markdown par défaut »
+    reste à markdown_editor : le plugin pose `inserer_md_barre_*` sur le champ texte, que l'éditeur
+    ne prend pas (spec 01 §5). Ses autres champs (chapeau…), rendus en Markdown dans ce mode, sont
+    en revanche équipés comme du SPIP.
 - `<poesie>` : conteneur de paragraphes où chaque retour à la ligne est significatif (rendu `hardBreak`).
 
 ## 7. Divers

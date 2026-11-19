@@ -20,6 +20,7 @@ import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { ariaModele, idiomeView, linkAutoView, modelView, multiView } from '../nodeviews/views.js';
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
+import { MARKDOWN, markdownTokenizer, parseMarkdown, renderMarkdown } from '../spip/markdown.js';
 import { serializeIdiome } from '../spip/multi.js';
 import { SpipAnomalies } from './anomalies.js';
 import { coloration, colorationActive } from './coloration.js';
@@ -27,6 +28,7 @@ import { SpipEdition } from './edition.js';
 import { SpipPasteImage } from './marqueurEnvoi.js';
 import { apercu, partieAffichee } from './texte.js';
 import { label as libelle } from '../ui/labels.js';
+import { config } from '../config.js';
 
 /**
  * Schéma de l'éditeur (spec 03) : seulement ce que la syntaxe SPIP sait exprimer.
@@ -39,7 +41,7 @@ const hidden = (fallback = null, keepOnSplit = true) => ({ default: fallback, re
 /** Blocs de premier niveau : seuls ceux-ci portent la carte de segments. */
 const TOP_BLOCKS = [
 	'paragraph', 'heading', 'horizontalRule', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'table',
-	'spipPoesie', 'spipAlign', 'spipCadre', 'spipHtml', 'spipMath', 'spipRaw', 'spipModelBlock', 'spipMultiBlock',
+	'spipPoesie', 'spipAlign', 'spipCadre', 'spipHtml', 'spipMath', 'spipMarkdown', 'spipRaw', 'spipModelBlock', 'spipMultiBlock',
 ];
 
 /** Attributs de la sérialisation conservatrice (spec 04 §4) : jamais recopiés sur un bloc coupé. */
@@ -126,6 +128,13 @@ const verbatimBlock = (name, className) => Node.create({
 const SpipCadre = verbatimBlock('spipCadre', 'spip_cadre');
 const SpipHtml = verbatimBlock('spipHtml', 'tts-html');
 const SpipMath = verbatimBlock('spipMath', 'tts-math');
+
+/**
+ * <md>…</md> du plugin Markdown (src/spip/markdown.js) : toujours dans le schéma, lu seulement
+ * avec le plugin (option markdown) ; sans lui, `<md>` n'est qu'une balise et son contenu du SPIP.
+ */
+const SpipMarkdownEcrit = verbatimBlock(MARKDOWN, 'tts-markdown').extend({ renderSpip: renderMarkdown });
+const SpipMarkdownLu = SpipMarkdownEcrit.extend({ spipTokenizer: markdownTokenizer, parseSpip: parseMarkdown });
 
 /** <poesie> / <poetry> : des paragraphes dont les sauts de ligne comptent. */
 const SpipPoesie = Node.create({
@@ -680,14 +689,14 @@ const SpipUi = Extension.create({
  * schéma range les marks d'un texte dans l'ordre de déclaration.
  *
  * @param {{ headingLevels?: number[], ui?: { previews?, titles?, editModel?, openLink? } | null,
- *           tierces?: import('@tiptap/core').AnyExtension[] }} options
+ *           tierces?: import('@tiptap/core').AnyExtension[], markdown?: boolean }} options
  *        ui : interface de l'instance ; avec `previews` et `titles` (services serveur présents), les
  *        modèles sont prévisualisés et les liens sans texte affichent leur titre ; tierces :
  *        extensions des plugins (spec 07), ajoutées à la fin ou à la place de l'extension du cœur
- *        de même nom
+ *        de même nom ; markdown : blocs <md> lus (plugin Markdown actif, configuration du serveur)
  */
-export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null, tierces = [] } = {}) {
-	return avecTierces(extensionsDuCoeur({ headingLevels, ui }), tierces);
+export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null, tierces = [], markdown = Boolean(config().markdown) } = {}) {
+	return avecTierces(extensionsDuCoeur({ headingLevels, ui, markdown }), tierces);
 }
 
 /**
@@ -709,7 +718,7 @@ function avecTierces(extensions, tierces) {
 	return [...resultat, ...ajoutees];
 }
 
-function extensionsDuCoeur({ headingLevels, ui }) {
+function extensionsDuCoeur({ headingLevels, ui, markdown }) {
 	const withView = (node, view, enabled) => (enabled ? node.extend({ addNodeView: () => view(ui) }) : node);
 	return [
 		SpipDocument,
@@ -733,6 +742,7 @@ function extensionsDuCoeur({ headingLevels, ui }) {
 		SpipCadre,
 		SpipHtml,
 		SpipMath,
+		markdown ? SpipMarkdownLu : SpipMarkdownEcrit,
 		SpipRaw,
 		SpipRawInline,
 		withView(SpipLinkAuto, linkAutoView, Boolean(ui?.titles)),
