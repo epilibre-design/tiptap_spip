@@ -97,7 +97,7 @@ describe('Envois (spec 10 §1, §3)', () => {
 		const s = services({ id_document: 4, raccourci: 'doc4' });
 		const instance = monterInstance('Texte', s);
 		coller(instance.editor.view.dom, presse({ files: [fichier('c.pdf', 'application/pdf'), png()] }));
-		expect(instance.etat.message.textContent).toBe('Type de fichier non accepté : c.pdf.');
+		expect(instance.etat.message.textContent).toBe('Type de fichier non accepté : c.pdf.');
 		await vi.waitFor(() => expect(instance.envois.enCours()).toBe(0));
 		expect(s.call).toHaveBeenCalledTimes(1);
 	});
