@@ -180,7 +180,7 @@ describe('DepotFichiers (spec 10 §8)', () => {
 		const instance = monterInstance('Texte', s);
 		const exe = glisser(instance.editor.view.dom, 'drop', [fichier('setup.exe', 'application/x-msdownload')]);
 		expect(exe.defaultPrevented).toBe(true);
-		expect(instance.etat.message.textContent).toBe('Type de fichier non accepté : setup.exe.');
+		expect(instance.etat.message.textContent).toBe('Type de fichier non accepté : setup.exe.');
 		instance.services = null;
 		expect(glisser(instance.editor.view.dom, 'dragover').defaultPrevented).toBe(true);
 		expect(glisser(instance.editor.view.dom, 'drop', [fichier('a.pdf', 'application/pdf')]).defaultPrevented).toBe(true);

@@ -1,5 +1,7 @@
 ## [Non publié]
 
+## [1.4.0] - 2026-11-19
+
 ### Ajouté
 
 - Blocs `<md>…</md>` du plugin Markdown : quand le plugin est actif, l'éditeur les affiche en
@@ -9,6 +11,11 @@
   refuse d'y écrire `</md>`, qui fermerait le bloc ; la barre d'état explique ce refus.
 - Extensions tierces : niveau de règle `echappe`, lu avant les backticks, pour les syntaxes
   traitées au pipeline `pre_echappe_html_propre`.
+
+### Corrigé
+
+- Les libellés français de secours de l’interface JavaScript reprennent les espaces insécables
+  du fichier de langue de référence. L’exemple de raccourci d’idiome conserve sa syntaxe exacte.
 
 ## [1.3.6] - 2026-11-18
 
@@ -185,7 +192,8 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.6...HEAD
+[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.4.0...HEAD
+[1.4.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.6...1.4.0
 [1.3.6]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.5...1.3.6
 [1.3.5]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.4...1.3.5
 [1.3.4]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.3...1.3.4

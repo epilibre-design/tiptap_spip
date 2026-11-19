@@ -99,7 +99,7 @@ return [
 	// I
 	'idiome' => 'Idiome',
 	'idiome_invalide' => 'Ce n’est pas un raccourci d’idiome.',
-	'idiome_raccourci' => 'Raccourci (<:module:cle :>)',
+	'idiome_raccourci' => 'Raccourci (<:module:cle:>)',
 	'idiome_retirer' => 'Supprimer l’idiome',
 	'italique' => 'Italique',
 
