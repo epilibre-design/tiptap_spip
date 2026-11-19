@@ -237,6 +237,19 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	padding: 0.25em 0.5em;
 }
 
+/* Bloc <md> du plugin Markdown : texte brut, signalé comme tel. */
+.tts-markdown {
+	border-left: 3px solid #ccc;
+}
+
+.tts-markdown::before {
+	content: "Markdown";
+	display: block;
+	font: 0.75em sans-serif;
+	color: #666;
+	user-select: none;
+}
+
 /* Liens, ancres et modèles (affichage compact ; prévisualisation des modèles : lot L2c). */
 .tts-link {
 	color: #1a5fb4;

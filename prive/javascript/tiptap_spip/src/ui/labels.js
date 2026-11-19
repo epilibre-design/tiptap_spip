@@ -114,6 +114,7 @@ export const DEFAUTS = {
 	etat_mots: '@nb@ mots',
 	etat_anomalie: '1 anomalie de syntaxe',
 	etat_anomalies: '@nb@ anomalies de syntaxe',
+	markdown_fermeture: 'Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.',
 	brut: 'Source SPIP',
 	brut_source: 'Source SPIP, relue quand on applique',
 	brut_invalide: 'Ce texte ne peut pas remplacer la source à cet endroit.',

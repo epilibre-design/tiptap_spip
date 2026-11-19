@@ -170,6 +170,18 @@ class Instance {
 
 		// barre d'état (mots, anomalies) en bas, sous le textarea du mode source
 		this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
+		// modification refusée par l'éditeur (</md> dans un bloc Markdown) : message effacé à la
+		// modification suivante, s'il est encore affiché
+		let refus = null;
+		this.editor.on('refus', ({ message }) => {
+			this.etat.signaler(message);
+			refus = message;
+		});
+		this.editor.on('transaction', ({ transaction }) => {
+			if (!refus || !transaction.docChanged) return;
+			if (this.etat.message.textContent === refus) this.etat.effacer();
+			refus = null;
+		});
 
 		// fichiers collés ou déposés (spec 10) : capture toujours installée, disponibilité décidée à chaque fois
 		let soumission = null;

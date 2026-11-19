@@ -1,5 +1,15 @@
 ## [Non publié]
 
+### Ajouté
+
+- Blocs `<md>…</md>` du plugin Markdown : quand le plugin est actif, l'éditeur les affiche en
+  texte brut marqué « Markdown », au lieu de lire leur contenu comme des raccourcis SPIP. Le
+  Markdown s'y modifie tel quel, et la barre n'y écrit plus de raccourcis SPIP que le Markdown
+  afficherait tels quels. Comme le plugin, l'éditeur lit ces blocs avant le code en backticks, et
+  refuse d'y écrire `</md>`, qui fermerait le bloc ; la barre d'état explique ce refus.
+- Extensions tierces : niveau de règle `echappe`, lu avant les backticks, pour les syntaxes
+  traitées au pipeline `pre_echappe_html_propre`.
+
 ## [1.3.6] - 2026-11-18
 
 ### Documentation

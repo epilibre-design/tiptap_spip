@@ -13,8 +13,9 @@ afterEach(() => {
 
 describe('reglesSpip', () => {
 	it('lit spipTokenizer, parseSpip et renderSpip ; type selon nœud bloc, nœud en ligne, mark', () => {
+		// spipMarkdown : seule règle du cœur, écriture seule sans le plugin Markdown (lecture avec, cf. markdown.test.js)
 		const regles = reglesSpip([...coreExtensions(), ...TIERCES]);
-		expect(regles.map((r) => [r.name, r.type, r.niveau])).toEqual([['faqItem', 'block', 'block'], ['sc', 'mark', 'inline'], ['emoji', 'inline', 'inline']]);
+		expect(regles.map((r) => [r.name, r.type, r.niveau])).toEqual([['spipMarkdown', 'block', null], ['faqItem', 'block', 'block'], ['sc', 'mark', 'inline'], ['emoji', 'inline', 'inline']]);
 	});
 
 	it('extension étendue (extend) : champs hérités du parent', () => {
@@ -62,7 +63,7 @@ describe('éditeur avec extensions tierces', () => {
 		ui.editNote(notePos());
 		const { sous } = Popover.current;
 		expect(sous.state.doc.textContent).toContain('b');
-		expect(sous.tiptapSpip.regles.map((r) => r.name)).toEqual(['emoji', 'sc']);
+		expect(sous.tiptapSpip.regles.map((r) => r.name)).toEqual(['spipMarkdown', 'emoji', 'sc']);
 		let emoji = false;
 		sous.state.doc.descendants((n) => {
 			if (n.type.name === 'emoji') emoji = true;

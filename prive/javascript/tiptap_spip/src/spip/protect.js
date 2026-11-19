@@ -55,7 +55,8 @@ export function protect(source) {
 			return i < 0;
 		});
 		// ordre d'origine des zones absorbées : celui de la liste des zones
-		nouvelles.forEach((n, i) => regions.push({ ...n, data: { ...n.data, absorbed: absorbed[i].map((r) => r.kind) } }));
+		// une règle du niveau echappe absorbée est notée à part : SPIP l'a lue avant la zone qui l'englobe
+		nouvelles.forEach((n, i) => regions.push({ ...n, data: { ...n.data, absorbed: absorbed[i].map((r) => (r.data.echappe ? 'echappe' : r.kind)) } }));
 		const morceaux = [];
 		let pos = 0;
 		for (const { start, end } of nouvelles) {
@@ -74,7 +75,21 @@ export function protect(source) {
 		appliquer();
 	};
 
-	// 1. wheel backticks (pre_echappe_html_propre, avant tout le reste) :
+	// règles tierces (regles.js) : région extension, lue par sa règle (blocks.js, inline.js)
+	const scanRegles = (niveau) => {
+		for (const regle of reglesDuNiveau(niveau)) {
+			if (regle.debut && !source.includes(regle.debut)) continue;
+			scan(regle.regex, (m, start, end) => {
+				if (end > start) add(start, end, 'extension', { regle: regle.name, ...(niveau === 'echappe' ? { echappe: true } : {}) });
+			});
+		}
+	};
+
+	// 0. règles du pipeline pre_echappe_html_propre (bloc <md> du plugin Markdown), avant la wheel
+	//    des backticks qui y est appelée ensuite
+	scanRegles('echappe');
+
+	// 1. wheel backticks (pre_echappe_html_propre, après le pipeline, avant tout le reste) :
 	//    d'abord \\ et \`, puis ``` `` ` — sur tout le texte, y compris dans <code> ou <html>
 	scan(RE_ECHAPPEMENT_CODE, (m, start, end) => add(start, end, 'escape', { char: m[1] }));
 	RE_BACKTICKS.forEach((regex) => scan(regex, (m, start, end) => {
@@ -93,15 +108,6 @@ export function protect(source) {
 	}));
 
 	// 2. blocs protégés <code>, <cadre>, <html>…
-	// règles tierces (regles.js) : région extension, lue par sa règle (blocks.js, inline.js)
-	const scanRegles = (niveau) => {
-		for (const regle of reglesDuNiveau(niveau)) {
-			if (regle.debut && !source.includes(regle.debut)) continue;
-			scan(regle.regex, (m, start, end) => {
-				if (end > start) add(start, end, 'extension', { regle: regle.name });
-			});
-		}
-	};
 	scanRegles('protect');
 	scan(RE_PROTEGE_BLOCS, (m, start, end) => {
 		const openTag = source.slice(start, start + m[0].indexOf('>') + 1);
