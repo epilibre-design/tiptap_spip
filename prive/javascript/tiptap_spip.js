@@ -25017,6 +25017,7 @@ var DEFAUTS = {
   etat_mots: "@nb@ mots",
   etat_anomalie: "1 anomalie de syntaxe",
   etat_anomalies: "@nb@ anomalies de syntaxe",
+  markdown_fermeture: "Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.",
   brut: "Source SPIP",
   brut_source: "Source SPIP, relue quand on applique",
   brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
@@ -25882,12 +25883,17 @@ function fermetureEcrite(tr, type) {
 var SpipMarkdownEcrit = verbatimBlock2(MARKDOWN, "tts-markdown").extend({
   renderSpip: renderMarkdown,
   // </md> fermerait le bloc, même dans du code Markdown où aucun échappement n'existe : une
-  // modification qui en écrirait un dans un bloc est refusée
+  // modification qui en écrirait un dans un bloc est refusée, et signalée (événement refus de
+  // l'éditeur, affiché par la barre d'état)
   addProseMirrorPlugins() {
-    const type = this.type;
+    const { type, editor } = this;
     return [new Plugin({
       key: new PluginKey("spipMarkdownFermeture"),
-      filterTransaction: (tr) => !tr.docChanged || !fermetureEcrite(tr, type)
+      filterTransaction: (tr) => {
+        if (!tr.docChanged || !fermetureEcrite(tr, type)) return true;
+        editor.emit("refus", { message: label("markdown_fermeture") });
+        return false;
+      }
     })];
   }
 });
@@ -29214,6 +29220,16 @@ var Instance = class {
     this.editor.on("transaction", this.majBarre);
     this.content.after(this.notes.element);
     this.etat = new StatusBar({ editor: this.editor, editRaw: (pos) => this.ui.editRaw(pos) });
+    let refus = null;
+    this.editor.on("refus", ({ message }) => {
+      this.etat.signaler(message);
+      refus = message;
+    });
+    this.editor.on("transaction", ({ transaction }) => {
+      if (!refus || !transaction.docChanged) return;
+      if (this.etat.message.textContent === refus) this.etat.effacer();
+      refus = null;
+    });
     let soumission = null;
     this.envois = new Envois({
       textarea,

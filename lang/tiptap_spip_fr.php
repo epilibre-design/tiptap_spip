@@ -119,6 +119,7 @@ return [
 	'lien_retirer' => 'Retirer le lien',
 
 	// M
+	'markdown_fermeture' => 'Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.',
 	'mode_source' => 'Source',
 	'modele' => 'Modèle',
 	'modele_aria' => 'Modèle @modele@',

@@ -120,6 +120,7 @@ return [
 	'lien_retirer' => 'Remove the link',
 
 	// M
+	'markdown_fermeture' => 'A Markdown block cannot contain </md>, which would close it.',
 	'mode_source' => 'Source',
 	'modele' => 'Model',
 	'modele_aria' => 'Model @modele@',

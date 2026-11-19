@@ -36,7 +36,11 @@ test('Markdown saisi dans le bloc écrit tel quel ; gras de la barre sans effet 
 	// </md> fermerait le bloc : le > final est refusé
 	await page.keyboard.type(' </md>');
 	await expect(bloc).toHaveText('Du *texte* et **plus** </md');
+	const message = page.locator('.tts-etat__message');
+	await expect(message).toHaveText('Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.');
+	// effacé à la modification suivante
 	for (let i = 0; i < 5; i++) await page.keyboard.press('Backspace');
+	await expect(message).toBeHidden();
 	// sélection dans le bloc : la mark gras n'y est pas permise
 	await page.keyboard.press('Shift+Home');
 	await page.keyboard.press('Control+b');

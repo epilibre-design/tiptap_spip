@@ -266,8 +266,9 @@ Lot L4.2 :
     marqueur `base64` (vérifié sur SPIP 4.4.30, Markdown 2.1.0) ; le tout reste brut.
   - Écriture : `<md>` + texte + `</md>`. Aucun échappement de `</md>` ne vaut partout : `&lt;/md>`
     s'affiche `</md>` hors du code Markdown, mais tel quel dans le code. L'éditeur refuse donc une
-    modification qui écrirait `</md>` (toute casse) dans un bloc ; un JSON qui en contient l'écrit
-    `&lt;/md>`.
+    modification qui écrirait `</md>` (toute casse) dans un bloc. Il émet alors l'événement `refus`
+    (`{ message }`), que la barre d'état affiche (`markdown_fermeture`) jusqu'à la modification
+    suivante. Un JSON qui contient `</md>` l'écrit `&lt;/md>`.
   - Limites : le mode « Markdown par défaut »
     reste à markdown_editor : le plugin pose `inserer_md_barre_*` sur le champ texte, que l'éditeur
     ne prend pas (spec 01 §5). Ses autres champs (chapeau…), rendus en Markdown dans ce mode, sont

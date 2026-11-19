@@ -152,12 +152,17 @@ function fermetureEcrite(tr, type) {
 const SpipMarkdownEcrit = verbatimBlock(MARKDOWN, 'tts-markdown').extend({
 	renderSpip: renderMarkdown,
 	// </md> fermerait le bloc, même dans du code Markdown où aucun échappement n'existe : une
-	// modification qui en écrirait un dans un bloc est refusée
+	// modification qui en écrirait un dans un bloc est refusée, et signalée (événement refus de
+	// l'éditeur, affiché par la barre d'état)
 	addProseMirrorPlugins() {
-		const type = this.type;
+		const { type, editor } = this;
 		return [new Plugin({
 			key: new PluginKey('spipMarkdownFermeture'),
-			filterTransaction: (tr) => !tr.docChanged || !fermetureEcrite(tr, type),
+			filterTransaction: (tr) => {
+				if (!tr.docChanged || !fermetureEcrite(tr, type)) return true;
+				editor.emit('refus', { message: libelle('markdown_fermeture') });
+				return false;
+			},
 		})];
 	},
 });

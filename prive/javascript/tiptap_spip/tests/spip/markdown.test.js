@@ -81,12 +81,17 @@ describe('blocs <md> du plugin Markdown', () => {
 
 	it('éditeur : une modification qui écrirait </md> dans un bloc est refusée ; les autres passent', () => {
 		const editor = createEditor({ element: document.createElement('div'), source: 'Avant\n\n<md>ab</md>', extensions: coreExtensions({ markdown: true }) });
+		const refus = [];
+		editor.on('refus', ({ message }) => refus.push(message));
 		const fin = editor.state.doc.content.size - 1;
 		editor.commands.insertContentAt(fin, '</md');
 		expect(editor.state.doc.lastChild.textContent).toBe('ab</md');
+		expect(refus).toEqual([]);
 		editor.commands.insertContentAt(fin + 4, '>');
 		editor.commands.insertContentAt(fin, '</MD>');
 		expect(editor.state.doc.lastChild.textContent).toBe('ab</md');
+		// chaque refus est signalé, avec le libellé de l'interface
+		expect(refus).toEqual(Array(2).fill('Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.'));
 		// hors du bloc, </md> est du texte SPIP ordinaire
 		editor.commands.insertContentAt(1, '</md> ');
 		expect(editor.state.doc.firstChild.textContent).toBe('</md> Avant');
