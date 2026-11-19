@@ -4,6 +4,8 @@
  *
  * Le parseur garde son ordre en dur ; une règle s'insère à l'un de ses trois niveaux, où elle trouve
  * des régions `extension` dans protect() (cf. protect.js) :
+ *   echappe : avant les backticks (pipeline pre_echappe_html_propre) ; un bloc protégé ou un code
+ *             qui englobe une telle région reste brut, car SPIP l'a lue avant lui ;
  *   protect : après les backticks, avant les blocs protégés du cœur (<code>, <cadre>…) ;
  *   block   : après les échappements, avant les modèles ;
  *   inline  : après les notes, avant les abréviations.
@@ -13,7 +15,7 @@
  * les analyses et écritures imbriquées (note, conteneur, relecture) en héritent.
  */
 
-const NIVEAUX = ['protect', 'block', 'inline'];
+const NIVEAUX = ['echappe', 'protect', 'block', 'inline'];
 const TYPES = ['block', 'inline', 'mark'];
 
 let actives = [];

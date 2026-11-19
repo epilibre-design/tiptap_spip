@@ -20,7 +20,7 @@ import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { ariaModele, idiomeView, linkAutoView, modelView, multiView } from '../nodeviews/views.js';
 import { parseGlossary, serializeGlossary } from '../spip/glossary.js';
-import { MARKDOWN, markdownTokenizer, parseMarkdown, renderMarkdown } from '../spip/markdown.js';
+import { FERMETURE, MARKDOWN, markdownTokenizer, parseMarkdown, renderMarkdown } from '../spip/markdown.js';
 import { serializeIdiome } from '../spip/multi.js';
 import { SpipAnomalies } from './anomalies.js';
 import { coloration, colorationActive } from './coloration.js';
@@ -129,11 +129,38 @@ const SpipCadre = verbatimBlock('spipCadre', 'spip_cadre');
 const SpipHtml = verbatimBlock('spipHtml', 'tts-html');
 const SpipMath = verbatimBlock('spipMath', 'tts-math');
 
+/** Un bloc touché par la transaction contient-il `</md>` ? Seules les zones modifiées sont lues. */
+function fermetureEcrite(tr, type) {
+	let trouvee = false;
+	tr.mapping.maps.forEach((map, i) => map.forEach((_a, _b, debut, fin) => {
+		const suite = tr.mapping.slice(i + 1);
+		const from = suite.map(debut, -1);
+		const to = Math.min(suite.map(fin, 1), tr.doc.content.size);
+		tr.doc.nodesBetween(from, to, (n) => {
+			if (trouvee) return false;
+			if (n.type === type) trouvee = FERMETURE.test(n.textContent);
+			return !n.isTextblock;
+		});
+	}));
+	return trouvee;
+}
+
 /**
  * <md>…</md> du plugin Markdown (src/spip/markdown.js) : toujours dans le schéma, lu seulement
  * avec le plugin (option markdown) ; sans lui, `<md>` n'est qu'une balise et son contenu du SPIP.
  */
-const SpipMarkdownEcrit = verbatimBlock(MARKDOWN, 'tts-markdown').extend({ renderSpip: renderMarkdown });
+const SpipMarkdownEcrit = verbatimBlock(MARKDOWN, 'tts-markdown').extend({
+	renderSpip: renderMarkdown,
+	// </md> fermerait le bloc, même dans du code Markdown où aucun échappement n'existe : une
+	// modification qui en écrirait un dans un bloc est refusée
+	addProseMirrorPlugins() {
+		const type = this.type;
+		return [new Plugin({
+			key: new PluginKey('spipMarkdownFermeture'),
+			filterTransaction: (tr) => !tr.docChanged || !fermetureEcrite(tr, type),
+		})];
+	},
+});
 const SpipMarkdownLu = SpipMarkdownEcrit.extend({ spipTokenizer: markdownTokenizer, parseSpip: parseMarkdown });
 
 /** <poesie> / <poetry> : des paragraphes dont les sauts de ligne comptent. */

@@ -170,7 +170,7 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne, bords) {
 				push({ t: 'node', node: node('spipIdiome', idiome) });
 			} else if (region.kind === 'model' && parseModel(src)) {
 				push({ t: 'node', node: node('spipModel', { model: parseModel(src) }) });
-			} else if (region.kind === 'block' && region.data.openTag === '<code>' && !region.data.inner.includes('\n') && region.data.inner !== '' && !region.data.absorbed.includes('backtick')) {
+			} else if (region.kind === 'block' && region.data.openTag === '<code>' && !region.data.inner.includes('\n') && region.data.inner !== '' && !region.data.absorbed.includes('backtick') && !region.data.absorbed.includes('echappe')) {
 				push({ t: 'code', v: region.data.inner });
 			} else {
 				push({ t: 'raw', v: src });

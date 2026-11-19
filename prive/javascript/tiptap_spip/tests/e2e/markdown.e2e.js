@@ -26,13 +26,17 @@ test('bloc <md> en texte brut, restitué à l\'identique, rendu par le plugin', 
 	await expect(page.locator('li', { hasText: 'deux' })).toBeVisible();
 });
 
-test('Markdown saisi dans le bloc écrit tel quel ; gras de la barre sans effet', async ({ page }) => {
+test('Markdown saisi dans le bloc écrit tel quel ; gras de la barre sans effet ; </md> refusé', async ({ page }) => {
 	const id = await editer(page, 'Intro\n\n<md>Du *texte*</md>');
 	const bloc = page.locator('.ProseMirror pre.tts-markdown');
 	await bloc.click();
 	await page.keyboard.press('End');
 	await selectionStable(page);
 	await page.keyboard.type(' et **plus**');
+	// </md> fermerait le bloc : le > final est refusé
+	await page.keyboard.type(' </md>');
+	await expect(bloc).toHaveText('Du *texte* et **plus** </md');
+	for (let i = 0; i < 5; i++) await page.keyboard.press('Backspace');
 	// sélection dans le bloc : la mark gras n'y est pas permise
 	await page.keyboard.press('Shift+Home');
 	await page.keyboard.press('Control+b');

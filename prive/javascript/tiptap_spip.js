@@ -17903,7 +17903,7 @@ function parseNote(src, masked = src) {
 }
 
 // src/spip/regles.js
-var NIVEAUX = ["protect", "block", "inline"];
+var NIVEAUX = ["echappe", "protect", "block", "inline"];
 var TYPES = ["block", "inline", "mark"];
 var actives = [];
 var regleDe = (nom) => actives.findLast((r) => r.name === nom) ?? null;
@@ -17984,7 +17984,7 @@ function protect(source) {
       if (i2 >= 0) absorbed[i2].push(r);
       return i2 < 0;
     });
-    nouvelles.forEach((n, i2) => regions.push({ ...n, data: { ...n.data, absorbed: absorbed[i2].map((r) => r.kind) } }));
+    nouvelles.forEach((n, i2) => regions.push({ ...n, data: { ...n.data, absorbed: absorbed[i2].map((r) => r.data.echappe ? "echappe" : r.kind) } }));
     const morceaux = [];
     let pos = 0;
     for (const { start, end } of nouvelles) {
@@ -18001,6 +18001,15 @@ function protect(source) {
     }
     appliquer();
   };
+  const scanRegles = (niveau) => {
+    for (const regle of reglesDuNiveau(niveau)) {
+      if (regle.debut && !source.includes(regle.debut)) continue;
+      scan(regle.regex, (m, start, end) => {
+        if (end > start) add(start, end, "extension", { regle: regle.name, ...niveau === "echappe" ? { echappe: true } : {} });
+      });
+    }
+  };
+  scanRegles("echappe");
   scan(RE_ECHAPPEMENT_CODE, (m, start, end) => add(start, end, "escape", { char: m[1] }));
   RE_BACKTICKS.forEach((regex) => scan(regex, (m, start, end) => {
     const ticks = m[1];
@@ -18016,14 +18025,6 @@ function protect(source) {
     }
     add(start, end, "backtick", { ticks, code: code2, language });
   }));
-  const scanRegles = (niveau) => {
-    for (const regle of reglesDuNiveau(niveau)) {
-      if (regle.debut && !source.includes(regle.debut)) continue;
-      scan(regle.regex, (m, start, end) => {
-        if (end > start) add(start, end, "extension", { regle: regle.name });
-      });
-    }
-  };
   scanRegles("protect");
   scan(RE_PROTEGE_BLOCS, (m, start, end) => {
     const openTag = source.slice(start, start + m[0].indexOf(">") + 1);
@@ -18720,7 +18721,7 @@ function tokenize(source, masked, regions, lineStart, link, uneLigne, bords) {
         push({ t: "node", node: node("spipIdiome", idiome) });
       } else if (region.kind === "model" && parseModel(src)) {
         push({ t: "node", node: node("spipModel", { model: parseModel(src) }) });
-      } else if (region.kind === "block" && region.data.openTag === "<code>" && !region.data.inner.includes("\n") && region.data.inner !== "" && !region.data.absorbed.includes("backtick")) {
+      } else if (region.kind === "block" && region.data.openTag === "<code>" && !region.data.inner.includes("\n") && region.data.inner !== "" && !region.data.absorbed.includes("backtick") && !region.data.absorbed.includes("echappe")) {
         push({ t: "code", v: region.data.inner });
       } else {
         push({ t: "raw", v: src });
@@ -18998,7 +18999,7 @@ function verbatimBlock(src, regions) {
   if (r.kind === "extension") return blocExtension(src, r);
   if (r.kind !== "block") return null;
   const { tag, openTag, closeTag, inner, absorbed } = r.data;
-  if (absorbed.includes("backtick")) return [node("spipRaw", { source: src })];
+  if (absorbed.includes("backtick") || absorbed.includes("echappe")) return [node("spipRaw", { source: src })];
   if (tag === "code") {
     if (!inner.includes("\n")) return null;
     const code2 = inner.replace(/^\n/, "").replace(/\n$/, "");
@@ -25254,15 +25255,16 @@ var idiomeView = (ui2) => ({ node: node2 }) => {
 // src/spip/markdown.js
 var MARKDOWN = "spipMarkdown";
 var markdownTokenizer = {
-  level: "protect",
+  level: "echappe",
   priority: 0,
   start: "<md>",
-  match: /<md>([\s\S]*?)<\/md>/
+  match: /<md>([\s\S]*?)<\/[mM][dD]>/
 };
 var parseMarkdown = (m) => node(MARKDOWN, null, m[1] === "" ? void 0 : [text(m[1])]);
+var FERMETURE = /<\/md>/i;
 function renderMarkdown(n) {
   const contenu = (n.content ?? []).map((t) => t.text ?? "").join("");
-  return `<md>${contenu.replace(/<\/md>/gi, "&lt;/md>")}</md>`;
+  return `<md>${contenu.replace(new RegExp(FERMETURE.source, "gi"), "&lt;/md>")}</md>`;
 }
 
 // src/spip/anomalies.js
@@ -25863,7 +25865,32 @@ var verbatimBlock2 = (name, className) => Node3.create({
 var SpipCadre = verbatimBlock2("spipCadre", "spip_cadre");
 var SpipHtml = verbatimBlock2("spipHtml", "tts-html");
 var SpipMath = verbatimBlock2("spipMath", "tts-math");
-var SpipMarkdownEcrit = verbatimBlock2(MARKDOWN, "tts-markdown").extend({ renderSpip: renderMarkdown });
+function fermetureEcrite(tr, type) {
+  let trouvee = false;
+  tr.mapping.maps.forEach((map2, i2) => map2.forEach((_a, _b, debut, fin) => {
+    const suite = tr.mapping.slice(i2 + 1);
+    const from2 = suite.map(debut, -1);
+    const to = Math.min(suite.map(fin, 1), tr.doc.content.size);
+    tr.doc.nodesBetween(from2, to, (n) => {
+      if (trouvee) return false;
+      if (n.type === type) trouvee = FERMETURE.test(n.textContent);
+      return !n.isTextblock;
+    });
+  }));
+  return trouvee;
+}
+var SpipMarkdownEcrit = verbatimBlock2(MARKDOWN, "tts-markdown").extend({
+  renderSpip: renderMarkdown,
+  // </md> fermerait le bloc, même dans du code Markdown où aucun échappement n'existe : une
+  // modification qui en écrirait un dans un bloc est refusée
+  addProseMirrorPlugins() {
+    const type = this.type;
+    return [new Plugin({
+      key: new PluginKey("spipMarkdownFermeture"),
+      filterTransaction: (tr) => !tr.docChanged || !fermetureEcrite(tr, type)
+    })];
+  }
+});
 var SpipMarkdownLu = SpipMarkdownEcrit.extend({ spipTokenizer: markdownTokenizer, parseSpip: parseMarkdown });
 var SpipPoesie = Node3.create({
   name: "spipPoesie",

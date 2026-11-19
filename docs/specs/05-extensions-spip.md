@@ -256,14 +256,19 @@ Lot L4.2 :
 - `<md>` du plugin [Markdown](https://git.spip.net/spip-contrib-extensions/markdown), en syntaxe SPIP
   par défaut : texte brut (`src/spip/markdown.js`), lu seulement si le plugin est actif
   (`spipConfig.tiptap_spip.markdown`) ; sans lui, `<md>` n'est qu'une balise et son contenu du SPIP.
-  - Lecture : règle de niveau `protect` du cœur (mécanisme de la spec 07 §5), car le plugin met ces
-    blocs de côté au pipeline `pre_echappe_html_propre`, avant les backticks et les blocs protégés.
-    Seule la forme exacte `<md>…</md>` est lue, et seulement si elle occupe tout son segment ; le
-    plugin ne convertit ni `<md class>` ni `<MD>`, et un bloc au milieu d'un paragraphe reste brut.
-  - Écriture : `<md>` + texte + `</md>` ; un `</md>` saisi (toute casse) est écrit `&lt;/md>`, que
-    Markdown affiche `</md>`.
-  - Limites : le code en backticks est repéré avant la règle. Un backtick qui chevauche la fermeture
-    `</md>` empêche la lecture du bloc, qui reste brut (sans perte). Le mode « Markdown par défaut »
+  - Lecture : règle de niveau `echappe` du cœur (mécanisme de la spec 07 §5), car le plugin met ces
+    blocs de côté au pipeline `pre_echappe_html_propre`, avant les backticks et les blocs protégés :
+    un backtick du bloc n'ouvre pas de code SPIP. Le bloc s'ouvre par `<md>` exactement et se ferme
+    au premier `</md>` de toute casse, comme dans le plugin, et n'est lu que s'il occupe tout son
+    segment. Le plugin ne convertit ni `<md class>` ni `<MD>` : leur contenu est rendu comme du
+    SPIP, et lu comme tel. Un bloc au milieu d'un paragraphe reste brut en ligne.
+  - Dans `<code>`, `<cadre>`, `<html>`… : le plugin lit le bloc avant eux et le rendu montre un
+    marqueur `base64` (vérifié sur SPIP 4.4.30, Markdown 2.1.0) ; le tout reste brut.
+  - Écriture : `<md>` + texte + `</md>`. Aucun échappement de `</md>` ne vaut partout : `&lt;/md>`
+    s'affiche `</md>` hors du code Markdown, mais tel quel dans le code. L'éditeur refuse donc une
+    modification qui écrirait `</md>` (toute casse) dans un bloc ; un JSON qui en contient l'écrit
+    `&lt;/md>`.
+  - Limites : le mode « Markdown par défaut »
     reste à markdown_editor : le plugin pose `inserer_md_barre_*` sur le champ texte, que l'éditeur
     ne prend pas (spec 01 §5). Ses autres champs (chapeau…), rendus en Markdown dans ce mode, sont
     en revanche équipés comme du SPIP.

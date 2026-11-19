@@ -93,7 +93,10 @@ function faq_tiptap_spip_extensions(array $flux): array {
   script, le bouton, les libellés, les styles et le rendu public ; e2e `faq.e2e.js` sous Chromium,
   Firefox et WebKit.
 - **Niveaux :** le parseur garde son ordre en dur, et le registre générique de la spec 04 §2 n'est pas
-  construit. Une règle s'insère à l'un des trois points de `protect()`, par `priority` croissante :
+  construit. Une règle s'insère à l'un des quatre points de `protect()`, par `priority` croissante :
+  - `echappe` : avant les backticks, pour une syntaxe traitée au pipeline
+    `pre_echappe_html_propre`, comme `<md>` du plugin Markdown (spec 05 §6). Un bloc protégé ou un
+    code `<code>` en ligne qui englobe une telle région reste brut ;
   - `protect` : après les backticks, avant `<code>`, `<cadre>`… ;
   - `block` : après les échappements, avant les modèles ;
   - `inline` : après les notes, avant les abréviations.

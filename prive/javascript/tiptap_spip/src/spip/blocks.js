@@ -55,8 +55,9 @@ function verbatimBlock(src, regions) {
 	if (r.kind === 'extension') return blocExtension(src, r);
 	if (r.kind !== 'block') return null;
 	const { tag, openTag, closeTag, inner, absorbed } = r.data;
-	// un bloc qui contenait du code en backticks est rendu autrement par SPIP : on le garde brut
-	if (absorbed.includes('backtick')) return [node('spipRaw', { source: src })];
+	// un bloc qui contenait du code en backticks, ou une règle lue avant lui (<md>), est rendu
+	// autrement par SPIP : on le garde brut
+	if (absorbed.includes('backtick') || absorbed.includes('echappe')) return [node('spipRaw', { source: src })];
 	if (tag === 'code') {
 		// <code> sur une seule ligne : code inline dans un paragraphe
 		if (!inner.includes('\n')) return null;
