@@ -1,5 +1,7 @@
 ## [Non publié]
 
+## [1.5.0] - 2026-11-23
+
 ### Ajouté
 
 - Extensions tierces : l'aide `helpers.lignes` découpe une source en lignes sans couper un code, une
@@ -197,7 +199,8 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.4.0...HEAD
+[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.5.0...HEAD
+[1.5.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.4.0...1.5.0
 [1.4.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.6...1.4.0
 [1.3.6]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.5...1.3.6
 [1.3.5]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.4...1.3.5
