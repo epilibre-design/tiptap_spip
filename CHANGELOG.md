@@ -1,5 +1,10 @@
 ## [Non publié]
 
+### Ajouté
+
+- Extensions tierces : l'aide `helpers.lignes` découpe une source en lignes sans couper un code, une
+  note ou un modèle.
+
 ## [1.4.0] - 2026-11-19
 
 ### Ajouté

@@ -40,8 +40,9 @@ export default Node.create({
 });
 ```
 
-`helpers` expose : `parseBlocks`, `parseInline`, `renderBlocks`, `renderInline`, `escape`, `regex`
-(constantes du core) — l'extension réutilise le moteur, elle n'en réimplémente pas une partie.
+`helpers` expose : `parseBlocks`, `parseInline`, `lignes` (découpe une source en lignes sans couper un
+code, une note ou un modèle), `renderBlocks`, `renderInline`, `escape`, `regex` (constantes du core) —
+l'extension réutilise le moteur, elle n'en réimplémente pas une partie.
 
 Les extensions de marks déclarent `renderSpip` sous la forme `{ open, close }` ou d'une fonction.
 
@@ -109,7 +110,7 @@ function faq_tiptap_spip_extensions(array $flux): array {
   - un bloc mal placé, ou un `parseSpip` qui renvoie autre chose qu'un objet ou lève une exception,
     laissent la source brute ;
   - une note n'accepte que ses blocs (spec 03 §5) : une note qui contient un bloc tiers reste brute.
-- **Aides :** `parseBlocks`, `parseInline`, `renderBlocks`, `renderInline`, `escape`, `regex`.
+- **Aides :** `parseBlocks`, `parseInline`, `lignes`, `renderBlocks`, `renderInline`, `escape`, `regex`.
 - **Règles par éditeur :**
   - `parse(source, { regles })` et `serialize(doc, { regles })` ; les appels imbriqués en héritent ;
   - `createEditor` attache `editor.tiptapSpip = { regles, tierces }` ;
