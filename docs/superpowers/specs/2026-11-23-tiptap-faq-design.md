@@ -32,7 +32,7 @@ la démo.
     ├─ tiptapFaqTitre       « :Titre », texte en ligne
     └─ tiptapFaqItem
        ├─ tiptapFaqQuestion « ? Question », texte en ligne
-       └─ tiptapFaqReponse  blocs sauf citation et poésie, éventuellement un paragraphe vide
+       └─ tiptapFaqReponse  blocs sauf citation, poésie, alignement et multi, éventuellement un paragraphe vide
 
 Titres et items dans n'importe quel ordre, au moins un item : FAQ 4.2.0 échoue (erreur fatale) sur un
 bloc sans question. FAQ imbriquée interdite. `#tag` et
@@ -47,7 +47,8 @@ Règle de niveau `block`, motif calqué sur `wheels/faq.json`, CRLF accepté. Le
 Reste en source brute un bloc sans question, ou avec un contenu que le plugin FAQ ignore : texte
 avant la première question, ou entre un titre et la question suivante. De même un bloc qui contient une
 citation (`<quote>` est perdu au rendu), une poésie (son contenu n'est pas protégé par
-`helpers.lignes`) ou une FAQ imbriquée.
+`helpers.lignes`), un alignement ou un `<multi>` sur plusieurs paragraphes, une FAQ imbriquée, ou `</faq>`
+dans du code (le motif relu sur la source s'arrêterait là).
 
 ### Écriture
 
@@ -55,8 +56,8 @@ Bloc non modifié : source d'origine. Bloc modifié : réécrit en entier sous f
 Une question ou un titre tient sur une ligne : pas de saut de ligne forcé.
 
 Sont refusés, avec l'événement `refus` (message en barre d'état) : une ligne de réponse commençant par
-`?` ou `:`, y compris dans un lien ou un `<multi>`, et `</faq>`. Le code, les notes et les modèles ne
-sont pas concernés : SPIP les met de côté avant la wheel.
+`?` ou `:` (ni code, ni note, ni modèle : SPIP les met de côté avant la wheel), et `</faq>` dans tout le
+bloc, code compris. Une ligne qui commence ainsi à l'intérieur d'un lien est écrite en entité.
 
 Pour un contenu JSON qui contient ces formes malgré le refus, `renderSpip` écrit le caractère de
 tête (`&#63;`, `&#58;`) ou le `<` de `</faq>` (`&lt;`) en entité HTML, vérifiées au rendu.
@@ -74,7 +75,7 @@ tête (`&#63;`, `&#58;`) ou le `<` de `</faq>` (`&lt;`) en entité HTML, vérifi
 
 1. Rendu réel du plugin FAQ : fait sur 4.2.0 avec SPIP 4.4.31. Les tests sont dans la branche
    `tests-rendu` du plugin FAQ ; les contenus exclus ci-dessus en résultent.
-2. Corpus `allerRetour` : code contenant `?` ou `</faq>`, plusieurs titres, CRLF, `format`, tags, réponses vides,
+2. Corpus `allerRetour` : code contenant `?`, plusieurs titres, CRLF, `format`, tags, réponses vides,
    contenus à garder bruts.
 3. Interface : commandes, clavier, refus.
 4. e2e sur SPIP 4.4 avec FAQ et `tw`.
