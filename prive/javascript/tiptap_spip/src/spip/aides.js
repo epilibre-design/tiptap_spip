@@ -4,6 +4,22 @@ import { protect } from './protect.js';
 import * as regex from './regex.js';
 import { escapeText, serializeBlocks, serializeInline } from './serialize.js';
 
+/** Zones que SPIP met de côté avant la wheel : un saut de ligne n'y sépare pas deux lignes. */
+const OPAQUES = new Set(['block', 'backtick', 'note', 'model']);
+
+function lignes(source) {
+	const zones = protect(source).regions.filter((r) => OPAQUES.has(r.kind) || (r.kind === 'extension' && r.data.echappe));
+	const out = [];
+	let debut = 0;
+	for (let i = source.indexOf('\n'); i >= 0; i = source.indexOf('\n', i + 1)) {
+		if (zones.some((z) => z.start <= i && i < z.end)) continue;
+		out.push(source.slice(debut, i));
+		debut = i + 1;
+	}
+	out.push(source.slice(debut));
+	return out;
+}
+
 /**
  * Aides passées à parseSpip et renderSpip (spec 07 §1) : l'extension réutilise le moteur au lieu
  * d'en réimplémenter une partie. Les règles actives restent celles de l'appel en cours.
@@ -16,6 +32,8 @@ export const aides = {
 		const { masked, regions } = protect(source);
 		return parseInline(source, masked, regions);
 	},
+	/** Source → lignes, sans couper un code, une note ou un modèle ; jointes par \n, elles redonnent la source. */
+	lignes,
 	/** Blocs JSON → source, séparés par une ligne vide. */
 	renderBlocks: (content) => serializeBlocks(content),
 	/** Nœuds en ligne JSON → source. */

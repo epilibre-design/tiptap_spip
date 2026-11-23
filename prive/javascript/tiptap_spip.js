@@ -18865,6 +18865,19 @@ function buildNodes(tokens) {
 }
 
 // src/spip/aides.js
+var OPAQUES = /* @__PURE__ */ new Set(["block", "backtick", "note", "model"]);
+function lignes(source) {
+  const zones = protect(source).regions.filter((r) => OPAQUES.has(r.kind) || r.kind === "extension" && r.data.echappe);
+  const out = [];
+  let debut = 0;
+  for (let i2 = source.indexOf("\n"); i2 >= 0; i2 = source.indexOf("\n", i2 + 1)) {
+    if (zones.some((z) => z.start <= i2 && i2 < z.end)) continue;
+    out.push(source.slice(debut, i2));
+    debut = i2 + 1;
+  }
+  out.push(source.slice(debut));
+  return out;
+}
 var aides = {
   /** Source → blocs JSON (paragraphes, listes, conteneurs…), sans carte de segments. */
   parseBlocks: (source) => parseContent(source),
@@ -18873,6 +18886,8 @@ var aides = {
     const { masked, regions } = protect(source);
     return parseInline(source, masked, regions);
   },
+  /** Source → lignes, sans couper un code, une note ou un modèle ; jointes par \n, elles redonnent la source. */
+  lignes,
   /** Blocs JSON → source, séparés par une ligne vide. */
   renderBlocks: (content) => serializeBlocks(content),
   /** Nœuds en ligne JSON → source. */
@@ -28238,8 +28253,8 @@ var languePremiere = (editor) => {
   const courante = langueCourante(editor);
   return codes.includes(courante) ? courante : codes[0] ?? "";
 };
-var langueSuivante = (editor, lignes) => {
-  const prises = lignes.map((l) => l.langue.value);
+var langueSuivante = (editor, lignes2) => {
+  const prises = lignes2.map((l) => l.langue.value);
   return languesProposees(editor).map((l) => l.code).find((c) => !prises.includes(c)) ?? "";
 };
 var selecteurLangue = (editor, lang) => {
@@ -28276,7 +28291,7 @@ function multiEnLigne(contexte3, existant) {
   const morceau = !existant && !selection.empty && $from.sameParent($to) && $from.parent.isTextblock ? $from.parent.slice($from.parentOffset, $to.parentOffset).content.toJSON() : null;
   const suivi = suivrePosition(editor, existant ? existant.from : morceau ? selection.from : selection.to);
   const fin = existant ? null : suivrePosition(editor, selection.to);
-  const lignes = [];
+  const lignes2 = [];
   const popover2 = new Popover({
     editor,
     wrapper,
@@ -28286,7 +28301,7 @@ function multiEnLigne(contexte3, existant) {
     onClose: () => {
       suivi.fin();
       fin?.fin();
-      lignes.forEach((l) => l.sous.destroy());
+      lignes2.forEach((l) => l.sous.destroy());
     }
   });
   const liste = document.createElement("div");
@@ -28329,19 +28344,19 @@ function multiEnLigne(contexte3, existant) {
     retirer.addEventListener("click", () => {
       sous.destroy();
       ligne.remove();
-      lignes.splice(lignes.indexOf(l), 1);
+      lignes2.splice(lignes2.indexOf(l), 1);
     });
-    lignes.push(l);
+    lignes2.push(l);
     return l;
   };
   if (existant) {
     for (const p of existant.node.attrs.parts ?? []) ajouter(p.lang, p.content);
   } else {
     ajouter(languePremiere(editor), morceau);
-    ajouter(langueSuivante(editor, lignes), null);
+    ajouter(langueSuivante(editor, lignes2), null);
   }
   const appliquer = () => {
-    const parts = lignes.map((l) => ({
+    const parts = lignes2.map((l) => ({
       lang: l.langue.value || null,
       content: l.modifie || !l.origine ? l.sous.getJSON().content?.[0]?.content ?? [] : l.origine
     })).filter((p2) => p2.lang || p2.content.length);
@@ -28369,7 +28384,7 @@ function multiEnLigne(contexte3, existant) {
   };
   popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
   popover2.button(label("multi_ajouter"), () => {
-    ajouter(langueSuivante(editor, lignes), null).langue.focus();
+    ajouter(langueSuivante(editor, lignes2), null).langue.focus();
     return false;
   }, { name: "ajouter_langue" });
   if (existant) {
@@ -28383,7 +28398,7 @@ function multiEnLigne(contexte3, existant) {
   }
   popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover2.open(lignes[0]?.langue);
+  popover2.open(lignes2[0]?.langue);
   return popover2;
 }
 var paragrapheVide = (node2) => node2?.type.name === "paragraph" && node2.content.size === 0;
@@ -28397,7 +28412,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
     onSubmit: () => appliquer(),
     onClose: () => suivi.fin()
   });
-  const lignes = [];
+  const lignes2 = [];
   const liste = document.createElement("div");
   liste.className = "tts-multi__parties";
   popover2.actions.before(liste);
@@ -28412,11 +28427,11 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
     const l = { langue, partie };
     retirer.addEventListener("click", () => {
       ligne.remove();
-      lignes.splice(lignes.indexOf(l), 1);
+      lignes2.splice(lignes2.indexOf(l), 1);
     });
     ligne.append(langue, retirer);
     liste.append(ligne);
-    lignes.push(l);
+    lignes2.push(l);
     return l;
   };
   if (nouveau) ajouter(languePremiere(editor), null);
@@ -28427,8 +28442,8 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
     return (nouveau ? paragrapheVide(node2) : node2?.type.name === "spipMultiBlock") ? { p, node: node2 } : null;
   };
   const appliquer = () => {
-    const langues = lignes.map((l) => l.langue.value || null);
-    if (!lignes.length) {
+    const langues = lignes2.map((l) => l.langue.value || null);
+    if (!lignes2.length) {
       popover2.error(label("multi_vide"));
       return false;
     }
@@ -28439,7 +28454,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
     const c = courant();
     if (!c) return true;
     const { schema } = editor;
-    const parties = lignes.map((l, i2) => l.partie ? schema.nodes.spipLangBlock.create({ lang: langues[i2] }, l.partie.content) : schema.nodes.spipLangBlock.create({ lang: langues[i2] }, schema.nodes.paragraph.create()));
+    const parties = lignes2.map((l, i2) => l.partie ? schema.nodes.spipLangBlock.create({ lang: langues[i2] }, l.partie.content) : schema.nodes.spipLangBlock.create({ lang: langues[i2] }, schema.nodes.paragraph.create()));
     const relatif = nouveau ? 1 : editor.state.selection.from - c.p;
     const bloc = schema.nodes.spipMultiBlock.create(nouveau ? null : c.node.attrs, parties);
     editor.chain().focus().command(({ tr }) => {
@@ -28452,7 +28467,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   };
   popover2.button(label("appliquer"), null, { submit: true, name: "appliquer" });
   popover2.button(label("multi_ajouter"), () => {
-    ajouter(langueSuivante(editor, lignes), null).langue.focus();
+    ajouter(langueSuivante(editor, lignes2), null).langue.focus();
     return false;
   }, { name: "ajouter_langue" });
   if (!nouveau) {
@@ -28470,7 +28485,7 @@ function languesDuBloc({ editor, wrapper }, pos, nouveau = false) {
   }
   popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
-  popover2.open(lignes[0]?.langue);
+  popover2.open(lignes2[0]?.langue);
   return popover2;
 }
 function openIdiomePopover({ editor, wrapper }, pos = null) {
