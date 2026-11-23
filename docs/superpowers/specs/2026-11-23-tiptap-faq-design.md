@@ -20,7 +20,7 @@ lignes rejointes par `\n` redonnent la source. Tests, spec 07 et CHANGELOG `[Non
 ## Livraison 2 : tiptap_faq
 
 Dépôt séparé. `paquet.xml` : compatibilité `[4.2.0;4.*]`, `necessite` `faq`
-4.2.0 et `tiptap_spip` 1.5.0 (qui apporte `helpers.lignes`). Le correctif du rendu des réponses
+4.1.0 ou plus et `tiptap_spip` 1.5.0 (qui apporte `helpers.lignes`). Le correctif du rendu des réponses
 ([ticket 5](https://git.spip.net/spip-contrib-extensions/faq/-/work_items/5)) n'est pas exigé. Script sans bundle (`window.tiptapSpip`), CSS, langues fr et en,
 pipelines `tiptap_spip_extensions`, `tiptap_spip_toolbars`, `tiptap_spip_i18n`, `header_prive_css` et
 `insert_head_css`. Noms d'extension, de composant et clés de langue préfixés : pas de collision avec
