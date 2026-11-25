@@ -146,6 +146,35 @@ describe('panneau de suggestions interne', () => {
 		editor.setEditable(true); editor.view.dom.parentElement.hidden = true;
 		expect(ouvrir(ui, trigger)).toBeNull();
 	});
+	it('remplacer le contenu restaure le focus, neutralise les nouveaux boutons et reste inerte après fermeture', () => {
+		const { ui } = monter('Un texte'); const { trigger } = origine();
+		const p = ouvrir(ui, trigger); p.corps.querySelector('button').focus();
+		const suivant = contenu(true); suivant.querySelector('button').removeAttribute('type');
+		p.remplacer(suivant);
+		expect(document.activeElement).toBe(suivant.querySelector('input'));
+		expect(suivant.querySelector('button').type).toBe('button');
+		p.remplacer(contenu()); expect(document.activeElement).toBe(p.corps);
+		p.fermer(); p.remplacer(contenu(true)); expect(document.activeElement).toBe(trigger);
+	});
+	it('Échap de sécurité sur body et composition IME respectée', () => {
+		const { ui } = monter('Un texte'); const { trigger } = origine(); const p = ouvrir(ui, trigger);
+		for (const key of ['Escape', 'Enter']) {
+			const event = new KeyboardEvent('keydown', { key, isComposing: true, bubbles: true, cancelable: true });
+			p.corps.dispatchEvent(event); expect(event.defaultPrevented).toBe(false);
+		}
+		expect(p.element.isConnected).toBe(true);
+		document.activeElement.blur(); expect(document.activeElement).toBe(document.body);
+		document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+		expect(p.element.isConnected).toBe(false); expect(document.activeElement).toBe(trigger);
+	});
+	it('la sortie Tab prend summary et iframe comme voisins logiques', () => {
+		const { ui } = monter('Un texte'); const { trigger } = origine();
+		const details = document.createElement('details'); details.innerHTML = '<summary>Suite</summary>';
+		trigger.after(details);
+		ouvrir(ui, trigger).element.lastElementChild.focus(); expect(document.activeElement).toBe(details.firstChild);
+		const iframe = document.createElement('iframe'); trigger.after(iframe);
+		ouvrir(ui, trigger).element.lastElementChild.focus(); expect(document.activeElement).toBe(iframe);
+	});
 	it('placement depuis rectangle indépendant du DOM, borné et défilant', () => {
 		const el = document.createElement('div'); wrapper?.append(el);
 		Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, value: 600 });

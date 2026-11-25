@@ -2,7 +2,7 @@ import { placerDepuisRect } from '../ui/placement.js';
 import { contexteSuggestions, enregistrerCoucheSuggestions, fermerSuggestions, lierContexteSuggestions } from './sessions.js';
 
 let compteur = 0;
-const SELECTEUR = 'button, input, select, textarea, a[href], [contenteditable="true"], [tabindex]';
+const SELECTEUR = 'button, input, select, textarea, a[href], summary, iframe, [contenteditable="true"], [tabindex]';
 
 /** Fabrique d'ouverture pour une interface dont l'éditeur est créé après elle. */
 export const creerOuvreurPanneau = (editor, contexte) => (options) => {
@@ -17,7 +17,9 @@ function voisin(editor, contexte, origine, sens) {
 	const depart = origine.trigger ?? editor.view.dom;
 	const scope = contexte.parent?.form ?? depart.ownerDocument.body;
 	const cibles = [...scope.querySelectorAll(SELECTEUR)].filter((e) => {
-		if (e.tabIndex < 0 || e.disabled || e.closest('[hidden], [inert], .tts-suggestions-panneau')
+		const summary = e.tagName === 'SUMMARY' && e.parentElement?.tagName === 'DETAILS'
+			&& !e.hasAttribute('tabindex') && [...e.parentElement.children].find((c) => c.tagName === 'SUMMARY') === e;
+		if ((e.tabIndex < 0 && !summary) || e.disabled || e.closest('[hidden], [inert], .tts-suggestions-panneau')
 			|| getComputedStyle(e).visibility === 'hidden') return false;
 		for (let ancetre = e; ancetre; ancetre = ancetre.parentElement) {
 			if (getComputedStyle(ancetre).display === 'none') return false;
@@ -50,8 +52,6 @@ export function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content,
 	corps.tabIndex = -1;
 	corps.setAttribute('role', 'group');
 	corps.setAttribute('aria-label', label);
-	corps.append(content);
-	for (const bouton of corps.querySelectorAll('button')) bouton.type = 'button';
 	let ouvert = true;
 	let delier;
 	const ecoutes = [];
@@ -106,7 +106,8 @@ export function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content,
 		placerDepuisRect(element, lireRect, { ecart: 4 });
 	};
 	placer();
-	ecouter(element, 'keydown', (event) => {
+	const clavier = (event) => {
+		if (event.isComposing) return;
 		if (event.key === 'Escape') {
 			event.preventDefault(); event.stopPropagation();
 			fermer({ reason: 'escape' });
@@ -116,6 +117,10 @@ export function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content,
 			const cible = event.composedPath()[0];
 			if (cible.form && !(cible.tagName === 'BUTTON' && cible.type === 'button')) event.preventDefault();
 		}
+	};
+	ecouter(element, 'keydown', clavier);
+	ecouter(doc, 'keydown', (event) => {
+		if (event.key === 'Escape' && doc.activeElement === doc.body) clavier(event);
 	});
 	const dehors = (event) => {
 		if (!event.composedPath().includes(element)) fermer({ reason: 'outside', refocus: false });
@@ -124,6 +129,20 @@ export function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content,
 	ecouter(doc, 'focusin', dehors, true);
 	ecouter(doc.defaultView, 'resize', placer);
 	ecouter(doc.defaultView, 'scroll', (e) => { if (!element.contains(e.target)) placer(); }, true);
-	(corps.querySelector('input[type="search"]') ?? corps).focus();
-	return { element, corps, fermer };
+	const remplacer = (contenu) => {
+		if (!ouvert) return;
+		corps.replaceChildren(contenu);
+		for (const bouton of corps.querySelectorAll('button')) bouton.type = 'button';
+		placer();
+		(corps.querySelector('input[type="search"]') ?? corps).focus();
+	};
+	const Observer = doc.defaultView.ResizeObserver;
+	if (Observer) {
+		const observer = new Observer(placer);
+		observer.observe(corps);
+		observer.observe(element);
+		ecoutes.push(() => observer.disconnect());
+	}
+	remplacer(content);
+	return { element, corps, fermer, remplacer, placer };
 }

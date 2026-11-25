@@ -29,7 +29,7 @@
 4. Réponse lente après fermeture ou destruction : ni réouverture ni commande ; éditeurs indépendants — tâche 3.
 5. Validation suivie d’une frappe : une annulation ne supprime que la frappe, la suivante restaure exactement la requête — tâche 3.
 
-État au 25 novembre 2026 : préalable et tâches 1–2 terminés ; [dossier de relecture](../reviews/2026-11-25-suggestions-taches-1-2.md). Attendre la relecture de ce jalon avant la tâche 3.
+État au 25 novembre 2026 : préalable et tâches 1–2 terminés ; [dossier de relecture](../reviews/2026-11-25-suggestions-taches-1-2.md). Relecture reçue : corriger C1/C2 et leurs tests, puis exécuter la tâche 3 ; prochain arrêt de relecture à sa fin. Les rapports intermédiaires sont conservés comme archives pendant ces jalons et seront retirés avant la demande de fusion (tâche 5).
 
 ## Livraison et préparation
 

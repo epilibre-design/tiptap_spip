@@ -178,3 +178,59 @@ test('multi : accès par ligne et nettoyage indépendant des deux éditeurs', as
 		return independant && !p.element.isConnected && multi.ouvert;
 	})).toBe(true);
 });
+
+test('C1 : curseur de note longue visible dès ouverture sans focus différé', async ({ page }) => {
+	await page.evaluate(() => {
+		const i = [...window.__tts.instances][0];
+		const content = Array.from({ length: 80 }, (_, n) => ({ type: 'paragraph', content: [{ type: 'text', text: `Paragraphe ${n} de cette longue note.` }] }));
+		i.editor.commands.setContent({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'spipNote', attrs: { content } }] }] });
+		window.__noteLongue = i.ui.editNote(1);
+	});
+	await expect.poll(() => page.evaluate(() => {
+		const n = window.__noteLongue; const r = n.sous.view.coordsAtPos(n.sous.state.selection.from);
+		const cadre = n.element.getBoundingClientRect();
+		return r.top >= cadre.top && r.bottom <= cadre.bottom && n.sous.view.hasFocus();
+	})).toBe(true);
+});
+
+test('C2 : clic dans la marge intérieure garde un focus et Échap ferme', async ({ page }) => {
+	await ouvrir(page, { note: true });
+	await page.locator('.tts-suggestions-panneau').click({ position: { x: 4, y: 4 } });
+	expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('dialog', { name: 'Suggestions de test' })).toHaveCount(0);
+	expect(await page.evaluate(() => window.__panneauTest.instance.pleinEcran())).toBe(true);
+});
+
+test('C2 : réessai remplace le bouton actif, récupère le focus et reste sans submit', async ({ page }) => {
+	await ouvrir(page, { note: true, erreur: true });
+	await page.keyboard.press('Tab');
+	await page.evaluate(() => {
+		const p = window.__panneauTest.panneau;
+		p.corps.querySelector('button').onclick = () => {
+			const content = document.createElement('div'); content.innerHTML = '<input type="search" aria-label="Recherche après essai"><button>Choisir</button>';
+			p.remplacer(content);
+		};
+	});
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('searchbox', { name: 'Recherche après essai' })).toBeFocused();
+	expect(await page.getByRole('dialog', { name: 'Suggestions de test' }).getByRole('button', { name: 'Choisir', exact: true }).getAttribute('type')).toBe('button');
+	await page.keyboard.press('Escape'); await expect(page.getByRole('dialog', { name: 'Suggestions de test' })).toHaveCount(0);
+});
+
+test('C2 : Échap récupère un panneau dont le contrôle actif a disparu', async ({ page }) => {
+	await ouvrir(page);
+	await page.evaluate(() => { window.__panneauTest.instance.togglePleinEcran(true); document.activeElement.remove(); });
+	expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('dialog', { name: 'Suggestions de test' })).toHaveCount(0);
+	expect(await page.evaluate(() => window.__panneauTest.instance.pleinEcran())).toBe(true);
+});
+
+test('le contenu redimensionné est replacé dans la fenêtre', async ({ page }) => {
+	await ouvrir(page);
+	await page.evaluate(() => { const p = window.__panneauTest.panneau; p.corps.style.height = '2000px'; });
+	await expect.poll(() => page.evaluate(() => {
+		const r = window.__panneauTest.panneau.element.getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0;
+	})).toBe(true);
+});

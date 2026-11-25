@@ -28270,7 +28270,7 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
 
 // src/suggestions/PanneauSuggestions.js
 var compteur2 = 0;
-var SELECTEUR = 'button, input, select, textarea, a[href], [contenteditable="true"], [tabindex]';
+var SELECTEUR = 'button, input, select, textarea, a[href], summary, iframe, [contenteditable="true"], [tabindex]';
 var creerOuvreurPanneau = (editor, contexte3) => (options) => {
   const cible = editor();
   if (!cible || cible.isDestroyed) return null;
@@ -28281,7 +28281,8 @@ function voisin(editor, contexte3, origine, sens) {
   const depart = origine.trigger ?? editor.view.dom;
   const scope = contexte3.parent?.form ?? depart.ownerDocument.body;
   const cibles = [...scope.querySelectorAll(SELECTEUR)].filter((e) => {
-    if (e.tabIndex < 0 || e.disabled || e.closest("[hidden], [inert], .tts-suggestions-panneau") || getComputedStyle(e).visibility === "hidden") return false;
+    const summary = e.tagName === "SUMMARY" && e.parentElement?.tagName === "DETAILS" && !e.hasAttribute("tabindex") && [...e.parentElement.children].find((c) => c.tagName === "SUMMARY") === e;
+    if (e.tabIndex < 0 && !summary || e.disabled || e.closest("[hidden], [inert], .tts-suggestions-panneau") || getComputedStyle(e).visibility === "hidden") return false;
     for (let ancetre = e; ancetre; ancetre = ancetre.parentElement) {
       if (getComputedStyle(ancetre).display === "none") return false;
     }
@@ -28310,8 +28311,6 @@ function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label:
   corps.tabIndex = -1;
   corps.setAttribute("role", "group");
   corps.setAttribute("aria-label", label2);
-  corps.append(content);
-  for (const bouton of corps.querySelectorAll("button")) bouton.type = "button";
   let ouvert2 = true;
   let delier;
   const ecoutes = [];
@@ -28365,7 +28364,8 @@ function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label:
     placerDepuisRect(element2, lireRect, { ecart: 4 });
   };
   placer();
-  ecouter(element2, "keydown", (event) => {
+  const clavier = (event) => {
+    if (event.isComposing) return;
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -28375,6 +28375,10 @@ function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label:
       const cible = event.composedPath()[0];
       if (cible.form && !(cible.tagName === "BUTTON" && cible.type === "button")) event.preventDefault();
     }
+  };
+  ecouter(element2, "keydown", clavier);
+  ecouter(doc4, "keydown", (event) => {
+    if (event.key === "Escape" && doc4.activeElement === doc4.body) clavier(event);
   });
   const dehors = (event) => {
     if (!event.composedPath().includes(element2)) fermer({ reason: "outside", refocus: false });
@@ -28385,8 +28389,22 @@ function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label:
   ecouter(doc4.defaultView, "scroll", (e) => {
     if (!element2.contains(e.target)) placer();
   }, true);
-  (corps.querySelector('input[type="search"]') ?? corps).focus();
-  return { element: element2, corps, fermer };
+  const remplacer = (contenu) => {
+    if (!ouvert2) return;
+    corps.replaceChildren(contenu);
+    for (const bouton of corps.querySelectorAll("button")) bouton.type = "button";
+    placer();
+    (corps.querySelector('input[type="search"]') ?? corps).focus();
+  };
+  const Observer = doc4.defaultView.ResizeObserver;
+  if (Observer) {
+    const observer2 = new Observer(placer);
+    observer2.observe(corps);
+    observer2.observe(element2);
+    ecoutes.push(() => observer2.disconnect());
+  }
+  remplacer(content);
+  return { element: element2, corps, fermer, remplacer, placer };
 }
 
 // src/ui/MultiPopover.js
@@ -28806,7 +28824,7 @@ function openNotePopover(contexte3, pos = null) {
   popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
   popover2.open(zone.querySelector("[contenteditable]") ?? nom);
-  sous.view.dispatch(sous.state.tr.setSelection(Selection.atEnd(sous.state.doc)));
+  sous.view.dispatch(sous.state.tr.setSelection(Selection.atEnd(sous.state.doc)).scrollIntoView());
   sous.view.focus();
   return popover2;
 }

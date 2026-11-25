@@ -1,5 +1,7 @@
 # Socle suggestions — jalon de relecture après la tâche 2
 
+**Archive intermédiaire au commit `9026c68` : ce rapport décrit cet état précis, pas la version corrigée après relecture. Conservé volontairement pendant les jalons ; à retirer avant la demande de fusion (tâche 5).**
+
 Périmètre demandé : préalable, tâche 1 et tâche 2 du [plan](../plans/2026-11-25-menu-suggestions.md). La tâche 3 reste à faire et attend cette relecture. Aucune insertion emoji, fabrique publique ou dépendance `@tiptap/suggestion` n’est encore livrée.
 
 ## Branche et périmètre Git

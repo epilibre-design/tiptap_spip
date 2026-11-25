@@ -158,7 +158,7 @@ export function openNotePopover(contexte, pos = null) {
 	popover.button(label('annuler'), () => {}, { name: 'annuler' });
 	popover.open(zone.querySelector('[contenteditable]') ?? nom);
 	// Focus immédiat : un focus différé volerait celui d'un panneau ouvert juste après.
-	sous.view.dispatch(sous.state.tr.setSelection(Selection.atEnd(sous.state.doc)));
+	sous.view.dispatch(sous.state.tr.setSelection(Selection.atEnd(sous.state.doc)).scrollIntoView());
 	sous.view.focus();
 	return popover;
 }

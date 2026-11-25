@@ -787,12 +787,16 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	margin: 0;
 	box-sizing: border-box;
 	max-width: calc(100vw - 16px);
-	padding: 0.75em;
+	padding: 0;
 	border: 1px solid #888;
 	border-radius: 4px;
 	background: #fff;
 	color: #222;
 	box-shadow: 0 3px 12px rgb(0 0 0 / 20%);
+}
+
+.tts-suggestions-panneau__corps {
+	padding: 0.75em;
 }
 
 .tts-suggestions-panneau__corps:focus-visible {
