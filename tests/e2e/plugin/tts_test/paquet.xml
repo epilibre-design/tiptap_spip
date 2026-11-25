@@ -11,6 +11,7 @@
 
 	<necessite nom="tiptap_spip" />
 
+	<pipeline nom="tiptap_spip_extensions" inclure="tts_test_pipelines.php" />
 	<pipeline nom="tiptap_spip_contextes" inclure="tts_test_pipelines.php" />
 
 	<chemin path="" />

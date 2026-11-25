@@ -29,7 +29,11 @@
 4. Réponse lente après fermeture ou destruction : ni réouverture ni commande ; éditeurs indépendants — tâche 3.
 5. Validation suivie d’une frappe : une annulation ne supprime que la frappe, la suivante restaure exactement la requête — tâche 3.
 
-État au 25 novembre 2026 : préalable et tâches 1–2 terminés, puis C1/C2 corrigés dans `cdf4b29`. L’ancien [rapport de tâche 2](../reviews/2026-11-25-suggestions-taches-1-2.md) est une archive au commit `9026c68`. La tâche 3 fait l’objet du [nouveau dossier de relecture](../reviews/2026-11-25-suggestions-tache-3.md), sur l’historique et les réponses tardives ; attendre cet avis avant la tâche 4. Les rapports intermédiaires seront retirés avant la demande de fusion (tâche 5).
+État au 25 novembre 2026 : préalable et tâches 1–3 terminés ; C1/C2 et D1–D3 corrigés.
+L’API publique et la fixture de la tâche 4 sont intégrées ; validation finale et documentation
+du socle en cours (tâche 5). Une relecture de Claude est attendue sur le socle complet avant
+la demande de fusion ; ne pas commencer les emojis. Les rapports intermédiaires sont archivés
+localement dans l’espace de travail du plan, hors des fichiers livrés.
 
 ## Livraison et préparation
 
@@ -114,11 +118,11 @@ Décision d’exécution : le branchement interne de `retenirFournisseurs` dans 
 
 **Interfaces:** `ui` exporte les deux fonctions des tâches 1 et 3 ; `coreExtensions` applique `retenirFournisseurs` après `avecTierces`, avec les instances du cœur. `noteExtensions`/`partieExtensions` conservent ce mécanisme et les fournisseurs retenus, sans état partagé.
 
-- [ ] Écrire les tests du fournisseur `@` de la spec via `registerExtension`, les exports module/global identiques, deux caractères distincts, doublon non fatal avec préférence au cœur, premier tiers retenu sans cœur, barres disjointes sans avertissement, et héritage note/multi. Le fournisseur factice reste dans le plugin de test, jamais dans le cœur livré.
-- [ ] Lancer `npm test -- tests/editor/api.test.js tests/editor/suggestions.test.js` et constater les nouveaux échecs.
-- [ ] Exporter la fabrique et le filtre, brancher l’arbitrage final et la fixture tierce. Déclarer explicitement le pipeline `tiptap_spip_extensions` dans `tts_test/paquet.xml` ; il n’y figure pas encore. Le fournisseur `@` n’est chargé que pour une page demandant `tts_suggestions=oui` : ajouter à `editer` une option de test `suggestions: false` par défaut et transmettre ce paramètre seulement si elle vaut `true` ; le pipeline de `tts_test` vérifie cette condition avant de renvoyer le script. Ajouter un test sans option qui vérifie l’absence du script et du fournisseur, même quand `tts_test` est actif. Ne pas exposer Suggestion, la classe de liste ou le panneau. Le cœur de cette livraison ne fournit encore aucun déclencheur emoji.
-- [ ] Relancer Vitest ciblé et les E2E suggestions après build. Ajouter/assertionner Entrée sur option active dans liste, tableau et titre ; sans option active, comportement natif ; texte HTML de fournisseur affiché littéralement ; contrôle axe sans nouvelle violation.
-- [ ] Committer avec `Exposer les suggestions aux extensions tierces`.
+- [x] Écrire les tests du fournisseur `@` de la spec via `registerExtension`, les exports module/global identiques, deux caractères distincts, doublon non fatal avec préférence au cœur, premier tiers retenu sans cœur, barres disjointes sans avertissement, et héritage note/multi. Le fournisseur factice reste dans le plugin de test, jamais dans le cœur livré.
+- [x] Lancer `npm test -- tests/editor/api.test.js tests/editor/suggestions.test.js` et constater les nouveaux échecs.
+- [x] Exporter la fabrique et le filtre, brancher l’arbitrage final et la fixture tierce. Déclarer explicitement le pipeline `tiptap_spip_extensions` dans `tts_test/paquet.xml` ; il n’y figure pas encore. Le fournisseur `@` n’est chargé que pour une page demandant `tts_suggestions=oui` : ajouter à `editer` une option de test `suggestions: false` par défaut et transmettre ce paramètre seulement si elle vaut `true` ; le pipeline de `tts_test` vérifie cette condition avant de renvoyer le script. Ajouter un test sans option qui vérifie l’absence du script et du fournisseur, même quand `tts_test` est actif. Ne pas exposer Suggestion, la classe de liste ou le panneau. Le cœur de cette livraison ne fournit encore aucun déclencheur emoji.
+- [x] Relancer Vitest ciblé et les E2E suggestions après build. Ajouter/assertionner Entrée sur option active dans liste, tableau et titre ; sans option active, comportement natif ; texte HTML de fournisseur affiché littéralement ; contrôle axe sans nouvelle violation.
+- [x] Committer avec `Exposer les suggestions aux extensions tierces`.
 
 ### Tâche 5 : Vérification et livraison du socle
 
