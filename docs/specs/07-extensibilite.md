@@ -4,6 +4,13 @@ Objectif : qu'un plugin SPIP qui ajoutait jusqu'ici un raccourci (règle TextWhe
 puisse l'ajouter à l'éditeur **sans modifier tiptap-spip** : FAQ, onglets dans le texte, todolist,
 intertitres hiérarchisés, `<sc>`, etc. C'est la dernière todo restée ouverte dans markdown_editor.
 
+Le [socle de suggestions](../superpowers/specs/2026-11-25-menu-suggestions-design.md) est
+implémenté : `ui.creerSuggestions(options)` renvoie une extension à enregistrer via
+`registerExtension` ; `ui.filtrerSuggestions(items, query)` fournit le classement commun.
+La liste et l’enveloppe des sélecteurs restent internes. Cette API est indépendante de la
+future déclinaison emoji ; aucun fournisseur n’est activé par défaut. L’exemple complet et
+le contrat sont dans la [documentation développeur](../site/developper/suggestions.md).
+
 ## 1. Contrat d'une extension SPIP
 
 Une extension est une extension Tiptap 3 standard enrichie de champs de configuration propres, sur le

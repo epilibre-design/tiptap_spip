@@ -779,3 +779,65 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	font-weight: bold;
 	pointer-events: none;
 }
+
+/* Enveloppe de sélecteur : couche supérieure indépendante du dialogue et de son formulaire. */
+.tts-suggestions-panneau,
+.tts-suggestions {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	box-sizing: border-box;
+	max-width: calc(100vw - 16px);
+	padding: 0;
+	border: 1px solid #888;
+	border-radius: 4px;
+	background: #fff;
+	color: #222;
+	box-shadow: 0 3px 12px rgb(0 0 0 / 20%);
+}
+
+.tts-suggestions-panneau__corps {
+	padding: 0.75em;
+}
+
+.tts-suggestions-panneau__corps:focus-visible {
+	outline: 2px solid #3584e4;
+	outline-offset: 2px;
+}
+
+.tts-suggestions-sentinelle {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+.tts-suggestions {
+	max-width: min(28em, calc(100vw - 16px));
+	padding: 0.25em;
+	font-size: 0.9em;
+}
+
+.tts-suggestions__option {
+	padding: 0.3em 0.5em;
+	cursor: pointer;
+	overflow-wrap: anywhere;
+}
+
+.tts-suggestions__option[aria-selected="true"] {
+	background: #dcecff;
+	color: #111;
+}
+
+.tts-suggestions__option small {
+	display: block;
+}
+
+.tts-suggestions__annonce {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}

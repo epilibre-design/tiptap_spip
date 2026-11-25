@@ -1,4 +1,5 @@
 import { Extension, InputRule, Mark, Node } from '@tiptap/core';
+import { retenirFournisseurs } from '../suggestions/fabrique.js';
 import Blockquote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
 import Code from '@tiptap/extension-code';
@@ -728,7 +729,8 @@ const SpipUi = Extension.create({
  *        de même nom ; markdown : blocs <md> lus (plugin Markdown actif, configuration du serveur)
  */
 export function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui = null, tierces = [], markdown = Boolean(config().markdown) } = {}) {
-	return avecTierces(extensionsDuCoeur({ headingLevels, ui, markdown }), tierces);
+	const coeur = extensionsDuCoeur({ headingLevels, ui, markdown });
+	return retenirFournisseurs(avecTierces(coeur, tierces), { duCoeur: new Set(coeur) });
 }
 
 /**

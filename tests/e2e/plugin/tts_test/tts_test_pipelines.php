@@ -14,3 +14,11 @@ function tts_test_tiptap_spip_contextes($contextes) {
 function tts_test_contexte(array $args): array {
 	return ['objet' => 'article', 'id_objet' => intval($args[0] ?? 0), 'champs' => ['texte']];
 }
+
+/** Fournisseurs fictifs strictement limités aux pages E2E qui les demandent. */
+function tts_test_tiptap_spip_extensions($flux) {
+	if (_request('tts_suggestions') === 'oui') {
+		$flux['data']['tts_suggestions'] = ['src' => find_in_path('javascript/suggestions.js')];
+	}
+	return $flux;
+}

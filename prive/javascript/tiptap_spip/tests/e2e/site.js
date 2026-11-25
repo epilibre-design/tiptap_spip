@@ -2,9 +2,21 @@
 // d'édition d'un article.
 import { expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
 export const repo = fileURLToPath(new URL('../../../../../', import.meta.url));
+
+/** À appeler avant la navigation, puis à attendre : contrôler les octets réellement reçus. */
+export async function verifierBundleServi(page) {
+	const variante = (url) => new URL(url).pathname.match(/\/prive\/javascript\/(tiptap_spip(?:\.min)?\.js)$/)?.[1];
+	const reponse = await page.waitForResponse((r) => Boolean(variante(r.url())));
+	const nom = variante(reponse.url());
+	assert.equal(reponse.status(), 200, 'Le bundle servi doit être reçu intégralement');
+	assert.ok((await reponse.body()).equals(readFileSync(`${repo}prive/javascript/${nom}`)),
+		`Le bundle servi (${nom}) diffère du checkout ${repo}`);
+}
 const driver = `${repo}tests/e2e/site.php`;
 const env = { ...process.env, SPIP_ROOT: process.env.TTS_SITE };
 // binaire PHP du site (php8.3 pour SPIP 4.2, par exemple)
@@ -36,14 +48,15 @@ export const CHAMPS_ARTICLE = 'tiptap_spip/champs/article';
 
 /**
  * Crée un article, ouvre une session et charge sa page d'édition.
- * @param {{ sansEditeur?: boolean, source?: boolean, avant?: (id: number) => void, titre?: string, auteur?: number, champs?: 'texte'|'defaut'|'garder' }} options
+ * @param {{ sansEditeur?: boolean, source?: boolean, suggestions?: boolean, avant?: (id: number) => void, titre?: string, auteur?: number, champs?: 'texte'|'defaut'|'garder' }} options
  *        sansEditeur : bundle bloqué, textarea natif ; source : éditeur attendu en mode source ; avant : préparation après la création de
  *        l'article (document lié…) ; titre : titre de l'article (défaut « Test tiptap_spip ») ;
+ *        suggestions : charge les fournisseurs fictifs via tts_suggestions=oui (défaut false) ;
  *        auteur : auteur de l'article et de la session (1, l'administrateur, par défaut) ;
  *        champs : champs équipés des articles, le seul texte (défaut), ceux de la configuration par
  *        défaut (réglage effacé) ou ceux de la configuration en place (garder)
  */
-export async function editer(page, source, { sansEditeur = false, source: modeSource = false, avant, titre = 'Test tiptap_spip', auteur = 1, champs = 'texte' } = {}) {
+export async function editer(page, source, { sansEditeur = false, source: modeSource = false, suggestions = false, avant, titre = 'Test tiptap_spip', auteur = 1, champs = 'texte' } = {}) {
 	if (champs === 'texte') configurer(CHAMPS_ARTICLE, 'texte');
 	else if (champs === 'defaut') effacerConfig(CHAMPS_ARTICLE);
 	const { id_article: id, cookie } = JSON.parse(php(['preparer', 'tts-e2e', titre, String(auteur)], source));
@@ -51,7 +64,7 @@ export async function editer(page, source, { sansEditeur = false, source: modeSo
 	const url = new URL(process.env.TTS_URL);
 	await page.context().addCookies([{ name: 'spip_session', value: cookie, domain: url.hostname, path: '/' }]);
 	if (sansEditeur) await page.route(/tiptap_spip(\.min)?\.js/, (route) => route.abort());
-	await page.goto(`/ecrire/?exec=article_edit&id_article=${id}`);
+	await page.goto(`/ecrire/?exec=article_edit&id_article=${id}${suggestions ? '&tts_suggestions=oui' : ''}`);
 	if (!sansEditeur) await expect(page.locator(modeSource ? '.tts-editor textarea' : '.tts-editor .ProseMirror').first()).toBeVisible();
 	return id;
 }

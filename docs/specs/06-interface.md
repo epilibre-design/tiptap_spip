@@ -22,6 +22,13 @@ garde son `name`, ses classes et sa place dans le formulaire.
 
 ## 2. Barre d'outils
 
+Le [socle de suggestions](../superpowers/specs/2026-11-25-menu-suggestions-design.md) est
+implémenté : les plugins peuvent proposer une liste inline et le cœur dispose d’une enveloppe
+interne pour ses sélecteurs explicites. Aucun fournisseur n’est activé par défaut.
+L’[insertion d’emojis](../superpowers/specs/2026-11-25-emojis-design.md) reste à implémenter :
+bouton et « Plus… » ouvrant `emoji-picker-element`, liste inline dès le premier caractère
+autorisé après `:`, catalogue anglais partagé, fermeture à l’espace.
+
 Déclarative, décrite côté PHP par le pipeline `tiptap_spip_toolbars` et rendue par le registre de
 composants, dont la conception s'inspire de celui de markdown_editor (`Toolbar.registerComponent`).
 

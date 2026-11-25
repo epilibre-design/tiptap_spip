@@ -4,6 +4,8 @@ Le site est construit avec **MkDocs Material**, comme la documentation de `wp2sp
 publiques sont dans `docs/site/` ; les spécifications et plans de `docs/specs/` et
 `docs/superpowers/` ne sont pas publiés par MkDocs.
 
+Pour ajouter un fournisseur à l’éditeur, voir [Proposer des suggestions pendant la saisie](suggestions.md).
+
 ## Construire localement
 
 Avec Python 3.10 ou plus récent, depuis la racine du dépôt :

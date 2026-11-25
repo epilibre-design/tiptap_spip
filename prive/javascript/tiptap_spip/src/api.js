@@ -1,5 +1,7 @@
 import { Extension, getSchema, Mark, markInputRule, mergeAttributes, Node, nodeInputRule } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { creerSuggestions } from './suggestions/fabrique.js';
+import { filtrerSuggestions } from './suggestions/filtre.js';
 import { schemaJSON } from './editor/content.js';
 import { coreExtensions } from './editor/extensions.js';
 import { reglesSpip } from './editor/regles.js';
@@ -52,7 +54,7 @@ export const registerToolbarComponent = (nom, fabrique) => Toolbar.registerCompo
 export const core = Object.freeze({ Node, Mark, Extension, mergeAttributes, nodeInputRule, markInputRule, Plugin, PluginKey });
 
 /** Briques d'interface : boutons et menus de barre, popovers (mêmes styles et accessibilité). */
-export const ui = Object.freeze({ boutonOutil, menuOutil, Popover });
+export const ui = Object.freeze({ boutonOutil, menuOutil, Popover, creerSuggestions, filtrerSuggestions });
 
 /**
  * Harnais d'aller-retour (spec 07 §4) pour les cas de corpus d'une extension tierce :

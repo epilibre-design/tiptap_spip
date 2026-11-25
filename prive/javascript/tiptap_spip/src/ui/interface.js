@@ -6,6 +6,7 @@ import { openModelPopover } from './ModelPopover.js';
 import { openIdiomePopover, openMultiPopover } from './MultiPopover.js';
 import { openNotePopover } from './NotePopover.js';
 import { openRawPopover } from './RawPopover.js';
+import { creerOuvreurPanneau } from '../suggestions/PanneauSuggestions.js';
 
 /**
  * Interface d'une instance d'éditeur, transmise aux extensions (coreExtensions({ ui })) : caches des
@@ -29,6 +30,7 @@ export function creerInterface({ editor, wrapper, services, catalogue = null }) 
 		return Boolean(parametres) && ouvrirCatalogue({ editor: editor(), url: catalogue.url, pos, parametres });
 	};
 	const ui = {
+		openSuggestionsPanel: creerOuvreurPanneau(editor, { wrapper }),
 		catalogue,
 		previews: services ? new ModelPreviews(services) : null,
 		titles: services ? new LinkTitles(services) : null,

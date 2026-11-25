@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { Mark, Node } from '@tiptap/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { allerRetour, oublierExtensions } from '../../src/api.js';
+import { allerRetour, oublierExtensions, ui } from '../../src/api.js';
 import { instances, tiptap_spip_init } from '../../src/main.js';
 import { Popover } from '../../src/ui/popover.js';
 import { Emoji, Faq, TIERCES } from '../fixtures/tierces.js';
@@ -22,8 +22,11 @@ describe('window.tiptapSpip', () => {
 		expect(Object.keys(api).sort()).toEqual(['allerRetour', 'core', 'label', 'registerExtension', 'registerToolbarComponent', 'ui']);
 		expect(api.core.Node).toBe(Node);
 		expect(Object.keys(api.core).sort()).toEqual(['Extension', 'Mark', 'Node', 'Plugin', 'PluginKey', 'markInputRule', 'mergeAttributes', 'nodeInputRule']);
-		expect(Object.keys(api.ui).sort()).toEqual(['Popover', 'boutonOutil', 'menuOutil']);
+		expect(Object.keys(api.ui).sort()).toEqual(['Popover', 'boutonOutil', 'creerSuggestions', 'filtrerSuggestions', 'menuOutil']);
 		expect(api.ui.Popover).toBe(Popover);
+		expect(api.ui).toBe(ui);
+		expect(typeof ui.creerSuggestions).toBe('function');
+		expect(typeof ui.filtrerSuggestions).toBe('function');
 	});
 
 	it('extension enregistrée avant le lancement : présente dans les éditeurs', () => {
@@ -110,4 +113,29 @@ describe('allerRetour (harnais des extensions tierces)', () => {
 		const Etroite = Faq.extend({ content: 'paragraph' });
 		expect(allerRetour('<faq|q=Q>\n-* liste\n</faq>', [Etroite]).valide).toBe(false);
 	});
+});
+
+
+it('fournisseurs publics sur barres disjointes et héritage dans notes et multis', async () => {
+	const api = globalThis.tiptapSpip;
+	const labels = { suggestions: 'Formules', loading: 'Attente', empty: 'Vide', error: 'Erreur' };
+	for (const toolbar of ['edition', 'forum']) api.registerExtension(api.ui.creerSuggestions({
+		name: `formules_${toolbar}`, char: '@', labels,
+		items: ({ query }) => api.ui.filtrerSuggestions([{ id: 'bon', title: toolbar }], query),
+		command: () => false,
+	}), { toolbars: [toolbar] });
+	const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+	document.body.innerHTML = '<textarea data-tts-toolbar="edition">Texte</textarea><textarea data-tts-toolbar="forum">Texte</textarea>';
+	tiptap_spip_init();
+	expect(instances.size).toBe(2);
+	for (const instance of instances) {
+		const nom = `formules_${instance.editor.tiptapSpip.tierces[0].name.split('_')[1]}`;
+		expect(instance.editor.extensionManager.extensions.some((e) => e.name === nom)).toBe(true);
+		const note = instance.ui.editNote(null);
+		expect(note.sous.extensionManager.extensions.some((e) => e.name === nom)).toBe(true); note.close();
+		const multi = instance.ui.editMulti(null);
+		for (const ligne of multi.lignes) expect(ligne.sous.extensionManager.extensions.some((e) => e.name === nom)).toBe(true);
+		multi.close();
+	}
+	expect(warn).not.toHaveBeenCalled();
 });
