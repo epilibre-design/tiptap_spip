@@ -296,7 +296,12 @@ test('multilinguisme : multi inséré sur une sélection, multi bloc et ses lang
 		// « chat » sélectionné, bouton Multi : deux parties, la première dans la langue de l'interface
 		await finDuTexte(page);
 		for (let i = 0; i < 4; i++) await page.keyboard.press('Shift+ArrowLeft');
-		await selectionStable(page);
+		// Attendre la sélection réellement lue par ProseMirror, pas seulement une frame Chromium.
+		await module(page);
+		await expect.poll(() => page.evaluate(() => {
+			const { doc, selection } = [...window.__tts.instances][0].editor.state;
+			return doc.textBetween(selection.from, selection.to);
+		})).toBe('chat');
 		await page.locator('.tts-toolbar .tts-outil--multi').click();
 		const popover = page.locator('.tts-popover--multi');
 		const langues = popover.locator('select[name=langue]');

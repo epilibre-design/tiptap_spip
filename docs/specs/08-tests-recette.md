@@ -4,6 +4,25 @@ La qualité de l'outil se joue sur l'aller-retour SPIP ⇄ JSON : un éditeur qu
 textes existants est inacceptable. Les tests sont donc centrés sur le parseur/sérialiseur, avec un
 oracle fourni par SPIP lui-même.
 
+## Socle de suggestions
+
+Le fournisseur tiers de test utilise exclusivement `window.tiptapSpip.ui.creerSuggestions` et
+`ui.filtrerSuggestions`, via le pipeline `tiptap_spip_extensions`. Il n’est chargé qu’avec
+`tts_suggestions=oui` ; une page sans cette option vérifie son absence. Avant chaque scénario
+suggestions, les octets du bundle reçu sont comparés à ceux du checkout testé.
+
+Les tests unitaires couvrent les limites de marks/atomes, les exclusions, le rejet conservé
+malgré une requête invalide, l’IME, les erreurs, les réponses tardives et l’isolation des éditeurs.
+La recette navigateur ajoute l’historique validation/frappe/annulation/rétablissement, les
+clics hors option, le focus, Tab/Échap dans une note en plein écran, les sous-éditeurs de multi,
+les listes/tableaux/titres et axe. Une composition simulée vérifie la réévaluation, sans
+prétendre couvrir les claviers physiques ou Android. Le geste tactile CDP est exécuté sous
+Chromium ; Firefox/WebKit vérifient la molette, la zone de barre et les événements tactiles
+non annulés. Validation du socle le 25 novembre 2026 : 1 574 tests unitaires et 174 E2E
+réussis (58 dans chacun des trois navigateurs, sur SPIP 4.4.21), build et documentation stricte
+validés. Le test de sélection du multi attend désormais la sélection réellement lue par
+ProseMirror avant d’ouvrir le dialogue. La recette du picker et du catalogue emoji appartient au deuxième lot.
+
 ## 1. Corpus
 
 `tests/corpus/` : fichiers `.spip` (source) avec, pour les cas unitaires, le `.json` attendu.

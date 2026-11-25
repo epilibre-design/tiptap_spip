@@ -165,7 +165,8 @@ bundle. Un nouveau contenu éditorial doit aussi déclarer son schéma et sa sé
   sauf le saut de ligne explicite reconnu comme `\n` si le fournisseur autorise ce préfixe.
   Ne pas confondre le début d’un nœud texte après une mark avec le début du bloc.
 - Appliquer le seuil et `queryPattern` à l’autorisation d’ouverture (`allow`/`shouldShow`),
-  en plus du seuil de recherche Tiptap : son seul `minQueryLength` ne masque pas le menu.
+  avant toute recherche ; ne pas les appliquer dans le matcher, qui doit garder la plage
+  même pendant une requête inadmissible pour préserver le rejet par Échap.
 - Recalculer les résultats à chaque modification de la requête complète, y compris après
   effacement. Le seuil est propre au fournisseur : l’emoji le fixe à un caractère, l’exemple
   tiers ci-dessus à deux. Repasser sous le seuil, insérer un caractère interdit ou un espace

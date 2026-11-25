@@ -1,5 +1,12 @@
 ## [Non publié]
 
+### Ajouté
+
+- Extensions tierces : `ui.creerSuggestions` et `ui.filtrerSuggestions` permettent de proposer
+  des suggestions pendant la saisie, avec navigation clavier, recherches asynchrones et
+  insertion isolée dans l’historique. Les fournisseurs sont repris dans les notes et multis ;
+  aucun déclencheur n’est activé par défaut.
+
 ## [1.5.0] - 2026-11-23
 
 ### Ajouté

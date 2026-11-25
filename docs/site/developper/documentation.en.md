@@ -4,6 +4,8 @@ The site is built with **MkDocs Material**, like the `wp2spip` documentation. Pu
 are in `docs/site/`; specifications and plans under `docs/specs/` and `docs/superpowers/` are
 not published by MkDocs.
 
+To add an editor provider, see [Provide suggestions while typing](suggestions.md).
+
 ## Build locally
 
 With Python 3.10 or newer, from the repository root:
