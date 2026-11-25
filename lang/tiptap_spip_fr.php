@@ -58,6 +58,10 @@ return [
 	'depot_indisponible' => 'L’ajout de fichiers n’est pas disponible ici.',
 
 	// E
+	'emoji' => 'Emoji',
+	'emoji_chargement' => 'Chargement des emojis…',
+	'emoji_erreur' => 'Impossible de charger les emojis.',
+	'emoji_reessayer' => 'Réessayer',
 	'enregistrer_sans_attendre' => 'Enregistrer sans attendre',
 	'envoi_echec' => 'Le fichier n’a pas pu être envoyé (session expirée ou connexion perdue).',
 	'envoi_en_cours' => 'Un fichier est en cours d’envoi.',

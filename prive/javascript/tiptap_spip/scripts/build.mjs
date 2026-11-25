@@ -2,11 +2,13 @@
 // licences des composants tiers qu'ils embarquent (tiptap_spip.LICENSES.txt).
 // Usage : node scripts/build.mjs [--watch]
 import { build, context } from 'esbuild';
+import { copierCatalogueEmojis } from './emojis.mjs';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const outdir = fileURLToPath(new URL('../../', import.meta.url));
 const modules = fileURLToPath(new URL('../node_modules/', import.meta.url));
+copierCatalogueEmojis({ modules, destination: `${outdir}tiptap_spip_emoji` });
 const LICENCES = 'tiptap_spip.LICENSES.txt';
 const common = {
 	entryPoints: [fileURLToPath(new URL('../src/main.js', import.meta.url))],
@@ -42,8 +44,9 @@ function ecrireLicences(metafile) {
 		.map((f) => f.match(/node_modules\/((?:@[^/]+\/)?[^/]+)\//)?.[1])
 		.filter(Boolean));
 	paquets.add('remixicon');
+	paquets.add('emoji-picker-element-data');
 	const textes = [...paquets].sort().map(licence);
-	writeFileSync(`${outdir}${LICENCES}`, `Composants tiers embarqués dans tiptap_spip.js et tiptap_spip.min.js.
+	writeFileSync(`${outdir}${LICENCES}`, `Composants tiers embarqués dans tiptap_spip.js, tiptap_spip.min.js et leur catalogue emoji.
 Généré par scripts/build.mjs : ne pas modifier à la main.
 
 ${textes.join(`\n\n${'-'.repeat(72)}\n\n`)}

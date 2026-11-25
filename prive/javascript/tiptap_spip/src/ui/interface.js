@@ -1,3 +1,8 @@
+import 'emoji-picker-element/picker';
+import frEmoji from 'emoji-picker-element/i18n/fr';
+import enEmoji from 'emoji-picker-element/i18n/en';
+import { ouvrirPickerEmoji } from '../emojis/PickerEmoji.js';
+import { lierContexteSuggestions } from '../suggestions/sessions.js';
 import { IdiomTranslations, LinkTitles, ModelPreviews } from '../services/cache.js';
 import { ouvrirCatalogue, parametresFormulaire } from './catalogue.js';
 import { openLinkPopover } from './LinkPopover.js';
@@ -18,7 +23,14 @@ import { creerOuvreurPanneau } from '../suggestions/PanneauSuggestions.js';
  *        catalogue : { url, modeles } du plugin Insérer modèles (catalogue.js), null sans lui
  */
 export function creerInterface({ editor, wrapper, services, catalogue = null }) {
-	const contexte = () => ({ editor: editor(), wrapper, services, titles: ui.titles, previews: ui.previews });
+	const ouvrirEmoji = (cible, parent, origin = {}) => {
+		if (!cible || cible.isDestroyed) return null;
+		lierContexteSuggestions(cible, { wrapper, parent });
+		return ouvrirPickerEmoji({ editor: cible, anchor: origin.anchor ?? origin.trigger, origin,
+			range: origin.range, onChoose: origin.onChoose, onClose: origin.onClose,
+			i18n: (wrapper.ownerDocument.documentElement.lang || 'fr').startsWith('fr') ? frEmoji : enEmoji });
+	};
+	const contexte = () => ({ editor: editor(), wrapper, services, titles: ui.titles, previews: ui.previews, ouvrirEmoji });
 	/**
 	 * Modèle à `pos` dans le formulaire du catalogue, prérempli, si tous ses paramètres y ont un champ ;
 	 * false sinon (saisie brute).
@@ -31,6 +43,7 @@ export function creerInterface({ editor, wrapper, services, catalogue = null }) 
 	};
 	const ui = {
 		openSuggestionsPanel: creerOuvreurPanneau(editor, { wrapper }),
+		openEmoji: (origin) => ouvrirEmoji(editor(), null, origin),
 		catalogue,
 		previews: services ? new ModelPreviews(services) : null,
 		titles: services ? new LinkTitles(services) : null,

@@ -841,3 +841,9 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 	overflow: hidden;
 	clip-path: inset(50%);
 }
+
+/* Dimensions publiques du web component ; ses contrôles internes gardent leur clavier natif. */
+.tts-emoji emoji-picker {
+	width: min(350px, calc(100vw - 3em));
+	height: min(400px, calc(100vh - 4em));
+}

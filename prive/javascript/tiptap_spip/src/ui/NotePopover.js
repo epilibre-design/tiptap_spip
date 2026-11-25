@@ -88,6 +88,7 @@ export function openNotePopover(contexte, pos = null) {
 
 	const enfant = () => ({ ...contexte, editor: sous, parent: popover });
 	const sousUi = {
+		openEmoji: (origin) => contexte.ouvrirEmoji?.(sous, popover, origin),
 		openSuggestionsPanel: creerOuvreurPanneau(() => sous, { wrapper, parent: popover }),
 		previews: contexte.previews ?? null,
 		titles: contexte.titles ?? null,

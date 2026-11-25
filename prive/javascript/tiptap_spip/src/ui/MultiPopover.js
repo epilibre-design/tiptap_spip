@@ -136,6 +136,7 @@ function multiEnLigne(contexte, existant) {
 		// interface de ce sous-éditeur : lien et glossaire en popovers enfants
 		const l = { langue, sous: null, origine, modifie: false, ligne };
 		const sousUi = {
+			openEmoji: (origin) => contexte.ouvrirEmoji?.(l.sous, popover, origin),
 			openSuggestionsPanel: creerOuvreurPanneau(() => l.sous, { wrapper, parent: popover }),
 			previews: contexte.previews ?? null,
 			titles: contexte.titles ?? null,

@@ -3,6 +3,10 @@
  * (window.spipConfig.tiptap_spip.i18n), français par défaut.
  */
 export const DEFAUTS = {
+	emoji: 'Emoji',
+	emoji_chargement: 'Chargement des emojis…',
+	emoji_erreur: 'Impossible de charger les emojis.',
+	emoji_reessayer: 'Réessayer',
 	mode_source: 'Source',
 	lien: 'Lien',
 	modele: 'Modèle',

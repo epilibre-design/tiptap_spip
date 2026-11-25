@@ -35,9 +35,11 @@ La validation et la documentation de livraison (tâche 5) sont préparées : 1 5
 Surcoût de production du socle exporté : 14 047 octets avec `gzip -n -6` (+13,72 Kio).
 La relecture finale de Claude est approuvée : aucun nouveau défaut. La publication et la
 fusion du socle sont autorisées ; les emojis ne sont pas commencés.
-Le complément E2E SPIP 5 est empêché par une migration de base requise sur le site jetable,
-avant tout formulaire d’édition ; cette recette n’est pas validée. Les preuves et les
-anciens rapports intermédiaires sont archivés localement dans l’espace de travail du plan.
+Complément au début du lot emoji : migration native du site jetable SPIP 5 effectuée avec
+sauvegarde SQLite conservée, puis **102/102 E2E suggestions réussis** (34 par navigateur),
+avec contrôle des octets du bundle du socle fusionné et chargement par importmap.
+La limite de recette SPIP 5 est levée et consignée dans la demande de fusion !63.
+Les preuves du socle et les anciens rapports intermédiaires sont archivés localement.
 
 ## Livraison et préparation
 

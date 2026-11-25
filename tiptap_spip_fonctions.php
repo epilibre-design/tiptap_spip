@@ -52,6 +52,23 @@ function tiptap_spip_barres_json($valeur = null): string {
 	return (string) json_encode(tiptap_spip_barres() ?: null, TIPTAP_SPIP_JSON);
 }
 
+/** Configuration du catalogue local versionné ; indisponibilité limitée aux emojis. */
+function tiptap_spip_emojis_json($ignore = ''): string {
+	$racine = 'prive/javascript/tiptap_spip_emoji/';
+	$fichier = find_in_path($racine . 'manifest.json');
+	$manifest = $fichier ? json_decode((string) file_get_contents($fichier), true) : null;
+	$version = $manifest['version'] ?? '';
+	if (!is_string($version) || !preg_match('/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/D', $version)
+		|| ($manifest['locale'] ?? null) !== 'en-tiptap-spip-' . $version
+		|| ($manifest['fichier'] ?? null) !== $version . '/en-emojibase.json'
+		|| !($json = find_in_path($racine . $manifest['fichier']))) {
+		return 'null';
+	}
+	return (string) json_encode([
+		'url' => url_absolue($json), 'version' => $version, 'locale' => $manifest['locale'],
+	], TIPTAP_SPIP_JSON | JSON_UNESCAPED_SLASHES);
+}
+
 /**
  * Scripts des extensions tierces (spec 07 §3) déclarés par le pipeline tiptap_spip_extensions :
  * flux['data'] = nom → ['src' => chemin ou URL, 'dependances' => [noms]]. Chacun vient après ses

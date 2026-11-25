@@ -10,6 +10,8 @@ Object.assign(window.spipConfig, {
 		toolbars: [(#VAL|tiptap_spip_barres_json)],
 		[(#REM) scripts des extensions tierces (pipeline tiptap_spip_extensions) ]
 		extensions: [(#VAL|tiptap_spip_extensions_json)],
+		[(#REM) catalogue emoji local : URL et base IndexedDB issues du même manifeste ]
+		emojis: [(#VAL|tiptap_spip_emojis_json)],
 		[(#REM) catalogue des modèles du plugin Insérer modèles, null sans lui (spec 05 §3) ]
 		modeles: [(#VAL|tiptap_spip_catalogue_modeles_json)],
 		[(#REM) coloration syntaxique des blocs de code avec le plugin Coloration Code ]
@@ -17,6 +19,10 @@ Object.assign(window.spipConfig, {
 		[(#REM) blocs <md> du plugin Markdown lus en texte brut (spec 05 §6) ]
 		markdown: [(#PLUGIN{markdown}|?{true,false})],
 		i18n: {
+			emoji: <:tiptap_spip:emoji|tiptap_spip_js_string:>,
+			emoji_chargement: <:tiptap_spip:emoji_chargement|tiptap_spip_js_string:>,
+			emoji_erreur: <:tiptap_spip:emoji_erreur|tiptap_spip_js_string:>,
+			emoji_reessayer: <:tiptap_spip:emoji_reessayer|tiptap_spip_js_string:>,
 			mode_source: <:tiptap_spip:mode_source|tiptap_spip_js_string:>,
 			lien: <:tiptap_spip:lien|tiptap_spip_js_string:>,
 			modele: <:tiptap_spip:modele|tiptap_spip_js_string:>,

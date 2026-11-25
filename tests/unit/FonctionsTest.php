@@ -178,4 +178,28 @@ final class FonctionsTest extends TestCase
 		$this->assertSame(['faq' => 'FAQ', 'faq_question' => 'Question <b>'], tiptap_spip_i18n());
 		$this->assertSame('{"faq":"FAQ","faq_question":"Question \\u003Cb\\u003E"}', tiptap_spip_i18n_json());
 	}
+	public function testCatalogueEmojiAbsentNeCassePasLaConfiguration(): void {
+		test_reset_globals();
+		$this->assertSame('null', tiptap_spip_emojis_json());
+	}
+
+	public function testCatalogueEmojiVersionneEtUrlAbsolue(): void {
+		test_reset_globals();
+		$manifest = tempnam(sys_get_temp_dir(), 'tts-emojis');
+		try {
+			file_put_contents($manifest, json_encode(['version' => '1.9.2', 'locale' => 'en-tiptap-spip-1.9.2', 'fichier' => '1.9.2/en-emojibase.json']));
+			$GLOBALS['_test_chemins']['prive/javascript/tiptap_spip_emoji/manifest.json'] = $manifest;
+			$GLOBALS['_test_chemins']['prive/javascript/tiptap_spip_emoji/1.9.2/en-emojibase.json'] = 'plugins/tiptap_spip/prive/javascript/tiptap_spip_emoji/1.9.2/en-emojibase.json';
+			$this->assertSame([
+				'url' => 'https://exemple.test/plugins/tiptap_spip/prive/javascript/tiptap_spip_emoji/1.9.2/en-emojibase.json',
+				'version' => '1.9.2', 'locale' => 'en-tiptap-spip-1.9.2',
+			], json_decode(tiptap_spip_emojis_json(), true));
+			file_put_contents($manifest, '{invalide');
+			$this->assertSame('null', tiptap_spip_emojis_json());
+		} finally {
+			unlink($manifest);
+			test_reset_globals();
+		}
+	}
+
 }
