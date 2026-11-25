@@ -1,5 +1,6 @@
 import { allerRetour, core, extensionsTierces, registerExtension, registerToolbarComponent, ui } from './api.js';
 import { config } from './config.js';
+import { fermerSuggestions, lierContexteSuggestions, suggestionsOuvertes } from './suggestions/sessions.js';
 import { createEditor as defaultCreateEditor } from './editor/createEditor.js';
 import { DepotFichiers } from './editor/deposer.js';
 import { Envois } from './editor/envois.js';
@@ -155,6 +156,7 @@ class Instance {
 			editorProps: { attributes: { class: 'tts-prosemirror', style: `min-height: ${rows * 1.5}em`, 'aria-label': nomDuChamp(textarea), 'aria-multiline': 'true' } },
 		});
 		this.bridge = new TextareaBridge({ textarea, editor: this.editor, codec });
+		lierContexteSuggestions(this.editor, { wrapper: this.wrapper });
 		this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
 		// barre d'outils déclarée (spec 06 §2) : celle de la configuration (pipeline tiptap_spip_toolbars),
 		// sinon celle du bundle ; une barre inconnue donne la barre minimale
@@ -264,7 +266,7 @@ class Instance {
 		} else if (event.key === 'Escape' && this.pleinEcran()) {
 			// un popover ou un menu ouvert se ferme d'abord (ProseMirror empêche l'action par défaut de
 			// toute touche Échap : defaultPrevented ne dit rien)
-			const ouvert = Popover.current?.wrapper === this.wrapper || this.toolbarElement.querySelector('[aria-expanded="true"]');
+			const ouvert = suggestionsOuvertes(this.wrapper) || Popover.current?.wrapper === this.wrapper || this.toolbarElement.querySelector('[aria-expanded="true"]');
 			if (ouvert) return;
 			event.preventDefault();
 			this.togglePleinEcran(false);
@@ -280,6 +282,7 @@ class Instance {
 		}
 		const mode = this.bridge.mode === 'visual' ? 'source' : 'visual';
 		if (!this.bridge.setMode(mode)) return;
+		fermerSuggestions({ wrapper: this.wrapper, reason: 'mode' });
 		const source = mode === 'source';
 		this.textarea.hidden = !source;
 		this.content.hidden = source;
@@ -293,6 +296,7 @@ class Instance {
 	/** @param {{ restore?: boolean }} options  restore : remettre le textarea à sa place */
 	destroy({ restore = true } = {}) {
 		instances.delete(this);
+		fermerSuggestions({ wrapper: this.wrapper, reason: 'destroy' });
 		// popovers de l'instance (et sous-éditeur d'une note) fermés
 		while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
 		this.notes.destroy();

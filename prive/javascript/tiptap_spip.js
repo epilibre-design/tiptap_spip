@@ -26500,6 +26500,113 @@ var ICONES = {
   pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
 };
 
+// src/suggestions/sessions.js
+var contextes = /* @__PURE__ */ new WeakMap();
+var couches = /* @__PURE__ */ new Set();
+var contexteSuggestions = (editor) => contextes.get(editor) ?? null;
+var suggestionsOuvertes = (wrapper) => [...couches].some((c) => c.wrapper === wrapper);
+function lierContexteSuggestions(editor, { wrapper, parent = null }) {
+  const precedent = contextes.get(editor);
+  if (precedent?.wrapper === wrapper && precedent.parent === parent) return precedent.disposer;
+  precedent?.disposer();
+  const contexte3 = { wrapper, parent, disposer: null };
+  contexte3.disposer = () => {
+    if (contextes.get(editor) !== contexte3) return;
+    fermerSuggestions({ editor, reason: "destroy" });
+    contextes.delete(editor);
+    editor.off("destroy", contexte3.disposer);
+  };
+  contextes.set(editor, contexte3);
+  editor.on("destroy", contexte3.disposer);
+  return contexte3.disposer;
+}
+function enregistrerCoucheSuggestions(couche) {
+  couches.add(couche);
+  return () => couches.delete(couche);
+}
+function fermerSuggestions({ parent, wrapper, editor, refocus = false, reason = "context" } = {}) {
+  for (const couche of [...couches]) {
+    if (wrapper && couche.wrapper !== wrapper) continue;
+    if (editor && couche.editor !== editor) continue;
+    if (parent) {
+      let ancetre = couche.parent;
+      while (ancetre && ancetre !== parent) ancetre = ancetre.parent;
+      if (!ancetre) continue;
+    }
+    couche.fermer({ refocus, reason });
+  }
+}
+
+// src/ui/placement.js
+var MARGE = 8;
+function placerDepuisRect(element2, lireRect, { ecart = 0, haut = MARGE } = {}) {
+  const defilement = element2.scrollTop;
+  Object.assign(element2.style, { left: "0px", right: "", top: "0px", bottom: "", maxHeight: "", overflowY: "" });
+  const ancre = lireRect();
+  const rect = element2.getBoundingClientRect();
+  const bas = window.innerHeight - MARGE;
+  const dessous = Math.max(0, bas - Math.max(haut, ancre.bottom + ecart));
+  const dessus = Math.max(0, Math.min(ancre.top - ecart, bas) - haut);
+  const versHaut = rect.height > dessous && dessus > dessous;
+  const disponible = versHaut ? dessus : dessous;
+  const hauteur = Math.min(rect.height, disponible);
+  const top = versHaut ? ancre.top - ecart - hauteur : ancre.bottom + ecart;
+  element2.style.left = `${Math.max(MARGE, Math.min(ancre.left, document.documentElement.clientWidth - MARGE - rect.width))}px`;
+  element2.style.top = `${Math.max(haut, Math.min(top, bas - hauteur))}px`;
+  if (rect.height > disponible) {
+    element2.style.maxHeight = `${disponible}px`;
+    element2.style.overflowY = "auto";
+  }
+  element2.scrollTop = defilement;
+}
+var intersection = (a, b) => ({
+  left: Math.max(a.left, b.left),
+  top: Math.max(a.top, b.top),
+  right: Math.min(a.right, b.right),
+  bottom: Math.min(a.bottom, b.bottom)
+});
+function bornes(element2) {
+  let limites = { left: 0, top: -Infinity, right: document.documentElement.clientWidth, bottom: Infinity };
+  for (let ancetre = element2.parentElement; ancetre && ancetre !== document.body; ancetre = ancetre.parentElement) {
+    const style2 = getComputedStyle(ancetre);
+    if (style2.overflowX !== "visible" || style2.overflowY !== "visible") {
+      limites = intersection(limites, ancetre.getBoundingClientRect());
+    }
+    if (style2.position === "fixed") return intersection(limites, { left: 0, top: 0, right: Infinity, bottom: window.innerHeight });
+  }
+  return limites;
+}
+function placerMenu(liste) {
+  const positionDefilement = liste.scrollTop;
+  Object.assign(liste.style, { left: "", right: "", top: "", bottom: "", maxHeight: "", overflowY: "" });
+  if (liste.hidden) return;
+  if (liste.popover === "manual" && liste.matches(":popover-open")) {
+    placerDepuisRect(liste, () => liste.parentElement.getBoundingClientRect());
+    liste.scrollTop = positionDefilement;
+    return;
+  }
+  const limites = bornes(liste);
+  let rect = liste.getBoundingClientRect();
+  if (rect.right > limites.right - MARGE) {
+    liste.style.left = "auto";
+    liste.style.right = "0px";
+    rect = liste.getBoundingClientRect();
+    if (rect.left < limites.left + MARGE) liste.style.right = `${rect.left - (limites.left + MARGE)}px`;
+  }
+  rect = liste.getBoundingClientRect();
+  if (rect.bottom <= limites.bottom - MARGE) return;
+  const bouton = liste.parentElement.getBoundingClientRect();
+  const dessous = limites.bottom - MARGE - rect.top;
+  const dessus = bouton.top - (limites.top + MARGE);
+  if (dessus > dessous) {
+    liste.style.top = "auto";
+    liste.style.bottom = "100%";
+    if (rect.height <= dessus) return;
+  }
+  liste.style.maxHeight = `${Math.max(0, dessus > dessous ? dessus : dessous)}px`;
+  liste.style.overflowY = "auto";
+}
+
 // src/ui/popover.js
 var Popover = class _Popover {
   /**
@@ -26620,6 +26727,7 @@ var Popover = class _Popover {
     this.erreur.hidden = !message;
   }
   open(focus2) {
+    fermerSuggestions({ reason: "popover" });
     while (_Popover.current && _Popover.current !== this.parent) _Popover.current.close({ refocus: false });
     if (this.parent) this.parent.enfant = this;
     _Popover.current = this;
@@ -26639,28 +26747,9 @@ var Popover = class _Popover {
       const { from: from2 } = this.editor.state.selection;
       const coords = this.editor.view.coordsAtPos(from2);
       if (this.flottant) {
-        const marge = 8;
-        const ecart = 4;
-        const defilement = this.element.scrollTop;
-        Object.assign(this.element.style, { left: "0px", top: "0px", maxHeight: "", overflowY: "" });
-        const rect = this.element.getBoundingClientRect();
         const barre = this.wrapper.querySelector(".tts-toolbar")?.getBoundingClientRect();
-        const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + marge;
-        const bas = window.innerHeight - marge;
-        const dessous = Math.max(0, bas - Math.max(haut, coords.bottom + ecart));
-        const dessus = Math.max(0, Math.min(coords.top - ecart, bas) - haut);
-        const versHaut = rect.height > dessous && dessus > dessous;
-        const hauteur = versHaut ? dessus : dessous;
-        const gauche = Math.max(marge, Math.min(coords.left, document.documentElement.clientWidth - marge - rect.width));
-        this.element.style.left = `${gauche}px`;
-        const hauteurAffichee = Math.min(rect.height, hauteur);
-        const position = versHaut ? coords.top - ecart - hauteurAffichee : coords.bottom + ecart;
-        this.element.style.top = `${Math.max(haut, Math.min(position, bas - hauteurAffichee))}px`;
-        if (rect.height > hauteur) {
-          this.element.style.maxHeight = `${hauteur}px`;
-          this.element.style.overflowY = "auto";
-        }
-        this.element.scrollTop = defilement;
+        const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + 8;
+        placerDepuisRect(this.element, () => coords, { ecart: 4, haut });
         return;
       }
       const box = this.wrapper.getBoundingClientRect();
@@ -26671,6 +26760,7 @@ var Popover = class _Popover {
   }
   close({ refocus = true } = {}) {
     if (!this.ouvert) return;
+    fermerSuggestions({ parent: this, reason: "parent" });
     this.ouvert = false;
     this.enfant?.close({ refocus: false });
     if (_Popover.current === this) _Popover.current = this.parent;
@@ -26708,68 +26798,6 @@ function lireSelection(editor) {
   if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
 }
 var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
-
-// src/ui/placement.js
-var MARGE = 8;
-var intersection = (a, b) => ({
-  left: Math.max(a.left, b.left),
-  top: Math.max(a.top, b.top),
-  right: Math.min(a.right, b.right),
-  bottom: Math.min(a.bottom, b.bottom)
-});
-function bornes(element2) {
-  let limites = { left: 0, top: -Infinity, right: document.documentElement.clientWidth, bottom: Infinity };
-  for (let ancetre = element2.parentElement; ancetre && ancetre !== document.body; ancetre = ancetre.parentElement) {
-    const style2 = getComputedStyle(ancetre);
-    if (style2.overflowX !== "visible" || style2.overflowY !== "visible") {
-      limites = intersection(limites, ancetre.getBoundingClientRect());
-    }
-    if (style2.position === "fixed") return intersection(limites, { left: 0, top: 0, right: Infinity, bottom: window.innerHeight });
-  }
-  return limites;
-}
-function placerMenu(liste) {
-  const positionDefilement = liste.scrollTop;
-  Object.assign(liste.style, { left: "", right: "", top: "", bottom: "", maxHeight: "", overflowY: "" });
-  if (liste.hidden) return;
-  if (liste.popover === "manual" && liste.matches(":popover-open")) {
-    const bouton2 = liste.parentElement.getBoundingClientRect();
-    const rect2 = liste.getBoundingClientRect();
-    const largeur = document.documentElement.clientWidth;
-    const dessous2 = Math.max(0, window.innerHeight - MARGE - bouton2.bottom);
-    const dessus2 = Math.max(0, bouton2.top - MARGE);
-    const versHaut = rect2.height > dessous2 && dessus2 > dessous2;
-    const hauteurVisible = versHaut ? dessus2 : dessous2;
-    liste.style.left = `${Math.max(MARGE, Math.min(bouton2.left, largeur - MARGE - rect2.width))}px`;
-    liste.style.top = `${versHaut ? Math.max(MARGE, bouton2.top - Math.min(rect2.height, dessus2)) : bouton2.bottom}px`;
-    if (rect2.height > hauteurVisible) {
-      liste.style.maxHeight = `${hauteurVisible}px`;
-      liste.style.overflowY = "auto";
-    }
-    liste.scrollTop = positionDefilement;
-    return;
-  }
-  const limites = bornes(liste);
-  let rect = liste.getBoundingClientRect();
-  if (rect.right > limites.right - MARGE) {
-    liste.style.left = "auto";
-    liste.style.right = "0px";
-    rect = liste.getBoundingClientRect();
-    if (rect.left < limites.left + MARGE) liste.style.right = `${rect.left - (limites.left + MARGE)}px`;
-  }
-  rect = liste.getBoundingClientRect();
-  if (rect.bottom <= limites.bottom - MARGE) return;
-  const bouton = liste.parentElement.getBoundingClientRect();
-  const dessous = limites.bottom - MARGE - rect.top;
-  const dessus = bouton.top - (limites.top + MARGE);
-  if (dessus > dessous) {
-    liste.style.top = "auto";
-    liste.style.bottom = "100%";
-    if (rect.height <= dessus) return;
-  }
-  liste.style.maxHeight = `${Math.max(0, dessus > dessous ? dessus : dessous)}px`;
-  liste.style.overflowY = "auto";
-}
 
 // src/ui/boutons.js
 var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
@@ -28240,6 +28268,127 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
   return popover2;
 }
 
+// src/suggestions/PanneauSuggestions.js
+var compteur2 = 0;
+var SELECTEUR = 'button, input, select, textarea, a[href], [contenteditable="true"], [tabindex]';
+var creerOuvreurPanneau = (editor, contexte3) => (options) => {
+  const cible = editor();
+  if (!cible || cible.isDestroyed) return null;
+  lierContexteSuggestions(cible, contexte3);
+  return ouvrirPanneauSuggestions({ ...options, editor: cible });
+};
+function voisin(editor, contexte3, origine, sens) {
+  const depart = origine.trigger ?? editor.view.dom;
+  const scope = contexte3.parent?.form ?? depart.ownerDocument.body;
+  const cibles = [...scope.querySelectorAll(SELECTEUR)].filter((e) => {
+    if (e.tabIndex < 0 || e.disabled || e.closest("[hidden], [inert], .tts-suggestions-panneau") || getComputedStyle(e).visibility === "hidden") return false;
+    for (let ancetre = e; ancetre; ancetre = ancetre.parentElement) {
+      if (getComputedStyle(ancetre).display === "none") return false;
+    }
+    return true;
+  });
+  const i2 = cibles.indexOf(depart);
+  if (i2 >= 0) return cibles[i2 + sens] ?? (contexte3.parent ? sens > 0 ? cibles[0] : cibles.at(-1) : depart);
+  const suivants = cibles.filter((e) => depart.compareDocumentPosition(e) & (sens > 0 ? 4 : 2));
+  return (sens > 0 ? suivants[0] : suivants.at(-1)) ?? depart;
+}
+function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label: label2, onClose }) {
+  const contexte3 = contexteSuggestions(editor);
+  if (!contexte3 || editor.isDestroyed || !editor.isEditable || editor.view.dom.closest("[hidden]")) return null;
+  fermerSuggestions({ reason: "replacement" });
+  const { wrapper, parent } = contexte3;
+  const doc4 = editor.view.dom.ownerDocument;
+  const element2 = doc4.createElement("div");
+  element2.className = "tts-suggestions-panneau";
+  element2.id = `tts-suggestions-panneau-${++compteur2}`;
+  element2.setAttribute("popover", "manual");
+  if (typeof element2.showPopover !== "function") element2.style.display = "block";
+  element2.setAttribute("role", "dialog");
+  element2.setAttribute("aria-label", label2);
+  const corps = doc4.createElement("div");
+  corps.className = "tts-suggestions-panneau__corps";
+  corps.tabIndex = -1;
+  corps.setAttribute("role", "group");
+  corps.setAttribute("aria-label", label2);
+  corps.append(content);
+  for (const bouton of corps.querySelectorAll("button")) bouton.type = "button";
+  let ouvert2 = true;
+  let delier;
+  const ecoutes = [];
+  const ecouter = (cible, type, fn, capture = false) => {
+    cible.addEventListener(type, fn, capture);
+    ecoutes.push(() => cible.removeEventListener(type, fn, capture));
+  };
+  const trigger = origin.trigger;
+  const boutonOrigine = trigger?.matches('button, [role="button"]') ? trigger : null;
+  const ancienControls = boutonOrigine?.getAttribute("aria-controls");
+  const fermer = ({ reason = "cancel", refocus = true } = {}) => {
+    if (!ouvert2) return;
+    ouvert2 = false;
+    delier?.();
+    ecoutes.forEach((retirer) => retirer());
+    element2.hidePopover?.();
+    element2.remove();
+    if (boutonOrigine) {
+      boutonOrigine.setAttribute("aria-expanded", "false");
+      if (ancienControls === null) boutonOrigine.removeAttribute("aria-controls");
+      else boutonOrigine.setAttribute("aria-controls", ancienControls);
+    }
+    onClose?.({ reason });
+    if (refocus && !editor.isDestroyed) {
+      const cible = origin.returnTarget ?? trigger ?? editor.view.dom;
+      if (cible.isConnected) cible.focus();
+    }
+  };
+  const sentinelle = (sens) => {
+    const el = doc4.createElement("span");
+    el.tabIndex = 0;
+    el.className = "tts-suggestions-sentinelle";
+    ecouter(el, "focus", () => {
+      const cible = voisin(editor, contexte3, origin, sens);
+      fermer({ reason: "tab", refocus: false });
+      if (cible?.isConnected) cible.focus();
+    });
+    return el;
+  };
+  element2.append(sentinelle(-1), corps, sentinelle(1));
+  (parent?.element ?? wrapper).append(element2);
+  delier = enregistrerCoucheSuggestions({ editor, wrapper, parent, fermer });
+  if (boutonOrigine) {
+    boutonOrigine.setAttribute("aria-expanded", "true");
+    boutonOrigine.setAttribute("aria-controls", element2.id);
+  }
+  element2.showPopover?.();
+  const lireRect = typeof anchor === "function" ? anchor : () => (anchor ?? editor.view.dom).getBoundingClientRect();
+  const placer = () => {
+    if (!ouvert2) return;
+    placerDepuisRect(element2, lireRect, { ecart: 4 });
+  };
+  placer();
+  ecouter(element2, "keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      fermer({ reason: "escape" });
+    } else if (event.key === "Enter") {
+      event.stopPropagation();
+      const cible = event.composedPath()[0];
+      if (cible.form && !(cible.tagName === "BUTTON" && cible.type === "button")) event.preventDefault();
+    }
+  });
+  const dehors = (event) => {
+    if (!event.composedPath().includes(element2)) fermer({ reason: "outside", refocus: false });
+  };
+  ecouter(doc4, "pointerdown", dehors, true);
+  ecouter(doc4, "focusin", dehors, true);
+  ecouter(doc4.defaultView, "resize", placer);
+  ecouter(doc4.defaultView, "scroll", (e) => {
+    if (!element2.contains(e.target)) placer();
+  }, true);
+  (corps.querySelector('input[type="search"]') ?? corps).focus();
+  return { element: element2, corps, fermer };
+}
+
 // src/ui/MultiPopover.js
 var langueCourante = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || "").replace("-", "_");
 var languesProposees = (editor) => {
@@ -28305,6 +28454,7 @@ function multiEnLigne(contexte3, existant) {
     }
   });
   const liste = document.createElement("div");
+  popover2.lignes = lignes2;
   liste.className = "tts-multi__parties";
   popover2.actions.before(liste);
   const tierces = editor.tiptapSpip?.tierces ?? [];
@@ -28324,6 +28474,7 @@ function multiEnLigne(contexte3, existant) {
     const content = schemaJSON({ type: "doc", content: [{ type: "paragraph", content: origine?.length ? origine : void 0 }] }, schema);
     const l = { langue, sous: null, origine, modifie: false, ligne };
     const sousUi = {
+      openSuggestionsPanel: creerOuvreurPanneau(() => l.sous, { wrapper, parent: popover2 }),
       previews: contexte3.previews ?? null,
       titles: contexte3.titles ?? null,
       openLink: () => openLinkPopover({ ...contexte3, editor: l.sous, parent: popover2 }),
@@ -28338,6 +28489,8 @@ function multiEnLigne(contexte3, existant) {
     });
     sous.tiptapSpip = editor.tiptapSpip;
     l.sous = sous;
+    l.sousUi = sousUi;
+    lierContexteSuggestions(sous, { wrapper, parent: popover2 });
     sous.on("update", () => {
       l.modifie = true;
     });
@@ -28588,6 +28741,7 @@ function openNotePopover(contexte3, pos = null) {
   popover2.actions.before(bloc);
   const enfant = () => ({ ...contexte3, editor: sous, parent: popover2 });
   const sousUi = {
+    openSuggestionsPanel: creerOuvreurPanneau(() => sous, { wrapper, parent: popover2 }),
     previews: contexte3.previews ?? null,
     titles: contexte3.titles ?? null,
     openLink: () => openLinkPopover(enfant()),
@@ -28613,7 +28767,9 @@ function openNotePopover(contexte3, pos = null) {
     editorProps: { attributes: { class: "tts-prosemirror", "aria-labelledby": titre.id, "aria-multiline": "true" } }
   });
   sous.tiptapSpip = editor.tiptapSpip;
+  lierContexteSuggestions(sous, { wrapper, parent: popover2 });
   popover2.sous = sous;
+  popover2.sousUi = sousUi;
   let modifie = false;
   sous.on("update", () => {
     modifie = true;
@@ -28650,7 +28806,8 @@ function openNotePopover(contexte3, pos = null) {
   popover2.button(label("annuler"), () => {
   }, { name: "annuler" });
   popover2.open(zone.querySelector("[contenteditable]") ?? nom);
-  sous.commands.focus("end");
+  sous.view.dispatch(sous.state.tr.setSelection(Selection.atEnd(sous.state.doc)));
+  sous.view.focus();
   return popover2;
 }
 
@@ -28664,6 +28821,7 @@ function creerInterface({ editor, wrapper, services, catalogue = null }) {
     return Boolean(parametres) && ouvrirCatalogue({ editor: editor(), url: catalogue.url, pos, parametres });
   };
   const ui2 = {
+    openSuggestionsPanel: creerOuvreurPanneau(editor, { wrapper }),
     catalogue,
     previews: services ? new ModelPreviews(services) : null,
     titles: services ? new LinkTitles(services) : null,
@@ -29224,6 +29382,7 @@ var Instance = class {
       editorProps: { attributes: { class: "tts-prosemirror", style: `min-height: ${rows * 1.5}em`, "aria-label": nomDuChamp(textarea), "aria-multiline": "true" } }
     });
     this.bridge = new TextareaBridge({ textarea, editor: this.editor, codec });
+    lierContexteSuggestions(this.editor, { wrapper: this.wrapper });
     this.notes = new NotesPanel({ editor: this.editor, editNote: (pos) => this.ui.editNote(pos), editMulti: (pos) => this.ui.editMulti(pos) });
     const barres = config().toolbars ?? barres_default;
     this.toolbar = new Toolbar({
@@ -29311,7 +29470,7 @@ var Instance = class {
       event.preventDefault();
       this.togglePleinEcran();
     } else if (event.key === "Escape" && this.pleinEcran()) {
-      const ouvert2 = Popover.current?.wrapper === this.wrapper || this.toolbarElement.querySelector('[aria-expanded="true"]');
+      const ouvert2 = suggestionsOuvertes(this.wrapper) || Popover.current?.wrapper === this.wrapper || this.toolbarElement.querySelector('[aria-expanded="true"]');
       if (ouvert2) return;
       event.preventDefault();
       this.togglePleinEcran(false);
@@ -29325,6 +29484,7 @@ var Instance = class {
     }
     const mode = this.bridge.mode === "visual" ? "source" : "visual";
     if (!this.bridge.setMode(mode)) return;
+    fermerSuggestions({ wrapper: this.wrapper, reason: "mode" });
     const source = mode === "source";
     this.textarea.hidden = !source;
     this.content.hidden = source;
@@ -29337,6 +29497,7 @@ var Instance = class {
   /** @param {{ restore?: boolean }} options  restore : remettre le textarea à sa place */
   destroy({ restore = true } = {}) {
     instances.delete(this);
+    fermerSuggestions({ wrapper: this.wrapper, reason: "destroy" });
     while (Popover.current?.wrapper === this.wrapper) Popover.current.close({ refocus: false });
     this.notes.destroy();
     this.depot.destroy();

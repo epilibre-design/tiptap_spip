@@ -6,6 +6,9 @@
  * Un popover peut en ouvrir un autre (lien depuis le sous-éditeur d'une note) : l'enfant s'ouvre
  * sans fermer son parent ; fermé, il rend la main au parent ; le parent fermé ferme l'enfant.
  */
+import { fermerSuggestions } from '../suggestions/sessions.js';
+import { placerDepuisRect } from './placement.js';
+
 export class Popover {
 	/**
 	 * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
@@ -138,6 +141,7 @@ export class Popover {
 	}
 
 	open(focus) {
+		fermerSuggestions({ reason: 'popover' });
 		// les popovers ouverts qui ne sont pas des ancêtres de celui-ci se ferment
 		while (Popover.current && Popover.current !== this.parent) Popover.current.close({ refocus: false });
 		if (this.parent) this.parent.enfant = this;
@@ -159,28 +163,9 @@ export class Popover {
 			const { from } = this.editor.state.selection;
 			const coords = this.editor.view.coordsAtPos(from);
 			if (this.flottant) {
-				const marge = 8;
-				const ecart = 4;
-				const defilement = this.element.scrollTop;
-				Object.assign(this.element.style, { left: '0px', top: '0px', maxHeight: '', overflowY: '' });
-				const rect = this.element.getBoundingClientRect();
 				const barre = this.wrapper.querySelector('.tts-toolbar')?.getBoundingClientRect();
-				const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + marge;
-				const bas = window.innerHeight - marge;
-				const dessous = Math.max(0, bas - Math.max(haut, coords.bottom + ecart));
-				const dessus = Math.max(0, Math.min(coords.top - ecart, bas) - haut);
-				const versHaut = rect.height > dessous && dessus > dessous;
-				const hauteur = versHaut ? dessus : dessous;
-				const gauche = Math.max(marge, Math.min(coords.left, document.documentElement.clientWidth - marge - rect.width));
-				this.element.style.left = `${gauche}px`;
-				const hauteurAffichee = Math.min(rect.height, hauteur);
-				const position = versHaut ? coords.top - ecart - hauteurAffichee : coords.bottom + ecart;
-				this.element.style.top = `${Math.max(haut, Math.min(position, bas - hauteurAffichee))}px`;
-				if (rect.height > hauteur) {
-					this.element.style.maxHeight = `${hauteur}px`;
-					this.element.style.overflowY = 'auto';
-				}
-				this.element.scrollTop = defilement;
+				const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + 8;
+				placerDepuisRect(this.element, () => coords, { ecart: 4, haut });
 				return;
 			}
 			const box = this.wrapper.getBoundingClientRect();
@@ -193,6 +178,7 @@ export class Popover {
 
 	close({ refocus = true } = {}) {
 		if (!this.ouvert) return;
+		fermerSuggestions({ parent: this, reason: 'parent' });
 		this.ouvert = false;
 		this.enfant?.close({ refocus: false });
 		if (Popover.current === this) Popover.current = this.parent;

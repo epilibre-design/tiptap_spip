@@ -12,6 +12,8 @@ import { openLinkPopover } from './LinkPopover.js';
 import { openGlossaryPopover } from './MarkPopover.js';
 import { lireSelection, Popover, suivrePosition } from './popover.js';
 import { openRawPopover } from './RawPopover.js';
+import { creerOuvreurPanneau } from '../suggestions/PanneauSuggestions.js';
+import { lierContexteSuggestions } from '../suggestions/sessions.js';
 
 /** Langue qu'affichent les multis, sinon celle de l'interface. */
 const langueCourante = (editor) => (langueAffichee(editor.state) || globalThis.document?.documentElement?.lang || '').replace('-', '_');
@@ -110,6 +112,7 @@ function multiEnLigne(contexte, existant) {
 		},
 	});
 	const liste = document.createElement('div');
+	popover.lignes = lignes;
 	liste.className = 'tts-multi__parties';
 	popover.actions.before(liste);
 
@@ -133,6 +136,7 @@ function multiEnLigne(contexte, existant) {
 		// interface de ce sous-éditeur : lien et glossaire en popovers enfants
 		const l = { langue, sous: null, origine, modifie: false, ligne };
 		const sousUi = {
+			openSuggestionsPanel: creerOuvreurPanneau(() => l.sous, { wrapper, parent: popover }),
 			previews: contexte.previews ?? null,
 			titles: contexte.titles ?? null,
 			openLink: () => openLinkPopover({ ...contexte, editor: l.sous, parent: popover }),
@@ -147,6 +151,8 @@ function multiEnLigne(contexte, existant) {
 		});
 		sous.tiptapSpip = editor.tiptapSpip;
 		l.sous = sous;
+		l.sousUi = sousUi;
+		lierContexteSuggestions(sous, { wrapper, parent: popover });
 		sous.on('update', () => {
 			l.modifie = true;
 		});

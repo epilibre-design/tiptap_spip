@@ -1,4 +1,5 @@
 import { Editor, getSchema } from '@tiptap/core';
+import { Selection } from '@tiptap/pm/state';
 import { schemaJSON } from '../editor/content.js';
 import { noteExtensions, noteSelectionnee } from '../editor/extensions.js';
 import { contenuNoteVide } from '../spip/notes.js';
@@ -9,6 +10,8 @@ import { openGlossaryPopover } from './MarkPopover.js';
 import { openModelPopover } from './ModelPopover.js';
 import { openRawPopover } from './RawPopover.js';
 import { idUnique, lireSelection, Popover, suivrePosition } from './popover.js';
+import { creerOuvreurPanneau } from '../suggestions/PanneauSuggestions.js';
+import { lierContexteSuggestions } from '../suggestions/sessions.js';
 
 /**
  * Popover de note (spec 05 §1) : nom optionnel (vide : numérotée), case « Sans appel », texte dans
@@ -85,6 +88,7 @@ export function openNotePopover(contexte, pos = null) {
 
 	const enfant = () => ({ ...contexte, editor: sous, parent: popover });
 	const sousUi = {
+		openSuggestionsPanel: creerOuvreurPanneau(() => sous, { wrapper, parent: popover }),
 		previews: contexte.previews ?? null,
 		titles: contexte.titles ?? null,
 		openLink: () => openLinkPopover(enfant()),
@@ -111,8 +115,10 @@ export function openNotePopover(contexte, pos = null) {
 		editorProps: { attributes: { class: 'tts-prosemirror', 'aria-labelledby': titre.id, 'aria-multiline': 'true' } },
 	});
 	sous.tiptapSpip = editor.tiptapSpip;
+	lierContexteSuggestions(sous, { wrapper, parent: popover });
 	// exposé pour les tests et les extensions
 	popover.sous = sous;
+	popover.sousUi = sousUi;
 	let modifie = false;
 	sous.on('update', () => {
 		modifie = true;
@@ -151,6 +157,8 @@ export function openNotePopover(contexte, pos = null) {
 	}
 	popover.button(label('annuler'), () => {}, { name: 'annuler' });
 	popover.open(zone.querySelector('[contenteditable]') ?? nom);
-	sous.commands.focus('end');
+	// Focus immédiat : un focus différé volerait celui d'un panneau ouvert juste après.
+	sous.view.dispatch(sous.state.tr.setSelection(Selection.atEnd(sous.state.doc)));
+	sous.view.focus();
 	return popover;
 }

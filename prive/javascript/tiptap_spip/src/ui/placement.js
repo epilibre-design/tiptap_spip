@@ -3,6 +3,28 @@
 /** Écart gardé entre la liste et le bord qui la couperait. */
 const MARGE = 8;
 
+/** Couche supérieure : placement à partir d'un rectangle, sans hypothèse de parenté DOM. */
+export function placerDepuisRect(element, lireRect, { ecart = 0, haut = MARGE } = {}) {
+	const defilement = element.scrollTop;
+	Object.assign(element.style, { left: '0px', right: '', top: '0px', bottom: '', maxHeight: '', overflowY: '' });
+	const ancre = lireRect();
+	const rect = element.getBoundingClientRect();
+	const bas = window.innerHeight - MARGE;
+	const dessous = Math.max(0, bas - Math.max(haut, ancre.bottom + ecart));
+	const dessus = Math.max(0, Math.min(ancre.top - ecart, bas) - haut);
+	const versHaut = rect.height > dessous && dessus > dessous;
+	const disponible = versHaut ? dessus : dessous;
+	const hauteur = Math.min(rect.height, disponible);
+	const top = versHaut ? ancre.top - ecart - hauteur : ancre.bottom + ecart;
+	element.style.left = `${Math.max(MARGE, Math.min(ancre.left, document.documentElement.clientWidth - MARGE - rect.width))}px`;
+	element.style.top = `${Math.max(haut, Math.min(top, bas - hauteur))}px`;
+	if (rect.height > disponible) {
+		element.style.maxHeight = `${disponible}px`;
+		element.style.overflowY = 'auto';
+	}
+	element.scrollTop = defilement;
+}
+
 /** Intersection de deux rectangles. */
 const intersection = (a, b) => ({
 	left: Math.max(a.left, b.left),
@@ -48,19 +70,7 @@ export function placerMenu(liste) {
 	if (liste.hidden) return;
 	// La couche supérieure échappe aux ancêtres qui coupent : seule la fenêtre limite le menu.
 	if (liste.popover === 'manual' && liste.matches(':popover-open')) {
-		const bouton = liste.parentElement.getBoundingClientRect();
-		const rect = liste.getBoundingClientRect();
-		const largeur = document.documentElement.clientWidth;
-		const dessous = Math.max(0, window.innerHeight - MARGE - bouton.bottom);
-		const dessus = Math.max(0, bouton.top - MARGE);
-		const versHaut = rect.height > dessous && dessus > dessous;
-		const hauteurVisible = versHaut ? dessus : dessous;
-		liste.style.left = `${Math.max(MARGE, Math.min(bouton.left, largeur - MARGE - rect.width))}px`;
-		liste.style.top = `${versHaut ? Math.max(MARGE, bouton.top - Math.min(rect.height, dessus)) : bouton.bottom}px`;
-		if (rect.height > hauteurVisible) {
-			liste.style.maxHeight = `${hauteurVisible}px`;
-			liste.style.overflowY = 'auto';
-		}
+		placerDepuisRect(liste, () => liste.parentElement.getBoundingClientRect());
 		liste.scrollTop = positionDefilement;
 		return;
 	}
