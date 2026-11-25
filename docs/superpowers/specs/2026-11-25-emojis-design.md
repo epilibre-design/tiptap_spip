@@ -290,6 +290,8 @@ disponibles. Aucun état de session dans l’objet `tiptapSpip` partagé avec le
   espace/retour à la ligne ou une nouvelle plage. Tab ferme sans valider et garde sa fonction.
 - Taper, charger ou coller `:smile:`, `mot:smile:`, `:)` ou `<3` reste littéral. Une insertion
   exige un choix explicite ; aucune règle automatique de conversion des shortcodes en v1.
+- Sur les claviers IME qui composent un mot entier, l’ouverture attend la fin de composition ;
+  le premier caractère ne garantit donc pas une ouverture immédiate.
 - Aucune ouverture dans `https://`, `12:30`, `mot:terme`, en composition IME ou en zone exclue.
 
 ## Contextes et conservation du contenu

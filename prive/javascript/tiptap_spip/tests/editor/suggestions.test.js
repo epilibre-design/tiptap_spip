@@ -97,9 +97,11 @@ it('reponses_inversees, signal annulé et aucun ancien résultat sélectionnable
 });
 
 it('erreur_distincte_vide, Haut/Bas disponibles et récupération après nouvelle requête', async () => {
+	const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 	const recherche = vi.fn().mockRejectedValueOnce(new Error('indisponible')).mockResolvedValueOnce([]).mockResolvedValue(items);
 	const { editor } = installer({ items: recherche }); await saisir(editor, '@b');
 	expect(document.querySelector('[role="status"]').textContent).toBe('Indisponible');
+	expect(error).toHaveBeenCalledOnce();
 	expect(touche(editor, 'ArrowDown').defaultPrevented).toBe(false);
 	await saisir(editor, 'o'); expect(document.querySelector('[role="status"]').textContent).toBe('Aucune formule');
 	expect(touche(editor, 'ArrowUp').defaultPrevented).toBe(false);
@@ -185,4 +187,61 @@ it('deux déclencheurs distincts cohabitent sans partage de résultats', async (
 	await saisir(editor, ' #bo'); expect(options()).toHaveLength(1);
 	expect(options()[0].textContent).toBe('Bonsoir'); touche(editor, 'ArrowDown'); touche(editor, 'Enter');
 	expect(source()).toBe('@bo Bonsoir !');
+});
+
+it.each(['motif', 'seuil'])('Échap reste rejeté après une requête invalide : %s', async (cas) => {
+	const { editor } = installer({ minQueryLength: 1, queryPattern: /[a-z]+/gy });
+	await saisir(editor, '@b'); touche(editor, 'Escape');
+	if (cas === 'motif') {
+		await saisir(editor, '!'); editor.commands.deleteRange({ from: 3, to: 4 });
+	} else {
+		editor.commands.deleteRange({ from: 2, to: 3 }); await saisir(editor, 'b');
+	}
+	await tick(); expect(options()).toHaveLength(0);
+	await saisir(editor, ' @b'); expect(options()).toHaveLength(2);
+});
+
+it('fin de composition réévalue sans ajouter d’entrée à l’historique', async () => {
+	const { editor } = installer(); editor.view.input.composing = true;
+	await saisir(editor, '@bo'); expect(options()).toHaveLength(0);
+	editor.view.dom.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: 'bo' }));
+	await new Promise((r) => setTimeout(r, 40));
+	expect(options()).toHaveLength(2);
+	editor.commands.undo(); expect(source()).toBe('');
+});
+
+it('sélection programmée sans focus ne recherche pas, le retour du focus réévalue', async () => {
+	const recherche = vi.fn(() => items); const { editor } = installer({ items: recherche });
+	const bouton = document.createElement('button'); wrapper.append(bouton); bouton.focus();
+	await saisir(editor, '@bo'); expect(recherche).not.toHaveBeenCalled(); expect(options()).toHaveLength(0);
+	editor.view.focus(); await tick(); expect(options()).toHaveLength(2);
+});
+
+it('les touches avec modificateurs restent disponibles à l’éditeur', async () => {
+	const commande = vi.fn(() => false); const { editor } = installer({ command: commande }); await saisir(editor, '@bo');
+	touche(editor, 'ArrowDown', { shiftKey: true }); expect(actif()).toBeNull();
+	editor.commands.setTextSelection(4); await tick(); touche(editor, 'ArrowDown');
+	touche(editor, 'Enter', { shiftKey: true }); expect(commande).not.toHaveBeenCalled();
+});
+
+it('les exceptions du fournisseur sont journalisées et la commande reste un refus', async () => {
+	const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+	const panne = new Error('commande cassée'); const { editor } = installer({ command: () => { throw panne; } });
+	await saisir(editor, '@bo'); touche(editor, 'ArrowDown'); touche(editor, 'Enter');
+	expect(error).toHaveBeenCalledWith(expect.stringContaining('commande'), panne);
+	expect(source()).toBe('@bo'); expect(options()).toHaveLength(2);
+});
+
+it('une commande peut détruire l’éditeur sans seconde transaction', async () => {
+	const { editor } = installer({ command: ({ editor }) => { editor.destroy(); return true; } });
+	await saisir(editor, '@bo'); touche(editor, 'ArrowDown');
+	expect(() => touche(editor, 'Enter')).not.toThrow(); expect(editor.isDestroyed).toBe(true);
+});
+
+it('la décoration est préfixée et annuler la validation rouvre la requête', async () => {
+	const { editor } = installer(); await saisir(editor, '@bo');
+	expect(editor.view.dom.querySelector('.suggestion')).toBeNull();
+	expect(editor.view.dom.querySelector('.tts-suggestion')).not.toBeNull();
+	touche(editor, 'ArrowDown'); touche(editor, 'Enter'); editor.commands.undo(); await tick();
+	expect(source()).toBe('@bo'); expect(options()).toHaveLength(2);
 });

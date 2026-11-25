@@ -193,6 +193,16 @@ bundle. Un nouveau contenu éditorial doit aussi déclarer son schéma et sa sé
 
 ## Interaction et focus
 
+L’inline ne s’ouvre que lorsque l’éditeur a le focus. Une sélection programmée hors focus
+ne lance aucune recherche ; le retour du focus réévalue la plage. Ne pas ouvrir pendant une
+composition IME ; après `compositionend` et la mise à jour de ProseMirror, réévaluer par une
+transaction sans entrée d’historique. Sur les claviers qui composent un mot entier, l’ouverture
+dès le premier caractère attend donc la validation de la composition.
+Les raccourcis de la liste ne traitent que les touches sans modificateur. Préserver notamment
+Maj+Entrée et Maj+flèche pour l’édition ; Tab/Maj+Tab ferment sans empêcher leur navigation.
+Un clic souris sur toute la liste (marge, état vide, options) conserve le focus de l’éditeur,
+sans annuler les événements tactiles de défilement ni la molette.
+
 À l’ouverture et après changement de requête, aucun résultat n’est actif. Flèche bas active
 le premier, Flèche haut le dernier ; les suivantes parcourent la liste et maintiennent
 l’option active visible. Survol ou déplacement tactile ne valide rien ; un clic sur une
@@ -205,10 +215,12 @@ Dans l’inline, Tab ferme sans valider et garde sa fonction normale, dont le pi
 du formulaire parent. Échap ferme sans effacer la requête.
 La fermeture est maintenue jusqu’à l’insertion d’un espace/retour à la ligne ou au déplacement
 vers une nouvelle plage de déclenchement, suivant la règle Tiptap 3.31.4 ; continuer à écrire
-dans la même requête ne la rouvre pas. Le bouton peut toujours ouvrir son panneau explicitement.
+dans la même requête ne la rouvre pas, même après un motif invalide ou un passage sous le seuil. Le bouton peut toujours ouvrir son panneau explicitement.
 Avec `allowSpaces: true`, adapter `shouldResetDismissed` : le natif conserve sinon le rejet
 même après un espace. Garder la même règle commune de réouverture après insertion d’un espace
 ou retour à la ligne, sans modifier le texte ni partager l’état de rejet entre éditeurs.
+
+Annuler une validation restaure la requête et peut rouvrir la liste, sans mutation supplémentaire.
 
 La suggestion inline garde le focus dans l’éditeur. Le panneau explicite le donne à sa
 recherche ; Échap le rend au bouton s’il a été ouvert depuis la barre, à l’éditeur s’il vient

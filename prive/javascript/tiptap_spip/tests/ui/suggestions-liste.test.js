@@ -28,7 +28,7 @@ it('texte inerte, options nommées et focus conservé dans le texte', () => {
 it('clic valide directement, survol ne valide rien et ancienne option retirée ignorée', () => {
 	const { liste, onChoose } = preparer(); const option = liste.element.querySelector('[role="option"]');
 	option.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); expect(onChoose).not.toHaveBeenCalled();
-	const down = new MouseEvent('pointerdown', { bubbles: true, cancelable: true }); option.dispatchEvent(down);
+	const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true }); option.dispatchEvent(down);
 	expect(down.defaultPrevented).toBe(true); option.click(); expect(onChoose).toHaveBeenCalledOnce();
 	liste.update({ query: 'b', loading: true, items: [] }); option.click(); expect(onChoose).toHaveBeenCalledOnce();
 	liste.destroy();
@@ -42,4 +42,16 @@ it('pas de choix implicite ; états sans option laissent Haut/Bas/Entrée', () =
 		for (const key of ['ArrowUp', 'ArrowDown', 'Enter']) expect(liste.keydown(new KeyboardEvent('keydown', { key }))).toBe(false);
 	}
 	expect(onChoose).not.toHaveBeenCalled(); liste.destroy(); liste.destroy();
+});
+
+it('toute la liste conserve le focus souris sans bloquer le tactile ni la molette', () => {
+	const { liste } = preparer();
+	for (const cible of [liste.element, liste.etat, liste.liste]) {
+		const e = new MouseEvent('mousedown', { bubbles: true, cancelable: true }); cible.dispatchEvent(e);
+		expect(e.defaultPrevented).toBe(true);
+		for (const type of ['touchstart', 'touchmove', 'wheel']) {
+			const e = new Event(type, { bubbles: true, cancelable: true }); cible.dispatchEvent(e); expect(e.defaultPrevented).toBe(false);
+		}
+	}
+	liste.destroy();
 });

@@ -39,6 +39,8 @@ export class ListeSuggestions {
 		const dehors = (e) => {
 			if (!e.composedPath().includes(this.element) && !e.composedPath().includes(this.dom)) onDismiss();
 		};
+		// mousedown préserve la sélection sans annuler touchmove/pointerdown (défilement tactile).
+		ecouter(this.element, 'mousedown', (e) => e.preventDefault());
 		ecouter(doc, 'pointerdown', dehors, true);
 		ecouter(doc, 'focusin', dehors, true);
 		ecouter(doc.defaultView, 'resize', () => this.placer());
@@ -69,7 +71,6 @@ export class ListeSuggestions {
 				const sous = this.dom.ownerDocument.createElement('small'); sous.textContent = item.subtext;
 				option.append(sous);
 			}
-			option.addEventListener('pointerdown', (e) => e.preventDefault());
 			option.addEventListener('click', () => {
 				if (!this.detruite && this.liste.contains(option)) this.onChoose(item);
 			});
@@ -84,7 +85,7 @@ export class ListeSuggestions {
 	}
 
 	keydown(event) {
-		if (this.detruite || event.isComposing || !this.items?.length) return false;
+		if (this.detruite || event.isComposing || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || !this.items?.length) return false;
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 			const sens = event.key === 'ArrowDown' ? 1 : -1;
 			this.actif = this.actif < 0 ? (sens > 0 ? 0 : this.items.length - 1)

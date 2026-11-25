@@ -32,7 +32,7 @@ export function retenirFournisseurs(extensions, { duCoeur = new Set() } = {}) {
 }
 
 function autorise(editor, state, range) {
-	if (!contexteSuggestions(editor) || !editor.isEditable || editor.view.composing
+	if (!contexteSuggestions(editor) || !editor.isEditable || !editor.view.hasFocus() || editor.view.composing
 		|| !state.selection.empty || editor.view.dom.closest('[hidden]')) return false;
 	const $from = state.doc.resolve(range.from);
 	for (let d = 0; d <= $from.depth; d++) if (exclus.has($from.node(d).type.name)) return false;
@@ -51,6 +51,8 @@ export function creerSuggestions(options) {
 		|| !['suggestions', 'loading', 'empty', 'error'].every((s) => typeof labels?.[s] === 'string')) {
 		throw new TypeError('tiptap_spip : fournisseur de suggestions invalide');
 	}
+	const motif = queryPattern && new RegExp(`^(?:${queryPattern.source})$`, queryPattern.flags.replace(/[gy]/g, ''));
+	const requeteValide = (query) => query.length >= minQueryLength && (!motif || motif.test(query));
 	return Extension.create({
 		name, priority: 10000, tiptapSpipSuggestion: { char },
 		addProseMirrorPlugins() {
@@ -71,8 +73,11 @@ export function creerSuggestions(options) {
 					|| etat.range.from !== range.from || etat.range.to !== range.to || etat.query !== courante.query
 					|| !autorise(editor, editor.state, range) || (allow && !allow({ editor, state: editor.state, range }))) return false;
 				editor.view.dispatch(closeHistory(editor.state.tr));
-				const succes = command({ editor, range, item });
+				let succes;
+				try { succes = command({ editor, range, item }); }
+				catch (e) { console.error(`tiptap_spip : commande de ${name}`, e); return false; }
 				if (succes !== true) return false;
+				if (editor.isDestroyed) return true;
 				editor.view.dispatch(closeHistory(editor.state.tr));
 				sortir(); editor.view.focus();
 				return true;
@@ -85,10 +90,11 @@ export function creerSuggestions(options) {
 				liste.update({ ...props, error: !props.loading && erreur });
 			};
 			const plugin = Suggestion({
-				editor, pluginKey: key, char, allowedPrefixes, startOfLine, allowSpaces, minQueryLength,
-				findSuggestionMatch: (config) => trouverSuggestion({ ...config, minQueryLength, queryPattern }),
+				editor, pluginKey: key, char, allowedPrefixes, startOfLine, allowSpaces,
+				decorationClass: 'tts-suggestion', decorationEmptyClass: 'tts-suggestion--vide',
+				findSuggestionMatch: trouverSuggestion,
 				allow: ({ state, range }) => autorise(editor, state, range) && (!allow || allow({ editor, state, range })),
-				shouldShow: ({ query }) => query.length >= minQueryLength,
+				shouldShow: ({ query }) => requeteValide(query),
 				shouldResetDismissed: ({ transaction, allowSpaces: espaces }) => espaces && transaction.docChanged
 					&& transaction.steps.some((step) => {
 						const fragment = step.slice?.content;
@@ -100,7 +106,8 @@ export function creerSuggestions(options) {
 						const resultat = await items({ editor, query, signal });
 						if (!Array.isArray(resultat) || resultat.some((i) => typeof i?.id !== 'string' || typeof i?.title !== 'string')) throw new TypeError('Items invalides');
 						return resultat;
-					} catch {
+					} catch (e) {
+						if (!signal.aborted) console.error(`tiptap_spip : recherche de ${name}`, e);
 						if (!signal.aborted && numero === recherche) erreur = true;
 						return [];
 					}
@@ -120,12 +127,21 @@ export function creerSuggestions(options) {
 			});
 			// Le handler natif consomme toujours Échap : protéger l'IME avant de l'appeler.
 			const clavier = plugin.props.handleKeyDown;
-			plugin.props.handleKeyDown = (view, event) => event.isComposing || view.composing ? false : clavier(view, event);
+			plugin.props.handleKeyDown = (view, event) => event.isComposing || view.composing || (event.shiftKey && event.key !== 'Tab') || event.ctrlKey || event.altKey || event.metaKey ? false : clavier(view, event);
+			let reevaluation;
+			plugin.props.handleDOMEvents = { compositionend: (view) => {
+				clearTimeout(reevaluation);
+				// Après le handler natif et son flush DOM en microtâche, sans entrée d’historique.
+				reevaluation = setTimeout(() => {
+					if (!editor.isDestroyed && !view.composing) view.dispatch(view.state.tr.setMeta('addToHistory', false));
+				}, 0);
+				return false;
+			} };
 			// setEditable met la vue à jour sans transaction : l'état natif ne s'y recalcule pas.
 			const creerVue = plugin.spec.view;
 			plugin.spec.view = (view) => {
 				const native = creerVue(view);
-				return { ...native, update(vue, precedent) {
+				return { ...native, destroy() { clearTimeout(reevaluation); native.destroy?.(); }, update(vue, precedent) {
 					if (!editor.isEditable && key.getState(vue.state)?.active) { sortir(); return; }
 					return native.update(vue, precedent);
 				} };
