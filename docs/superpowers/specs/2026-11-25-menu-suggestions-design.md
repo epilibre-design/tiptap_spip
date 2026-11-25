@@ -206,6 +206,9 @@ du formulaire parent. Échap ferme sans effacer la requête.
 La fermeture est maintenue jusqu’à l’insertion d’un espace/retour à la ligne ou au déplacement
 vers une nouvelle plage de déclenchement, suivant la règle Tiptap 3.31.4 ; continuer à écrire
 dans la même requête ne la rouvre pas. Le bouton peut toujours ouvrir son panneau explicitement.
+Avec `allowSpaces: true`, adapter `shouldResetDismissed` : le natif conserve sinon le rejet
+même après un espace. Garder la même règle commune de réouverture après insertion d’un espace
+ou retour à la ligne, sans modifier le texte ni partager l’état de rejet entre éditeurs.
 
 La suggestion inline garde le focus dans l’éditeur. Le panneau explicite le donne à sa
 recherche ; Échap le rend au bouton s’il a été ouvert depuis la barre, à l’éditeur s’il vient

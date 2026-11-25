@@ -19292,6 +19292,138 @@ function schemaJSON(json, schema) {
 }
 var toEditorJSON = (source, schema, regles = []) => schemaJSON(parse(source, { empreintes: false, regles }), schema);
 
+// node_modules/@tiptap/suggestion/dist/index.js
+var SuggestionPluginKey = new PluginKey("suggestion");
+
+// src/ui/placement.js
+var MARGE = 8;
+function placerDepuisRect(element2, lireRect, { ecart = 0, haut = MARGE } = {}) {
+  const defilement = element2.scrollTop;
+  Object.assign(element2.style, { left: "0px", right: "", top: "0px", bottom: "", maxHeight: "", overflowY: "" });
+  const ancre = lireRect();
+  const rect = element2.getBoundingClientRect();
+  const bas = window.innerHeight - MARGE;
+  const dessous = Math.max(0, bas - Math.max(haut, ancre.bottom + ecart));
+  const dessus = Math.max(0, Math.min(ancre.top - ecart, bas) - haut);
+  const versHaut = rect.height > dessous && dessus > dessous;
+  const disponible = versHaut ? dessus : dessous;
+  const hauteur = Math.min(rect.height, disponible);
+  const top = versHaut ? ancre.top - ecart - hauteur : ancre.bottom + ecart;
+  element2.style.left = `${Math.max(MARGE, Math.min(ancre.left, document.documentElement.clientWidth - MARGE - rect.width))}px`;
+  element2.style.top = `${Math.max(haut, Math.min(top, bas - hauteur))}px`;
+  if (rect.height > disponible) {
+    element2.style.maxHeight = `${disponible}px`;
+    element2.style.overflowY = "auto";
+  }
+  element2.scrollTop = defilement;
+}
+var intersection = (a, b) => ({
+  left: Math.max(a.left, b.left),
+  top: Math.max(a.top, b.top),
+  right: Math.min(a.right, b.right),
+  bottom: Math.min(a.bottom, b.bottom)
+});
+function bornes(element2) {
+  let limites = { left: 0, top: -Infinity, right: document.documentElement.clientWidth, bottom: Infinity };
+  for (let ancetre = element2.parentElement; ancetre && ancetre !== document.body; ancetre = ancetre.parentElement) {
+    const style2 = getComputedStyle(ancetre);
+    if (style2.overflowX !== "visible" || style2.overflowY !== "visible") {
+      limites = intersection(limites, ancetre.getBoundingClientRect());
+    }
+    if (style2.position === "fixed") return intersection(limites, { left: 0, top: 0, right: Infinity, bottom: window.innerHeight });
+  }
+  return limites;
+}
+function placerMenu(liste) {
+  const positionDefilement = liste.scrollTop;
+  Object.assign(liste.style, { left: "", right: "", top: "", bottom: "", maxHeight: "", overflowY: "" });
+  if (liste.hidden) return;
+  if (liste.popover === "manual" && liste.matches(":popover-open")) {
+    placerDepuisRect(liste, () => liste.parentElement.getBoundingClientRect());
+    liste.scrollTop = positionDefilement;
+    return;
+  }
+  const limites = bornes(liste);
+  let rect = liste.getBoundingClientRect();
+  if (rect.right > limites.right - MARGE) {
+    liste.style.left = "auto";
+    liste.style.right = "0px";
+    rect = liste.getBoundingClientRect();
+    if (rect.left < limites.left + MARGE) liste.style.right = `${rect.left - (limites.left + MARGE)}px`;
+  }
+  rect = liste.getBoundingClientRect();
+  if (rect.bottom <= limites.bottom - MARGE) return;
+  const bouton = liste.parentElement.getBoundingClientRect();
+  const dessous = limites.bottom - MARGE - rect.top;
+  const dessus = bouton.top - (limites.top + MARGE);
+  if (dessus > dessous) {
+    liste.style.top = "auto";
+    liste.style.bottom = "100%";
+    if (rect.height <= dessus) return;
+  }
+  liste.style.maxHeight = `${Math.max(0, dessus > dessous ? dessus : dessous)}px`;
+  liste.style.overflowY = "auto";
+}
+
+// src/suggestions/sessions.js
+var contextes = /* @__PURE__ */ new WeakMap();
+var couches = /* @__PURE__ */ new Set();
+var contexteSuggestions = (editor) => contextes.get(editor) ?? null;
+var suggestionsOuvertes = (wrapper) => [...couches].some((c) => c.wrapper === wrapper);
+function lierContexteSuggestions(editor, { wrapper, parent = null }) {
+  const precedent = contextes.get(editor);
+  if (precedent?.wrapper === wrapper && precedent.parent === parent) return precedent.disposer;
+  precedent?.disposer();
+  const contexte3 = { wrapper, parent, disposer: null };
+  contexte3.disposer = () => {
+    if (contextes.get(editor) !== contexte3) return;
+    fermerSuggestions({ editor, reason: "destroy" });
+    contextes.delete(editor);
+    editor.off("destroy", contexte3.disposer);
+  };
+  contextes.set(editor, contexte3);
+  editor.on("destroy", contexte3.disposer);
+  return contexte3.disposer;
+}
+function enregistrerCoucheSuggestions(couche) {
+  couches.add(couche);
+  return () => couches.delete(couche);
+}
+function fermerSuggestions({ parent, wrapper, editor, refocus = false, reason = "context" } = {}) {
+  for (const couche of [...couches]) {
+    if (wrapper && couche.wrapper !== wrapper) continue;
+    if (editor && couche.editor !== editor) continue;
+    if (parent) {
+      let ancetre = couche.parent;
+      while (ancetre && ancetre !== parent) ancetre = ancetre.parent;
+      if (!ancetre) continue;
+    }
+    couche.fermer({ refocus, reason });
+  }
+}
+
+// src/suggestions/fabrique.js
+var avertis = /* @__PURE__ */ new Set();
+function retenirFournisseurs(extensions, { duCoeur = /* @__PURE__ */ new Set() } = {}) {
+  const retenus = /* @__PURE__ */ new Map();
+  for (const e of extensions) {
+    const char = e.config.tiptapSpipSuggestion?.char;
+    if (!char) continue;
+    if (!retenus.has(char) || duCoeur.has(e) && !duCoeur.has(retenus.get(char))) retenus.set(char, e);
+  }
+  return extensions.filter((e) => {
+    const char = e.config.tiptapSpipSuggestion?.char;
+    if (!char || retenus.get(char) === e) return true;
+    const garde = retenus.get(char);
+    const cle2 = JSON.stringify([char, garde.name, e.name]);
+    if (!avertis.has(cle2)) {
+      avertis.add(cle2);
+      console.warn(`tiptap_spip : suggestions \xAB ${char} \xBB : ${garde.name} conserv\xE9, ${e.name} ignor\xE9`);
+    }
+    return false;
+  });
+}
+
 // node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
 var jsxElements = /* @__PURE__ */ new WeakSet();
 var jsxFragments = /* @__PURE__ */ new WeakSet();
@@ -26362,7 +26494,8 @@ var SpipUi = Extension.create({
   }
 });
 function coreExtensions({ headingLevels = [2, 3, 4, 5, 6], ui: ui2 = null, tierces = [], markdown = Boolean(config().markdown) } = {}) {
-  return avecTierces(extensionsDuCoeur({ headingLevels, ui: ui2, markdown }), tierces);
+  const coeur = extensionsDuCoeur({ headingLevels, ui: ui2, markdown });
+  return retenirFournisseurs(avecTierces(coeur, tierces), { duCoeur: new Set(coeur) });
 }
 function avecTierces(extensions, tierces) {
   const ajoutees = [];
@@ -26499,113 +26632,6 @@ var ICONES = {
   pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
   pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
 };
-
-// src/suggestions/sessions.js
-var contextes = /* @__PURE__ */ new WeakMap();
-var couches = /* @__PURE__ */ new Set();
-var contexteSuggestions = (editor) => contextes.get(editor) ?? null;
-var suggestionsOuvertes = (wrapper) => [...couches].some((c) => c.wrapper === wrapper);
-function lierContexteSuggestions(editor, { wrapper, parent = null }) {
-  const precedent = contextes.get(editor);
-  if (precedent?.wrapper === wrapper && precedent.parent === parent) return precedent.disposer;
-  precedent?.disposer();
-  const contexte3 = { wrapper, parent, disposer: null };
-  contexte3.disposer = () => {
-    if (contextes.get(editor) !== contexte3) return;
-    fermerSuggestions({ editor, reason: "destroy" });
-    contextes.delete(editor);
-    editor.off("destroy", contexte3.disposer);
-  };
-  contextes.set(editor, contexte3);
-  editor.on("destroy", contexte3.disposer);
-  return contexte3.disposer;
-}
-function enregistrerCoucheSuggestions(couche) {
-  couches.add(couche);
-  return () => couches.delete(couche);
-}
-function fermerSuggestions({ parent, wrapper, editor, refocus = false, reason = "context" } = {}) {
-  for (const couche of [...couches]) {
-    if (wrapper && couche.wrapper !== wrapper) continue;
-    if (editor && couche.editor !== editor) continue;
-    if (parent) {
-      let ancetre = couche.parent;
-      while (ancetre && ancetre !== parent) ancetre = ancetre.parent;
-      if (!ancetre) continue;
-    }
-    couche.fermer({ refocus, reason });
-  }
-}
-
-// src/ui/placement.js
-var MARGE = 8;
-function placerDepuisRect(element2, lireRect, { ecart = 0, haut = MARGE } = {}) {
-  const defilement = element2.scrollTop;
-  Object.assign(element2.style, { left: "0px", right: "", top: "0px", bottom: "", maxHeight: "", overflowY: "" });
-  const ancre = lireRect();
-  const rect = element2.getBoundingClientRect();
-  const bas = window.innerHeight - MARGE;
-  const dessous = Math.max(0, bas - Math.max(haut, ancre.bottom + ecart));
-  const dessus = Math.max(0, Math.min(ancre.top - ecart, bas) - haut);
-  const versHaut = rect.height > dessous && dessus > dessous;
-  const disponible = versHaut ? dessus : dessous;
-  const hauteur = Math.min(rect.height, disponible);
-  const top = versHaut ? ancre.top - ecart - hauteur : ancre.bottom + ecart;
-  element2.style.left = `${Math.max(MARGE, Math.min(ancre.left, document.documentElement.clientWidth - MARGE - rect.width))}px`;
-  element2.style.top = `${Math.max(haut, Math.min(top, bas - hauteur))}px`;
-  if (rect.height > disponible) {
-    element2.style.maxHeight = `${disponible}px`;
-    element2.style.overflowY = "auto";
-  }
-  element2.scrollTop = defilement;
-}
-var intersection = (a, b) => ({
-  left: Math.max(a.left, b.left),
-  top: Math.max(a.top, b.top),
-  right: Math.min(a.right, b.right),
-  bottom: Math.min(a.bottom, b.bottom)
-});
-function bornes(element2) {
-  let limites = { left: 0, top: -Infinity, right: document.documentElement.clientWidth, bottom: Infinity };
-  for (let ancetre = element2.parentElement; ancetre && ancetre !== document.body; ancetre = ancetre.parentElement) {
-    const style2 = getComputedStyle(ancetre);
-    if (style2.overflowX !== "visible" || style2.overflowY !== "visible") {
-      limites = intersection(limites, ancetre.getBoundingClientRect());
-    }
-    if (style2.position === "fixed") return intersection(limites, { left: 0, top: 0, right: Infinity, bottom: window.innerHeight });
-  }
-  return limites;
-}
-function placerMenu(liste) {
-  const positionDefilement = liste.scrollTop;
-  Object.assign(liste.style, { left: "", right: "", top: "", bottom: "", maxHeight: "", overflowY: "" });
-  if (liste.hidden) return;
-  if (liste.popover === "manual" && liste.matches(":popover-open")) {
-    placerDepuisRect(liste, () => liste.parentElement.getBoundingClientRect());
-    liste.scrollTop = positionDefilement;
-    return;
-  }
-  const limites = bornes(liste);
-  let rect = liste.getBoundingClientRect();
-  if (rect.right > limites.right - MARGE) {
-    liste.style.left = "auto";
-    liste.style.right = "0px";
-    rect = liste.getBoundingClientRect();
-    if (rect.left < limites.left + MARGE) liste.style.right = `${rect.left - (limites.left + MARGE)}px`;
-  }
-  rect = liste.getBoundingClientRect();
-  if (rect.bottom <= limites.bottom - MARGE) return;
-  const bouton = liste.parentElement.getBoundingClientRect();
-  const dessous = limites.bottom - MARGE - rect.top;
-  const dessus = bouton.top - (limites.top + MARGE);
-  if (dessus > dessous) {
-    liste.style.top = "auto";
-    liste.style.bottom = "100%";
-    if (rect.height <= dessus) return;
-  }
-  liste.style.maxHeight = `${Math.max(0, dessus > dessous ? dessus : dessous)}px`;
-  liste.style.overflowY = "auto";
-}
 
 // src/ui/popover.js
 var Popover = class _Popover {
