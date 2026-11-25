@@ -2,9 +2,21 @@
 // d'édition d'un article.
 import { expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
 export const repo = fileURLToPath(new URL('../../../../../', import.meta.url));
+
+/** À appeler avant la navigation, puis à attendre : contrôler les octets réellement reçus. */
+export async function verifierBundleServi(page) {
+	const variante = (url) => new URL(url).pathname.match(/\/prive\/javascript\/(tiptap_spip(?:\.min)?\.js)$/)?.[1];
+	const reponse = await page.waitForResponse((r) => Boolean(variante(r.url())));
+	const nom = variante(reponse.url());
+	assert.equal(reponse.status(), 200, 'Le bundle servi doit être reçu intégralement');
+	assert.ok((await reponse.body()).equals(readFileSync(`${repo}prive/javascript/${nom}`)),
+		`Le bundle servi (${nom}) diffère du checkout ${repo}`);
+}
 const driver = `${repo}tests/e2e/site.php`;
 const env = { ...process.env, SPIP_ROOT: process.env.TTS_SITE };
 // binaire PHP du site (php8.3 pour SPIP 4.2, par exemple)
