@@ -33,8 +33,10 @@
 La validation et la documentation de livraison (tâche 5) sont préparées : 1 574 tests unitaires,
 174 E2E (58 par navigateur, SPIP 4.4.21), build et documentation FR/EN validés.
 Surcoût de production du socle exporté : 14 047 octets avec `gzip -n -6` (+13,72 Kio).
-Une relecture de Claude reste attendue sur le socle complet avant la demande de fusion ;
-aucune demande n’a été publiée et les emojis ne sont pas commencés. Les preuves et les
+La relecture finale de Claude est approuvée : aucun nouveau défaut. La publication et la
+fusion du socle sont autorisées ; les emojis ne sont pas commencés.
+Le complément E2E SPIP 5 est empêché par une migration de base requise sur le site jetable,
+avant tout formulaire d’édition ; cette recette n’est pas validée. Les preuves et les
 anciens rapports intermédiaires sont archivés localement dans l’espace de travail du plan.
 
 ## Livraison et préparation
@@ -137,7 +139,7 @@ Décision d’exécution : le branchement interne de `retenirFournisseurs` dans 
 - [x] Documenter l’exemple public, limites et arbitrage de caractères sur les nouvelles pages suggestions français/anglais, avec liens depuis les pages de documentation développeur ; ne pas détourner le tutoriel FAQ. Mettre à jour l’état du socle seulement, laisser emojis à implémenter. Ajouter une entrée CHANGELOG pour l’API visible des intégrateurs ; régénérer les licences avec `npm run build`.
 - [x] Retirer les deux rapports intermédiaires `docs/superpowers/reviews/2026-11-25-suggestions-taches-1-2.md` et `docs/superpowers/reviews/2026-11-25-suggestions-tache-3.md`, ainsi que les liens vers eux dans le présent plan. Conserver les preuves locales et résumer les résultats définitifs dans la demande de fusion, sans publier des mesures d’états intermédiaires comme état final.
 - [x] Vérifier `git diff --check`, les chemins documentaires et la liste des fichiers ; commit `Documenter et valider le socle de suggestions`. Préparer la demande de fusion **socle → main** avec les vérifications réellement exécutées.
-- [ ] Faire relire en priorité la sortie Tab/Échap et l’isolation de l’historique avant fusion. Après fusion du socle, commencer le deuxième plan depuis le `main` actualisé.
+- [x] Faire relire en priorité la sortie Tab/Échap et l’isolation de l’historique avant fusion. Après fusion du socle, commencer le deuxième plan depuis le `main` actualisé.
 
 ## Contrôle de couverture avant exécution
 
