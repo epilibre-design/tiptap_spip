@@ -22,6 +22,12 @@ garde son `name`, ses classes et sa place dans le formulaire.
 
 ## 2. Barre d'outils
 
+Évolutions prévues : un [menu de suggestions réutilisable](../superpowers/specs/2026-11-25-menu-suggestions-design.md),
+puis sa première déclinaison, l’[insertion d’emojis](../superpowers/specs/2026-11-25-emojis-design.md),
+avec un bouton visible et « Plus… » ouvrant `emoji-picker-element`, ainsi qu’une liste inline
+dès le premier caractère autorisé après `:`. Les deux parcours utilisent le même catalogue
+anglais du picker ; l’espace ferme la liste inline. Ces évolutions restent à implémenter.
+
 Déclarative, décrite côté PHP par le pipeline `tiptap_spip_toolbars` et rendue par le registre de
 composants, dont la conception s'inspire de celui de markdown_editor (`Toolbar.registerComponent`).
 
