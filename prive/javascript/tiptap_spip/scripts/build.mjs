@@ -46,6 +46,7 @@ function ecrireLicences(metafile) {
 	paquets.add('remixicon');
 	paquets.add('emoji-picker-element-data');
 	const textes = [...paquets].sort().map(licence);
+	textes.push(`Emoji Add, Microsoft (SVG Repo 309597), MIT\nhttps://www.svgrepo.com/svg/309597/emoji-add\n\n${readFileSync(new URL('../src/ui/svg-add-emoji.LICENSE', import.meta.url), 'utf8').trim()}`);
 	writeFileSync(`${outdir}${LICENCES}`, `Composants tiers embarqués dans tiptap_spip.js, tiptap_spip.min.js et leur catalogue emoji.
 Généré par scripts/build.mjs : ne pas modifier à la main.
 

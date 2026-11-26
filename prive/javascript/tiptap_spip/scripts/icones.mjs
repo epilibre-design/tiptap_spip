@@ -57,9 +57,14 @@ const lignes = Object.entries(ICONES).map(([nom, fichier]) => {
 		.replace('<svg ', '<svg aria-hidden="true" focusable="false" ');
 	return `\t${nom}: '${svg}',`;
 });
+// Emoji Add de Microsoft, MIT (SVG Repo 309597) : géométrie originale, couleur héritée,
+// métadonnées et identifiants supprimés pour éviter les doublons entre boutons.
+const emoji = readFileSync(new URL('../src/ui/svg-add-emoji.svg', import.meta.url), 'utf8');
+const path = emoji.match(/<path d="([^"]+)"/)[1];
+lignes.push(`\temoji: '<svg class="svg-add-emoji" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="${path}"/></svg>',`);
 const sortie = fileURLToPath(new URL('../src/ui/icones.js', import.meta.url));
 writeFileSync(sortie, `// Généré par scripts/icones.mjs (npm run icones) : ne pas modifier à la main.
-// Icônes Remix Icon (https://remixicon.com), licence Apache-2.0.
+// Remix Icon : Apache-2.0 ; Emoji Add de Microsoft (SVG Repo 309597) : MIT.
 export const ICONES = {
 ${lignes.join('\n')}
 };

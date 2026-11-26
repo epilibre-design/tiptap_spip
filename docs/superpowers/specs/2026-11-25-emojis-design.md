@@ -347,8 +347,8 @@ la langue de l’interface ; les noms d’emojis ne sont pas traduits par cette 
 Classes `tts-` pour l’enveloppe ; adapter taille, thème et couleurs du picker par ses variables
 CSS publiques, sans recopier son interface interne. Utiliser l’icône locale `svg-add-emoji`
 ([source SVG Repo](https://www.svgrepo.com/svg/309597/emoji-add)), décorative et accompagnée
-d’un nom accessible pour le bouton. La fiche indique CC0 lors de l’étude ; conserver cette
-provenance plutôt que déclarer MIT sans autre source. Fermer et nettoyer au changement de mode,
+d’un nom accessible pour le bouton. La fiche actuelle attribue cette icône à Microsoft sous licence MIT, confirmée par
+[la licence du dépôt Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE). Conserver la notice MIT et la provenance avec le SVG. Fermer et nettoyer au changement de mode,
 à la fermeture du parent et à la destruction. Aucun événement tardif ne rouvre ou n’insère.
 
 | Cas | Résultat attendu |

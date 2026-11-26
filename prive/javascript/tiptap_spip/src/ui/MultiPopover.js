@@ -1,3 +1,4 @@
+import { creerBoutonEmoji } from '../emojis/bouton.js';
 import { Editor, getSchema } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { config } from '../config.js';
@@ -154,6 +155,9 @@ function multiEnLigne(contexte, existant) {
 		l.sous = sous;
 		l.sousUi = sousUi;
 		lierContexteSuggestions(sous, { wrapper, parent: popover });
+		const accesEmoji = creerBoutonEmoji({ editor: sous, ouvrir: sousUi.openEmoji });
+		accesEmoji.element.classList.add('tts-emoji-acces');
+		zone.prepend(accesEmoji.element);
 		sous.on('update', () => {
 			l.modifie = true;
 		});

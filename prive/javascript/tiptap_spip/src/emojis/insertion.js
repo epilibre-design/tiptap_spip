@@ -11,7 +11,7 @@ export function emojiAutorise({ editor, state = editor?.state, range = state?.se
 	const { doc } = state, a = doc.resolve(range.from), b = doc.resolve(range.to);
 	if (!a.parent.isTextblock || !a.sameParent(b)) return false;
 	for (let d = 0; d <= a.depth; d++) if (exclus.has(a.node(d).type.name)) return false;
-	let interdit = a.marks().some((m) => m.type.name === 'code');
+	let interdit = (range.from === range.to ? state.storedMarks ?? a.marks() : a.marks()).some((m) => m.type.name === 'code');
 	doc.nodesBetween(range.from, range.to, (n) => {
 		interdit ||= exclus.has(n.type.name) || (n.isAtom && !n.isText && n.type.name !== 'hardBreak')
 			|| n.marks.some((m) => m.type.name === 'code');
@@ -24,7 +24,7 @@ export function insererEmoji({ editor, range, unicode }) {
 	if (typeof unicode !== 'string' || !unicode.trim() || !emojiAutorise({ editor, range })) return false;
 	const { state } = editor;
 	const a = state.doc.resolve(range.from), b = state.doc.resolve(range.to);
-	const marks = a.marksAcross(b) ?? a.marks();
+	const marks = range.from === range.to ? state.storedMarks ?? a.marks() : a.marksAcross(b) ?? a.marks();
 	const tr = closeHistory(state.tr).replaceWith(range.from, range.to, state.schema.text(unicode, marks));
 	tr.setSelection(TextSelection.create(tr.doc, range.from + unicode.length));
 	editor.view.dispatch(tr);

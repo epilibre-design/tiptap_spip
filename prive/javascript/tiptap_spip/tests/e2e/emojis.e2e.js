@@ -77,9 +77,13 @@ test('erreur_tab_reessayer_sortie : erreur persistante et nouvel élément', asy
 	expect(await panneau(page).locator('.tts-suggestions-panneau__corps').evaluate((e) => document.activeElement === e)).toBe(true);
 	// Dépasser le délai de message natif : notre erreur ne disparaît pas.
 	await page.waitForTimeout(1800); await expect(panneau(page).getByRole('alert')).toBeVisible();
-	await page.keyboard.press('Tab'); await expect(retry).toBeFocused(); await page.keyboard.press('Tab');
+	await page.keyboard.press('Shift+Tab'); await expect(page.locator('#tts-emoji-before')).toBeFocused(); await parentIntact(page);
+	await rouvrir(page); await expect(retry).toBeVisible(); await expect(panneau(page).locator('emoji-picker')).toHaveCount(0);
+	await expect(panneau(page).locator('.tts-suggestions-panneau__corps')).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(retry).toBeFocused(); await page.keyboard.press('Tab');
 	await expect(page.locator('#tts-emoji-after')).toBeFocused(); await parentIntact(page);
-	await rouvrir(page); await expect(panneau(page).getByRole('alert')).toBeVisible();
+	await rouvrir(page); await expect(retry).toBeVisible(); await expect(panneau(page).locator('emoji-picker')).toHaveCount(0);
 	await page.unrouteAll({ behavior: 'wait' });
 	await panneau(page).getByRole('button', { name: 'Réessayer', exact: true }).click();
 	await expect(recherche(page)).toBeFocused(); await expect(panneau(page).getByRole('alert')).toHaveCount(0);
@@ -203,4 +207,58 @@ test.describe('inline emoji', () => {
 		await expect(liste(page).getByRole('option')).toHaveCount(6); await expect(liste(page).getByRole('option').first()).not.toHaveText('😇 :halo:');
 		expect(await page.evaluate(() => performance.getEntriesByType('resource').filter((r) => r.name.includes('en-emojibase.json')).length)).toBe(1);
 	});
+});
+
+test('bouton de barre : sélection remplacée, SVG décoratif, historique et curseur', async ({ page }) => {
+	await page.evaluate(() => [...window.__tts.instances][0].editor.commands.setTextSelection({ from: 1, to: 3 }));
+	const bouton = page.locator('.tts-toolbar .tts-outil--emoji');
+	await expect(bouton.locator('svg.svg-add-emoji')).toHaveAttribute('aria-hidden', 'true');
+	await bouton.click(); await expect(recherche(page)).toBeFocused(); await recherche(page).fill('heart');
+	await panneau(page).getByRole('option', { name: /^❤️, red heart,/ }).click(); await expect(panneau(page)).toHaveCount(0);
+	await page.keyboard.type('x');
+	expect(await page.evaluate(() => [...window.__tts.instances][0].editor.state.doc.textContent)).toBe('❤️x texte à conserver.');
+	await page.keyboard.press('Control+z'); expect(await page.evaluate(() => [...window.__tts.instances][0].editor.state.doc.textContent)).toBe('❤️ texte à conserver.');
+	await page.keyboard.press('Control+z'); expect(await page.evaluate(() => [...window.__tts.instances][0].editor.state.doc.textContent)).toBe('Un texte à conserver.');
+});
+
+test('petit bouton de note : sélection locale, parent et plein écran conservés', async ({ page }) => {
+	await page.evaluate(() => {
+		const i = [...window.__tts.instances][0]; i.togglePleinEcran(true); window.__noteBouton = i.ui.editNote(null);
+		window.__noteBouton.sous.commands.insertContent('note'); window.__noteBouton.sous.commands.setTextSelection({ from: 1, to: 5 });
+	});
+	await page.locator('.tts-note__bloc .tts-outil--emoji').click(); await expect(recherche(page)).toBeFocused();
+	await recherche(page).fill('heart'); await panneau(page).getByRole('option', { name: /^❤️, red heart,/ }).click();
+	await expect(panneau(page)).toHaveCount(0);
+	expect(await page.evaluate(() => window.__noteBouton.sous.state.doc.textContent)).toBe('❤️');
+	expect(await page.evaluate(() => window.__noteBouton.ouvert && [...window.__tts.instances][0].pleinEcran())).toBe(true);
+	expect(await page.evaluate(() => [...window.__tts.instances][0].editor.state.doc.textContent)).toBe('Un texte à conserver.');
+});
+
+test('petit bouton par langue de multi : insertion indépendante', async ({ page }) => {
+	await page.evaluate(() => {
+		window.__multiBouton = [...window.__tts.instances][0].ui.editMulti(null);
+		for (const [i, l] of window.__multiBouton.lignes.entries()) l.sous.commands.insertContent(i ? 'en' : 'fr');
+	});
+	for (const i of [0, 1]) {
+		await page.locator('.tts-multi__partie').nth(i).getByRole('button', { name: 'Emoji', exact: true }).click();
+		await expect(recherche(page)).toBeFocused(); await recherche(page).fill('heart');
+		await panneau(page).getByRole('option', { name: /^❤️, red heart,/ }).click(); await expect(panneau(page)).toHaveCount(0);
+	}
+	expect(await page.evaluate(() => window.__multiBouton.lignes.map((l) => l.sous.state.doc.textContent))).toEqual(['fr❤️', 'en❤️']);
+	expect(await page.evaluate(() => window.__multiBouton.ouvert)).toBe(true);
+});
+
+test('source, lecture seule et atome sélectionné : bouton désactivé, aucun remplacement', async ({ page }) => {
+	const bouton = page.locator('.tts-toolbar .tts-outil--emoji');
+	await page.evaluate(() => [...window.__tts.instances][0].toggleMode()); await expect(bouton).toBeDisabled();
+	await page.evaluate(() => [...window.__tts.instances][0].toggleMode());
+	await page.evaluate(() => [...window.__tts.instances][0].editor.setEditable(false)); await expect(bouton).toBeDisabled();
+	await page.evaluate(() => {
+		const e = [...window.__tts.instances][0].editor; e.setEditable(true);
+		e.commands.insertContentAt(1, { type: 'spipNote', attrs: { name: null, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'note' }] }] } });
+		e.commands.setNodeSelection(1);
+	});
+	await expect(bouton).toBeDisabled();
+	expect(await page.evaluate(() => [...window.__tts.instances][0].ui.openEmoji({}) === null)).toBe(true);
+	await expect(page.locator('.tts-note')).toHaveCount(1); await expect(panneau(page)).toHaveCount(0);
 });

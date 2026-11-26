@@ -150,3 +150,7 @@ it('Entrée sans choix actif garde sa fonction de paragraphe et n’ouvre pas le
 	touche(editor, 'Enter'); expect(openEmoji).not.toHaveBeenCalled();
 	expect(editor.state.doc.textContent).toBe(':h'); expect(editor.state.doc.childCount).toBe(2);
 });
+it('au curseur, respecte les marks actives avant la prochaine frappe', () => {
+	const { editor } = installer(); editor.commands.setItalic();
+	expect(insererEmoji({ editor, range: { from: 1, to: 1 }, unicode: '❤️' })).toBe(true); expect(source()).toBe('{❤️}');
+});

@@ -860,3 +860,12 @@ html.tts-plein-ecran :has(.tts-editor--plein-ecran) {
 }
 .tts-suggestions__action[hidden] { display: none; }
 .tts-suggestions__action[data-active="true"] { background: #dcecff; color: #111; }
+
+.tts-emoji-acces { margin: 0.15em 0; }
+.tts-emoji-acces svg { width: 1.2em; height: 1.2em; }
+.tts-emoji emoji-picker {
+	--background: #fff;
+	--border-color: transparent;
+	--outline-color: #3584e4;
+	color: #222;
+}

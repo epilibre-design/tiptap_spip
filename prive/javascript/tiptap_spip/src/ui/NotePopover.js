@@ -1,3 +1,4 @@
+import { creerBoutonEmoji } from '../emojis/bouton.js';
 import { Editor, getSchema } from '@tiptap/core';
 import { Selection } from '@tiptap/pm/state';
 import { schemaJSON } from '../editor/content.js';
@@ -117,6 +118,9 @@ export function openNotePopover(contexte, pos = null) {
 	});
 	sous.tiptapSpip = editor.tiptapSpip;
 	lierContexteSuggestions(sous, { wrapper, parent: popover });
+	const accesEmoji = creerBoutonEmoji({ editor: sous, ouvrir: sousUi.openEmoji });
+	accesEmoji.element.classList.add('tts-emoji-acces');
+	titre.after(accesEmoji.element);
 	// exposé pour les tests et les extensions
 	popover.sous = sous;
 	popover.sousUi = sousUi;

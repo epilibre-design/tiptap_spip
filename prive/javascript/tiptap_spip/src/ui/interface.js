@@ -1,3 +1,5 @@
+import { emojiAutorise, insererEmoji } from '../emojis/insertion.js';
+import { lireSelection, suivrePosition } from './popover.js';
 import 'emoji-picker-element/picker';
 import frEmoji from 'emoji-picker-element/i18n/fr';
 import enEmoji from 'emoji-picker-element/i18n/en';
@@ -25,10 +27,19 @@ import { creerOuvreurPanneau } from '../suggestions/PanneauSuggestions.js';
 export function creerInterface({ editor, wrapper, services, catalogue = null }) {
 	const ouvrirEmoji = (cible, parent, origin = {}) => {
 		if (!cible || cible.isDestroyed) return null;
+		lireSelection(cible);
+		const range = origin.range ?? { from: cible.state.selection.from, to: cible.state.selection.to };
+		if (!emojiAutorise({ editor: cible, range })) return null;
+		const debut = origin.onChoose ? null : suivrePosition(cible, range.from);
+		const fin = origin.onChoose ? null : suivrePosition(cible, range.to);
+		const terminer = (raison) => { debut?.fin(); fin?.fin(); origin.onClose?.(raison); };
 		lierContexteSuggestions(cible, { wrapper, parent });
-		return ouvrirPickerEmoji({ editor: cible, anchor: origin.anchor ?? origin.trigger, origin,
-			range: origin.range, onChoose: origin.onChoose, onClose: origin.onClose,
+		const panneau = ouvrirPickerEmoji({ editor: cible, anchor: origin.anchor ?? origin.trigger, origin,
+			range, onChoose: origin.onChoose ?? ((unicode) => insererEmoji({ editor: cible,
+				range: { from: debut.pos(), to: fin.pos() }, unicode })), onClose: terminer,
 			i18n: (wrapper.ownerDocument.documentElement.lang || 'fr').startsWith('fr') ? frEmoji : enEmoji });
+		if (!panneau) terminer({ reason: 'unavailable' });
+		return panneau;
 	};
 	const contexte = () => ({ editor: editor(), wrapper, services, titles: ui.titles, previews: ui.previews, ouvrirEmoji });
 	/**
