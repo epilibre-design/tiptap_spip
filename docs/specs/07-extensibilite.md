@@ -8,7 +8,9 @@ Le [socle de suggestions](../superpowers/specs/2026-11-25-menu-suggestions-desig
 implémenté : `ui.creerSuggestions(options)` renvoie une extension à enregistrer via
 `registerExtension` ; `ui.filtrerSuggestions(items, query)` fournit le classement commun.
 La liste et l’enveloppe des sélecteurs restent internes. Cette API est indépendante de la
-future déclinaison emoji ; aucun fournisseur n’est activé par défaut. L’exemple complet et
+déclinaison emoji native, dont le fournisseur `:` est activé dans les contextes autorisés.
+Le fournisseur du cœur garde `:` en cas de doublon ; retirer son bouton par le pipeline des
+barres laisse la saisie inline disponible. L’exemple complet et
 le contrat sont dans la [documentation développeur](../site/developper/suggestions.md).
 
 ## 1. Contrat d'une extension SPIP

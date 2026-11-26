@@ -1,19 +1,22 @@
+import AxeBuilder from '@axe-core/playwright';
+import { demarrerTransportsEmoji } from './emojis-transport.js';
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { configure, editer, module, verifierBundleServi, configurer, effacerConfig, lireConfig, activer, repo } from './site.js';
+import { configure, editer, module, verifierBundleServi, configurer, effacerConfig, lireConfig, activer, repo, enregistrer, texte, publier, crlf } from './site.js';
 
 configure(test);
 test.beforeEach(async ({ page }, info) => {
-	if (info.title.includes('repli sans champ') || info.title.includes('balise incompatible')) {
-		await page.addInitScript(({ incompatible }) => {
+	if (info.title.includes('repli sans champ') || info.title.includes('balise incompatible') || info.title.includes('chargement sans fin')) {
+		await page.addInitScript(({ incompatible, suspendu }) => {
 			class PickerDejaPresent extends HTMLElement {
 				dataSource = ''; locale = ''; i18n = {};
-				get database() { return incompatible ? {} : { ready: () => Promise.resolve() }; }
+				get database() { return incompatible ? {} : { ready: () => suspendu && !window.__debloquerPicker ? new Promise(() => {}) : Promise.resolve() }; }
 				constructor() { super(); this.attachShadow({ mode: 'open' }); }
 			}
 			customElements.define('emoji-picker', PickerDejaPresent);
-		}, { incompatible: info.title.includes('balise incompatible') });
+		}, { incompatible: info.title.includes('balise incompatible'), suspendu: info.title.includes('chargement sans fin') });
 	}
+	if (info.title.includes('IndexedDB indisponible')) await page.addInitScript(() => Object.defineProperty(window, 'indexedDB', { value: undefined }));
 	const bundle = verifierBundleServi(page);
 	await editer(page, 'Un texte à conserver.'); await bundle; await module(page);
 });
@@ -261,4 +264,118 @@ test('source, lecture seule et atome sélectionné : bouton désactivé, aucun r
 	await expect(bouton).toBeDisabled();
 	expect(await page.evaluate(() => [...window.__tts.instances][0].ui.openEmoji({}) === null)).toBe(true);
 	await expect(page.locator('.tts-note')).toHaveCount(1); await expect(panneau(page)).toHaveCount(0);
+});
+
+test('chargement sans fin : délai de dix secondes et nouvel essai récupérable', async ({ page }) => {
+	await page.clock.install(); await page.locator('.tts-toolbar .tts-outil--emoji').click();
+	await expect(panneau(page).getByRole('status')).toHaveText('Chargement des emojis…');
+	await page.clock.fastForward(10_000); const retry = panneau(page).getByRole('button', { name: 'Réessayer' });
+	await expect(retry).toBeVisible(); await page.evaluate(() => { window.__debloquerPicker = true; }); await retry.click();
+	await expect(panneau(page).getByRole('alert')).toHaveCount(0); await expect(panneau(page).getByRole('status')).toHaveCount(0);
+	await page.keyboard.press('Escape'); await expect(panneau(page)).toHaveCount(0);
+});
+
+test('langue SPIP conservée quand html lang est différent', async ({ page }) => {
+	expect(await page.evaluate(() => window.spipConfig.tiptap_spip.lang)).toBe('fr');
+	await page.evaluate(() => { document.documentElement.lang = 'en'; });
+	await page.locator('.tts-toolbar .tts-outil--emoji').click(); await expect(panneau(page).getByRole('combobox', { name: 'Rechercher', exact: true })).toBeFocused();
+});
+
+test('IndexedDB indisponible : inline utilisable et erreur limitée au picker', async ({ page }) => {
+	await page.evaluate(() => { const e = [...window.__tts.instances][0].editor; e.commands.clearContent(); e.view.focus(); });
+	await page.keyboard.type(':heart'); await expect(page.locator('.tts-suggestions').getByRole('option').first()).toHaveText('❤️ :heart:');
+	await page.locator('.tts-suggestions').getByRole('button', { name: 'Plus…' }).click();
+	await expect(panneau(page).getByRole('button', { name: 'Réessayer' })).toBeVisible();
+	await page.keyboard.press('Escape'); await page.keyboard.type(' :heart');
+	await expect(page.locator('.tts-suggestions').getByRole('option').first()).toHaveText('❤️ :heart:');
+});
+
+test('JSON indisponible : erreur inline distincte, éditeur utilisable', async ({ page }) => {
+	await page.route('**/tiptap_spip_emoji/*/en-emojibase.json', (route) => route.fulfill({ status: 503, body: 'Indisponible' }));
+	await page.evaluate(() => { const e = [...window.__tts.instances][0].editor; e.commands.clearContent(); e.view.focus(); });
+	await page.keyboard.type(':h'); await expect(page.locator('.tts-suggestions').getByRole('status')).toHaveText('Impossible de charger les emojis.');
+	await page.keyboard.type(' '); await expect(page.locator('.tts-suggestions')).toHaveCount(0);
+	expect(await page.evaluate(() => [...window.__tts.instances][0].editor.state.doc.textContent)).toBe(':h ');
+	await page.locator('.tts-toolbar .tts-outil--emoji').click(); await expect(panneau(page).getByRole('button', { name: 'Réessayer' })).toBeVisible();
+});
+
+test('cache déjà initialisé hors ligne : picker et inline restent utilisables', async ({ page }) => {
+	await page.evaluate(() => { const e = [...window.__tts.instances][0].editor; e.commands.clearContent(); e.view.focus(); });
+	await page.keyboard.type(':h'); await expect(page.locator('.tts-suggestions').getByRole('option')).toHaveCount(6); await page.keyboard.press('Escape');
+	const bouton = page.locator('.tts-toolbar .tts-outil--emoji'); await bouton.click(); await expect(recherche(page)).toBeFocused();
+	await expect(panneau(page).getByRole('menuitem').first()).toBeVisible(); await page.keyboard.press('Escape');
+	try {
+		await page.context().setOffline(true); await bouton.click(); await expect(recherche(page)).toBeFocused();
+		await expect(panneau(page).getByRole('menuitem').first()).toBeVisible(); await page.keyboard.press('Escape');
+		await page.evaluate(() => [...window.__tts.instances][0].editor.view.focus()); await page.keyboard.type(' :heart');
+		await expect(page.locator('.tts-suggestions').getByRole('option').first()).toHaveText('❤️ :heart:');
+	} finally { await page.context().setOffline(false); }
+});
+
+test('versions de catalogue isolées : préférences conservées par version, anciennes bases gardées', async ({ page }) => {
+	const bouton = page.locator('.tts-toolbar .tts-outil--emoji');
+	const original = readFileSync(`${repo}prive/javascript/tiptap_spip_emoji/1.8.0/en-emojibase.json`);
+	await page.route('**/tts-catalogue-v*.json', (r) => r.fulfill({ status: 200, contentType: 'application/json', headers: { etag: '"fixture"' }, body: original }));
+	const configurerVersion = (version) => page.evaluate((version) => {
+		const c = window.spipConfig.tiptap_spip.emojis; c.locale = `en-tiptap-spip-fixture-${version}`; c.url = new URL(`/tts-catalogue-${version}.json`, location.href).href;
+	}, version);
+	await configurerVersion('v1'); await bouton.click(); await expect(recherche(page)).toBeFocused();
+	await page.evaluate(async () => document.querySelector('emoji-picker').database.setPreferredSkinTone(4)); await page.keyboard.press('Escape');
+	await bouton.click(); await expect(recherche(page)).toBeFocused();
+	expect(await page.evaluate(() => document.querySelector('emoji-picker').database.getPreferredSkinTone())).toBe(4); await page.keyboard.press('Escape');
+	await configurerVersion('v2'); await bouton.click(); await expect(recherche(page)).toBeFocused();
+	expect(await page.evaluate(() => document.querySelector('emoji-picker').database.getPreferredSkinTone())).toBe(0);
+	const bases = await page.evaluate(async () => (await indexedDB.databases()).map((b) => b.name));
+	expect(bases).toContain('emoji-picker-element-en-tiptap-spip-fixture-v1'); expect(bases).toContain('emoji-picker-element-en-tiptap-spip-fixture-v2');
+});
+
+test('conservation Unicode : enregistrement, rechargement et rendu public Unicode', async ({ page }) => {
+	const initial = '😄 👍🏽 👩‍💻 🇫🇷 ❤️ et [a 😄 b] ; [?a 😄 b] ; [ABBR 😄|explication].\n\nTexte[[ Une note ❤️. ]] <multi>[fr]cœur ❤️[en]heart ❤️</multi>.';
+	const bundle = verifierBundleServi(page); const id = await editer(page, initial); await bundle; const recu = texte(id);
+	await enregistrer(page); expect(texte(id)).toBe(crlf(recu));
+	const servi = verifierBundleServi(page); await page.goto(`/ecrire/?exec=article_edit&id_article=${id}`); await servi;
+	await enregistrer(page); expect(texte(id)).toBe(crlf(recu));
+	publier(id); await page.goto(`/spip.php?page=article&id_article=${id}&var_mode=calcul`);
+	for (const unicode of ['😄', '👍🏽', '👩‍💻', '🇫🇷', '❤️']) expect(await page.locator('body').innerText()).toContain(unicode);
+});
+
+test('picker réel accessible dans une note : aucune violation axe nouvelle', async ({ page }) => {
+	await ouvrir(page); await expect(recherche(page)).toBeFocused(); await expect(panneau(page).getByRole('menuitem').first()).toBeVisible();
+	const rapport = await new AxeBuilder({ page }).include('.tts-suggestions-panneau').analyze();
+	expect(rapport.violations).toEqual([]);
+});
+
+test.describe('transports réels', () => {
+	let transports;
+	test.beforeAll(async () => { transports = await demarrerTransportsEmoji({ site: process.env.TTS_SITE, base: process.env.TTS_URL, php: process.env.TTS_PHP || 'php' }); });
+	test.afterAll(async () => { await transports?.close(); });
+	const cloner = async (page, browser, base, proxy) => {
+		const contexte = await browser.newContext({ ignoreHTTPSErrors: true, userAgent: 'tts-e2e', locale: 'fr-FR', ...(proxy ? { proxy: { server: proxy } } : {}) });
+		try {
+			await contexte.addCookies((await page.context().cookies()).map((c) => ({ ...c, domain: new URL(base).hostname })));
+			const autre = await contexte.newPage(); const servi = verifierBundleServi(autre); const url = new URL(page.url());
+			await autre.goto(new URL(url.pathname + url.search, base).href); await servi; await module(autre);
+			return { page: autre, fermer: () => contexte.close() };
+		} catch (e) { await contexte.close(); throw e; }
+	};
+	for (const etag of [false, true]) test(`HTTP non sécurisé ${etag ? 'avec' : 'sans'} ETag, crypto.subtle réellement absent`, async ({ page, browser }) => {
+		const alias = `http://tts-emojis.test:${new URL(process.env.TTS_URL).port || 80}`;
+		const autre = await cloner(page, browser, alias, transports.proxy); const p = autre.page;
+		try {
+			expect(await p.evaluate(() => ({ secure: isSecureContext, subtle: typeof crypto.subtle }))).toEqual({ secure: false, subtle: 'undefined' });
+			await p.route('**/tiptap_spip_emoji/*/en-emojibase.json', (r) => r.fulfill({ status: 200, contentType: 'application/json',
+				headers: etag ? { etag: '"fixture"' } : {}, body: readFileSync(`${repo}prive/javascript/tiptap_spip_emoji/1.8.0/en-emojibase.json`) }));
+			await p.locator('.tts-toolbar .tts-outil--emoji').click();
+			if (etag) await expect(recherche(p)).toBeFocused();
+			else { await expect(panneau(p).getByRole('button', { name: 'Réessayer' })).toBeVisible(); await expect(panneau(p).locator('emoji-picker')).toHaveCount(0); }
+		} finally { await autre.fermer(); }
+	});
+	test('HTTPS réel sans ETag : crypto.subtle disponible et picker prêt', async ({ page, browser }) => {
+		const autre = await cloner(page, browser, transports.https); const p = autre.page;
+		try {
+			expect(await p.evaluate(() => ({ secure: isSecureContext, digest: typeof crypto.subtle?.digest }))).toEqual({ secure: true, digest: 'function' });
+			await p.route('**/tiptap_spip_emoji/*/en-emojibase.json', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: readFileSync(`${repo}prive/javascript/tiptap_spip_emoji/1.8.0/en-emojibase.json`) }));
+			await p.locator('.tts-toolbar .tts-outil--emoji').click(); await expect(recherche(p)).toBeFocused();
+		} finally { await autre.fermer(); }
+	});
 });

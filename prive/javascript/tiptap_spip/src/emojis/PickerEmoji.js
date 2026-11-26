@@ -11,14 +11,14 @@ export function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.
 	const debut = suivrePosition(editor, range.from), fin = suivrePosition(editor, range.to);
 	const initial = editor.state.doc.slice(range.from, range.to).content;
 	const doc = editor.view.dom.ownerDocument;
-	let ouvert = true, accepte = false, essai = 0, pret = false, retirerChoix;
+	let ouvert = true, accepte = false, essai = 0, pret = false, retirerChoix, attente;
 	let panneau;
 	const cibleFocus = (picker) => {
 		if (!ouvert) return;
 		(picker?.shadowRoot?.querySelector('input[type="search"]') ?? panneau.corps).focus();
 	};
 	const terminer = (raison) => {
-		ouvert = false; essai++; retirerChoix?.(); debut.fin(); fin.fin();
+		ouvert = false; essai++; clearTimeout(attente); retirerChoix?.(); debut.fin(); fin.fin();
 		onClose?.(raison);
 	};
 	const fragment = doc.createElement('div');
@@ -26,7 +26,7 @@ export function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.
 	if (!panneau) { terminer({ reason: 'unavailable' }); return null; }
 	const erreur = () => {
 		if (!ouvert) return;
-		pret = false; retirerChoix?.();
+		pret = false; essai++; clearTimeout(attente); retirerChoix?.();
 		const contenu = doc.createElement('div');
 		const message = doc.createElement('p'); message.setAttribute('role', 'alert'); message.textContent = label('emoji_erreur');
 		const retry = doc.createElement('button'); retry.type = 'button'; retry.textContent = label('emoji_reessayer');
@@ -35,6 +35,7 @@ export function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.
 	};
 	function charger() {
 		const numero = ++essai;
+		clearTimeout(attente);
 		pret = false; retirerChoix?.();
 		const donnees = config().emojis;
 		if (!donnees?.url || !donnees.locale) { erreur(); return; }
@@ -66,9 +67,10 @@ export function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.
 			contenu.append(status, picker); panneau.remplacer(contenu);
 			const database = picker.database;
 			if (typeof database?.ready !== 'function') throw new Error('Base du picker incompatible');
+			attente = setTimeout(erreur, 10_000);
 			Promise.resolve(database.ready()).then(() => {
 				if (!ouvert || numero !== essai) return;
-				pret = true; status.remove(); panneau.placer();
+				clearTimeout(attente); pret = true; status.remove(); panneau.placer();
 				// Le rendu du composant finit dans la même file de microtâches que ready().
 				queueMicrotask(() => { if (ouvert && numero === essai) cibleFocus(picker); });
 			}, () => { if (ouvert && numero === essai) erreur(); });

@@ -1,5 +1,21 @@
 # Troubleshoot
 
+## The emoji picker shows an error
+
+Click **Retry**. This button also appears after ten seconds without a response. The picker
+uses the browser’s IndexedDB storage. When that storage is blocked, `:heart` suggestions
+remain available as long as the catalogue can be loaded. On an HTTP site without an ETag
+header for the JSON, use HTTPS to provide the required cryptographic API.
+
+Search names remain in English. Preferred skin tone applies to the full picker; inline
+suggestions insert the base form. Favorites and skin tone are kept for a catalogue version
+and reset when that version changes.
+
+If the site’s MySQL connection uses `utf8` rather than `utf8mb4`, SPIP may store non-BMP
+characters as numeric entities. The editor preserves the received source and displays it as
+a raw fragment. Typing `:h` immediately after that fragment requires an ordinary space.
+This delivery was tested with SQLite; MySQL was not tested in this environment.
+
 ## I cannot see the editor
 
 Check that the plugin is **active** under **Configuration → Plugin management**. Then open

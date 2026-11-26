@@ -21,7 +21,7 @@ beforeEach(() => {
 	mode = ''; instances = [];
 	globalThis.spipConfig = { tiptap_spip: { emojis: { url: 'https://exemple.test/1.8.0/en.json', version: '1.8.0', locale: 'en-tiptap-spip-1.8.0' } } };
 });
-afterEach(() => { demonter(); delete globalThis.spipConfig; vi.restoreAllMocks(); });
+afterEach(() => { vi.useRealTimers(); document.documentElement.lang = ''; demonter(); delete globalThis.spipConfig; vi.restoreAllMocks(); });
 const ouvrir = (options = {}) => {
 	const { ui, editor } = monter('Un texte'); const trigger = document.createElement('button'); trigger.type = 'button'; document.querySelector('.tts-editor').append(trigger);
 	const onChoose = vi.fn(() => true); const onClose = vi.fn();
@@ -108,4 +108,17 @@ it('une exception de commande est journalisée, un éditeur détruit ne reçoit 
 	const { picker, editor } = ouvrir({ onChoose: () => { throw new Error('commande'); } });
 	picker.attente.resolve(); await tick(); choix(picker); expect(journal).toHaveBeenCalledOnce(); expect(picker.isConnected).toBe(true);
 	editor.destroy(); choix(picker); expect(picker.isConnected).toBe(false);
+});
+it('un ready suspendu donne accès à Réessayer après dix secondes, sans retour tardif', async () => {
+	vi.useFakeTimers(); const { picker } = ouvrir();
+	await vi.advanceTimersByTimeAsync(10_000);
+	expect(document.querySelector('[role=alert]')).not.toBeNull(); expect(picker.isConnected).toBe(false);
+	picker.attente.resolve(); await vi.advanceTimersByTimeAsync(0); expect(document.querySelector('[role=alert]')).not.toBeNull();
+	document.querySelector('.tts-suggestions-panneau button').click(); const autre = instances.at(-1);
+	expect(autre).not.toBe(picker); autre.attente.resolve(); await vi.advanceTimersByTimeAsync(0);
+	expect(document.querySelector('[role=alert]')).toBeNull(); expect(autre.shadowRoot.activeElement?.type).toBe('search');
+});
+it('l’i18n du picker suit la langue SPIP explicite même si html lang diffère', () => {
+	document.documentElement.lang = 'fr'; globalThis.spipConfig.tiptap_spip.lang = 'en';
+	const { picker } = ouvrir(); expect(picker.i18n.searchLabel).toBe('Search');
 });

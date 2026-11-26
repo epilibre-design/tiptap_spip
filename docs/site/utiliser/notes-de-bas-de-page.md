@@ -22,6 +22,9 @@ La zone **Texte de la note** est un petit éditeur : elle accepte notamment la m
 liens et les listes. Elle ne possède pas sa propre barre d’outils et ne permet pas d’imbriquer une
 note dans une autre.
 
+Le bouton **Emoji** près de cette zone ouvre le même sélecteur que la barre principale. Les
+suggestions `:heart` sont aussi disponibles ; choisir un emoji ne valide pas la note.
+
 ## Rappeler une note
 
 Pour ajouter un autre appel vers une note existante, créez une note avec le même **Nom**,

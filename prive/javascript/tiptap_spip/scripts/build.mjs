@@ -5,6 +5,7 @@ import { build, context } from 'esbuild';
 import { copierCatalogueEmojis } from './emojis.mjs';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 
 const outdir = fileURLToPath(new URL('../../', import.meta.url));
 const modules = fileURLToPath(new URL('../node_modules/', import.meta.url));
@@ -20,6 +21,14 @@ const common = {
 	legalComments: 'none',
 	banner: { js: `/*! tiptap_spip, GPL-3.0-or-later. Licences des composants tiers : ${LICENCES} */` },
 	logLevel: 'info',
+	plugins: [{ name: 'emoji-css-format', setup(builder) {
+		// Adaptation de forme du picker Apache-2.0 1.29.1 : deux espaces après des
+		// déclarations CSS, sans effet sur le rendu ; garder les bundles sans erreurs diff --check.
+		builder.onLoad({ filter: /[\\/]emoji-picker-element[\\/]picker\.js$/ }, ({ path }) => ({
+			contents: readFileSync(path, 'utf8').replace(/(--(?:num-groups|indicator-opacity):[^\n]*;)[ \t]+(?=\r?$)/gm, '$1'),
+			loader: 'js', resolveDir: dirname(path),
+		}));
+	} }],
 };
 const variants = [
 	{ ...common, outfile: `${outdir}tiptap_spip.js`, metafile: true },

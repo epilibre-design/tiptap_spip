@@ -24,10 +24,17 @@ garde son `name`, ses classes et sa place dans le formulaire.
 
 Le [socle de suggestions](../superpowers/specs/2026-11-25-menu-suggestions-design.md) est
 implémenté : les plugins peuvent proposer une liste inline et le cœur dispose d’une enveloppe
-interne pour ses sélecteurs explicites. Aucun fournisseur n’est activé par défaut.
-L’[insertion d’emojis](../superpowers/specs/2026-11-25-emojis-design.md) reste à implémenter :
-bouton et « Plus… » ouvrant `emoji-picker-element`, liste inline dès le premier caractère
-autorisé après `:`, catalogue anglais partagé, fermeture à l’espace.
+interne pour ses sélecteurs explicites.
+L’[insertion d’emojis](../superpowers/specs/2026-11-25-emojis-design.md) est implémentée :
+le bouton `emoji` et « Plus… » ouvrent le picker local, l’inline propose six résultats dès un
+caractère autorisé après `:`, puis se ferme à l’espace. Le catalogue est anglais et l’insertion
+écrit du texte Unicode. Le bouton suit `caracteres` en édition, `code` dans les forums et `lien`
+dans la barre minimale ; la barre `modele` conserve seulement l’accès inline par défaut.
+Notes et langues de multi ont chacune un petit bouton ciblant leur propre sélection.
+Échap revient au déclencheur, les teintes consomment le premier Échap, Tab sort par les
+sentinelles ; le parent et le plein écran restent ouverts. En erreur ou après dix secondes de
+chargement sans réponse, « Réessayer » crée un nouvel élément. La langue de l’interface SPIP
+pilote les libellés du picker ; le vocabulaire de recherche reste anglais.
 
 Déclarative, décrite côté PHP par le pipeline `tiptap_spip_toolbars` et rendue par le registre de
 composants, dont la conception s'inspire de celui de markdown_editor (`Toolbar.registerComponent`).

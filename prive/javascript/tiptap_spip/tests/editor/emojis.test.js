@@ -154,3 +154,7 @@ it('au curseur, respecte les marks actives avant la prochaine frappe', () => {
 	const { editor } = installer(); editor.commands.setItalic();
 	expect(insererEmoji({ editor, range: { from: 1, to: 1 }, unicode: '❤️' })).toBe(true); expect(source()).toBe('{❤️}');
 });
+it('entité numérique brute : pas de préfixe après l’atome, espace U+0020 autorisé', async () => {
+	const { editor } = installer('&#128512;'); await saisir(editor, ':smi'); expect(options()).toHaveLength(0);
+	await saisir(editor, ' :smi'); expect(options().length).toBeGreaterThan(0); expect(source()).toBe('&#128512;:smi :smi');
+});

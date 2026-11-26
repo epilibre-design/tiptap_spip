@@ -31756,8 +31756,8 @@ function createRoot(shadowRoot, props) {
   });
   createEffect(() => {
     state.pickerStyle = `
-      --num-groups: ${state.groups.length}; 
-      --indicator-opacity: ${state.searchMode ? 0 : 1}; 
+      --num-groups: ${state.groups.length};
+      --indicator-opacity: ${state.searchMode ? 0 : 1};
       --num-skintones: ${NUM_SKIN_TONES};`;
   });
   createEffect(() => {
@@ -32487,7 +32487,7 @@ function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.s
   const debut = suivrePosition(editor, range.from), fin = suivrePosition(editor, range.to);
   const initial = editor.state.doc.slice(range.from, range.to).content;
   const doc4 = editor.view.dom.ownerDocument;
-  let ouvert2 = true, accepte = false, essai = 0, pret = false, retirerChoix;
+  let ouvert2 = true, accepte = false, essai = 0, pret = false, retirerChoix, attente;
   let panneau;
   const cibleFocus = (picker) => {
     if (!ouvert2) return;
@@ -32496,6 +32496,7 @@ function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.s
   const terminer = (raison) => {
     ouvert2 = false;
     essai++;
+    clearTimeout(attente);
     retirerChoix?.();
     debut.fin();
     fin.fin();
@@ -32510,6 +32511,8 @@ function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.s
   const erreur = () => {
     if (!ouvert2) return;
     pret = false;
+    essai++;
+    clearTimeout(attente);
     retirerChoix?.();
     const contenu = doc4.createElement("div");
     const message = doc4.createElement("p");
@@ -32524,6 +32527,7 @@ function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.s
   };
   function charger2() {
     const numero = ++essai;
+    clearTimeout(attente);
     pret = false;
     retirerChoix?.();
     const donnees = config().emojis;
@@ -32571,8 +32575,10 @@ function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.s
       panneau.remplacer(contenu);
       const database = picker.database;
       if (typeof database?.ready !== "function") throw new Error("Base du picker incompatible");
+      attente = setTimeout(erreur, 1e4);
       Promise.resolve(database.ready()).then(() => {
         if (!ouvert2 || numero !== essai) return;
+        clearTimeout(attente);
         pret = true;
         status.remove();
         panneau.placer();
@@ -33499,7 +33505,7 @@ function creerInterface({ editor, wrapper, services, catalogue = null }) {
         unicode
       })),
       onClose: terminer,
-      i18n: (wrapper.ownerDocument.documentElement.lang || "fr").startsWith("fr") ? fr_default : en_default
+      i18n: (config().lang ?? wrapper.ownerDocument.documentElement.lang).startsWith("en") ? en_default : fr_default
     });
     if (!panneau) terminer({ reason: "unavailable" });
     return panneau;

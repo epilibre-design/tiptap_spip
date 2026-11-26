@@ -1,6 +1,6 @@
 # Insertion d’emojis dans l’éditeur SPIP
 
-Statut : spécifications à implémenter. Arbitrage du demandeur après relecture :
+Statut : implémentation et recette automatisée réalisées ; relecture finale avant fusion. Arbitrage du demandeur après relecture :
 **catalogue anglais d’`emoji-picker-element` partagé avec l’inline, insertion de texte Unicode,
 sans nœud emoji Tiptap ; ouverture inline dès un caractère autorisé après `:`**.
 Ce choix remplace l’extraction du catalogue de `@tiptap/extension-emoji`. Les deux parcours
@@ -136,8 +136,9 @@ Libellés d’interface traduits par SPIP en français et anglais. Conserver nom
 mots-clés amont comme seul vocabulaire de recherche, pour la frappe comme pour le panneau.
 Utiliser par exemple `:heart`, sans ajouter `:coeur` ou `:cœur` comme alias. Aucune traduction,
 liste de synonymes locale ou adaptation de la recherche selon la langue de l’interface.
-Le multilinguisme du catalogue est hors périmètre. L’objet `i18n` du picker peut traduire
-les commandes de l’interface tout en gardant les données et la recherche en anglais.
+Le multilinguisme du catalogue est hors périmètre. L’objet `i18n` du picker traduit les commandes en français ou anglais selon `config().lang`,
+transmis par SPIP dans le même contexte que les libellés. `<html lang>` sert seulement de
+repli lorsque cette configuration manque ; le catalogue et la recherche restent anglais.
 
 ## Intégration du composant et cycle d’une ouverture
 
@@ -149,7 +150,9 @@ et vérifier les capacités nécessaires (`dataSource`, `locale`, `database.read
 de choix). Une incompatibilité produit une erreur locale au panneau, pas à l’éditeur ;
 ne pas redéfinir la balise ni recourir silencieusement au catalogue de l’autre plugin.
 
-L’enveloppe possède un état de chargement et d’erreur indépendant. Observer
+L’enveloppe possède un état de chargement et d’erreur indépendant. Après **10 secondes**
+sans résolution ni rejet de `ready()`, elle affiche son erreur et « Réessayer », invalide cet
+essai et ignore sa réponse tardive ; un réessai crée un nouvel élément. Observer
 `picker.database.ready()` : le message natif du picker peut disparaître après une attente
 longue. Une ouverture ou un essai de rechargement crée un nouvel élément ; ne pas réutiliser
 un élément dont l’initialisation a échoué. Ignorer le résultat de `ready()` après fermeture.

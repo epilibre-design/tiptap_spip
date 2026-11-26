@@ -1,3 +1,4 @@
+import { config } from '../config.js';
 import { emojiAutorise, insererEmoji } from '../emojis/insertion.js';
 import { lireSelection, suivrePosition } from './popover.js';
 import 'emoji-picker-element/picker';
@@ -37,7 +38,7 @@ export function creerInterface({ editor, wrapper, services, catalogue = null }) 
 		const panneau = ouvrirPickerEmoji({ editor: cible, anchor: origin.anchor ?? origin.trigger, origin,
 			range, onChoose: origin.onChoose ?? ((unicode) => insererEmoji({ editor: cible,
 				range: { from: debut.pos(), to: fin.pos() }, unicode })), onClose: terminer,
-			i18n: (wrapper.ownerDocument.documentElement.lang || 'fr').startsWith('fr') ? frEmoji : enEmoji });
+			i18n: (config().lang ?? wrapper.ownerDocument.documentElement.lang).startsWith('en') ? enEmoji : frEmoji });
 		if (!panneau) terminer({ reason: 'unavailable' });
 		return panneau;
 	};

@@ -29,6 +29,12 @@ dans `src/spip/regex.js` (source unique, avec référence au fichier PHP d'origi
 | `RE_BACKTICKS_*` | `textwheel/wheels/spip/backticks.json` / `backticks.php` |
 | `RE_ABBR`, listes, tableaux, intertitres | `textwheel/wheels/spip/*.json` (le format YAML des wheels est obsolète) |
 
+L’insertion d’emojis ne requiert aucune règle du parseur ou du sérialiseur : elle écrit du texte
+Unicode. Le corpus `emojis.spip` et les tests dédiés couvrent la conservation des séquences,
+les marques atomiques, les crochets, le code et les empreintes internes des notes et multis.
+Une édition dans un autre paragraphe conserve la forme du code intact ; réécrire son propre
+paragraphe peut utiliser la forme canonique existante en backticks.
+
 ## 2. Parseur : étapes
 
 Le parseur suit l'ordre de TextWheel. Chaque étape est une **règle enregistrée** dans un registre

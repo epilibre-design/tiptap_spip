@@ -5,6 +5,7 @@ Object.assign(window.spipConfig, {
 		prive: [(#ENV{prive,oui}|=={oui}|?{true,false})],
 		[(#REM) public, crayons, mode, niveaux, champs (page configurer_tiptap_spip) ]
 		...[(#VAL|tiptap_spip_config_js)],
+		lang: [(#LANG|tiptap_spip_js_string)],
 		[(#REM) langue de la page transmise aux services à la demande (Crayons…), séparateur & pour le JS (spec 11) ]
 		services: [(#URL_PAGE*{tiptap_spip_services}|parametre_url{lang,#ENV{lang},&}|url_absolue|tiptap_spip_js_string)],
 		toolbars: [(#VAL|tiptap_spip_barres_json)],

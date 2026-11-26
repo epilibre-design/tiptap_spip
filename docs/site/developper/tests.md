@@ -92,3 +92,12 @@ Depuis la racine du dépôt, pour les tests PHP sans site SPIP :
 composer install
 composer tests-unit
 ```
+
+## Recette des transports du sélecteur emoji
+
+`emojis.e2e.js` démarre ses fixtures HTTP et TLS locales automatiquement. Installez OpenSSL
+et indiquez le PHP compatible avec le site dans `TTS_PHP`. Un proxy local dessert
+`tts-emojis.test` sans DNS externe pour vérifier un contexte HTTP réellement non sécurisé ;
+un serveur PHP auxiliaire et un certificat temporaire vérifient HTTPS. Les deux lisent le
+site existant, puis s’arrêtent ; aucun site ni base n’est recréé. Les en-têtes ETag du seul
+JSON peuvent être simulés, les octets du bundle reçu restent contrôlés.

@@ -21,7 +21,39 @@ Chromium ; Firefox/WebKit vérifient la molette, la zone de barre et les événe
 non annulés. Validation du socle le 25 novembre 2026 : 1 574 tests unitaires et 174 E2E
 réussis (58 dans chacun des trois navigateurs, sur SPIP 4.4.21), build et documentation stricte
 validés. Le test de sélection du multi attend désormais la sélection réellement lue par
-ProseMirror avant d’ouvrir le dialogue. La recette du picker et du catalogue emoji appartient au deuxième lot.
+ProseMirror avant d’ouvrir le dialogue. La recette du picker et du catalogue emoji est décrite ci-dessous.
+
+## Emojis Unicode
+
+Validation du lot le 26 novembre 2026 : 1 690 tests Vitest, 75 tests PHPUnit et 244 E2E
+réussis sur SPIP 4.4.21 (82 Chromium, 81 Firefox, 81 WebKit). Les deux autres cas sont le
+benchmark réservé à Chromium : médiane de 93,6 ms pour 50 000 caractères, sous 150 ms.
+SPIP 5 : 87/87 E2E emoji réussis dans les trois navigateurs, bundle servi vérifié.
+Documentation FR/EN stricte et build reproductible validés ; comparaison SPIP : 164/165
+fichiers équivalents et un écart ancien accepté. Surcoût JS/CSS cumulé avec le socle :
+32 914 octets gzip ; JSON séparé : 74 647 octets (`gzip -n -6 -c`).
+
+`tests/editor/emoji-catalogue.test.js` vérifie le classement sur les données réelles : `h` →
+`halo`, `heart` → ❤️, `smile` → 😄, alias correspondant et absence d’alias traduit. Les tests
+éditeur et UI couvrent les préfixes, marks/atomes, six options et Plus hors listbox, l’historique,
+les plages suivies et les choix tardifs. `tests/spip/emojis.test.js` et le corpus `emojis.spip`
+protègent les caractères, sélecteurs de variation, crochets, marques et contenus imbriqués.
+
+`emojis.e2e.js` utilise le picker réel dans Chromium, Firefox et WebKit : boutons et inline,
+note en plein écran, teintes, Tab/Maj+Tab, erreur et réessai, chargement suspendu, axe, données
+privées/publiques identiques et persistance après enregistrement. Les cas réseau testent un
+vrai nom HTTP non sécurisé via un proxy local (`isSecureContext === false`, `crypto.subtle`
+absent), avec/sans ETag, et une terminaison TLS locale avec certificat de recette. Les seuls
+fichiers interceptés sont les JSON de catalogue ; les octets du bundle servi sont contrôlés.
+Les transports de recette démarrent et s’arrêtent automatiquement ; OpenSSL et le PHP du
+site sont nécessaires. IndexedDB indisponible, cache hors ligne et isolation des versions
+sont également couverts. Aucun site n’est réinitialisé.
+
+La recette SQL disponible utilise SQLite. Les connexions MySQL `utf8mb4` et `utf8` ne sont
+pas présentes dans cet environnement et ne sont pas annoncées comme testées. Les entités
+numériques reçues sont conservées en nœuds bruts, sans décodage global ; un atome suivi
+immédiatement de `:smi` ne déclenche rien, un espace U+0020 le permet. Les claviers Android
+réels restent hors de cette recette automatisée.
 
 ## 1. Corpus
 

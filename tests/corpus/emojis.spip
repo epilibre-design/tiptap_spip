@@ -1,0 +1,11 @@
+Texte Unicode : 😄 👍🏽 👩‍💻 🇫🇷 ❤️ et présentation texte ❤︎.
+
+Crochets [a 😄 b], [?a 😄 b] et [ABBR 😄|explication].
+
+{{Gras ❤️}} et {italique 👩‍💻}, `code 👍🏽` et <code>code 😄</code>.
+
+Texte[[ Une note ❤️ avec {{du gras 😄}}. ]] voisin.
+
+Texte <multi>[fr]Un cœur ❤️[en]A heart ❤️</multi> voisin.
+
+Littéraux : :smile: :) <3 et entités &#128512;:smi &#128512; :smi.
