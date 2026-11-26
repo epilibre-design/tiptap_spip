@@ -19591,10 +19591,12 @@ function fermerSuggestions({ parent, wrapper, editor, refocus = false, reason = 
 // src/suggestions/ListeSuggestions.js
 var compteur = 0;
 var ListeSuggestions = class {
-  constructor({ editor, labels, onChoose, onDismiss }) {
+  constructor({ editor, labels, onChoose, onDismiss, onAction, formatItem }) {
     this.dom = editor.view.dom;
     this.labels = labels;
     this.onChoose = onChoose;
+    this.formatItem = formatItem;
+    this.onAction = onAction;
     this.actif = -1;
     this.detruite = false;
     const doc4 = this.dom.ownerDocument;
@@ -19608,7 +19610,15 @@ var ListeSuggestions = class {
     this.liste.id = `tts-suggestions-${++compteur}`;
     this.liste.setAttribute("role", "listbox");
     this.liste.setAttribute("aria-label", labels.suggestions);
-    this.element.append(this.etat, this.liste);
+    this.action = doc4.createElement("button");
+    this.action.type = "button";
+    this.action.tabIndex = -1;
+    this.action.className = "tts-suggestions__action";
+    this.action.hidden = true;
+    this.action.addEventListener("click", () => {
+      if (!this.detruite && !this.action.hidden) this.onAction?.();
+    });
+    this.element.append(this.etat, this.liste, this.action);
     const contexte3 = contexteSuggestions(editor);
     (contexte3.parent?.element ?? contexte3.wrapper).append(this.element);
     this.element.showPopover?.();
@@ -19632,11 +19642,14 @@ var ListeSuggestions = class {
       if (!this.element.contains(e.target)) this.placer();
     }, true);
   }
-  update({ query, items = [], loading = false, error = false, clientRect: clientRect2 }) {
+  update({ query, items = [], loading = false, error = false, clientRect: clientRect2, actionLabel }) {
     if (this.detruite) return;
     this.query = query;
     this.items = loading || error ? [] : items;
     this.actif = -1;
+    this.action.hidden = !this.items.length || !actionLabel;
+    this.action.textContent = actionLabel ?? "";
+    this.action.dataset.active = "false";
     this.rect = clientRect2;
     this.dom.removeAttribute("aria-activedescendant");
     this.etat.textContent = loading ? this.labels.loading : error ? this.labels.error : this.items.length ? `${this.labels.suggestions} : ${this.items.length}` : this.labels.empty;
@@ -19650,7 +19663,7 @@ var ListeSuggestions = class {
       option.setAttribute("role", "option");
       option.setAttribute("aria-selected", "false");
       const titre = this.dom.ownerDocument.createElement("span");
-      titre.textContent = item.title;
+      titre.textContent = this.formatItem?.(item) ?? item.title;
       option.append(titre);
       if (item.subtext) {
         const sous = this.dom.ownerDocument.createElement("small");
@@ -19672,15 +19685,24 @@ var ListeSuggestions = class {
     if (this.detruite || event.isComposing || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || !this.items?.length) return false;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       const sens = event.key === "ArrowDown" ? 1 : -1;
-      this.actif = this.actif < 0 ? sens > 0 ? 0 : this.items.length - 1 : (this.actif + sens + this.items.length) % this.items.length;
+      const total = this.items.length + (this.action.hidden ? 0 : 1);
+      this.actif = this.actif < 0 ? sens > 0 ? 0 : this.items.length - 1 : (this.actif + sens + total) % total;
       for (const [i2, option] of [...this.liste.children].entries()) option.setAttribute("aria-selected", String(i2 === this.actif));
       const actif = this.liste.children[this.actif];
-      this.dom.setAttribute("aria-activedescendant", actif.id);
-      actif.scrollIntoView?.({ block: "nearest" });
+      this.action.dataset.active = String(!actif);
+      if (actif) {
+        this.dom.setAttribute("aria-activedescendant", actif.id);
+        this.etat.textContent = `${this.labels.suggestions} : ${this.items.length}`;
+      } else {
+        this.dom.removeAttribute("aria-activedescendant");
+        this.etat.textContent = this.action.textContent;
+      }
+      (actif ?? this.action).scrollIntoView?.({ block: "nearest" });
       return true;
     }
     if (event.key === "Enter" && this.actif >= 0) {
-      this.onChoose(this.items[this.actif]);
+      if (this.actif === this.items.length) this.onAction?.();
+      else this.onChoose(this.items[this.actif]);
       return true;
     }
     return false;
@@ -19759,7 +19781,8 @@ function autorise(editor, state, range) {
   });
   return !code2;
 }
-function creerSuggestions(options) {
+var creerSuggestions = (options) => creerSuggestionsInternes(options);
+function creerSuggestionsInternes(options, interne = {}) {
   const {
     name,
     char,
@@ -19801,7 +19824,7 @@ function creerSuggestions(options) {
       const executer = ({ range, item }) => {
         const etat = key.getState(editor.state);
         if (!etat?.active || !courante || !liste?.items.includes(item) || etat.range.from !== range.from || etat.range.to !== range.to || etat.query !== courante.query || !autorise(editor, editor.state, range) || allow && !allow({ editor, state: editor.state, range })) return false;
-        editor.view.dispatch(closeHistory(editor.state.tr));
+        if (interne.historique !== false) editor.view.dispatch(closeHistory(editor.state.tr));
         let succes;
         try {
           succes = command2({ editor, range, item });
@@ -19811,21 +19834,41 @@ function creerSuggestions(options) {
         }
         if (succes !== true) return false;
         if (editor.isDestroyed) return true;
-        editor.view.dispatch(closeHistory(editor.state.tr));
+        if (interne.historique !== false) editor.view.dispatch(closeHistory(editor.state.tr));
         sortir();
         editor.view.focus();
         return true;
       };
+      const action = () => {
+        const props = courante;
+        if (!props || !key.getState(editor.state)?.active || !autorise(editor, editor.state, props.range)) return;
+        const rect = props.clientRect?.();
+        sortir();
+        interne.onAction?.({ editor, range: props.range, anchor: rect ? () => rect : void 0 });
+      };
       const afficher = (props) => {
         if (!contexteSuggestions(editor) || editor.isDestroyed) return;
         courante = props;
+        if (interne.masquerVide && !props.loading && !erreur && !props.items.length) {
+          liste?.destroy();
+          liste = null;
+          return;
+        }
         liste ?? (liste = new ListeSuggestions({
           editor,
           labels,
           onChoose: (item) => courante?.command(item),
-          onDismiss: sortir
+          onDismiss: sortir,
+          onAction: action,
+          formatItem: interne.formatItem
         }));
-        liste.update({ ...props, error: !props.loading && erreur });
+        const maximum = interne.maximum ?? props.items.length;
+        liste.update({
+          ...props,
+          items: props.items.slice(0, maximum),
+          error: !props.loading && erreur,
+          actionLabel: props.items.length > maximum ? interne.actionLabel?.() : null
+        });
       };
       const plugin2 = Suggestion({
         editor,
@@ -21555,6 +21598,472 @@ function schemaJSON(json, schema) {
   return out;
 }
 var toEditorJSON = (source, schema, regles = []) => schemaJSON(parse(source, { empreintes: false, regles }), schema);
+
+// src/emojis/catalogue.js
+var catalogues = /* @__PURE__ */ new Map();
+var indexes = /* @__PURE__ */ new WeakMap();
+function indexer(emojis) {
+  return emojis.map((emoji, position) => ({
+    emoji,
+    position,
+    aliases: emoji.shortcodes.map((s) => s.toLowerCase()),
+    champs: [emoji.annotation, ...emoji.tags].map((s) => s.toLowerCase())
+  }));
+}
+function figer(valeur) {
+  if (valeur && typeof valeur === "object") {
+    Object.values(valeur).forEach(figer);
+    Object.freeze(valeur);
+  }
+  return valeur;
+}
+function chargerCatalogueEmojis({ url }) {
+  if (typeof url !== "string" || !url) return Promise.reject(new Error("URL du catalogue emoji indisponible"));
+  if (!catalogues.has(url)) {
+    const promise2 = Promise.resolve().then(() => fetch(url)).then((response) => {
+      if (!response.ok) throw new Error(`Chargement du catalogue emoji : HTTP ${response.status}`);
+      return response.json();
+    }).then((emojis) => {
+      const chaines = (liste) => Array.isArray(liste) && liste.every((s) => typeof s === "string" && s.length > 0);
+      if (!Array.isArray(emojis) || !emojis.every((e) => e && typeof e.emoji === "string" && e.emoji && chaines(e.shortcodes) && e.shortcodes.length > 0 && typeof e.annotation === "string" && chaines(e.tags) && Number.isFinite(e.order))) throw new Error("Catalogue emoji invalide");
+      figer(emojis);
+      indexes.set(emojis, indexer(emojis));
+      return emojis;
+    });
+    catalogues.set(url, promise2);
+    promise2.catch(() => {
+      if (catalogues.get(url) === promise2) catalogues.delete(url);
+    });
+  }
+  return catalogues.get(url);
+}
+function filtrerEmojis(emojis, query) {
+  const recherche = query.toLowerCase();
+  if (!recherche) return [];
+  const index = indexes.get(emojis) ?? indexer(emojis);
+  const trouves = [];
+  for (const entree of index) {
+    const { aliases, champs } = entree;
+    const exact = aliases.findIndex((s) => s === recherche);
+    const prefixe = aliases.findIndex((s) => s.startsWith(recherche));
+    const inclusion = aliases.findIndex((s) => s.includes(recherche));
+    const rang2 = exact >= 0 ? 0 : prefixe >= 0 ? 1 : champs.some((s) => s === recherche) ? 2 : champs.some((s) => s.startsWith(recherche)) ? 3 : inclusion >= 0 || champs.some((s) => s.includes(recherche)) ? 4 : Infinity;
+    if (Number.isFinite(rang2)) trouves.push({ ...entree, rang: rang2, alias: exact >= 0 ? exact : prefixe >= 0 ? prefixe : inclusion >= 0 ? inclusion : 0 });
+  }
+  trouves.sort((a, b) => a.rang - b.rang || a.emoji.order - b.emoji.order || a.position - b.position);
+  const vus = /* @__PURE__ */ new Set();
+  const items = [];
+  for (const { emoji, alias } of trouves) {
+    if (vus.has(emoji.emoji)) continue;
+    vus.add(emoji.emoji);
+    items.push({
+      id: emoji.emoji,
+      title: emoji.shortcodes[alias],
+      context: { unicode: emoji.emoji, annotation: emoji.annotation, tags: [...emoji.tags] }
+    });
+  }
+  return items;
+}
+
+// src/emojis/insertion.js
+var exclus2 = /* @__PURE__ */ new Set(["codeBlock", "spipCadre", "spipHtml", "spipMath", "spipMarkdown", "spipRaw", "spipRawInline"]);
+function emojiAutorise({ editor, state = editor?.state, range = state?.selection }) {
+  if (!editor || editor.isDestroyed || !editor.isEditable || editor.view.dom.closest("[hidden]") || state.selection instanceof NodeSelection || !range || !Number.isInteger(range.from) || !Number.isInteger(range.to) || range.from < 0 || range.to < range.from || range.to > state.doc.content.size) return false;
+  const { doc: doc4 } = state, a = doc4.resolve(range.from), b = doc4.resolve(range.to);
+  if (!a.parent.isTextblock || !a.sameParent(b)) return false;
+  for (let d = 0; d <= a.depth; d++) if (exclus2.has(a.node(d).type.name)) return false;
+  let interdit = a.marks().some((m) => m.type.name === "code");
+  doc4.nodesBetween(range.from, range.to, (n) => {
+    interdit || (interdit = exclus2.has(n.type.name) || n.isAtom && !n.isText && n.type.name !== "hardBreak" || n.marks.some((m) => m.type.name === "code"));
+  });
+  return !interdit;
+}
+function insererEmoji({ editor, range, unicode }) {
+  if (typeof unicode !== "string" || !unicode.trim() || !emojiAutorise({ editor, range })) return false;
+  const { state } = editor;
+  const a = state.doc.resolve(range.from), b = state.doc.resolve(range.to);
+  const marks = a.marksAcross(b) ?? a.marks();
+  const tr = closeHistory(state.tr).replaceWith(range.from, range.to, state.schema.text(unicode, marks));
+  tr.setSelection(TextSelection.create(tr.doc, range.from + unicode.length));
+  editor.view.dispatch(tr);
+  if (!editor.isDestroyed) editor.view.dispatch(closeHistory(editor.state.tr));
+  return true;
+}
+
+// src/ui/labels.js
+var DEFAUTS = {
+  emoji: "Emoji",
+  emoji_plus: "Plus\u2026",
+  emoji_chargement: "Chargement des emojis\u2026",
+  emoji_erreur: "Impossible de charger les emojis.",
+  emoji_reessayer: "R\xE9essayer",
+  mode_source: "Source",
+  lien: "Lien",
+  modele: "Mod\xE8le",
+  lien_cible: "Cible (art12, rub3, https://\u2026)",
+  lien_rechercher: "Rechercher un contenu",
+  lien_bulle: "Bulle d\u2019aide",
+  lien_langue: "Langue de la cible",
+  lien_nouvelle_fenetre: "Ouvrir dans une nouvelle fen\xEAtre",
+  lien_ouvrir: "Ouvrir",
+  lien_retirer: "Retirer le lien",
+  lien_figer: "Figer le titre",
+  lien_cible_obligatoire: "Indiquez une cible.",
+  modele_raccourci: "Raccourci du mod\xE8le",
+  modele_modifier: "Modifier",
+  modele_invalide: "Ce n\u2019est pas un raccourci de mod\xE8le.",
+  modele_catalogue: "Catalogue des mod\xE8les\u2026",
+  modele_saisir: "Saisir le raccourci\u2026",
+  terme: "Terme",
+  selection_invalide: "S\xE9lectionnez du texte d\u2019un m\xEAme paragraphe.",
+  bulle: "Bulle d\u2019aide",
+  langue: "Langue",
+  gras: "Gras",
+  italique: "Italique",
+  glossaire: "Glossaire",
+  glossaire_nom: "Glossaire (vide\xA0: par d\xE9faut)",
+  glossaire_numero: "Num\xE9ro",
+  glossaire_definition: "Voir la d\xE9finition",
+  glossaire_retirer: "Retirer du glossaire",
+  glossaire_invalide: "Ce terme ou ces r\xE9glages ne peuvent pas s\u2019\xE9crire en raccourci de glossaire.",
+  abbr: "Abr\xE9viation",
+  abbr_explication: "Explication",
+  abbr_retirer: "Retirer l\u2019abr\xE9viation",
+  abbr_invalide: "Cette abr\xE9viation ne peut pas s\u2019\xE9crire en raccourci (explication vide, crochets, barre verticale\u2026).",
+  lien_invalide: "Cette cible ou cette bulle ne peut pas s\u2019\xE9crire dans un raccourci de lien.",
+  note: "Note",
+  note_nom: "Nom (vide\xA0: num\xE9rot\xE9e)",
+  note_sans_appel: "Sans appel",
+  note_texte: "Texte de la note",
+  note_retirer: "Supprimer la note",
+  note_aria_sans_appel: "Note sans appel",
+  note_invalide: "Cette note ne peut pas s\u2019\xE9crire telle quelle (nom ou texte).",
+  note_vide: "La note est vide.",
+  notes: "Notes",
+  multi: "Multilingue",
+  multi_texte: "Texte dans cette langue",
+  multi_ajouter: "Ajouter une langue",
+  multi_retirer_langue: "Retirer",
+  multi_sans_langue: "Sans langue",
+  multi_supprimer: "Supprimer le multi",
+  multi_langues: "Langues du multi",
+  multi_invalide: "Ce multi ne peut pas s\u2019\xE9crire tel quel (code de langue, langue sans code en double, texte).",
+  multi_vide: "Le multi est vide.",
+  langue_affichee: "Langue affich\xE9e",
+  idiome: "Idiome",
+  idiome_raccourci: "Raccourci (<:module:cle:>)",
+  idiome_invalide: "Ce n\u2019est pas un raccourci d\u2019idiome.",
+  idiome_retirer: "Supprimer l\u2019idiome",
+  barre_outils: "Barre d\u2019outils",
+  outil_annuler: "Annuler",
+  outil_retablir: "R\xE9tablir",
+  outil_titre: "Titre",
+  outil_paragraphe: "Paragraphe",
+  outil_intertitre: "Intertitre",
+  outil_titre_niveau: "Titre de niveau @niveau@",
+  outil_liste: "Liste",
+  outil_liste_puces: "Liste \xE0 puces",
+  outil_liste_numerotee: "Liste num\xE9rot\xE9e",
+  outil_indenter: "Indenter",
+  outil_desindenter: "D\xE9sindenter",
+  outil_citation: "Citation",
+  outil_poesie: "Po\xE9sie",
+  outil_cadre: "Bloc de code",
+  outil_barre: "Barr\xE9",
+  outil_exposant: "Exposant",
+  outil_indice: "Indice",
+  outil_code: "Code",
+  outil_alignement: "Alignement",
+  outil_align_left: "\xC0 gauche",
+  outil_align_center: "Centr\xE9",
+  outil_align_right: "\xC0 droite",
+  outil_align_justify: "Justifi\xE9",
+  outil_align_aucun: "Sans alignement",
+  outil_tableau: "Tableau",
+  outil_tableau_inserer: "Ins\xE9rer un tableau",
+  outil_tableau_en_tete: "Ligne d\u2019en-t\xEAte",
+  outil_tableau_ligne_avant: "Ins\xE9rer une ligne au-dessus",
+  outil_tableau_ligne_apres: "Ins\xE9rer une ligne en dessous",
+  outil_tableau_colonne_avant: "Ins\xE9rer une colonne \xE0 gauche",
+  outil_tableau_colonne_apres: "Ins\xE9rer une colonne \xE0 droite",
+  outil_tableau_supprimer_ligne: "Supprimer la ligne",
+  outil_tableau_supprimer_colonne: "Supprimer la colonne",
+  outil_tableau_fusionner: "Fusionner les cellules",
+  outil_tableau_scinder: "Scinder la cellule",
+  outil_tableau_supprimer: "Supprimer le tableau",
+  outil_guillemets: "Guillemets",
+  outil_guillemets_simples: "Guillemets internes",
+  outil_caracteres: "Caract\xE8res sp\xE9ciaux",
+  outil_majuscules: "Majuscules",
+  outil_minuscules: "Minuscules",
+  outil_plein_ecran: "Plein \xE9cran",
+  outil_plein_ecran_sortir: "Quitter le plein \xE9cran",
+  anomalie_ouverture: "Mise en forme ouverte sans \xEAtre ferm\xE9e\xA0: au rendu, elle s\u2019\xE9tend jusqu\u2019\xE0 la fin du paragraphe.",
+  anomalie_fermeture: "Fermeture sans ouverture\xA0: au rendu, elle s\u2019affiche telle quelle ou reste sans effet.",
+  anomalie_intertitre: "Accolades d\u2019intertitre hors d\u2019un intertitre complet\xA0: au rendu, la suite devient un intertitre.",
+  anomalie_citation: "<quote> sans </quote>\xA0: au rendu, tout le texte qui suit passe en citation.",
+  anomalie_balise: "Balise SPIP sans fermeture\xA0: au rendu, elle n\u2019est pas trait\xE9e.",
+  etat: "\xC9tat du texte",
+  etat_mot: "1 mot",
+  etat_mots: "@nb@ mots",
+  etat_anomalie: "1 anomalie de syntaxe",
+  etat_anomalies: "@nb@ anomalies de syntaxe",
+  markdown_fermeture: "Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.",
+  brut: "Source SPIP",
+  brut_source: "Source SPIP, relue quand on applique",
+  brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
+  modele_aria: "Mod\xE8le @modele@",
+  envoi_fichier: "Envoi du fichier\u2026",
+  depot_indication: "D\xE9poser les fichiers",
+  depot_indisponible: "L\u2019ajout de fichiers n\u2019est pas disponible ici.",
+  envoi_echec: "Le fichier n\u2019a pas pu \xEAtre envoy\xE9 (session expir\xE9e ou connexion perdue).",
+  envoi_en_cours: "Un fichier est en cours d\u2019envoi.",
+  enregistrer_sans_attendre: "Enregistrer sans attendre",
+  fichier_trop_gros: "Fichier trop volumineux\xA0: @nom@.",
+  fichier_type_refuse: "Type de fichier non accept\xE9\xA0: @nom@.",
+  zone_texte: "Texte",
+  appliquer: "Appliquer",
+  annuler: "Annuler"
+};
+var label = (key) => globalThis.spipConfig?.tiptap_spip?.i18n?.[key] ?? DEFAUTS[key] ?? key;
+
+// src/ui/popover.js
+var Popover = class _Popover {
+  /**
+   * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
+   *           onSubmit: () => boolean|void, parent?: Popover, onClose?: () => void }} options
+   *        onSubmit renvoie false pour garder le popover ouvert ; editor : celui qui reprend le focus
+   */
+  constructor({ editor, wrapper, titre, className, onSubmit, parent = null, onClose = null }) {
+    this.editor = editor;
+    this.wrapper = wrapper;
+    this.parent = parent;
+    this.enfant = null;
+    this.onClose = onClose;
+    this.ouvert = false;
+    this.element = document.createElement("div");
+    this.element.className = "tts-popover-dialogue";
+    this.element.setAttribute("role", "dialog");
+    this.element.setAttribute("aria-label", titre);
+    this.flottant = typeof this.element.showPopover === "function";
+    if (this.flottant) this.element.popover = "manual";
+    this.placementEnAttente = 0;
+    this.replacer = () => {
+      if (this.placementEnAttente) return;
+      this.placementEnAttente = requestAnimationFrame(() => {
+        this.placementEnAttente = 0;
+        if (this.ouvert) this.place();
+      });
+    };
+    this.auDefilement = (event) => {
+      if (!this.element.contains(event.target)) this.replacer();
+    };
+    this.form = document.createElement("form");
+    this.form.className = `tts-popover ${className ?? ""}`.trim();
+    this.element.append(this.form);
+    this.erreur = document.createElement("p");
+    this.erreur.className = "tts-popover__erreur";
+    this.erreur.setAttribute("role", "alert");
+    this.erreur.hidden = true;
+    this.actions = document.createElement("div");
+    this.actions.className = "tts-popover__actions";
+    this.form.append(this.erreur, this.actions);
+    this.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (onSubmit() !== false) this.close();
+    });
+    this.form.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        this.close();
+      } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && event.target.tagName === "TEXTAREA") {
+        event.preventDefault();
+        this.form.requestSubmit();
+      } else if (event.key === "Tab" && !event.defaultPrevented) {
+        this.pieger(event);
+      }
+    });
+  }
+  /** Champ libellé ; renvoie l'élément de saisie. */
+  field(texte2, input) {
+    const etiquette = document.createElement("label");
+    etiquette.className = "tts-popover__champ";
+    const span = document.createElement("span");
+    span.textContent = texte2;
+    etiquette.append(span, input);
+    this.actions.before(etiquette);
+    return input;
+  }
+  input(texte2, { value = "", type = "text", name } = {}) {
+    const input = document.createElement("input");
+    input.type = type;
+    input.name = name ?? "";
+    if (type === "checkbox") input.checked = Boolean(value);
+    else input.value = value ?? "";
+    return this.field(texte2, input);
+  }
+  /** Zone de texte libellée, pour une saisie sur plusieurs lignes (Ctrl/Cmd+Entrée valide). */
+  textarea(texte2, { value = "", name, rows = 3 } = {}) {
+    const zone = document.createElement("textarea");
+    zone.name = name ?? "";
+    zone.rows = rows;
+    zone.value = value ?? "";
+    return this.field(texte2, zone);
+  }
+  /** Bouton d'action ; type submit pour l'action principale. */
+  button(texte2, onClick, { submit = false, name } = {}) {
+    const bouton = document.createElement("button");
+    bouton.type = submit ? "submit" : "button";
+    bouton.textContent = texte2;
+    if (name) bouton.name = name;
+    if (!submit) {
+      bouton.addEventListener("click", () => {
+        if (onClick() !== false) this.close();
+      });
+    }
+    this.actions.append(bouton);
+    return bouton;
+  }
+  /** Éléments du popover atteignables à la tabulation, dans l'ordre. */
+  focusables() {
+    return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')].filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest("[hidden]"));
+  }
+  /**
+   * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
+   * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
+   */
+  pieger(event) {
+    const cibles = this.focusables();
+    if (!cibles.length) return;
+    const actif = this.form.ownerDocument.activeElement;
+    const dedans = cibles.includes(actif);
+    const cible = event.shiftKey ? (!dedans || actif === cibles[0]) && cibles.at(-1) : (!dedans || actif === cibles.at(-1)) && cibles[0];
+    if (!cible) return;
+    event.preventDefault();
+    cible.focus();
+  }
+  error(message) {
+    this.erreur.textContent = message;
+    this.erreur.hidden = !message;
+  }
+  open(focus2) {
+    fermerSuggestions({ reason: "popover" });
+    while (_Popover.current && _Popover.current !== this.parent) _Popover.current.close({ refocus: false });
+    if (this.parent) this.parent.enfant = this;
+    _Popover.current = this;
+    this.ouvert = true;
+    this.wrapper.append(this.element);
+    if (this.flottant) this.element.showPopover();
+    this.place();
+    if (this.flottant) {
+      window.addEventListener("resize", this.replacer);
+      window.addEventListener("scroll", this.auDefilement, true);
+    }
+    (focus2 ?? this.form.querySelector("input, button"))?.focus();
+  }
+  /** Près de la sélection, dans la fenêtre si la couche supérieure est disponible. */
+  place() {
+    try {
+      const { from: from2 } = this.editor.state.selection;
+      const coords = this.editor.view.coordsAtPos(from2);
+      if (this.flottant) {
+        const barre = this.wrapper.querySelector(".tts-toolbar")?.getBoundingClientRect();
+        const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + 8;
+        placerDepuisRect(this.element, () => coords, { ecart: 4, haut });
+        return;
+      }
+      const box = this.wrapper.getBoundingClientRect();
+      this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
+      this.form.style.top = `${coords.bottom - box.top + 4}px`;
+    } catch {
+    }
+  }
+  close({ refocus = true } = {}) {
+    if (!this.ouvert) return;
+    fermerSuggestions({ parent: this, reason: "parent" });
+    this.ouvert = false;
+    this.enfant?.close({ refocus: false });
+    if (_Popover.current === this) _Popover.current = this.parent;
+    if (this.parent?.enfant === this) this.parent.enfant = null;
+    if (this.flottant) {
+      window.removeEventListener("resize", this.replacer);
+      window.removeEventListener("scroll", this.auDefilement, true);
+      if (this.placementEnAttente) cancelAnimationFrame(this.placementEnAttente);
+      this.placementEnAttente = 0;
+      this.element.hidePopover();
+    }
+    this.element.remove();
+    if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
+    this.onClose?.();
+  }
+};
+Popover.current = null;
+function suivrePosition(editor, pos) {
+  let courante = pos;
+  const onTransaction = ({ transaction }) => {
+    if (courante === null) return;
+    const r = transaction.mapping.mapResult(courante, 1);
+    courante = r.deletedAfter ? null : r.pos;
+  };
+  editor.on("transaction", onTransaction);
+  return {
+    pos: () => courante,
+    fin() {
+      editor.off("transaction", onTransaction);
+      return courante;
+    }
+  };
+}
+function lireSelection(editor) {
+  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+}
+var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
+
+// src/emojis/fournisseur.js
+function creerFournisseurEmoji({ ui: ui2 } = {}) {
+  return creerSuggestionsInternes({
+    name: "ttsEmojis",
+    char: ":",
+    minQueryLength: 1,
+    queryPattern: /^[a-z0-9_+=-]+$/i,
+    allowedPrefixes: [" ", "\n"],
+    labels: { suggestions: label("emoji"), loading: label("emoji_chargement"), empty: "", error: label("emoji_erreur") },
+    allow: ({ editor, state, range }) => emojiAutorise({ editor, state, range }),
+    items: async ({ query }) => filtrerEmojis(await chargerCatalogueEmojis({ url: config().emojis?.url }), query),
+    command: ({ editor, range, item }) => insererEmoji({ editor, range, unicode: item.context.unicode })
+  }, {
+    maximum: 6,
+    masquerVide: true,
+    historique: false,
+    formatItem: (item) => `${item.context.unicode} :${item.title}:`,
+    actionLabel: () => label("emoji_plus"),
+    onAction: ({ editor, range, anchor }) => {
+      if (!ui2?.openEmoji || !emojiAutorise({ editor, range })) return;
+      const debut = suivrePosition(editor, range.from), fin = suivrePosition(editor, range.to);
+      const original = editor.state.doc.slice(range.from, range.to).content;
+      let ouvert2 = true;
+      const terminer = () => {
+        ouvert2 = false;
+        debut.fin();
+        fin.fin();
+      };
+      const panneau = ui2.openEmoji({
+        range,
+        anchor,
+        returnTarget: editor.view.dom,
+        onChoose: (unicode) => {
+          const actuelle = { from: debut.pos(), to: fin.pos() };
+          if (!ouvert2 || !emojiAutorise({ editor, range: actuelle }) || !editor.state.doc.slice(actuelle.from, actuelle.to).content.eq(original)) return false;
+          const fait = insererEmoji({ editor, range: actuelle, unicode });
+          if (fait) terminer();
+          return fait;
+        },
+        onClose: terminer
+      });
+      if (!panneau) terminer();
+    }
+  });
+}
 
 // node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
 var jsxElements = /* @__PURE__ */ new WeakSet();
@@ -27183,142 +27692,6 @@ function partieAffichee(parts, langue = globalThis.document?.documentElement?.la
   return parts.findLast((p) => p.lang?.toLowerCase() === l) ?? parts.findLast((p) => p.lang?.toLowerCase().split(/[-_]/)[0] === base2) ?? parts[0];
 }
 
-// src/ui/labels.js
-var DEFAUTS = {
-  emoji: "Emoji",
-  emoji_chargement: "Chargement des emojis\u2026",
-  emoji_erreur: "Impossible de charger les emojis.",
-  emoji_reessayer: "R\xE9essayer",
-  mode_source: "Source",
-  lien: "Lien",
-  modele: "Mod\xE8le",
-  lien_cible: "Cible (art12, rub3, https://\u2026)",
-  lien_rechercher: "Rechercher un contenu",
-  lien_bulle: "Bulle d\u2019aide",
-  lien_langue: "Langue de la cible",
-  lien_nouvelle_fenetre: "Ouvrir dans une nouvelle fen\xEAtre",
-  lien_ouvrir: "Ouvrir",
-  lien_retirer: "Retirer le lien",
-  lien_figer: "Figer le titre",
-  lien_cible_obligatoire: "Indiquez une cible.",
-  modele_raccourci: "Raccourci du mod\xE8le",
-  modele_modifier: "Modifier",
-  modele_invalide: "Ce n\u2019est pas un raccourci de mod\xE8le.",
-  modele_catalogue: "Catalogue des mod\xE8les\u2026",
-  modele_saisir: "Saisir le raccourci\u2026",
-  terme: "Terme",
-  selection_invalide: "S\xE9lectionnez du texte d\u2019un m\xEAme paragraphe.",
-  bulle: "Bulle d\u2019aide",
-  langue: "Langue",
-  gras: "Gras",
-  italique: "Italique",
-  glossaire: "Glossaire",
-  glossaire_nom: "Glossaire (vide\xA0: par d\xE9faut)",
-  glossaire_numero: "Num\xE9ro",
-  glossaire_definition: "Voir la d\xE9finition",
-  glossaire_retirer: "Retirer du glossaire",
-  glossaire_invalide: "Ce terme ou ces r\xE9glages ne peuvent pas s\u2019\xE9crire en raccourci de glossaire.",
-  abbr: "Abr\xE9viation",
-  abbr_explication: "Explication",
-  abbr_retirer: "Retirer l\u2019abr\xE9viation",
-  abbr_invalide: "Cette abr\xE9viation ne peut pas s\u2019\xE9crire en raccourci (explication vide, crochets, barre verticale\u2026).",
-  lien_invalide: "Cette cible ou cette bulle ne peut pas s\u2019\xE9crire dans un raccourci de lien.",
-  note: "Note",
-  note_nom: "Nom (vide\xA0: num\xE9rot\xE9e)",
-  note_sans_appel: "Sans appel",
-  note_texte: "Texte de la note",
-  note_retirer: "Supprimer la note",
-  note_aria_sans_appel: "Note sans appel",
-  note_invalide: "Cette note ne peut pas s\u2019\xE9crire telle quelle (nom ou texte).",
-  note_vide: "La note est vide.",
-  notes: "Notes",
-  multi: "Multilingue",
-  multi_texte: "Texte dans cette langue",
-  multi_ajouter: "Ajouter une langue",
-  multi_retirer_langue: "Retirer",
-  multi_sans_langue: "Sans langue",
-  multi_supprimer: "Supprimer le multi",
-  multi_langues: "Langues du multi",
-  multi_invalide: "Ce multi ne peut pas s\u2019\xE9crire tel quel (code de langue, langue sans code en double, texte).",
-  multi_vide: "Le multi est vide.",
-  langue_affichee: "Langue affich\xE9e",
-  idiome: "Idiome",
-  idiome_raccourci: "Raccourci (<:module:cle:>)",
-  idiome_invalide: "Ce n\u2019est pas un raccourci d\u2019idiome.",
-  idiome_retirer: "Supprimer l\u2019idiome",
-  barre_outils: "Barre d\u2019outils",
-  outil_annuler: "Annuler",
-  outil_retablir: "R\xE9tablir",
-  outil_titre: "Titre",
-  outil_paragraphe: "Paragraphe",
-  outil_intertitre: "Intertitre",
-  outil_titre_niveau: "Titre de niveau @niveau@",
-  outil_liste: "Liste",
-  outil_liste_puces: "Liste \xE0 puces",
-  outil_liste_numerotee: "Liste num\xE9rot\xE9e",
-  outil_indenter: "Indenter",
-  outil_desindenter: "D\xE9sindenter",
-  outil_citation: "Citation",
-  outil_poesie: "Po\xE9sie",
-  outil_cadre: "Bloc de code",
-  outil_barre: "Barr\xE9",
-  outil_exposant: "Exposant",
-  outil_indice: "Indice",
-  outil_code: "Code",
-  outil_alignement: "Alignement",
-  outil_align_left: "\xC0 gauche",
-  outil_align_center: "Centr\xE9",
-  outil_align_right: "\xC0 droite",
-  outil_align_justify: "Justifi\xE9",
-  outil_align_aucun: "Sans alignement",
-  outil_tableau: "Tableau",
-  outil_tableau_inserer: "Ins\xE9rer un tableau",
-  outil_tableau_en_tete: "Ligne d\u2019en-t\xEAte",
-  outil_tableau_ligne_avant: "Ins\xE9rer une ligne au-dessus",
-  outil_tableau_ligne_apres: "Ins\xE9rer une ligne en dessous",
-  outil_tableau_colonne_avant: "Ins\xE9rer une colonne \xE0 gauche",
-  outil_tableau_colonne_apres: "Ins\xE9rer une colonne \xE0 droite",
-  outil_tableau_supprimer_ligne: "Supprimer la ligne",
-  outil_tableau_supprimer_colonne: "Supprimer la colonne",
-  outil_tableau_fusionner: "Fusionner les cellules",
-  outil_tableau_scinder: "Scinder la cellule",
-  outil_tableau_supprimer: "Supprimer le tableau",
-  outil_guillemets: "Guillemets",
-  outil_guillemets_simples: "Guillemets internes",
-  outil_caracteres: "Caract\xE8res sp\xE9ciaux",
-  outil_majuscules: "Majuscules",
-  outil_minuscules: "Minuscules",
-  outil_plein_ecran: "Plein \xE9cran",
-  outil_plein_ecran_sortir: "Quitter le plein \xE9cran",
-  anomalie_ouverture: "Mise en forme ouverte sans \xEAtre ferm\xE9e\xA0: au rendu, elle s\u2019\xE9tend jusqu\u2019\xE0 la fin du paragraphe.",
-  anomalie_fermeture: "Fermeture sans ouverture\xA0: au rendu, elle s\u2019affiche telle quelle ou reste sans effet.",
-  anomalie_intertitre: "Accolades d\u2019intertitre hors d\u2019un intertitre complet\xA0: au rendu, la suite devient un intertitre.",
-  anomalie_citation: "<quote> sans </quote>\xA0: au rendu, tout le texte qui suit passe en citation.",
-  anomalie_balise: "Balise SPIP sans fermeture\xA0: au rendu, elle n\u2019est pas trait\xE9e.",
-  etat: "\xC9tat du texte",
-  etat_mot: "1 mot",
-  etat_mots: "@nb@ mots",
-  etat_anomalie: "1 anomalie de syntaxe",
-  etat_anomalies: "@nb@ anomalies de syntaxe",
-  markdown_fermeture: "Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.",
-  brut: "Source SPIP",
-  brut_source: "Source SPIP, relue quand on applique",
-  brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
-  modele_aria: "Mod\xE8le @modele@",
-  envoi_fichier: "Envoi du fichier\u2026",
-  depot_indication: "D\xE9poser les fichiers",
-  depot_indisponible: "L\u2019ajout de fichiers n\u2019est pas disponible ici.",
-  envoi_echec: "Le fichier n\u2019a pas pu \xEAtre envoy\xE9 (session expir\xE9e ou connexion perdue).",
-  envoi_en_cours: "Un fichier est en cours d\u2019envoi.",
-  enregistrer_sans_attendre: "Enregistrer sans attendre",
-  fichier_trop_gros: "Fichier trop volumineux\xA0: @nom@.",
-  fichier_type_refuse: "Type de fichier non accept\xE9\xA0: @nom@.",
-  zone_texte: "Texte",
-  appliquer: "Appliquer",
-  annuler: "Annuler"
-};
-var label = (key) => globalThis.spipConfig?.tiptap_spip?.i18n?.[key] ?? DEFAUTS[key] ?? key;
-
 // src/ui/sanitize.js
 var RETIRES = "script, style, link, meta, base, object, embed, form";
 var INTERACTIFS = "a, area, button, input, select, textarea, iframe, video, audio, [tabindex], [contenteditable]";
@@ -28702,6 +29075,7 @@ function extensionsDuCoeur({ headingLevels, ui: ui2, markdown }) {
     SpipEdition,
     SpipAnomalies,
     SpipUi.configure({ ui: ui2 }),
+    creerFournisseurEmoji({ ui: ui2 }),
     SpipPasteImage.configure({ ui: ui2 })
   ];
 }
@@ -28768,198 +29142,6 @@ var ICONES = {
   pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
   pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
 };
-
-// src/ui/popover.js
-var Popover = class _Popover {
-  /**
-   * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
-   *           onSubmit: () => boolean|void, parent?: Popover, onClose?: () => void }} options
-   *        onSubmit renvoie false pour garder le popover ouvert ; editor : celui qui reprend le focus
-   */
-  constructor({ editor, wrapper, titre, className, onSubmit, parent = null, onClose = null }) {
-    this.editor = editor;
-    this.wrapper = wrapper;
-    this.parent = parent;
-    this.enfant = null;
-    this.onClose = onClose;
-    this.ouvert = false;
-    this.element = document.createElement("div");
-    this.element.className = "tts-popover-dialogue";
-    this.element.setAttribute("role", "dialog");
-    this.element.setAttribute("aria-label", titre);
-    this.flottant = typeof this.element.showPopover === "function";
-    if (this.flottant) this.element.popover = "manual";
-    this.placementEnAttente = 0;
-    this.replacer = () => {
-      if (this.placementEnAttente) return;
-      this.placementEnAttente = requestAnimationFrame(() => {
-        this.placementEnAttente = 0;
-        if (this.ouvert) this.place();
-      });
-    };
-    this.auDefilement = (event) => {
-      if (!this.element.contains(event.target)) this.replacer();
-    };
-    this.form = document.createElement("form");
-    this.form.className = `tts-popover ${className ?? ""}`.trim();
-    this.element.append(this.form);
-    this.erreur = document.createElement("p");
-    this.erreur.className = "tts-popover__erreur";
-    this.erreur.setAttribute("role", "alert");
-    this.erreur.hidden = true;
-    this.actions = document.createElement("div");
-    this.actions.className = "tts-popover__actions";
-    this.form.append(this.erreur, this.actions);
-    this.form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (onSubmit() !== false) this.close();
-    });
-    this.form.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        this.close();
-      } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && event.target.tagName === "TEXTAREA") {
-        event.preventDefault();
-        this.form.requestSubmit();
-      } else if (event.key === "Tab" && !event.defaultPrevented) {
-        this.pieger(event);
-      }
-    });
-  }
-  /** Champ libellé ; renvoie l'élément de saisie. */
-  field(texte2, input) {
-    const etiquette = document.createElement("label");
-    etiquette.className = "tts-popover__champ";
-    const span = document.createElement("span");
-    span.textContent = texte2;
-    etiquette.append(span, input);
-    this.actions.before(etiquette);
-    return input;
-  }
-  input(texte2, { value = "", type = "text", name } = {}) {
-    const input = document.createElement("input");
-    input.type = type;
-    input.name = name ?? "";
-    if (type === "checkbox") input.checked = Boolean(value);
-    else input.value = value ?? "";
-    return this.field(texte2, input);
-  }
-  /** Zone de texte libellée, pour une saisie sur plusieurs lignes (Ctrl/Cmd+Entrée valide). */
-  textarea(texte2, { value = "", name, rows = 3 } = {}) {
-    const zone = document.createElement("textarea");
-    zone.name = name ?? "";
-    zone.rows = rows;
-    zone.value = value ?? "";
-    return this.field(texte2, zone);
-  }
-  /** Bouton d'action ; type submit pour l'action principale. */
-  button(texte2, onClick, { submit = false, name } = {}) {
-    const bouton = document.createElement("button");
-    bouton.type = submit ? "submit" : "button";
-    bouton.textContent = texte2;
-    if (name) bouton.name = name;
-    if (!submit) {
-      bouton.addEventListener("click", () => {
-        if (onClick() !== false) this.close();
-      });
-    }
-    this.actions.append(bouton);
-    return bouton;
-  }
-  /** Éléments du popover atteignables à la tabulation, dans l'ordre. */
-  focusables() {
-    return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')].filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest("[hidden]"));
-  }
-  /**
-   * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
-   * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
-   */
-  pieger(event) {
-    const cibles = this.focusables();
-    if (!cibles.length) return;
-    const actif = this.form.ownerDocument.activeElement;
-    const dedans = cibles.includes(actif);
-    const cible = event.shiftKey ? (!dedans || actif === cibles[0]) && cibles.at(-1) : (!dedans || actif === cibles.at(-1)) && cibles[0];
-    if (!cible) return;
-    event.preventDefault();
-    cible.focus();
-  }
-  error(message) {
-    this.erreur.textContent = message;
-    this.erreur.hidden = !message;
-  }
-  open(focus2) {
-    fermerSuggestions({ reason: "popover" });
-    while (_Popover.current && _Popover.current !== this.parent) _Popover.current.close({ refocus: false });
-    if (this.parent) this.parent.enfant = this;
-    _Popover.current = this;
-    this.ouvert = true;
-    this.wrapper.append(this.element);
-    if (this.flottant) this.element.showPopover();
-    this.place();
-    if (this.flottant) {
-      window.addEventListener("resize", this.replacer);
-      window.addEventListener("scroll", this.auDefilement, true);
-    }
-    (focus2 ?? this.form.querySelector("input, button"))?.focus();
-  }
-  /** Près de la sélection, dans la fenêtre si la couche supérieure est disponible. */
-  place() {
-    try {
-      const { from: from2 } = this.editor.state.selection;
-      const coords = this.editor.view.coordsAtPos(from2);
-      if (this.flottant) {
-        const barre = this.wrapper.querySelector(".tts-toolbar")?.getBoundingClientRect();
-        const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + 8;
-        placerDepuisRect(this.element, () => coords, { ecart: 4, haut });
-        return;
-      }
-      const box = this.wrapper.getBoundingClientRect();
-      this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
-      this.form.style.top = `${coords.bottom - box.top + 4}px`;
-    } catch {
-    }
-  }
-  close({ refocus = true } = {}) {
-    if (!this.ouvert) return;
-    fermerSuggestions({ parent: this, reason: "parent" });
-    this.ouvert = false;
-    this.enfant?.close({ refocus: false });
-    if (_Popover.current === this) _Popover.current = this.parent;
-    if (this.parent?.enfant === this) this.parent.enfant = null;
-    if (this.flottant) {
-      window.removeEventListener("resize", this.replacer);
-      window.removeEventListener("scroll", this.auDefilement, true);
-      if (this.placementEnAttente) cancelAnimationFrame(this.placementEnAttente);
-      this.placementEnAttente = 0;
-      this.element.hidePopover();
-    }
-    this.element.remove();
-    if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
-    this.onClose?.();
-  }
-};
-Popover.current = null;
-function suivrePosition(editor, pos) {
-  let courante = pos;
-  const onTransaction = ({ transaction }) => {
-    if (courante === null) return;
-    const r = transaction.mapping.mapResult(courante, 1);
-    courante = r.deletedAfter ? null : r.pos;
-  };
-  editor.on("transaction", onTransaction);
-  return {
-    pos: () => courante,
-    fin() {
-      editor.off("transaction", onTransaction);
-      return courante;
-    }
-  };
-}
-function lireSelection(editor) {
-  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
-}
-var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
 
 // src/ui/boutons.js
 var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
@@ -30056,10 +30238,10 @@ function uniqEmoji(emojis) {
   return uniqBy(emojis, (_) => _.unicode);
 }
 function initialMigration(db) {
-  function createObjectStore(name, keyPath, indexes) {
+  function createObjectStore(name, keyPath, indexes2) {
     const store = keyPath ? db.createObjectStore(name, { keyPath }) : db.createObjectStore(name);
-    if (indexes) {
-      for (const [indexName, [keyPath2, multiEntry]] of Object.entries(indexes)) {
+    if (indexes2) {
+      for (const [indexName, [keyPath2, multiEntry]] of Object.entries(indexes2)) {
         store.createIndex(indexName, keyPath2, { multiEntry });
       }
     }
@@ -32223,7 +32405,10 @@ function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label:
     onClose?.({ reason });
     if (refocus && !editor.isDestroyed) {
       const cible = origin.returnTarget ?? trigger ?? editor.view.dom;
-      if (cible.isConnected) cible.focus();
+      if (cible.isConnected) {
+        if (cible === editor.view.dom) editor.view.focus();
+        else cible.focus();
+      }
     }
   };
   const sentinelle = (sens) => {
@@ -32295,20 +32480,8 @@ function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label:
 }
 
 // src/emojis/PickerEmoji.js
-var exclus2 = /* @__PURE__ */ new Set(["codeBlock", "spipCadre", "spipHtml", "spipMath", "spipMarkdown", "spipRaw", "spipRawInline"]);
 function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.selection, onChoose, onClose, i18n }) {
-  const valide = (plage) => {
-    if (editor.isDestroyed || !editor.isEditable || editor.view.dom.closest("[hidden]") || !plage || !Number.isInteger(plage.from) || !Number.isInteger(plage.to) || plage.from < 0 || plage.to < plage.from || plage.to > editor.state.doc.content.size) return false;
-    const { doc: doc5 } = editor.state;
-    const a = doc5.resolve(plage.from), b = doc5.resolve(plage.to);
-    if (!a.parent.isTextblock || !a.sameParent(b)) return false;
-    for (let d = 0; d <= a.depth; d++) if (exclus2.has(a.node(d).type.name)) return false;
-    let code2 = a.marks().some((m) => m.type.name === "code");
-    doc5.nodesBetween(plage.from, plage.to, (n) => {
-      code2 || (code2 = n.marks.some((m) => m.type.name === "code"));
-    });
-    return !code2;
-  };
+  const valide = (plage) => emojiAutorise({ editor, range: plage });
   if (!valide(range)) return null;
   const debut = suivrePosition(editor, range.from), fin = suivrePosition(editor, range.to);
   const initial = editor.state.doc.slice(range.from, range.to).content;

@@ -140,3 +140,67 @@ test('catalogue paresseux, URL absolue identique en privé et public, octets ori
 		expect(await page.evaluate(() => window.spipConfig.tiptap_spip.emojis)).toEqual(config);
 	} finally { if (avant) configurer('tiptap_spip/public', avant); else effacerConfig('tiptap_spip/public'); }
 });
+
+test.describe('inline emoji', () => {
+	const liste = (page) => page.locator('.tts-suggestions');
+	const texte = (page) => page.evaluate(() => window.__inlineEmoji.state.doc.textContent);
+	test.beforeEach(async ({ page }) => {
+		await page.evaluate(() => {
+			window.__inlineEmoji = [...window.__tts.instances][0].editor;
+			window.__inlineEmoji.commands.clearContent(); window.__inlineEmoji.view.focus();
+		});
+	});
+	test('premier caractère, affinement, retour arrière, espace et résultat vide', async ({ page }) => {
+		await page.keyboard.type(':h'); await expect(liste(page).getByRole('option')).toHaveCount(6);
+		await expect(liste(page).getByRole('option').first()).toHaveText('😇 :halo:');
+		await page.keyboard.type('e'); await expect(liste(page).getByRole('option').first()).not.toHaveText('😇 :halo:');
+		await page.keyboard.press('Backspace'); await expect(liste(page).getByRole('option').first()).toHaveText('😇 :halo:');
+		await page.keyboard.type(' '); await expect(liste(page)).toHaveCount(0); expect(await texte(page)).toBe(':h ');
+		await page.keyboard.type(':='); await expect(liste(page)).toHaveCount(0);
+		await page.keyboard.press('Backspace'); await page.keyboard.type('h'); await expect(liste(page).getByRole('option')).toHaveCount(6);
+	});
+	test('validation Unicode, frappe, annulations et rétablissements indépendants', async ({ page }) => {
+		await page.keyboard.type(':smile'); await expect(liste(page).getByRole('option').first()).toHaveText('😄 :smile:');
+		await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter'); await page.keyboard.type('x'); expect(await texte(page)).toBe('😄x');
+		await page.keyboard.press('Control+z'); expect(await texte(page)).toBe('😄');
+		await page.keyboard.press('Control+z'); expect(await texte(page)).toBe(':smile'); await expect(liste(page).getByRole('option')).toHaveCount(6);
+		await page.keyboard.press('Control+Shift+z'); await page.keyboard.press('Control+Shift+z'); expect(await texte(page)).toBe('😄x');
+	});
+	test('Plus au clavier hors listbox, annulation maintient le rejet', async ({ page }) => {
+		await page.keyboard.type(':h'); await expect(liste(page).getByRole('option')).toHaveCount(6);
+		expect(await liste(page).getByRole('button', { name: 'Plus…' }).evaluate((e) => !e.closest('[role=listbox]'))).toBe(true);
+		await page.keyboard.press('ArrowUp'); await expect(liste(page).getByRole('option').last()).toHaveAttribute('aria-selected', 'true');
+		await page.keyboard.press('ArrowDown');
+		expect(await page.evaluate(() => window.__inlineEmoji.view.dom.hasAttribute('aria-activedescendant'))).toBe(false);
+		await page.keyboard.press('Enter'); await expect(recherche(page)).toBeFocused(); expect(await texte(page)).toBe(':h');
+		await page.keyboard.press('Escape'); await page.keyboard.type('e'); await expect(liste(page)).toHaveCount(0); expect(await texte(page)).toBe(':he');
+		await page.keyboard.type(' :h'); await expect(liste(page).getByRole('option')).toHaveCount(6);
+	});
+	test('Plus puis choix réel remplace la requête, sans espace ajouté', async ({ page }) => {
+		await page.keyboard.type(':h'); await liste(page).getByRole('button', { name: 'Plus…' }).click();
+		await expect(recherche(page)).toBeFocused(); await recherche(page).fill('heart');
+		const choix = panneau(page).locator('emoji-picker button[role=option]').first(); await expect(choix).toBeVisible();
+		const unicode = await choix.textContent(); await choix.click(); await expect(panneau(page)).toHaveCount(0);
+		expect(await texte(page)).toBe(unicode.trim());
+		await page.keyboard.press('Control+z'); expect(await texte(page)).toBe(':h');
+	});
+	test('note en plein écran : inline et Plus gardent le parent ouvert', async ({ page }) => {
+		await page.evaluate(() => {
+			const instance = [...window.__tts.instances][0]; instance.togglePleinEcran(true);
+			window.__noteEmoji = instance.ui.editNote(null); window.__inlineEmoji = window.__noteEmoji.sous;
+		});
+		await page.keyboard.type(':h'); await expect(liste(page).getByRole('option')).toHaveCount(6);
+		await liste(page).getByRole('button', { name: 'Plus…' }).click(); await expect(recherche(page)).toBeFocused();
+		await page.keyboard.press('Escape'); await page.keyboard.type('e'); await expect(liste(page)).toHaveCount(0);
+		expect(await texte(page)).toBe(':he');
+		expect(await page.evaluate(() => window.__noteEmoji.ouvert && [...window.__tts.instances][0].pleinEcran())).toBe(true);
+	});
+	test('premier caractère en chargement, réponse mutualisée pour la requête courante', async ({ page }) => {
+		let liberer; const attente = new Promise((r) => { liberer = r; });
+		await page.route('**/tiptap_spip_emoji/*/en-emojibase.json', async (route) => { await attente; await route.continue(); });
+		await page.keyboard.type(':h'); await expect(liste(page).getByRole('status')).toHaveText('Chargement des emojis…');
+		await page.keyboard.type('e'); liberer();
+		await expect(liste(page).getByRole('option')).toHaveCount(6); await expect(liste(page).getByRole('option').first()).not.toHaveText('😇 :halo:');
+		expect(await page.evaluate(() => performance.getEntriesByType('resource').filter((r) => r.name.includes('en-emojibase.json')).length)).toBe(1);
+	});
+});

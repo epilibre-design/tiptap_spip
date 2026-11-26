@@ -1,24 +1,12 @@
+import { emojiAutorise } from './insertion.js';
 import { config } from '../config.js';
 import { label } from '../ui/labels.js';
 import { suivrePosition } from '../ui/popover.js';
 import { ouvrirPanneauSuggestions } from '../suggestions/PanneauSuggestions.js';
 
-const exclus = new Set(['codeBlock', 'spipCadre', 'spipHtml', 'spipMath', 'spipMarkdown', 'spipRaw', 'spipRawInline']);
-
 /** Le composant DOM est enregistré par ui/interface.js, jamais par le fournisseur. */
 export function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.selection, onChoose, onClose, i18n }) {
-	const valide = (plage) => {
-		if (editor.isDestroyed || !editor.isEditable || editor.view.dom.closest('[hidden]') || !plage
-			|| !Number.isInteger(plage.from) || !Number.isInteger(plage.to)
-			|| plage.from < 0 || plage.to < plage.from || plage.to > editor.state.doc.content.size) return false;
-		const { doc } = editor.state;
-		const a = doc.resolve(plage.from), b = doc.resolve(plage.to);
-		if (!a.parent.isTextblock || !a.sameParent(b)) return false;
-		for (let d = 0; d <= a.depth; d++) if (exclus.has(a.node(d).type.name)) return false;
-		let code = a.marks().some((m) => m.type.name === 'code');
-		doc.nodesBetween(plage.from, plage.to, (n) => { code ||= n.marks.some((m) => m.type.name === 'code'); });
-		return !code;
-	};
+	const valide = (plage) => emojiAutorise({ editor, range: plage });
 	if (!valide(range)) return null;
 	const debut = suivrePosition(editor, range.from), fin = suivrePosition(editor, range.to);
 	const initial = editor.state.doc.slice(range.from, range.to).content;

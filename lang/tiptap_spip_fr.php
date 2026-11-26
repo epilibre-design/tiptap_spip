@@ -59,6 +59,7 @@ return [
 
 	// E
 	'emoji' => 'Emoji',
+	'emoji_plus' => 'Plus…',
 	'emoji_chargement' => 'Chargement des emojis…',
 	'emoji_erreur' => 'Impossible de charger les emojis.',
 	'emoji_reessayer' => 'Réessayer',

@@ -144,3 +144,11 @@ describe('chargement partagé à la demande, sans DOM ni IndexedDB', () => {
 		await expect(chargerCatalogueEmojis({ url: null })).rejects.toThrow(); expect(fetch).not.toHaveBeenCalled();
 	});
 });
+
+it('importe fournisseur et extensions en Node sans HTMLElement ni web component', async () => {
+	expect(typeof HTMLElement).toBe('undefined');
+	const fournisseur = await import('../../src/emojis/fournisseur.js');
+	const extensions = await import('../../src/editor/extensions.js');
+	expect(typeof fournisseur.creerFournisseurEmoji).toBe('function'); expect(typeof extensions.coreExtensions).toBe('function');
+	expect(fetch).not.toHaveBeenCalled();
+});

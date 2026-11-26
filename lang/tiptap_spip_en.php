@@ -60,6 +60,7 @@ return [
 
 	// E
 	'emoji' => 'Emoji',
+	'emoji_plus' => 'More…',
 	'emoji_chargement' => 'Loading emojis…',
 	'emoji_erreur' => 'Unable to load emojis.',
 	'emoji_reessayer' => 'Retry',
