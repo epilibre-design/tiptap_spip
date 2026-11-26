@@ -290,7 +290,14 @@ test('IndexedDB indisponible : inline utilisable et erreur limitée au picker', 
 	await expect(page.locator('.tts-suggestions').getByRole('option').first()).toHaveText('❤️ :heart:');
 });
 
-test('JSON indisponible : erreur inline distincte, éditeur utilisable', async ({ page }) => {
+test('configuration absente puis JSON indisponible : inline silencieux puis erreur distincte', async ({ page }) => {
+	const configuration = await page.evaluate(() => {
+		const c = window.spipConfig.tiptap_spip; const emojis = c.emojis; c.emojis = null;
+		const e = [...window.__tts.instances][0].editor; e.commands.clearContent(); e.view.focus(); return emojis;
+	});
+	await page.keyboard.type(':h'); await expect(page.locator('.tts-suggestions')).toHaveCount(0);
+	expect(await page.evaluate(() => [...window.__tts.instances][0].editor.state.doc.textContent)).toBe(':h');
+	await page.evaluate((emojis) => { window.spipConfig.tiptap_spip.emojis = emojis; }, configuration);
 	await page.route('**/tiptap_spip_emoji/*/en-emojibase.json', (route) => route.fulfill({ status: 503, body: 'Indisponible' }));
 	await page.evaluate(() => { const e = [...window.__tts.instances][0].editor; e.commands.clearContent(); e.view.focus(); });
 	await page.keyboard.type(':h'); await expect(page.locator('.tts-suggestions').getByRole('status')).toHaveText('Impossible de charger les emojis.');

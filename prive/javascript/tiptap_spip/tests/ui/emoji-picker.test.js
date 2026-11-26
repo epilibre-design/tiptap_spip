@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 vi.mock('emoji-picker-element/picker', () => ({}));
 import { demonter, monter, tick } from './outils.js';
+import * as pickerEmoji from '../../src/emojis/PickerEmoji.js';
 
 let mode, instances;
 const attente = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
@@ -55,6 +56,13 @@ it('erreur ready persistante, repli et Réessayer entre les sentinelles, nouvel 
 it('ready et choix tardifs après fermeture sont ignorés', async () => {
 	const { p, picker, onChoose, onClose } = ouvrir(); p.fermer(); picker.attente.resolve(); await tick(); choix(picker);
 	expect(onChoose).not.toHaveBeenCalled(); expect(onClose).toHaveBeenCalledOnce(); expect(document.querySelector('emoji-picker')).toBeNull();
+});
+it('panneau indisponible : notifie une seule fermeture même si l’adaptateur a déjà terminé', () => {
+	vi.spyOn(pickerEmoji, 'ouvrirPickerEmoji').mockImplementation(({ onClose }) => {
+		onClose({ reason: 'unavailable' }); return null;
+	});
+	const { p, onClose } = ouvrir();
+	expect(p).toBeNull(); expect(onClose).toHaveBeenCalledExactlyOnceWith({ reason: 'unavailable' });
 });
 it('n’accepte qu’un choix par ouverture et ignore emoji-click-sync', async () => {
 	const { picker, onChoose, onClose } = ouvrir(); picker.attente.resolve(); await tick();

@@ -25,13 +25,16 @@ ProseMirror avant d’ouvrir le dialogue. La recette du picker et du catalogue e
 
 ## Emojis Unicode
 
-Validation du lot le 26 novembre 2026 : 1 690 tests Vitest, 75 tests PHPUnit et 244 E2E
+Validation du lot sur `d01b29b` le 26 novembre 2026 : 1 690 tests Vitest, 75 tests PHPUnit et 244 E2E
 réussis sur SPIP 4.4.21 (82 Chromium, 81 Firefox, 81 WebKit). Les deux autres cas sont le
 benchmark réservé à Chromium : médiane de 93,6 ms pour 50 000 caractères, sous 150 ms.
 SPIP 5 : 87/87 E2E emoji réussis dans les trois navigateurs, bundle servi vérifié.
 Documentation FR/EN stricte et build reproductible validés ; comparaison SPIP : 164/165
 fichiers équivalents et un écart ancien accepté. Surcoût JS/CSS cumulé avec le socle :
 32 914 octets gzip ; JSON séparé : 74 647 octets (`gzip -n -6 -c`).
+Après les deux ajustements de relecture (fermeture idempotente et inline sans configuration),
+1 693 Vitest, 75 PHPUnit et les 87 E2E emoji sur SPIP 4.4.21 sont rejoués avec succès.
+Le delta JS/CSS publié est de 32 928 octets gzip ; le JSON est inchangé.
 
 `tests/editor/emoji-catalogue.test.js` vérifie le classement sur les données réelles : `h` →
 `halo`, `heart` → ❤️, `smile` → 😄, alias correspondant et absence d’alias traduit. Les tests

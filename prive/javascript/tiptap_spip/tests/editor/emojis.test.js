@@ -33,6 +33,15 @@ it.each([':h', ':he', ' :h'])('ouvre dès un caractère et respecte toute la req
 	expect(options()).toHaveLength(6); expect(actif()).toBeNull(); expect(fetch).toHaveBeenCalledOnce();
 	expect(options()[0].textContent).toBe(`${filtrerEmojis(catalogue, text.split(':').at(-1))[0].context.unicode} :${filtrerEmojis(catalogue, text.split(':').at(-1))[0].title}:`);
 });
+it.each([undefined, null])('sans configuration emoji (%s), garde la saisie littérale sans recherche', async (emojis) => {
+	const configuration = globalThis.spipConfig.tiptap_spip.emojis;
+	globalThis.spipConfig.tiptap_spip.emojis = emojis;
+	const { editor } = installer(); await saisir(editor, ':h');
+	expect(document.querySelector('.tts-suggestions')).toBeNull(); expect(fetch).not.toHaveBeenCalled();
+	expect(source()).toBe(':h');
+	globalThis.spipConfig.tiptap_spip.emojis = configuration;
+	await saisir(editor, ' :h'); expect(options()).toHaveLength(6);
+});
 it.each([':-', ':+', ':='])('lance la recherche pour le caractère autorisé %s', async (text) => {
 	const { editor } = installer(); await saisir(editor, text); expect(fetch).toHaveBeenCalledOnce();
 });

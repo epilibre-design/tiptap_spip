@@ -1,6 +1,6 @@
 # Insertion d’emojis dans l’éditeur SPIP
 
-Statut : implémentation et recette automatisée réalisées ; relecture finale avant fusion. Arbitrage du demandeur après relecture :
+Statut : implémentation et recette automatisée réalisées ; relecture finale favorable. Arbitrage du demandeur après relecture :
 **catalogue anglais d’`emoji-picker-element` partagé avec l’inline, insertion de texte Unicode,
 sans nœud emoji Tiptap ; ouverture inline dès un caractère autorisé après `:`**.
 Ce choix remplace l’extraction du catalogue de `@tiptap/extension-emoji`. Les deux parcours
@@ -163,6 +163,8 @@ revalider l’éditeur, la plage suivie et le contexte avant toute insertion. Un
 ou un événement tardif après fermeture, destruction ou remplacement du panneau n’insère
 rien de plus. Ne pas écouter simultanément `emoji-click` et `emoji-click-sync` pour insérer.
 En l’absence de `event.detail.unicode` non vide, refuser le choix sans mutation.
+La fin d’une ouverture est idempotente : notifier `onClose` une seule fois, y compris
+lorsque l’adaptateur signale lui-même l’indisponibilité puis renvoie `null`.
 
 Pour donner le focus initial à la recherche, autoriser l’accès ciblé
 `picker.shadowRoot?.querySelector('input[type=search]')` dans un adaptateur testé sur la
@@ -351,7 +353,10 @@ Classes `tts-` pour l’enveloppe ; adapter taille, thème et couleurs du picker
 CSS publiques, sans recopier son interface interne. Utiliser l’icône locale `svg-add-emoji`
 ([source SVG Repo](https://www.svgrepo.com/svg/309597/emoji-add)), décorative et accompagnée
 d’un nom accessible pour le bouton. La fiche actuelle attribue cette icône à Microsoft sous licence MIT, confirmée par
-[la licence du dépôt Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE). Conserver la notice MIT et la provenance avec le SVG. Fermer et nettoyer au changement de mode,
+[la licence du dépôt Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons/blob/main/LICENSE).
+Le demandeur a validé le choix de cette icône Microsoft Fluent UI « Emoji Add » sous MIT,
+en remplacement de la mention CC0 erronée des premières specs. Conserver la notice
+`src/ui/svg-add-emoji.LICENSE` et l’entrée de `CREDITS.md` telles quelles. Fermer et nettoyer au changement de mode,
 à la fermeture du parent et à la destruction. Aucun événement tardif ne rouvre ou n’insère.
 
 | Cas | Résultat attendu |
@@ -407,6 +412,7 @@ d’un nom accessible pour le bouton. La fiche actuelle attribue cette icône à
 | HTTP avec ETag, puis HTTP sans ETag et sans `crypto.subtle` | Premier cas pris en charge ; second : erreur du picker explicite, inline et éditeur utilisables |
 | Appareil masquant un emoji ou teinte préférée enregistrée | Différences natives du picker acceptées ; inline sur le JSON et caractère de base |
 | IndexedDB indisponible ou catalogue non accessible | Erreur limitée au parcours concerné ; éditeur utilisable ; inline indépendant d’IndexedDB |
+| Configuration du catalogue absente | Pas de suggestions inline ni de recherche ; texte saisi conservé ; le bouton peut afficher son erreur locale |
 | Livraison et usage hors ligne | JSON local partagé, aucun CDN ni image distante ; cache et mises à jour vérifiés ; plafonds gzip mesurés |
 
 Validation prévue : copie reproductible du catalogue et Vitest du filtre, des commandes, de

@@ -10,7 +10,7 @@ export function creerFournisseurEmoji({ ui } = {}) {
 		name: 'ttsEmojis', char: ':', minQueryLength: 1, queryPattern: /^[a-z0-9_+=-]+$/i,
 		allowedPrefixes: [' ', '\n'],
 		labels: { suggestions: label('emoji'), loading: label('emoji_chargement'), empty: '', error: label('emoji_erreur') },
-		allow: ({ editor, state, range }) => emojiAutorise({ editor, state, range }),
+		allow: ({ editor, state, range }) => Boolean(config().emojis?.url) && emojiAutorise({ editor, state, range }),
 		items: async ({ query }) => filtrerEmojis(await chargerCatalogueEmojis({ url: config().emojis?.url }), query),
 		command: ({ editor, range, item }) => insererEmoji({ editor, range, unicode: item.context.unicode }),
 	}, {

@@ -33,7 +33,11 @@ export function creerInterface({ editor, wrapper, services, catalogue = null }) 
 		if (!emojiAutorise({ editor: cible, range })) return null;
 		const debut = origin.onChoose ? null : suivrePosition(cible, range.from);
 		const fin = origin.onChoose ? null : suivrePosition(cible, range.to);
-		const terminer = (raison) => { debut?.fin(); fin?.fin(); origin.onClose?.(raison); };
+		let termine = false;
+		const terminer = (raison) => {
+			if (termine) return;
+			termine = true; debut?.fin(); fin?.fin(); origin.onClose?.(raison);
+		};
 		lierContexteSuggestions(cible, { wrapper, parent });
 		const panneau = ouvrirPickerEmoji({ editor: cible, anchor: origin.anchor ?? origin.trigger, origin,
 			range, onChoose: origin.onChoose ?? ((unicode) => insererEmoji({ editor: cible,
