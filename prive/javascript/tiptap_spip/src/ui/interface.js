@@ -1,3 +1,11 @@
+import { config } from '../config.js';
+import { emojiAutorise, insererEmoji } from '../emojis/insertion.js';
+import { lireSelection, suivrePosition } from './popover.js';
+import 'emoji-picker-element/picker';
+import frEmoji from 'emoji-picker-element/i18n/fr';
+import enEmoji from 'emoji-picker-element/i18n/en';
+import { ouvrirPickerEmoji } from '../emojis/PickerEmoji.js';
+import { lierContexteSuggestions } from '../suggestions/sessions.js';
 import { IdiomTranslations, LinkTitles, ModelPreviews } from '../services/cache.js';
 import { ouvrirCatalogue, parametresFormulaire } from './catalogue.js';
 import { openLinkPopover } from './LinkPopover.js';
@@ -18,7 +26,27 @@ import { creerOuvreurPanneau } from '../suggestions/PanneauSuggestions.js';
  *        catalogue : { url, modeles } du plugin Insérer modèles (catalogue.js), null sans lui
  */
 export function creerInterface({ editor, wrapper, services, catalogue = null }) {
-	const contexte = () => ({ editor: editor(), wrapper, services, titles: ui.titles, previews: ui.previews });
+	const ouvrirEmoji = (cible, parent, origin = {}) => {
+		if (!cible || cible.isDestroyed) return null;
+		lireSelection(cible);
+		const range = origin.range ?? { from: cible.state.selection.from, to: cible.state.selection.to };
+		if (!emojiAutorise({ editor: cible, range })) return null;
+		const debut = origin.onChoose ? null : suivrePosition(cible, range.from);
+		const fin = origin.onChoose ? null : suivrePosition(cible, range.to);
+		let termine = false;
+		const terminer = (raison) => {
+			if (termine) return;
+			termine = true; debut?.fin(); fin?.fin(); origin.onClose?.(raison);
+		};
+		lierContexteSuggestions(cible, { wrapper, parent });
+		const panneau = ouvrirPickerEmoji({ editor: cible, anchor: origin.anchor ?? origin.trigger, origin,
+			range, onChoose: origin.onChoose ?? ((unicode) => insererEmoji({ editor: cible,
+				range: { from: debut.pos(), to: fin.pos() }, unicode })), onClose: terminer,
+			i18n: (config().lang ?? wrapper.ownerDocument.documentElement.lang).startsWith('en') ? enEmoji : frEmoji });
+		if (!panneau) terminer({ reason: 'unavailable' });
+		return panneau;
+	};
+	const contexte = () => ({ editor: editor(), wrapper, services, titles: ui.titles, previews: ui.previews, ouvrirEmoji });
 	/**
 	 * Modèle à `pos` dans le formulaire du catalogue, prérempli, si tous ses paramètres y ont un champ ;
 	 * false sinon (saisie brute).
@@ -31,6 +59,7 @@ export function creerInterface({ editor, wrapper, services, catalogue = null }) 
 	};
 	const ui = {
 		openSuggestionsPanel: creerOuvreurPanneau(editor, { wrapper }),
+		openEmoji: (origin) => ouvrirEmoji(editor(), null, origin),
 		catalogue,
 		previews: services ? new ModelPreviews(services) : null,
 		titles: services ? new LinkTitles(services) : null,

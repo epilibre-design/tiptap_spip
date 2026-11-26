@@ -2,8 +2,9 @@
 
 A plugin can show a list after a character, for example `@bo` to insert “Bonjour !”.
 The shared layer handles the list, keyboard and asynchronous requests; the plugin provides
-results and an insertion command. No provider is enabled by default. Emoji insertion belongs
-to a later release.
+results and an insertion command. The core already reserves `:` for emojis. Choose another
+character for your provider: a duplicate `:` is ignored with a warning. Removing the Emoji
+button through the toolbar pipeline keeps inline emoji suggestions enabled.
 
 ## Load a provider
 

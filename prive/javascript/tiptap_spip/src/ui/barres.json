@@ -4,11 +4,11 @@
 		"titre", "liste", "citation", "poesie", "cadre", "|",
 		"gras", "italique", "barre", "exposant", "indice", "code", "|",
 		"lien", "note", "glossaire", "abbr", "modele", "|",
-		"alignement", "tableau", "guillemets", "caracteres", "|",
+		"alignement", "tableau", "guillemets", "caracteres", "emoji", "|",
 		"multi", "langues", "|",
 		"source", "pleinEcran"
 	],
-	"forum": ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
-	"minimale": ["gras", "italique", "lien", "|", "source"],
+	"forum": ["gras", "italique", "lien", "|", "citation", "liste", "code", "emoji", "|", "source"],
+	"minimale": ["gras", "italique", "lien", "emoji", "|", "source"],
 	"modele": ["gras", "italique", "exposant", "|", "liste", "citation", "|", "source"]
 }

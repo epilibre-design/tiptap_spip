@@ -78,7 +78,10 @@ export function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content,
 		onClose?.({ reason });
 		if (refocus && !editor.isDestroyed) {
 			const cible = origin.returnTarget ?? trigger ?? editor.view.dom;
-			if (cible.isConnected) cible.focus();
+			if (cible.isConnected) {
+				if (cible === editor.view.dom) editor.view.focus();
+				else cible.focus();
+			}
 		}
 	};
 	const sentinelle = (sens) => {

@@ -187,3 +187,10 @@ describe('panneau de suggestions interne', () => {
 		expect(el.style.overflowY).toBe('auto');
 	});
 });
+
+it('annulation inline rend le focus par la vue ProseMirror pour conserver le curseur', () => {
+	const { editor, ui } = monter('Un texte'); editor.commands.setTextSelection(5);
+	const focus = vi.spyOn(editor.view, 'focus');
+	const p = ui.openSuggestionsPanel({ content: contenu(), label: 'Suggestions', origin: { returnTarget: editor.view.dom } });
+	p.fermer({ reason: 'escape' }); expect(focus).toHaveBeenCalledOnce(); expect(editor.state.selection.from).toBe(5);
+});

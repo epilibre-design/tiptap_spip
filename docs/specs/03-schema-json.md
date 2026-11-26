@@ -21,6 +21,11 @@ Pas de StarterKit : les extensions sont déclarées une à une, les marks dans l
 (`bold`, `italic`, `strike`, `superscript`, `subscript`, `code`). Le schéma range les marks d'un texte dans
 l'ordre de déclaration ; un autre ordre ferait diverger `getJSON()` de l'empreinte d'un bloc intact.
 
+Les emojis insérés par le sélecteur sont du texte Unicode ordinaire. Aucun nœud emoji ni
+attribut de catalogue n’entre dans le document ; marks, VS15/VS16, ZWJ et teintes restent dans
+les chaînes de texte. Les entités numériques déjà reçues du serveur suivent le traitement
+habituel des nœuds bruts.
+
 ## 2. Extensions standard retenues (déclarées une à une)
 
 | Extension | Statut | Raccourci SPIP |

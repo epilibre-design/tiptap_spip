@@ -59,6 +59,11 @@ return [
 	'depot_indisponible' => 'Adding files is not available here.',
 
 	// E
+	'emoji' => 'Emoji',
+	'emoji_plus' => 'More…',
+	'emoji_chargement' => 'Loading emojis…',
+	'emoji_erreur' => 'Unable to load emojis.',
+	'emoji_reessayer' => 'Retry',
 	'enregistrer_sans_attendre' => 'Save without waiting',
 	'envoi_echec' => 'The file could not be sent (session expired or connection lost).',
 	'envoi_en_cours' => 'A file is being sent.',

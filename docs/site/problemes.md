@@ -1,5 +1,21 @@
 # Résoudre un problème
 
+## Le sélecteur d’emojis affiche une erreur
+
+Cliquez sur **Réessayer**. Ce bouton apparaît aussi après dix secondes sans réponse.
+Le sélecteur utilise le stockage IndexedDB du navigateur ; si ce stockage est bloqué, les
+suggestions `:heart` restent disponibles tant que le catalogue peut être chargé. Sur un site
+HTTP sans en-tête ETag pour le JSON, utilisez HTTPS pour fournir l’API cryptographique nécessaire.
+
+Le catalogue de recherche est anglais. La teinte préférée s’applique au sélecteur complet ;
+les suggestions inline insèrent la forme de base. Favoris et teinte sont conservés pour une
+version du catalogue, puis réinitialisés lorsque cette version change.
+
+Si la connexion MySQL du site utilise `utf8` au lieu de `utf8mb4`, SPIP peut enregistrer les
+caractères hors BMP sous forme d’entités numériques. L’éditeur conserve cette source reçue et
+l’affiche comme un fragment brut. Saisir `:h` juste après ce fragment exige un espace ordinaire.
+La recette de cette livraison a été exécutée sur SQLite ; MySQL n’a pas été testé ici.
+
 ## Je ne vois pas l’éditeur
 
 Vérifiez que le plugin est **actif** dans **Configuration → Gestion des plugins**. Ouvrez ensuite

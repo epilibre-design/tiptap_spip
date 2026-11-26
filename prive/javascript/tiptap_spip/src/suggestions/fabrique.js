@@ -42,7 +42,10 @@ function autorise(editor, state, range) {
 }
 
 /** Une extension par fournisseur ; les closures de plugin sont créées pour chaque éditeur. */
-export function creerSuggestions(options) {
+export const creerSuggestions = (options) => creerSuggestionsInternes(options);
+
+/** Adaptations du cœur seulement ; cette fabrique n’est pas exposée dans l’API ui publique. */
+export function creerSuggestionsInternes(options, interne = {}) {
 	const { name, char, items, command, labels, allow, minQueryLength = 0, queryPattern,
 		allowedPrefixes = [' '], startOfLine = false, allowSpaces = false } = options;
 	if (typeof name !== 'string' || !name || typeof char !== 'string' || [...char].length !== 1
@@ -72,22 +75,36 @@ export function creerSuggestions(options) {
 				if (!etat?.active || !courante || !liste?.items.includes(item)
 					|| etat.range.from !== range.from || etat.range.to !== range.to || etat.query !== courante.query
 					|| !autorise(editor, editor.state, range) || (allow && !allow({ editor, state: editor.state, range }))) return false;
-				editor.view.dispatch(closeHistory(editor.state.tr));
+				if (interne.historique !== false) editor.view.dispatch(closeHistory(editor.state.tr));
 				let succes;
 				try { succes = command({ editor, range, item }); }
 				catch (e) { console.error(`tiptap_spip : commande de ${name}`, e); return false; }
 				if (succes !== true) return false;
 				if (editor.isDestroyed) return true;
-				editor.view.dispatch(closeHistory(editor.state.tr));
+				if (interne.historique !== false) editor.view.dispatch(closeHistory(editor.state.tr));
 				sortir(); editor.view.focus();
 				return true;
+			};
+			const action = () => {
+				const props = courante;
+				if (!props || !key.getState(editor.state)?.active || !autorise(editor, editor.state, props.range)) return;
+				const rect = props.clientRect?.();
+				// Poser le rejet avant que le picker ne prenne ou rende le focus.
+				sortir();
+				interne.onAction?.({ editor, range: props.range, anchor: rect ? () => rect : undefined });
 			};
 			const afficher = (props) => {
 				if (!contexteSuggestions(editor) || editor.isDestroyed) return;
 				courante = props;
+				if (interne.masquerVide && !props.loading && !erreur && !props.items.length) {
+					liste?.destroy(); liste = null; return;
+				}
 				liste ??= new ListeSuggestions({ editor, labels,
-					onChoose: (item) => courante?.command(item), onDismiss: sortir });
-				liste.update({ ...props, error: !props.loading && erreur });
+					onChoose: (item) => courante?.command(item), onDismiss: sortir,
+					onAction: action, formatItem: interne.formatItem });
+				const maximum = interne.maximum ?? props.items.length;
+				liste.update({ ...props, items: props.items.slice(0, maximum), error: !props.loading && erreur,
+					actionLabel: props.items.length > maximum ? interne.actionLabel?.() : null });
 			};
 			const plugin = Suggestion({
 				editor, pluginKey: key, char, allowedPrefixes, startOfLine, allowSpaces,

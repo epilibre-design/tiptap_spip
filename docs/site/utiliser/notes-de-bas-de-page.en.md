@@ -19,6 +19,9 @@ is required unless a **Name** is entered, including a number to refer to an auto
 The **Note text** area is a small editor: it supports formatting, links, lists, and more. It has
 no toolbar of its own and does not allow notes inside notes.
 
+The **Emoji** button next to this area opens the same picker as the main toolbar. `:heart`
+suggestions are also available; choosing an emoji does not submit the note.
+
 ## Refer to a note again
 
 To add another reference to an existing note, create a note with the same **Name**, such as `A`,

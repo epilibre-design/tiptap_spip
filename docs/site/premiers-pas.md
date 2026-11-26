@@ -45,6 +45,19 @@ Selon la configuration et le contenu, la barre peut aussi proposer les outils
 La barre reste visible pendant le défilement du formulaire. Les boutons disponibles dépendent du
 champ : un commentaire de forum, par exemple, a une barre plus courte qu’un article.
 
+## Insérer un emoji
+
+Cliquez sur **Emoji** dans la barre pour parcourir le sélecteur, ou utilisez le petit bouton
+près du texte d’une note ou de chaque langue d’un multi. Le choix remplace le texte sélectionné.
+Les noms recherchés sont anglais, par exemple `heart` ou `smile`.
+
+Vous pouvez aussi saisir `:h` après un espace ou au début d’une ligne. La liste propose six
+emojis et s’affine à chaque caractère ; **Plus…** ouvre le sélecteur complet. Utilisez Bas puis
+Entrée pour choisir, ou cliquez sur un résultat. Un espace ferme la liste ; Échap l’annule.
+Entrée sans choix actif garde sa fonction habituelle. Les écritures `:smile:` et `:)` déjà
+présentes dans le texte restent littérales. Le bouton Emoji a été ajouté après la capture de
+barre ci-dessus.
+
 ## Passer en source et revenir
 
 Cliquez sur **Source** pour voir et modifier les raccourcis SPIP, par exemple `{{gras}}` ou

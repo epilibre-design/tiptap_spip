@@ -545,21 +545,21 @@ var Mark = class _Mark {
   [exclusive](https://prosemirror.net/docs/ref/#model.MarkSpec.excludes) with this mark are present,
   those are replaced by this one.
   */
-  addToSet(set) {
+  addToSet(set2) {
     let copy2, placed = false;
-    for (let i2 = 0; i2 < set.length; i2++) {
-      let other = set[i2];
+    for (let i2 = 0; i2 < set2.length; i2++) {
+      let other = set2[i2];
       if (this.eq(other))
-        return set;
+        return set2;
       if (this.type.excludes(other.type)) {
         if (!copy2)
-          copy2 = set.slice(0, i2);
+          copy2 = set2.slice(0, i2);
       } else if (other.type.excludes(this.type)) {
-        return set;
+        return set2;
       } else {
         if (!placed && other.type.rank > this.type.rank) {
           if (!copy2)
-            copy2 = set.slice(0, i2);
+            copy2 = set2.slice(0, i2);
           copy2.push(this);
           placed = true;
         }
@@ -568,7 +568,7 @@ var Mark = class _Mark {
       }
     }
     if (!copy2)
-      copy2 = set.slice();
+      copy2 = set2.slice();
     if (!placed)
       copy2.push(this);
     return copy2;
@@ -577,18 +577,18 @@ var Mark = class _Mark {
   Remove this mark from the given set, returning a new set. If this
   mark is not in the set, the set itself is returned.
   */
-  removeFromSet(set) {
-    for (let i2 = 0; i2 < set.length; i2++)
-      if (this.eq(set[i2]))
-        return set.slice(0, i2).concat(set.slice(i2 + 1));
-    return set;
+  removeFromSet(set2) {
+    for (let i2 = 0; i2 < set2.length; i2++)
+      if (this.eq(set2[i2]))
+        return set2.slice(0, i2).concat(set2.slice(i2 + 1));
+    return set2;
   }
   /**
   Test whether this mark is in the given set of marks.
   */
-  isInSet(set) {
-    for (let i2 = 0; i2 < set.length; i2++)
-      if (this.eq(set[i2]))
+  isInSet(set2) {
+    for (let i2 = 0; i2 < set2.length; i2++)
+      if (this.eq(set2[i2]))
         return true;
     return false;
   }
@@ -2013,15 +2013,15 @@ function dfa(nfa2) {
       nfa2[node2].forEach(({ term, to }) => {
         if (!term)
           return;
-        let set;
+        let set2;
         for (let i2 = 0; i2 < out.length; i2++)
           if (out[i2][0] == term)
-            set = out[i2][1];
+            set2 = out[i2][1];
         nullFrom(nfa2, to).forEach((node3) => {
-          if (!set)
-            out.push([term, set = []]);
-          if (set.indexOf(node3) == -1)
-            set.push(node3);
+          if (!set2)
+            out.push([term, set2 = []]);
+          if (set2.indexOf(node3) == -1)
+            set2.push(node3);
         });
       });
     });
@@ -2340,21 +2340,21 @@ var MarkType = class _MarkType {
   When there is a mark of this type in the given set, a new set
   without it is returned. Otherwise, the input set is returned.
   */
-  removeFromSet(set) {
-    for (var i2 = 0; i2 < set.length; i2++)
-      if (set[i2].type == this) {
-        set = set.slice(0, i2).concat(set.slice(i2 + 1));
+  removeFromSet(set2) {
+    for (var i2 = 0; i2 < set2.length; i2++)
+      if (set2[i2].type == this) {
+        set2 = set2.slice(0, i2).concat(set2.slice(i2 + 1));
         i2--;
       }
-    return set;
+    return set2;
   }
   /**
   Tests whether there is a mark of this type in the given set.
   */
-  isInSet(set) {
-    for (let i2 = 0; i2 < set.length; i2++)
-      if (set[i2].type == this)
-        return set[i2];
+  isInSet(set2) {
+    for (let i2 = 0; i2 < set2.length; i2++)
+      if (set2[i2].type == this)
+        return set2[i2];
   }
   /**
   Queries whether a given mark type is
@@ -4105,10 +4105,10 @@ function removeMark(tr, from2, to, mark2) {
     step++;
     let toRemove = null;
     if (mark2 instanceof MarkType) {
-      let set = node2.marks, found2;
-      while (found2 = mark2.isInSet(set)) {
+      let set2 = node2.marks, found2;
+      while (found2 = mark2.isInSet(set2)) {
         (toRemove || (toRemove = [])).push(found2);
-        set = found2.removeFromSet(set);
+        set2 = found2.removeFromSet(set2);
       }
     } else if (mark2) {
       if (mark2.isInSet(node2.marks))
@@ -5169,10 +5169,10 @@ var Transform = class {
       if (mark2.isInSet(node2.marks))
         this.step(new RemoveNodeMarkStep(pos, mark2));
     } else {
-      let set = node2.marks, found2, steps = [];
-      while (found2 = mark2.isInSet(set)) {
+      let set2 = node2.marks, found2, steps = [];
+      while (found2 = mark2.isInSet(set2)) {
         steps.push(new RemoveNodeMarkStep(pos, found2));
-        set = found2.removeFromSet(set);
+        set2 = found2.removeFromSet(set2);
       }
       for (let i2 = steps.length - 1; i2 >= 0; i2--)
         this.step(steps[i2]);
@@ -10873,16 +10873,16 @@ function moveSpans(spans, offset3) {
   return result;
 }
 function mapAndGatherRemainingDecorations(children, oldChildren, decorations3, mapping, offset3, oldOffset, options) {
-  function gather(set, oldOffset2) {
-    for (let i2 = 0; i2 < set.local.length; i2++) {
-      let mapped = set.local[i2].map(mapping, offset3, oldOffset2);
+  function gather(set2, oldOffset2) {
+    for (let i2 = 0; i2 < set2.local.length; i2++) {
+      let mapped = set2.local[i2].map(mapping, offset3, oldOffset2);
       if (mapped)
         decorations3.push(mapped);
       else if (options.onRemove)
-        options.onRemove(set.local[i2].spec);
+        options.onRemove(set2.local[i2].spec);
     }
-    for (let i2 = 0; i2 < set.children.length; i2 += 3)
-      gather(set.children[i2 + 2], set.children[i2] + oldOffset2 + 1);
+    for (let i2 = 0; i2 < set2.children.length; i2 += 3)
+      gather(set2.children[i2 + 2], set2.children[i2] + oldOffset2 + 1);
   }
   for (let i2 = 0; i2 < children.length; i2 += 3)
     if (children[i2 + 1] == -1)
@@ -11403,8 +11403,8 @@ function readDOMChange(view, from2, to, typeOver, addedNodes) {
   from2 = $before.before(shared + 1);
   to = view.state.doc.resolve(to).after(shared + 1);
   let sel = view.state.selection;
-  let parse2 = parseBetween(view, from2, to, addedNodes);
-  let doc4 = view.state.doc, compare = doc4.slice(parse2.from, parse2.to);
+  let parse3 = parseBetween(view, from2, to, addedNodes);
+  let doc4 = view.state.doc, compare = doc4.slice(parse3.from, parse3.to);
   let preferredPos, preferredSide;
   if (view.input.lastKeyCode === 8 && Date.now() - 100 < view.input.lastKeyCodeTime) {
     preferredPos = view.state.selection.to;
@@ -11414,7 +11414,7 @@ function readDOMChange(view, from2, to, typeOver, addedNodes) {
     preferredSide = "start";
   }
   view.input.lastKeyCode = null;
-  let change = findDiff(compare.content, parse2.doc.content, parse2.from, preferredPos, preferredSide);
+  let change = findDiff(compare.content, parse3.doc.content, parse3.from, preferredPos, preferredSide);
   if (change)
     view.input.domChangeCount++;
   if ((ios && view.input.lastIOSEnter > Date.now() - 225 || android) && addedNodes.some((n) => isElt(n) && !isInline.test(n.nodeName)) && (!change || change.endA >= change.endB) && view.someProp("handleKeyDown", (f) => f(view, keyEvent(13, "Enter")))) {
@@ -11422,11 +11422,11 @@ function readDOMChange(view, from2, to, typeOver, addedNodes) {
     return;
   }
   if (!change) {
-    if (typeOver && sel instanceof TextSelection && !sel.empty && sel.$head.sameParent(sel.$anchor) && !view.composing && !(parse2.sel && parse2.sel.anchor != parse2.sel.head)) {
+    if (typeOver && sel instanceof TextSelection && !sel.empty && sel.$head.sameParent(sel.$anchor) && !view.composing && !(parse3.sel && parse3.sel.anchor != parse3.sel.head)) {
       change = { start: sel.from, endA: sel.to, endB: sel.to };
     } else {
-      if (parse2.sel) {
-        let sel2 = resolveSelection(view, view.state.doc, parse2.sel);
+      if (parse3.sel) {
+        let sel2 = resolveSelection(view, view.state.doc, parse3.sel);
         if (sel2 && !sel2.eq(view.state.selection)) {
           let tr = view.state.tr.setSelection(sel2);
           if (compositionID)
@@ -11438,23 +11438,23 @@ function readDOMChange(view, from2, to, typeOver, addedNodes) {
     }
   }
   if (view.state.selection.from < view.state.selection.to && change.start == change.endB && view.state.selection instanceof TextSelection) {
-    if (change.start > view.state.selection.from && change.start <= view.state.selection.from + 2 && view.state.selection.from >= parse2.from) {
+    if (change.start > view.state.selection.from && change.start <= view.state.selection.from + 2 && view.state.selection.from >= parse3.from) {
       change.start = view.state.selection.from;
-    } else if (change.endA < view.state.selection.to && change.endA >= view.state.selection.to - 2 && view.state.selection.to <= parse2.to) {
+    } else if (change.endA < view.state.selection.to && change.endA >= view.state.selection.to - 2 && view.state.selection.to <= parse3.to) {
       change.endB += view.state.selection.to - change.endA;
       change.endA = view.state.selection.to;
     }
   }
-  if (ie && ie_version <= 11 && change.endB == change.start + 1 && change.endA == change.start && change.start > parse2.from && parse2.doc.textBetween(change.start - parse2.from - 1, change.start - parse2.from + 1) == " \xA0") {
+  if (ie && ie_version <= 11 && change.endB == change.start + 1 && change.endA == change.start && change.start > parse3.from && parse3.doc.textBetween(change.start - parse3.from - 1, change.start - parse3.from + 1) == " \xA0") {
     change.start--;
     change.endA--;
     change.endB--;
   }
-  let $from = parse2.doc.resolveNoCache(change.start - parse2.from);
-  let $to = parse2.doc.resolveNoCache(change.endB - parse2.from);
+  let $from = parse3.doc.resolveNoCache(change.start - parse3.from);
+  let $to = parse3.doc.resolveNoCache(change.endB - parse3.from);
   let $fromA = doc4.resolve(change.start);
   let inlineChange = $from.sameParent($to) && $from.parent.inlineContent && $fromA.end() >= change.endA;
-  if ((ios && view.input.lastIOSEnter > Date.now() - 225 && (!inlineChange || addedNodes.some((n) => n.nodeName == "DIV" || n.nodeName == "P")) || !inlineChange && looksLikeEnter(parse2.doc, $from.pos, $to.pos)) && view.someProp("handleKeyDown", (f) => f(view, keyEvent(13, "Enter")))) {
+  if ((ios && view.input.lastIOSEnter > Date.now() - 225 && (!inlineChange || addedNodes.some((n) => n.nodeName == "DIV" || n.nodeName == "P")) || !inlineChange && looksLikeEnter(parse3.doc, $from.pos, $to.pos)) && view.someProp("handleKeyDown", (f) => f(view, keyEvent(13, "Enter")))) {
     view.input.lastIOSEnter = 0;
     return;
   }
@@ -11465,9 +11465,9 @@ function readDOMChange(view, from2, to, typeOver, addedNodes) {
   }
   if (chrome && change.endB == change.start)
     view.input.lastChromeDelete = Date.now();
-  if (android && !inlineChange && $from.start() != $to.start() && $to.parentOffset == 0 && $from.depth == $to.depth && parse2.sel && parse2.sel.anchor == parse2.sel.head && parse2.sel.head == change.endA) {
+  if (android && !inlineChange && $from.start() != $to.start() && $to.parentOffset == 0 && $from.depth == $to.depth && parse3.sel && parse3.sel.anchor == parse3.sel.head && parse3.sel.head == change.endA) {
     change.endB -= 2;
-    $to = parse2.doc.resolveNoCache(change.endB - parse2.from);
+    $to = parse3.doc.resolveNoCache(change.endB - parse3.from);
     setTimeout(() => {
       view.someProp("handleKeyDown", function(f) {
         return f(view, keyEvent(13, "Enter"));
@@ -11476,9 +11476,9 @@ function readDOMChange(view, from2, to, typeOver, addedNodes) {
   }
   let chFrom = change.start, chTo = change.endA;
   let mkTr = (base2) => {
-    let tr = base2 || view.state.tr.replace(chFrom, chTo, parse2.doc.slice(change.start - parse2.from, change.endB - parse2.from));
-    if (parse2.sel) {
-      let sel2 = resolveSelection(view, tr.doc, parse2.sel);
+    let tr = base2 || view.state.tr.replace(chFrom, chTo, parse3.doc.slice(change.start - parse3.from, change.endB - parse3.from));
+    if (parse3.sel) {
+      let sel2 = resolveSelection(view, tr.doc, parse3.sel);
       if (sel2 && !(chrome && view.composing && sel2.empty && (change.start != change.endB || view.input.lastChromeDelete < Date.now() - 100) && (sel2.head == chFrom || sel2.head == tr.mapping.map(chTo) - 1) || ie && sel2.empty && sel2.head == chFrom))
         tr.setSelection(sel2);
     }
@@ -15186,8 +15186,8 @@ function getRebuildRanges(tr, doc4) {
     ranges: merged
   };
 }
-function mapDecorationSet(set, mapping, doc4, widgetKeys) {
-  return set.map(mapping, doc4, { onRemove: (removedSpec) => {
+function mapDecorationSet(set2, mapping, doc4, widgetKeys) {
+  return set2.map(mapping, doc4, { onRemove: (removedSpec) => {
     const key = removedSpec === null || removedSpec === void 0 ? void 0 : removedSpec.key;
     if (typeof key === "string") widgetKeys.delete(key);
   } });
@@ -15202,7 +15202,7 @@ function mapDecorations(name, previous, tr) {
   };
 }
 function mergeDecorationSets(doc4, decorationSetsByExtension) {
-  const allDecorations = Object.values(decorationSetsByExtension).flatMap((set) => set.find());
+  const allDecorations = Object.values(decorationSetsByExtension).flatMap((set2) => set2.find());
   return DecorationSet.create(doc4, allDecorations);
 }
 function unionWidgetKeys(widgetKeysByExtension) {
@@ -15295,8 +15295,8 @@ var DecorationManager = class {
           const decorationSetsByExtension = {};
           const widgetKeysByExtension = {};
           for (const { name, spec } of entries) {
-            const { set, widgetKeys } = this.buildFullSet(name, spec, state);
-            decorationSetsByExtension[name] = set;
+            const { set: set2, widgetKeys } = this.buildFullSet(name, spec, state);
+            decorationSetsByExtension[name] = set2;
             widgetKeysByExtension[name] = widgetKeys;
           }
           const managerState = {
@@ -15333,8 +15333,8 @@ var DecorationManager = class {
                 widgetKeysByExtension[name] = result.widgetKeys;
                 recomputedNames.add(name);
               } else {
-                const { set, widgetKeys } = this.buildFullSet(name, spec, newState);
-                decorationSetsByExtension[name] = set;
+                const { set: set2, widgetKeys } = this.buildFullSet(name, spec, newState);
+                decorationSetsByExtension[name] = set2;
                 widgetKeysByExtension[name] = widgetKeys;
                 recomputedNames.add(name);
               }
@@ -15391,10 +15391,10 @@ var DecorationManager = class {
     var _previous$decorationS, _previous$widgetKeysB;
     const previousSet = (_previous$decorationS = previous.decorationSetsByExtension[name]) !== null && _previous$decorationS !== void 0 ? _previous$decorationS : DecorationSet.empty;
     const widgetKeys = new Set((_previous$widgetKeysB = previous.widgetKeysByExtension[name]) !== null && _previous$widgetKeysB !== void 0 ? _previous$widgetKeysB : []);
-    let set = mapDecorationSet(previousSet, tr.mapping, tr.doc, widgetKeys);
+    let set2 = mapDecorationSet(previousSet, tr.mapping, tr.doc, widgetKeys);
     const docSize = newState.doc.content.size;
     for (const { from: from2, to } of ranges) {
-      const stale = set.find(from2, to).filter((decoration) => rangeOwnsPosition({
+      const stale = set2.find(from2, to).filter((decoration) => rangeOwnsPosition({
         position: decoration.from,
         from: from2,
         to,
@@ -15404,7 +15404,7 @@ var DecorationManager = class {
         const key = widgetKeyOf(decoration);
         if (key) widgetKeys.delete(key);
       }
-      set = set.remove(stale);
+      set2 = set2.remove(stale);
       const { decorations: pmDecorations, widgetKeys: addedKeys } = decorationsToPMDecorations(filterOutOfRangeDecorations({
         decorations: this.runCreate(name, "createInRange", () => spec.createInRange({
           editor: this.editor,
@@ -15419,11 +15419,11 @@ var DecorationManager = class {
         extensionName: name,
         warnedExtensions: this.warnedOutOfRangeExtensions
       }), name);
-      set = set.add(newState.doc, pmDecorations);
+      set2 = set2.add(newState.doc, pmDecorations);
       for (const key of addedKeys) widgetKeys.add(key);
     }
     return {
-      set,
+      set: set2,
       widgetKeys
     };
   }
@@ -19028,9 +19028,9 @@ function createSuggestionProps({ pluginKey, decorationTag, decorationClass, deco
     decorations(state) {
       const { active, range, decorationId, query } = pluginKey.getState(state);
       if (!active) return null;
-      const isEmpty2 = !(query === null || query === void 0 ? void 0 : query.length);
+      const isEmpty3 = !(query === null || query === void 0 ? void 0 : query.length);
       const classNames = [decorationClass];
-      if (isEmpty2) classNames.push(decorationEmptyClass);
+      if (isEmpty3) classNames.push(decorationEmptyClass);
       return DecorationSet.create(state.doc, [Decoration.inline(range.from, range.to, {
         nodeName: decorationTag,
         class: classNames.join(" "),
@@ -19167,7 +19167,7 @@ function createSuggestionAsyncRequestManager({ editor, items }) {
     clearDebounceTimer();
     abortController = null;
   };
-  const fetch = async (query, debounce) => {
+  const fetch2 = async (query, debounce) => {
     abort();
     abortController = new AbortController();
     const controller = abortController;
@@ -19191,7 +19191,7 @@ function createSuggestionAsyncRequestManager({ editor, items }) {
   };
   return {
     abort,
-    fetch
+    fetch: fetch2
   };
 }
 function createSuggestionFloatingUiConfig({ placement, offset: offset$1, flip: flip$1, floatingUi }) {
@@ -19416,8 +19416,8 @@ function createSuggestionView({ editor, pluginKey, items, renderer, minQueryLeng
   };
 }
 var SuggestionPluginKey = new PluginKey("suggestion");
-function Suggestion({ pluginKey = SuggestionPluginKey, editor, char = "@", allowSpaces = false, allowToIncludeChar = false, allowedPrefixes = [" "], startOfLine = false, decorationTag = "span", decorationClass = "suggestion", decorationContent = "", decorationEmptyClass = "is-empty", command: command2 = () => null, items = () => [], minQueryLength = 0, debounce = 0, initialItems, placement = "bottom-start", offset: offsetOption = {}, container, flip: flip3 = true, floatingUi, dismissOnOutsideClick = true, render: render2 = () => ({}), allow = () => true, findSuggestionMatch: findSuggestionMatch$1 = findSuggestionMatch, shouldShow, shouldResetDismissed }) {
-  const renderer = render2 === null || render2 === void 0 ? void 0 : render2();
+function Suggestion({ pluginKey = SuggestionPluginKey, editor, char = "@", allowSpaces = false, allowToIncludeChar = false, allowedPrefixes = [" "], startOfLine = false, decorationTag = "span", decorationClass = "suggestion", decorationContent = "", decorationEmptyClass = "is-empty", command: command2 = () => null, items = () => [], minQueryLength = 0, debounce = 0, initialItems, placement = "bottom-start", offset: offsetOption = {}, container, flip: flip3 = true, floatingUi, dismissOnOutsideClick = true, render: render3 = () => ({}), allow = () => true, findSuggestionMatch: findSuggestionMatch$1 = findSuggestionMatch, shouldShow, shouldResetDismissed }) {
+  const renderer = render3 === null || render3 === void 0 ? void 0 : render3();
   const effectiveAllowSpaces = allowSpaces && !allowToIncludeChar;
   const clientRectFor$1 = (view, decorationNode) => clientRectFor(editor, view, decorationNode, pluginKey);
   function shouldKeepDismissed$1(props) {
@@ -19591,10 +19591,12 @@ function fermerSuggestions({ parent, wrapper, editor, refocus = false, reason = 
 // src/suggestions/ListeSuggestions.js
 var compteur = 0;
 var ListeSuggestions = class {
-  constructor({ editor, labels, onChoose, onDismiss }) {
+  constructor({ editor, labels, onChoose, onDismiss, onAction, formatItem }) {
     this.dom = editor.view.dom;
     this.labels = labels;
     this.onChoose = onChoose;
+    this.formatItem = formatItem;
+    this.onAction = onAction;
     this.actif = -1;
     this.detruite = false;
     const doc4 = this.dom.ownerDocument;
@@ -19608,7 +19610,15 @@ var ListeSuggestions = class {
     this.liste.id = `tts-suggestions-${++compteur}`;
     this.liste.setAttribute("role", "listbox");
     this.liste.setAttribute("aria-label", labels.suggestions);
-    this.element.append(this.etat, this.liste);
+    this.action = doc4.createElement("button");
+    this.action.type = "button";
+    this.action.tabIndex = -1;
+    this.action.className = "tts-suggestions__action";
+    this.action.hidden = true;
+    this.action.addEventListener("click", () => {
+      if (!this.detruite && !this.action.hidden) this.onAction?.();
+    });
+    this.element.append(this.etat, this.liste, this.action);
     const contexte3 = contexteSuggestions(editor);
     (contexte3.parent?.element ?? contexte3.wrapper).append(this.element);
     this.element.showPopover?.();
@@ -19632,11 +19642,14 @@ var ListeSuggestions = class {
       if (!this.element.contains(e.target)) this.placer();
     }, true);
   }
-  update({ query, items = [], loading = false, error = false, clientRect: clientRect2 }) {
+  update({ query, items = [], loading = false, error = false, clientRect: clientRect2, actionLabel }) {
     if (this.detruite) return;
     this.query = query;
     this.items = loading || error ? [] : items;
     this.actif = -1;
+    this.action.hidden = !this.items.length || !actionLabel;
+    this.action.textContent = actionLabel ?? "";
+    this.action.dataset.active = "false";
     this.rect = clientRect2;
     this.dom.removeAttribute("aria-activedescendant");
     this.etat.textContent = loading ? this.labels.loading : error ? this.labels.error : this.items.length ? `${this.labels.suggestions} : ${this.items.length}` : this.labels.empty;
@@ -19650,7 +19663,7 @@ var ListeSuggestions = class {
       option.setAttribute("role", "option");
       option.setAttribute("aria-selected", "false");
       const titre = this.dom.ownerDocument.createElement("span");
-      titre.textContent = item.title;
+      titre.textContent = this.formatItem?.(item) ?? item.title;
       option.append(titre);
       if (item.subtext) {
         const sous = this.dom.ownerDocument.createElement("small");
@@ -19672,15 +19685,24 @@ var ListeSuggestions = class {
     if (this.detruite || event.isComposing || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || !this.items?.length) return false;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       const sens = event.key === "ArrowDown" ? 1 : -1;
-      this.actif = this.actif < 0 ? sens > 0 ? 0 : this.items.length - 1 : (this.actif + sens + this.items.length) % this.items.length;
+      const total = this.items.length + (this.action.hidden ? 0 : 1);
+      this.actif = this.actif < 0 ? sens > 0 ? 0 : this.items.length - 1 : (this.actif + sens + total) % total;
       for (const [i2, option] of [...this.liste.children].entries()) option.setAttribute("aria-selected", String(i2 === this.actif));
       const actif = this.liste.children[this.actif];
-      this.dom.setAttribute("aria-activedescendant", actif.id);
-      actif.scrollIntoView?.({ block: "nearest" });
+      this.action.dataset.active = String(!actif);
+      if (actif) {
+        this.dom.setAttribute("aria-activedescendant", actif.id);
+        this.etat.textContent = `${this.labels.suggestions} : ${this.items.length}`;
+      } else {
+        this.dom.removeAttribute("aria-activedescendant");
+        this.etat.textContent = this.action.textContent;
+      }
+      (actif ?? this.action).scrollIntoView?.({ block: "nearest" });
       return true;
     }
     if (event.key === "Enter" && this.actif >= 0) {
-      this.onChoose(this.items[this.actif]);
+      if (this.actif === this.items.length) this.onAction?.();
+      else this.onChoose(this.items[this.actif]);
       return true;
     }
     return false;
@@ -19759,7 +19781,8 @@ function autorise(editor, state, range) {
   });
   return !code2;
 }
-function creerSuggestions(options) {
+var creerSuggestions = (options) => creerSuggestionsInternes(options);
+function creerSuggestionsInternes(options, interne = {}) {
   const {
     name,
     char,
@@ -19801,7 +19824,7 @@ function creerSuggestions(options) {
       const executer = ({ range, item }) => {
         const etat = key.getState(editor.state);
         if (!etat?.active || !courante || !liste?.items.includes(item) || etat.range.from !== range.from || etat.range.to !== range.to || etat.query !== courante.query || !autorise(editor, editor.state, range) || allow && !allow({ editor, state: editor.state, range })) return false;
-        editor.view.dispatch(closeHistory(editor.state.tr));
+        if (interne.historique !== false) editor.view.dispatch(closeHistory(editor.state.tr));
         let succes;
         try {
           succes = command2({ editor, range, item });
@@ -19811,21 +19834,41 @@ function creerSuggestions(options) {
         }
         if (succes !== true) return false;
         if (editor.isDestroyed) return true;
-        editor.view.dispatch(closeHistory(editor.state.tr));
+        if (interne.historique !== false) editor.view.dispatch(closeHistory(editor.state.tr));
         sortir();
         editor.view.focus();
         return true;
       };
+      const action = () => {
+        const props = courante;
+        if (!props || !key.getState(editor.state)?.active || !autorise(editor, editor.state, props.range)) return;
+        const rect = props.clientRect?.();
+        sortir();
+        interne.onAction?.({ editor, range: props.range, anchor: rect ? () => rect : void 0 });
+      };
       const afficher = (props) => {
         if (!contexteSuggestions(editor) || editor.isDestroyed) return;
         courante = props;
+        if (interne.masquerVide && !props.loading && !erreur && !props.items.length) {
+          liste?.destroy();
+          liste = null;
+          return;
+        }
         liste ?? (liste = new ListeSuggestions({
           editor,
           labels,
           onChoose: (item) => courante?.command(item),
-          onDismiss: sortir
+          onDismiss: sortir,
+          onAction: action,
+          formatItem: interne.formatItem
         }));
-        liste.update({ ...props, error: !props.loading && erreur });
+        const maximum = interne.maximum ?? props.items.length;
+        liste.update({
+          ...props,
+          items: props.items.slice(0, maximum),
+          error: !props.loading && erreur,
+          actionLabel: props.items.length > maximum ? interne.actionLabel?.() : null
+        });
       };
       const plugin2 = Suggestion({
         editor,
@@ -21555,6 +21598,472 @@ function schemaJSON(json, schema) {
   return out;
 }
 var toEditorJSON = (source, schema, regles = []) => schemaJSON(parse(source, { empreintes: false, regles }), schema);
+
+// src/emojis/catalogue.js
+var catalogues = /* @__PURE__ */ new Map();
+var indexes = /* @__PURE__ */ new WeakMap();
+function indexer(emojis) {
+  return emojis.map((emoji, position) => ({
+    emoji,
+    position,
+    aliases: emoji.shortcodes.map((s) => s.toLowerCase()),
+    champs: [emoji.annotation, ...emoji.tags].map((s) => s.toLowerCase())
+  }));
+}
+function figer(valeur) {
+  if (valeur && typeof valeur === "object") {
+    Object.values(valeur).forEach(figer);
+    Object.freeze(valeur);
+  }
+  return valeur;
+}
+function chargerCatalogueEmojis({ url }) {
+  if (typeof url !== "string" || !url) return Promise.reject(new Error("URL du catalogue emoji indisponible"));
+  if (!catalogues.has(url)) {
+    const promise2 = Promise.resolve().then(() => fetch(url)).then((response) => {
+      if (!response.ok) throw new Error(`Chargement du catalogue emoji : HTTP ${response.status}`);
+      return response.json();
+    }).then((emojis) => {
+      const chaines = (liste) => Array.isArray(liste) && liste.every((s) => typeof s === "string" && s.length > 0);
+      if (!Array.isArray(emojis) || !emojis.every((e) => e && typeof e.emoji === "string" && e.emoji && chaines(e.shortcodes) && e.shortcodes.length > 0 && typeof e.annotation === "string" && chaines(e.tags) && Number.isFinite(e.order))) throw new Error("Catalogue emoji invalide");
+      figer(emojis);
+      indexes.set(emojis, indexer(emojis));
+      return emojis;
+    });
+    catalogues.set(url, promise2);
+    promise2.catch(() => {
+      if (catalogues.get(url) === promise2) catalogues.delete(url);
+    });
+  }
+  return catalogues.get(url);
+}
+function filtrerEmojis(emojis, query) {
+  const recherche = query.toLowerCase();
+  if (!recherche) return [];
+  const index = indexes.get(emojis) ?? indexer(emojis);
+  const trouves = [];
+  for (const entree of index) {
+    const { aliases, champs } = entree;
+    const exact = aliases.findIndex((s) => s === recherche);
+    const prefixe = aliases.findIndex((s) => s.startsWith(recherche));
+    const inclusion = aliases.findIndex((s) => s.includes(recherche));
+    const rang2 = exact >= 0 ? 0 : prefixe >= 0 ? 1 : champs.some((s) => s === recherche) ? 2 : champs.some((s) => s.startsWith(recherche)) ? 3 : inclusion >= 0 || champs.some((s) => s.includes(recherche)) ? 4 : Infinity;
+    if (Number.isFinite(rang2)) trouves.push({ ...entree, rang: rang2, alias: exact >= 0 ? exact : prefixe >= 0 ? prefixe : inclusion >= 0 ? inclusion : 0 });
+  }
+  trouves.sort((a, b) => a.rang - b.rang || a.emoji.order - b.emoji.order || a.position - b.position);
+  const vus = /* @__PURE__ */ new Set();
+  const items = [];
+  for (const { emoji, alias } of trouves) {
+    if (vus.has(emoji.emoji)) continue;
+    vus.add(emoji.emoji);
+    items.push({
+      id: emoji.emoji,
+      title: emoji.shortcodes[alias],
+      context: { unicode: emoji.emoji, annotation: emoji.annotation, tags: [...emoji.tags] }
+    });
+  }
+  return items;
+}
+
+// src/emojis/insertion.js
+var exclus2 = /* @__PURE__ */ new Set(["codeBlock", "spipCadre", "spipHtml", "spipMath", "spipMarkdown", "spipRaw", "spipRawInline"]);
+function emojiAutorise({ editor, state = editor?.state, range = state?.selection }) {
+  if (!editor || editor.isDestroyed || !editor.isEditable || editor.view.dom.closest("[hidden]") || state.selection instanceof NodeSelection || !range || !Number.isInteger(range.from) || !Number.isInteger(range.to) || range.from < 0 || range.to < range.from || range.to > state.doc.content.size) return false;
+  const { doc: doc4 } = state, a = doc4.resolve(range.from), b = doc4.resolve(range.to);
+  if (!a.parent.isTextblock || !a.sameParent(b)) return false;
+  for (let d = 0; d <= a.depth; d++) if (exclus2.has(a.node(d).type.name)) return false;
+  let interdit = (range.from === range.to ? state.storedMarks ?? a.marks() : a.marks()).some((m) => m.type.name === "code");
+  doc4.nodesBetween(range.from, range.to, (n) => {
+    interdit || (interdit = exclus2.has(n.type.name) || n.isAtom && !n.isText && n.type.name !== "hardBreak" || n.marks.some((m) => m.type.name === "code"));
+  });
+  return !interdit;
+}
+function insererEmoji({ editor, range, unicode }) {
+  if (typeof unicode !== "string" || !unicode.trim() || !emojiAutorise({ editor, range })) return false;
+  const { state } = editor;
+  const a = state.doc.resolve(range.from), b = state.doc.resolve(range.to);
+  const marks = range.from === range.to ? state.storedMarks ?? a.marks() : a.marksAcross(b) ?? a.marks();
+  const tr = closeHistory(state.tr).replaceWith(range.from, range.to, state.schema.text(unicode, marks));
+  tr.setSelection(TextSelection.create(tr.doc, range.from + unicode.length));
+  editor.view.dispatch(tr);
+  if (!editor.isDestroyed) editor.view.dispatch(closeHistory(editor.state.tr));
+  return true;
+}
+
+// src/ui/labels.js
+var DEFAUTS = {
+  emoji: "Emoji",
+  emoji_plus: "Plus\u2026",
+  emoji_chargement: "Chargement des emojis\u2026",
+  emoji_erreur: "Impossible de charger les emojis.",
+  emoji_reessayer: "R\xE9essayer",
+  mode_source: "Source",
+  lien: "Lien",
+  modele: "Mod\xE8le",
+  lien_cible: "Cible (art12, rub3, https://\u2026)",
+  lien_rechercher: "Rechercher un contenu",
+  lien_bulle: "Bulle d\u2019aide",
+  lien_langue: "Langue de la cible",
+  lien_nouvelle_fenetre: "Ouvrir dans une nouvelle fen\xEAtre",
+  lien_ouvrir: "Ouvrir",
+  lien_retirer: "Retirer le lien",
+  lien_figer: "Figer le titre",
+  lien_cible_obligatoire: "Indiquez une cible.",
+  modele_raccourci: "Raccourci du mod\xE8le",
+  modele_modifier: "Modifier",
+  modele_invalide: "Ce n\u2019est pas un raccourci de mod\xE8le.",
+  modele_catalogue: "Catalogue des mod\xE8les\u2026",
+  modele_saisir: "Saisir le raccourci\u2026",
+  terme: "Terme",
+  selection_invalide: "S\xE9lectionnez du texte d\u2019un m\xEAme paragraphe.",
+  bulle: "Bulle d\u2019aide",
+  langue: "Langue",
+  gras: "Gras",
+  italique: "Italique",
+  glossaire: "Glossaire",
+  glossaire_nom: "Glossaire (vide\xA0: par d\xE9faut)",
+  glossaire_numero: "Num\xE9ro",
+  glossaire_definition: "Voir la d\xE9finition",
+  glossaire_retirer: "Retirer du glossaire",
+  glossaire_invalide: "Ce terme ou ces r\xE9glages ne peuvent pas s\u2019\xE9crire en raccourci de glossaire.",
+  abbr: "Abr\xE9viation",
+  abbr_explication: "Explication",
+  abbr_retirer: "Retirer l\u2019abr\xE9viation",
+  abbr_invalide: "Cette abr\xE9viation ne peut pas s\u2019\xE9crire en raccourci (explication vide, crochets, barre verticale\u2026).",
+  lien_invalide: "Cette cible ou cette bulle ne peut pas s\u2019\xE9crire dans un raccourci de lien.",
+  note: "Note",
+  note_nom: "Nom (vide\xA0: num\xE9rot\xE9e)",
+  note_sans_appel: "Sans appel",
+  note_texte: "Texte de la note",
+  note_retirer: "Supprimer la note",
+  note_aria_sans_appel: "Note sans appel",
+  note_invalide: "Cette note ne peut pas s\u2019\xE9crire telle quelle (nom ou texte).",
+  note_vide: "La note est vide.",
+  notes: "Notes",
+  multi: "Multilingue",
+  multi_texte: "Texte dans cette langue",
+  multi_ajouter: "Ajouter une langue",
+  multi_retirer_langue: "Retirer",
+  multi_sans_langue: "Sans langue",
+  multi_supprimer: "Supprimer le multi",
+  multi_langues: "Langues du multi",
+  multi_invalide: "Ce multi ne peut pas s\u2019\xE9crire tel quel (code de langue, langue sans code en double, texte).",
+  multi_vide: "Le multi est vide.",
+  langue_affichee: "Langue affich\xE9e",
+  idiome: "Idiome",
+  idiome_raccourci: "Raccourci (<:module:cle:>)",
+  idiome_invalide: "Ce n\u2019est pas un raccourci d\u2019idiome.",
+  idiome_retirer: "Supprimer l\u2019idiome",
+  barre_outils: "Barre d\u2019outils",
+  outil_annuler: "Annuler",
+  outil_retablir: "R\xE9tablir",
+  outil_titre: "Titre",
+  outil_paragraphe: "Paragraphe",
+  outil_intertitre: "Intertitre",
+  outil_titre_niveau: "Titre de niveau @niveau@",
+  outil_liste: "Liste",
+  outil_liste_puces: "Liste \xE0 puces",
+  outil_liste_numerotee: "Liste num\xE9rot\xE9e",
+  outil_indenter: "Indenter",
+  outil_desindenter: "D\xE9sindenter",
+  outil_citation: "Citation",
+  outil_poesie: "Po\xE9sie",
+  outil_cadre: "Bloc de code",
+  outil_barre: "Barr\xE9",
+  outil_exposant: "Exposant",
+  outil_indice: "Indice",
+  outil_code: "Code",
+  outil_alignement: "Alignement",
+  outil_align_left: "\xC0 gauche",
+  outil_align_center: "Centr\xE9",
+  outil_align_right: "\xC0 droite",
+  outil_align_justify: "Justifi\xE9",
+  outil_align_aucun: "Sans alignement",
+  outil_tableau: "Tableau",
+  outil_tableau_inserer: "Ins\xE9rer un tableau",
+  outil_tableau_en_tete: "Ligne d\u2019en-t\xEAte",
+  outil_tableau_ligne_avant: "Ins\xE9rer une ligne au-dessus",
+  outil_tableau_ligne_apres: "Ins\xE9rer une ligne en dessous",
+  outil_tableau_colonne_avant: "Ins\xE9rer une colonne \xE0 gauche",
+  outil_tableau_colonne_apres: "Ins\xE9rer une colonne \xE0 droite",
+  outil_tableau_supprimer_ligne: "Supprimer la ligne",
+  outil_tableau_supprimer_colonne: "Supprimer la colonne",
+  outil_tableau_fusionner: "Fusionner les cellules",
+  outil_tableau_scinder: "Scinder la cellule",
+  outil_tableau_supprimer: "Supprimer le tableau",
+  outil_guillemets: "Guillemets",
+  outil_guillemets_simples: "Guillemets internes",
+  outil_caracteres: "Caract\xE8res sp\xE9ciaux",
+  outil_majuscules: "Majuscules",
+  outil_minuscules: "Minuscules",
+  outil_plein_ecran: "Plein \xE9cran",
+  outil_plein_ecran_sortir: "Quitter le plein \xE9cran",
+  anomalie_ouverture: "Mise en forme ouverte sans \xEAtre ferm\xE9e\xA0: au rendu, elle s\u2019\xE9tend jusqu\u2019\xE0 la fin du paragraphe.",
+  anomalie_fermeture: "Fermeture sans ouverture\xA0: au rendu, elle s\u2019affiche telle quelle ou reste sans effet.",
+  anomalie_intertitre: "Accolades d\u2019intertitre hors d\u2019un intertitre complet\xA0: au rendu, la suite devient un intertitre.",
+  anomalie_citation: "<quote> sans </quote>\xA0: au rendu, tout le texte qui suit passe en citation.",
+  anomalie_balise: "Balise SPIP sans fermeture\xA0: au rendu, elle n\u2019est pas trait\xE9e.",
+  etat: "\xC9tat du texte",
+  etat_mot: "1 mot",
+  etat_mots: "@nb@ mots",
+  etat_anomalie: "1 anomalie de syntaxe",
+  etat_anomalies: "@nb@ anomalies de syntaxe",
+  markdown_fermeture: "Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.",
+  brut: "Source SPIP",
+  brut_source: "Source SPIP, relue quand on applique",
+  brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
+  modele_aria: "Mod\xE8le @modele@",
+  envoi_fichier: "Envoi du fichier\u2026",
+  depot_indication: "D\xE9poser les fichiers",
+  depot_indisponible: "L\u2019ajout de fichiers n\u2019est pas disponible ici.",
+  envoi_echec: "Le fichier n\u2019a pas pu \xEAtre envoy\xE9 (session expir\xE9e ou connexion perdue).",
+  envoi_en_cours: "Un fichier est en cours d\u2019envoi.",
+  enregistrer_sans_attendre: "Enregistrer sans attendre",
+  fichier_trop_gros: "Fichier trop volumineux\xA0: @nom@.",
+  fichier_type_refuse: "Type de fichier non accept\xE9\xA0: @nom@.",
+  zone_texte: "Texte",
+  appliquer: "Appliquer",
+  annuler: "Annuler"
+};
+var label = (key) => globalThis.spipConfig?.tiptap_spip?.i18n?.[key] ?? DEFAUTS[key] ?? key;
+
+// src/ui/popover.js
+var Popover = class _Popover {
+  /**
+   * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
+   *           onSubmit: () => boolean|void, parent?: Popover, onClose?: () => void }} options
+   *        onSubmit renvoie false pour garder le popover ouvert ; editor : celui qui reprend le focus
+   */
+  constructor({ editor, wrapper, titre, className, onSubmit, parent = null, onClose = null }) {
+    this.editor = editor;
+    this.wrapper = wrapper;
+    this.parent = parent;
+    this.enfant = null;
+    this.onClose = onClose;
+    this.ouvert = false;
+    this.element = document.createElement("div");
+    this.element.className = "tts-popover-dialogue";
+    this.element.setAttribute("role", "dialog");
+    this.element.setAttribute("aria-label", titre);
+    this.flottant = typeof this.element.showPopover === "function";
+    if (this.flottant) this.element.popover = "manual";
+    this.placementEnAttente = 0;
+    this.replacer = () => {
+      if (this.placementEnAttente) return;
+      this.placementEnAttente = requestAnimationFrame(() => {
+        this.placementEnAttente = 0;
+        if (this.ouvert) this.place();
+      });
+    };
+    this.auDefilement = (event) => {
+      if (!this.element.contains(event.target)) this.replacer();
+    };
+    this.form = document.createElement("form");
+    this.form.className = `tts-popover ${className ?? ""}`.trim();
+    this.element.append(this.form);
+    this.erreur = document.createElement("p");
+    this.erreur.className = "tts-popover__erreur";
+    this.erreur.setAttribute("role", "alert");
+    this.erreur.hidden = true;
+    this.actions = document.createElement("div");
+    this.actions.className = "tts-popover__actions";
+    this.form.append(this.erreur, this.actions);
+    this.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (onSubmit() !== false) this.close();
+    });
+    this.form.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        this.close();
+      } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && event.target.tagName === "TEXTAREA") {
+        event.preventDefault();
+        this.form.requestSubmit();
+      } else if (event.key === "Tab" && !event.defaultPrevented) {
+        this.pieger(event);
+      }
+    });
+  }
+  /** Champ libellé ; renvoie l'élément de saisie. */
+  field(texte2, input) {
+    const etiquette = document.createElement("label");
+    etiquette.className = "tts-popover__champ";
+    const span = document.createElement("span");
+    span.textContent = texte2;
+    etiquette.append(span, input);
+    this.actions.before(etiquette);
+    return input;
+  }
+  input(texte2, { value = "", type = "text", name } = {}) {
+    const input = document.createElement("input");
+    input.type = type;
+    input.name = name ?? "";
+    if (type === "checkbox") input.checked = Boolean(value);
+    else input.value = value ?? "";
+    return this.field(texte2, input);
+  }
+  /** Zone de texte libellée, pour une saisie sur plusieurs lignes (Ctrl/Cmd+Entrée valide). */
+  textarea(texte2, { value = "", name, rows = 3 } = {}) {
+    const zone = document.createElement("textarea");
+    zone.name = name ?? "";
+    zone.rows = rows;
+    zone.value = value ?? "";
+    return this.field(texte2, zone);
+  }
+  /** Bouton d'action ; type submit pour l'action principale. */
+  button(texte2, onClick, { submit = false, name } = {}) {
+    const bouton = document.createElement("button");
+    bouton.type = submit ? "submit" : "button";
+    bouton.textContent = texte2;
+    if (name) bouton.name = name;
+    if (!submit) {
+      bouton.addEventListener("click", () => {
+        if (onClick() !== false) this.close();
+      });
+    }
+    this.actions.append(bouton);
+    return bouton;
+  }
+  /** Éléments du popover atteignables à la tabulation, dans l'ordre. */
+  focusables() {
+    return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')].filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest("[hidden]"));
+  }
+  /**
+   * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
+   * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
+   */
+  pieger(event) {
+    const cibles = this.focusables();
+    if (!cibles.length) return;
+    const actif = this.form.ownerDocument.activeElement;
+    const dedans = cibles.includes(actif);
+    const cible = event.shiftKey ? (!dedans || actif === cibles[0]) && cibles.at(-1) : (!dedans || actif === cibles.at(-1)) && cibles[0];
+    if (!cible) return;
+    event.preventDefault();
+    cible.focus();
+  }
+  error(message) {
+    this.erreur.textContent = message;
+    this.erreur.hidden = !message;
+  }
+  open(focus2) {
+    fermerSuggestions({ reason: "popover" });
+    while (_Popover.current && _Popover.current !== this.parent) _Popover.current.close({ refocus: false });
+    if (this.parent) this.parent.enfant = this;
+    _Popover.current = this;
+    this.ouvert = true;
+    this.wrapper.append(this.element);
+    if (this.flottant) this.element.showPopover();
+    this.place();
+    if (this.flottant) {
+      window.addEventListener("resize", this.replacer);
+      window.addEventListener("scroll", this.auDefilement, true);
+    }
+    (focus2 ?? this.form.querySelector("input, button"))?.focus();
+  }
+  /** Près de la sélection, dans la fenêtre si la couche supérieure est disponible. */
+  place() {
+    try {
+      const { from: from2 } = this.editor.state.selection;
+      const coords = this.editor.view.coordsAtPos(from2);
+      if (this.flottant) {
+        const barre = this.wrapper.querySelector(".tts-toolbar")?.getBoundingClientRect();
+        const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + 8;
+        placerDepuisRect(this.element, () => coords, { ecart: 4, haut });
+        return;
+      }
+      const box = this.wrapper.getBoundingClientRect();
+      this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
+      this.form.style.top = `${coords.bottom - box.top + 4}px`;
+    } catch {
+    }
+  }
+  close({ refocus = true } = {}) {
+    if (!this.ouvert) return;
+    fermerSuggestions({ parent: this, reason: "parent" });
+    this.ouvert = false;
+    this.enfant?.close({ refocus: false });
+    if (_Popover.current === this) _Popover.current = this.parent;
+    if (this.parent?.enfant === this) this.parent.enfant = null;
+    if (this.flottant) {
+      window.removeEventListener("resize", this.replacer);
+      window.removeEventListener("scroll", this.auDefilement, true);
+      if (this.placementEnAttente) cancelAnimationFrame(this.placementEnAttente);
+      this.placementEnAttente = 0;
+      this.element.hidePopover();
+    }
+    this.element.remove();
+    if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
+    this.onClose?.();
+  }
+};
+Popover.current = null;
+function suivrePosition(editor, pos) {
+  let courante = pos;
+  const onTransaction = ({ transaction }) => {
+    if (courante === null) return;
+    const r = transaction.mapping.mapResult(courante, 1);
+    courante = r.deletedAfter ? null : r.pos;
+  };
+  editor.on("transaction", onTransaction);
+  return {
+    pos: () => courante,
+    fin() {
+      editor.off("transaction", onTransaction);
+      return courante;
+    }
+  };
+}
+function lireSelection(editor) {
+  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
+}
+var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
+
+// src/emojis/fournisseur.js
+function creerFournisseurEmoji({ ui: ui2 } = {}) {
+  return creerSuggestionsInternes({
+    name: "ttsEmojis",
+    char: ":",
+    minQueryLength: 1,
+    queryPattern: /^[a-z0-9_+=-]+$/i,
+    allowedPrefixes: [" ", "\n"],
+    labels: { suggestions: label("emoji"), loading: label("emoji_chargement"), empty: "", error: label("emoji_erreur") },
+    allow: ({ editor, state, range }) => Boolean(config().emojis?.url) && emojiAutorise({ editor, state, range }),
+    items: async ({ query }) => filtrerEmojis(await chargerCatalogueEmojis({ url: config().emojis?.url }), query),
+    command: ({ editor, range, item }) => insererEmoji({ editor, range, unicode: item.context.unicode })
+  }, {
+    maximum: 6,
+    masquerVide: true,
+    historique: false,
+    formatItem: (item) => `${item.context.unicode} :${item.title}:`,
+    actionLabel: () => label("emoji_plus"),
+    onAction: ({ editor, range, anchor }) => {
+      if (!ui2?.openEmoji || !emojiAutorise({ editor, range })) return;
+      const debut = suivrePosition(editor, range.from), fin = suivrePosition(editor, range.to);
+      const original = editor.state.doc.slice(range.from, range.to).content;
+      let ouvert2 = true;
+      const terminer = () => {
+        ouvert2 = false;
+        debut.fin();
+        fin.fin();
+      };
+      const panneau = ui2.openEmoji({
+        range,
+        anchor,
+        returnTarget: editor.view.dom,
+        onChoose: (unicode) => {
+          const actuelle = { from: debut.pos(), to: fin.pos() };
+          if (!ouvert2 || !emojiAutorise({ editor, range: actuelle }) || !editor.state.doc.slice(actuelle.from, actuelle.to).content.eq(original)) return false;
+          const fait = insererEmoji({ editor, range: actuelle, unicode });
+          if (fait) terminer();
+          return fait;
+        },
+        onClose: terminer
+      });
+      if (!panneau) terminer();
+    }
+  });
+}
 
 // node_modules/@tiptap/core/dist/jsx-runtime/jsx-runtime.js
 var jsxElements = /* @__PURE__ */ new WeakSet();
@@ -25542,8 +26051,8 @@ function tableEditing({ allowTableNodeSelection = false } = {}) {
         return null;
       },
       apply(tr, cur) {
-        const set = tr.getMeta(tableEditingKey);
-        if (set != null) return set == -1 ? null : set;
+        const set2 = tr.getMeta(tableEditingKey);
+        if (set2 != null) return set2 == -1 ? null : set2;
         if (cur == null || !tr.docChanged) return cur;
         const { deleted, pos } = tr.mapping.mapResult(cur);
         return deleted ? null : pos;
@@ -26803,9 +27312,9 @@ function scanRangeForDecorations({ editor, options, dataAttribute, doc: doc4, se
   const isEmptyDoc = editor.isEmpty;
   doc4.nodesBetween(from2, to, (node2, pos) => {
     const hasAnchor = anchor >= pos && anchor <= pos + node2.nodeSize;
-    const isEmpty2 = !node2.isLeaf && isNodeEmpty(node2);
+    const isEmpty3 = !node2.isLeaf && isNodeEmpty(node2);
     if (!node2.type.isTextblock) return options.includeChildren;
-    if ((hasAnchor || !options.showOnlyCurrent) && isEmpty2) decorations3.push(createPlaceholderDecoration({
+    if ((hasAnchor || !options.showOnlyCurrent) && isEmpty3) decorations3.push(createPlaceholderDecoration({
       editor,
       isEmptyDoc,
       dataAttribute,
@@ -27183,138 +27692,6 @@ function partieAffichee(parts, langue = globalThis.document?.documentElement?.la
   return parts.findLast((p) => p.lang?.toLowerCase() === l) ?? parts.findLast((p) => p.lang?.toLowerCase().split(/[-_]/)[0] === base2) ?? parts[0];
 }
 
-// src/ui/labels.js
-var DEFAUTS = {
-  mode_source: "Source",
-  lien: "Lien",
-  modele: "Mod\xE8le",
-  lien_cible: "Cible (art12, rub3, https://\u2026)",
-  lien_rechercher: "Rechercher un contenu",
-  lien_bulle: "Bulle d\u2019aide",
-  lien_langue: "Langue de la cible",
-  lien_nouvelle_fenetre: "Ouvrir dans une nouvelle fen\xEAtre",
-  lien_ouvrir: "Ouvrir",
-  lien_retirer: "Retirer le lien",
-  lien_figer: "Figer le titre",
-  lien_cible_obligatoire: "Indiquez une cible.",
-  modele_raccourci: "Raccourci du mod\xE8le",
-  modele_modifier: "Modifier",
-  modele_invalide: "Ce n\u2019est pas un raccourci de mod\xE8le.",
-  modele_catalogue: "Catalogue des mod\xE8les\u2026",
-  modele_saisir: "Saisir le raccourci\u2026",
-  terme: "Terme",
-  selection_invalide: "S\xE9lectionnez du texte d\u2019un m\xEAme paragraphe.",
-  bulle: "Bulle d\u2019aide",
-  langue: "Langue",
-  gras: "Gras",
-  italique: "Italique",
-  glossaire: "Glossaire",
-  glossaire_nom: "Glossaire (vide\xA0: par d\xE9faut)",
-  glossaire_numero: "Num\xE9ro",
-  glossaire_definition: "Voir la d\xE9finition",
-  glossaire_retirer: "Retirer du glossaire",
-  glossaire_invalide: "Ce terme ou ces r\xE9glages ne peuvent pas s\u2019\xE9crire en raccourci de glossaire.",
-  abbr: "Abr\xE9viation",
-  abbr_explication: "Explication",
-  abbr_retirer: "Retirer l\u2019abr\xE9viation",
-  abbr_invalide: "Cette abr\xE9viation ne peut pas s\u2019\xE9crire en raccourci (explication vide, crochets, barre verticale\u2026).",
-  lien_invalide: "Cette cible ou cette bulle ne peut pas s\u2019\xE9crire dans un raccourci de lien.",
-  note: "Note",
-  note_nom: "Nom (vide\xA0: num\xE9rot\xE9e)",
-  note_sans_appel: "Sans appel",
-  note_texte: "Texte de la note",
-  note_retirer: "Supprimer la note",
-  note_aria_sans_appel: "Note sans appel",
-  note_invalide: "Cette note ne peut pas s\u2019\xE9crire telle quelle (nom ou texte).",
-  note_vide: "La note est vide.",
-  notes: "Notes",
-  multi: "Multilingue",
-  multi_texte: "Texte dans cette langue",
-  multi_ajouter: "Ajouter une langue",
-  multi_retirer_langue: "Retirer",
-  multi_sans_langue: "Sans langue",
-  multi_supprimer: "Supprimer le multi",
-  multi_langues: "Langues du multi",
-  multi_invalide: "Ce multi ne peut pas s\u2019\xE9crire tel quel (code de langue, langue sans code en double, texte).",
-  multi_vide: "Le multi est vide.",
-  langue_affichee: "Langue affich\xE9e",
-  idiome: "Idiome",
-  idiome_raccourci: "Raccourci (<:module:cle:>)",
-  idiome_invalide: "Ce n\u2019est pas un raccourci d\u2019idiome.",
-  idiome_retirer: "Supprimer l\u2019idiome",
-  barre_outils: "Barre d\u2019outils",
-  outil_annuler: "Annuler",
-  outil_retablir: "R\xE9tablir",
-  outil_titre: "Titre",
-  outil_paragraphe: "Paragraphe",
-  outil_intertitre: "Intertitre",
-  outil_titre_niveau: "Titre de niveau @niveau@",
-  outil_liste: "Liste",
-  outil_liste_puces: "Liste \xE0 puces",
-  outil_liste_numerotee: "Liste num\xE9rot\xE9e",
-  outil_indenter: "Indenter",
-  outil_desindenter: "D\xE9sindenter",
-  outil_citation: "Citation",
-  outil_poesie: "Po\xE9sie",
-  outil_cadre: "Bloc de code",
-  outil_barre: "Barr\xE9",
-  outil_exposant: "Exposant",
-  outil_indice: "Indice",
-  outil_code: "Code",
-  outil_alignement: "Alignement",
-  outil_align_left: "\xC0 gauche",
-  outil_align_center: "Centr\xE9",
-  outil_align_right: "\xC0 droite",
-  outil_align_justify: "Justifi\xE9",
-  outil_align_aucun: "Sans alignement",
-  outil_tableau: "Tableau",
-  outil_tableau_inserer: "Ins\xE9rer un tableau",
-  outil_tableau_en_tete: "Ligne d\u2019en-t\xEAte",
-  outil_tableau_ligne_avant: "Ins\xE9rer une ligne au-dessus",
-  outil_tableau_ligne_apres: "Ins\xE9rer une ligne en dessous",
-  outil_tableau_colonne_avant: "Ins\xE9rer une colonne \xE0 gauche",
-  outil_tableau_colonne_apres: "Ins\xE9rer une colonne \xE0 droite",
-  outil_tableau_supprimer_ligne: "Supprimer la ligne",
-  outil_tableau_supprimer_colonne: "Supprimer la colonne",
-  outil_tableau_fusionner: "Fusionner les cellules",
-  outil_tableau_scinder: "Scinder la cellule",
-  outil_tableau_supprimer: "Supprimer le tableau",
-  outil_guillemets: "Guillemets",
-  outil_guillemets_simples: "Guillemets internes",
-  outil_caracteres: "Caract\xE8res sp\xE9ciaux",
-  outil_majuscules: "Majuscules",
-  outil_minuscules: "Minuscules",
-  outil_plein_ecran: "Plein \xE9cran",
-  outil_plein_ecran_sortir: "Quitter le plein \xE9cran",
-  anomalie_ouverture: "Mise en forme ouverte sans \xEAtre ferm\xE9e\xA0: au rendu, elle s\u2019\xE9tend jusqu\u2019\xE0 la fin du paragraphe.",
-  anomalie_fermeture: "Fermeture sans ouverture\xA0: au rendu, elle s\u2019affiche telle quelle ou reste sans effet.",
-  anomalie_intertitre: "Accolades d\u2019intertitre hors d\u2019un intertitre complet\xA0: au rendu, la suite devient un intertitre.",
-  anomalie_citation: "<quote> sans </quote>\xA0: au rendu, tout le texte qui suit passe en citation.",
-  anomalie_balise: "Balise SPIP sans fermeture\xA0: au rendu, elle n\u2019est pas trait\xE9e.",
-  etat: "\xC9tat du texte",
-  etat_mot: "1 mot",
-  etat_mots: "@nb@ mots",
-  etat_anomalie: "1 anomalie de syntaxe",
-  etat_anomalies: "@nb@ anomalies de syntaxe",
-  markdown_fermeture: "Un bloc Markdown ne peut pas contenir </md>, qui le fermerait.",
-  brut: "Source SPIP",
-  brut_source: "Source SPIP, relue quand on applique",
-  brut_invalide: "Ce texte ne peut pas remplacer la source \xE0 cet endroit.",
-  modele_aria: "Mod\xE8le @modele@",
-  envoi_fichier: "Envoi du fichier\u2026",
-  depot_indication: "D\xE9poser les fichiers",
-  depot_indisponible: "L\u2019ajout de fichiers n\u2019est pas disponible ici.",
-  envoi_echec: "Le fichier n\u2019a pas pu \xEAtre envoy\xE9 (session expir\xE9e ou connexion perdue).",
-  envoi_en_cours: "Un fichier est en cours d\u2019envoi.",
-  enregistrer_sans_attendre: "Enregistrer sans attendre",
-  fichier_trop_gros: "Fichier trop volumineux\xA0: @nom@.",
-  fichier_type_refuse: "Type de fichier non accept\xE9\xA0: @nom@.",
-  zone_texte: "Texte",
-  appliquer: "Appliquer",
-  annuler: "Annuler"
-};
-var label = (key) => globalThis.spipConfig?.tiptap_spip?.i18n?.[key] ?? DEFAUTS[key] ?? key;
-
 // src/ui/sanitize.js
 var RETIRES = "script, style, link, meta, base, object, embed, form";
 var INTERACTIFS = "a, area, button, input, select, textarea, iframe, video, audio, [tabindex], [contenteditable]";
@@ -27369,7 +27746,7 @@ var modelView = (ui2) => ({ node: node2, getPos }) => {
   bouton.addEventListener("click", () => ui2.editModel(getPos()));
   dom.append(preview, bouton);
   let source = null;
-  const render2 = (model) => {
+  const render3 = (model) => {
     if (model?.source === source) return;
     source = model?.source ?? "";
     dom.dataset.ttsModel = JSON.stringify(model);
@@ -27397,12 +27774,12 @@ var modelView = (ui2) => ({ node: node2, getPos }) => {
       }
     );
   };
-  render2(node2.attrs.model);
+  render3(node2.attrs.model);
   return {
     dom,
     update(updated) {
       if (updated.type !== node2.type) return false;
-      render2(updated.attrs.model);
+      render3(updated.attrs.model);
       return true;
     },
     // le bouton gère ses événements ; le reste (clic, glisser) revient à ProseMirror
@@ -27415,7 +27792,7 @@ var linkAutoView = (ui2) => ({ node: node2 }) => {
   dom.className = "tts-link tts-link-auto";
   dom.contentEditable = "false";
   let cible = null;
-  const render2 = (attrs) => {
+  const render3 = (attrs) => {
     if (attrs.href === cible) return;
     cible = attrs.href;
     dom.dataset.ttsHref = cible;
@@ -27430,12 +27807,12 @@ var linkAutoView = (ui2) => ({ node: node2 }) => {
       }
     );
   };
-  render2(node2.attrs);
+  render3(node2.attrs);
   return {
     dom,
     update(updated) {
       if (updated.type !== node2.type) return false;
-      render2(updated.attrs);
+      render3(updated.attrs);
       return true;
     },
     ignoreMutation: () => true
@@ -27474,7 +27851,7 @@ var multiView = () => ({ node: node2, decorations: decorations3 }) => {
   const dom = document.createElement("span");
   dom.className = "tts-multi";
   dom.contentEditable = "false";
-  const render2 = (n, decos) => {
+  const render3 = (n, decos) => {
     const langue = decos?.find((d) => d.spec?.langue !== void 0)?.spec.langue;
     const notes = decos?.find((d) => d.spec?.notes)?.spec.notes;
     const parts = n.attrs.parts ?? [];
@@ -27484,12 +27861,12 @@ var multiView = () => ({ node: node2, decorations: decorations3 }) => {
     dom.dataset.ttsLang = affichee?.lang ?? "";
     dom.title = parts.map((p) => `${p.lang ?? "*"} : ${apercu(p.content)}`).join(" \xB7 ");
   };
-  render2(node2, decorations3);
+  render3(node2, decorations3);
   return {
     dom,
     update(updated, decos) {
       if (updated.type !== node2.type) return false;
-      render2(updated, decos);
+      render3(updated, decos);
       return true;
     },
     ignoreMutation: () => true
@@ -27500,7 +27877,7 @@ var idiomeView = (ui2) => ({ node: node2 }) => {
   dom.className = "tts-idiome";
   dom.contentEditable = "false";
   let raccourci = null;
-  const render2 = (attrs) => {
+  const render3 = (attrs) => {
     const r = serializeIdiome(attrs);
     if (r === raccourci) return;
     raccourci = r;
@@ -27520,12 +27897,12 @@ var idiomeView = (ui2) => ({ node: node2 }) => {
       }
     );
   };
-  render2(node2.attrs);
+  render3(node2.attrs);
   return {
     dom,
     update(updated) {
       if (updated.type !== node2.type) return false;
-      render2(updated.attrs);
+      render3(updated.attrs);
       return true;
     },
     ignoreMutation: () => true
@@ -27820,7 +28197,7 @@ function coloration() {
     key: cle,
     state: {
       init: (_, { doc: doc4 }) => decorations2(doc4, hljs, demander),
-      apply: (tr, set) => tr.docChanged || tr.getMeta(cle) ? decorations2(tr.doc, hljs, demander) : set
+      apply: (tr, set2) => tr.docChanged || tr.getMeta(cle) ? decorations2(tr.doc, hljs, demander) : set2
     },
     view(v) {
       vue = v;
@@ -28698,6 +29075,7 @@ function extensionsDuCoeur({ headingLevels, ui: ui2, markdown }) {
     SpipEdition,
     SpipAnomalies,
     SpipUi.configure({ ui: ui2 }),
+    creerFournisseurEmoji({ ui: ui2 }),
     SpipPasteImage.configure({ ui: ui2 })
   ];
 }
@@ -28762,200 +29140,9 @@ var ICONES = {
   caracteres: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M14 20V17.8432C15.8631 16.6512 17.5 13.9677 17.5 10.8844C17.5 7.8107 15.5 4.85516 12 4.85516C8.5 4.85516 6.5 7.8107 6.5 10.8844C6.5 13.9677 8.13687 16.6512 10 17.8432V20H3V18H7.7597C5.66635 16.5054 4 13.9889 4 10.8844C4 6.24653 7.5 3 12 3C16.5 3 20 6.24653 20 10.8844C20 13.9889 18.3336 16.5054 16.2403 18H21V20H14Z"/></svg>',
   source: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M16.95 8.46451L18.3642 7.05029L23.3139 12L18.3642 16.9498L16.95 15.5356L20.4855 12L16.95 8.46451ZM7.05048 8.46451L3.51495 12L7.05048 15.5356L5.63627 16.9498L0.686523 12L5.63627 7.05029L7.05048 8.46451Z"/></svg>',
   pleinEcran: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M8 3V5H4V9H2V3H8ZM2 21V15H4V19H8V21H2ZM22 21H16V19H20V15H22V21ZM22 9H20V5H16V3H22V9Z"/></svg>',
-  pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>'
+  pleinEcranSortir: '<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M18 7H22V9H16V3H18V7ZM8 9H2V7H6V3H8V9ZM18 17V21H16V15H22V17H18ZM8 15V21H6V17H2V15H8Z"/></svg>',
+  emoji: '<svg class="svg-add-emoji" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5,12 C20.5375661,12 23,14.4624339 23,17.5 C23,20.5375661 20.5375661,23 17.5,23 C14.4624339,23 12,20.5375661 12,17.5 C12,14.4624339 14.4624339,12 17.5,12 Z M12.0000002,1.99896738 C17.523704,1.99896738 22.0015507,6.47681407 22.0015507,12.0005179 C22.0015507,12.2637452 21.9913819,12.5245975 21.9714157,12.7827034 C21.5335438,12.3671164 21.0376367,12.012094 20.4972374,11.7307716 C20.3551544,7.16057357 16.6051843,3.49896738 12.0000002,3.49896738 C7.30472352,3.49896738 3.49844971,7.30524119 3.49844971,12.0005179 C3.49844971,16.6060394 7.16059249,20.3562216 11.7317296,20.4979161 C12.0124658,21.0381559 12.3673338,21.5337732 12.7825138,21.9716342 C12.5247521,21.9918733 12.2635668,22.0020684 12.0000002,22.0020684 C6.47629639,22.0020684 1.99844971,17.5242217 1.99844971,12.0005179 C1.99844971,6.47681407 6.47629639,1.99896738 12.0000002,1.99896738 Z M17.5,13.9992349 L17.4101244,14.0072906 C17.2060313,14.0443345 17.0450996,14.2052662 17.0080557,14.4093593 L17,14.4992349 L16.9996498,16.9992349 L14.4976498,17 L14.4077742,17.0080557 C14.2036811,17.0450996 14.0427494,17.2060313 14.0057055,17.4101244 L13.9976498,17.5 L14.0057055,17.5898756 C14.0427494,17.7939687 14.2036811,17.9549004 14.4077742,17.9919443 L14.4976498,18 L17.0006498,17.9992349 L17.0011076,20.5034847 L17.0091633,20.5933603 C17.0462073,20.7974534 17.207139,20.9583851 17.411232,20.995429 L17.5011076,21.0034847 L17.5909833,20.995429 C17.7950763,20.9583851 17.956008,20.7974534 17.993052,20.5933603 L18.0011076,20.5034847 L18.0006498,17.9992349 L20.5045655,18 L20.5944411,17.9919443 C20.7985342,17.9549004 20.9594659,17.7939687 20.9965098,17.5898756 L21.0045655,17.5 L20.9965098,17.4101244 C20.9594659,17.2060313 20.7985342,17.0450996 20.5944411,17.0080557 L20.5045655,17 L17.9996498,16.9992349 L18,14.4992349 L17.9919443,14.4093593 C17.9549004,14.2052662 17.7939687,14.0443345 17.5898756,14.0072906 L17.5,13.9992349 Z M8.46174078,14.7838355 C9.12309331,15.6232213 10.0524954,16.1974014 11.0917655,16.4103066 C11.0312056,16.7638158 11,17.1282637 11,17.5 C11,17.6408778 11.0044818,17.7807089 11.0133105,17.9193584 C9.53812034,17.6766509 8.21128537,16.8896809 7.28351576,15.7121597 C7.02716611,15.3868018 7.08310832,14.9152347 7.40846617,14.6588851 C7.73382403,14.4025354 8.20539113,14.4584777 8.46174078,14.7838355 Z M9.00044779,8.75115873 C9.69041108,8.75115873 10.2497368,9.3104845 10.2497368,10.0004478 C10.2497368,10.6904111 9.69041108,11.2497368 9.00044779,11.2497368 C8.3104845,11.2497368 7.75115873,10.6904111 7.75115873,10.0004478 C7.75115873,9.3104845 8.3104845,8.75115873 9.00044779,8.75115873 Z M15.0004478,8.75115873 C15.6904111,8.75115873 16.2497368,9.3104845 16.2497368,10.0004478 C16.2497368,10.6904111 15.6904111,11.2497368 15.0004478,11.2497368 C14.3104845,11.2497368 13.7511587,10.6904111 13.7511587,10.0004478 C13.7511587,9.3104845 14.3104845,8.75115873 15.0004478,8.75115873 Z"/></svg>'
 };
-
-// src/ui/popover.js
-var Popover = class _Popover {
-  /**
-   * @param {{ editor: import('@tiptap/core').Editor, wrapper: HTMLElement, titre: string,
-   *           onSubmit: () => boolean|void, parent?: Popover, onClose?: () => void }} options
-   *        onSubmit renvoie false pour garder le popover ouvert ; editor : celui qui reprend le focus
-   */
-  constructor({ editor, wrapper, titre, className, onSubmit, parent = null, onClose = null }) {
-    this.editor = editor;
-    this.wrapper = wrapper;
-    this.parent = parent;
-    this.enfant = null;
-    this.onClose = onClose;
-    this.ouvert = false;
-    this.element = document.createElement("div");
-    this.element.className = "tts-popover-dialogue";
-    this.element.setAttribute("role", "dialog");
-    this.element.setAttribute("aria-label", titre);
-    this.flottant = typeof this.element.showPopover === "function";
-    if (this.flottant) this.element.popover = "manual";
-    this.placementEnAttente = 0;
-    this.replacer = () => {
-      if (this.placementEnAttente) return;
-      this.placementEnAttente = requestAnimationFrame(() => {
-        this.placementEnAttente = 0;
-        if (this.ouvert) this.place();
-      });
-    };
-    this.auDefilement = (event) => {
-      if (!this.element.contains(event.target)) this.replacer();
-    };
-    this.form = document.createElement("form");
-    this.form.className = `tts-popover ${className ?? ""}`.trim();
-    this.element.append(this.form);
-    this.erreur = document.createElement("p");
-    this.erreur.className = "tts-popover__erreur";
-    this.erreur.setAttribute("role", "alert");
-    this.erreur.hidden = true;
-    this.actions = document.createElement("div");
-    this.actions.className = "tts-popover__actions";
-    this.form.append(this.erreur, this.actions);
-    this.form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (onSubmit() !== false) this.close();
-    });
-    this.form.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        this.close();
-      } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && event.target.tagName === "TEXTAREA") {
-        event.preventDefault();
-        this.form.requestSubmit();
-      } else if (event.key === "Tab" && !event.defaultPrevented) {
-        this.pieger(event);
-      }
-    });
-  }
-  /** Champ libellé ; renvoie l'élément de saisie. */
-  field(texte2, input) {
-    const etiquette = document.createElement("label");
-    etiquette.className = "tts-popover__champ";
-    const span = document.createElement("span");
-    span.textContent = texte2;
-    etiquette.append(span, input);
-    this.actions.before(etiquette);
-    return input;
-  }
-  input(texte2, { value = "", type = "text", name } = {}) {
-    const input = document.createElement("input");
-    input.type = type;
-    input.name = name ?? "";
-    if (type === "checkbox") input.checked = Boolean(value);
-    else input.value = value ?? "";
-    return this.field(texte2, input);
-  }
-  /** Zone de texte libellée, pour une saisie sur plusieurs lignes (Ctrl/Cmd+Entrée valide). */
-  textarea(texte2, { value = "", name, rows = 3 } = {}) {
-    const zone = document.createElement("textarea");
-    zone.name = name ?? "";
-    zone.rows = rows;
-    zone.value = value ?? "";
-    return this.field(texte2, zone);
-  }
-  /** Bouton d'action ; type submit pour l'action principale. */
-  button(texte2, onClick, { submit = false, name } = {}) {
-    const bouton = document.createElement("button");
-    bouton.type = submit ? "submit" : "button";
-    bouton.textContent = texte2;
-    if (name) bouton.name = name;
-    if (!submit) {
-      bouton.addEventListener("click", () => {
-        if (onClick() !== false) this.close();
-      });
-    }
-    this.actions.append(bouton);
-    return bouton;
-  }
-  /** Éléments du popover atteignables à la tabulation, dans l'ordre. */
-  focusables() {
-    return [...this.form.querySelectorAll('input, select, textarea, button, [contenteditable="true"], [tabindex]')].filter((e) => e.tabIndex >= 0 && !e.disabled && !e.closest("[hidden]"));
-  }
-  /**
-   * Piège de focus (spec 06 §7) : Tab sur le dernier élément revient au premier, Maj+Tab sur le
-   * premier va au dernier. Une tabulation déjà traitée (liste du sous-éditeur d'une note) n'arrive pas ici.
-   */
-  pieger(event) {
-    const cibles = this.focusables();
-    if (!cibles.length) return;
-    const actif = this.form.ownerDocument.activeElement;
-    const dedans = cibles.includes(actif);
-    const cible = event.shiftKey ? (!dedans || actif === cibles[0]) && cibles.at(-1) : (!dedans || actif === cibles.at(-1)) && cibles[0];
-    if (!cible) return;
-    event.preventDefault();
-    cible.focus();
-  }
-  error(message) {
-    this.erreur.textContent = message;
-    this.erreur.hidden = !message;
-  }
-  open(focus2) {
-    fermerSuggestions({ reason: "popover" });
-    while (_Popover.current && _Popover.current !== this.parent) _Popover.current.close({ refocus: false });
-    if (this.parent) this.parent.enfant = this;
-    _Popover.current = this;
-    this.ouvert = true;
-    this.wrapper.append(this.element);
-    if (this.flottant) this.element.showPopover();
-    this.place();
-    if (this.flottant) {
-      window.addEventListener("resize", this.replacer);
-      window.addEventListener("scroll", this.auDefilement, true);
-    }
-    (focus2 ?? this.form.querySelector("input, button"))?.focus();
-  }
-  /** Près de la sélection, dans la fenêtre si la couche supérieure est disponible. */
-  place() {
-    try {
-      const { from: from2 } = this.editor.state.selection;
-      const coords = this.editor.view.coordsAtPos(from2);
-      if (this.flottant) {
-        const barre = this.wrapper.querySelector(".tts-toolbar")?.getBoundingClientRect();
-        const haut = (barre && barre.top <= 1 && barre.bottom > 0 ? barre.bottom : 0) + 8;
-        placerDepuisRect(this.element, () => coords, { ecart: 4, haut });
-        return;
-      }
-      const box = this.wrapper.getBoundingClientRect();
-      this.form.style.left = `${Math.max(0, coords.left - box.left)}px`;
-      this.form.style.top = `${coords.bottom - box.top + 4}px`;
-    } catch {
-    }
-  }
-  close({ refocus = true } = {}) {
-    if (!this.ouvert) return;
-    fermerSuggestions({ parent: this, reason: "parent" });
-    this.ouvert = false;
-    this.enfant?.close({ refocus: false });
-    if (_Popover.current === this) _Popover.current = this.parent;
-    if (this.parent?.enfant === this) this.parent.enfant = null;
-    if (this.flottant) {
-      window.removeEventListener("resize", this.replacer);
-      window.removeEventListener("scroll", this.auDefilement, true);
-      if (this.placementEnAttente) cancelAnimationFrame(this.placementEnAttente);
-      this.placementEnAttente = 0;
-      this.element.hidePopover();
-    }
-    this.element.remove();
-    if (refocus && !this.editor.isDestroyed) this.editor.view.focus();
-    this.onClose?.();
-  }
-};
-Popover.current = null;
-function suivrePosition(editor, pos) {
-  let courante = pos;
-  const onTransaction = ({ transaction }) => {
-    if (courante === null) return;
-    const r = transaction.mapping.mapResult(courante, 1);
-    courante = r.deletedAfter ? null : r.pos;
-  };
-  editor.on("transaction", onTransaction);
-  return {
-    pos: () => courante,
-    fin() {
-      editor.off("transaction", onTransaction);
-      return courante;
-    }
-  };
-}
-function lireSelection(editor) {
-  if (editor.view.hasFocus()) editor.view.domObserver?.flush?.();
-}
-var idUnique = (prefixe) => `${prefixe}-${Math.random().toString(36).slice(2)}`;
 
 // src/ui/boutons.js
 var MAC = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? "");
@@ -29410,9 +29597,9 @@ var Services = class _Services {
     return container?.querySelector("form") ? new _Services(container, options) : null;
   }
   /** @param {HTMLElement} container  élément .tts-services */
-  constructor(container, { fetch = globalThis.fetch?.bind(globalThis), xhr = () => new XMLHttpRequest() } = {}) {
+  constructor(container, { fetch: fetch2 = globalThis.fetch?.bind(globalThis), xhr = () => new XMLHttpRequest() } = {}) {
     this.container = container;
-    this.fetch = fetch;
+    this.fetch = fetch2;
     this.xhr = xhr;
     this.available = true;
     this.queue = Promise.resolve();
@@ -29444,10 +29631,10 @@ var Services = class _Services {
    */
   call(operation, params = {}, options = {}) {
     const run2 = () => this.send(operation, params, options);
-    const promise = this.queue.then(run2, run2);
-    this.queue = promise.catch(() => {
+    const promise2 = this.queue.then(run2, run2);
+    this.queue = promise2.catch(() => {
     });
-    return promise;
+    return promise2;
   }
   async send(operation, params, { fichier = null, progression = null, signal = null } = {}) {
     if (signal?.aborted) throw abandon();
@@ -29829,15 +30016,15 @@ var TextareaBridge = class {
 };
 
 // src/hosts/aLaDemande.js
-async function servicesALaDemande(textarea, ctx, { fetch = globalThis.fetch?.bind(globalThis), url = globalThis.spipConfig?.tiptap_spip?.services, signal } = {}) {
-  if (!url || !fetch || signal?.aborted) return null;
+async function servicesALaDemande(textarea, ctx, { fetch: fetch2 = globalThis.fetch?.bind(globalThis), url = globalThis.spipConfig?.tiptap_spip?.services, signal } = {}) {
+  if (!url || !fetch2 || signal?.aborted) return null;
   const adresse = new URL(url, document.baseURI);
   adresse.searchParams.set("objet", ctx.objet);
   adresse.searchParams.set("id_objet", String(ctx.id));
   adresse.searchParams.set("champ", ctx.champ);
   let html;
   try {
-    const res = await fetch(adresse.href, { credentials: "same-origin", signal });
+    const res = await fetch2(adresse.href, { credentials: "same-origin", signal });
     html = res.ok ? await res.text() : "";
   } catch {
     return null;
@@ -30004,6 +30191,2411 @@ function ouvrirCatalogue({ editor, url, pos = null, parametres = null }) {
   return true;
 }
 
+// node_modules/emoji-picker-element/database.js
+function assertNonEmptyString(str) {
+  if (typeof str !== "string" || !str) {
+    throw new Error("expected a non-empty string, got: " + str);
+  }
+}
+function assertNumber(number) {
+  if (typeof number !== "number") {
+    throw new Error("expected a number, got: " + number);
+  }
+}
+var DB_VERSION_CURRENT = 1;
+var DB_VERSION_INITIAL = 1;
+var STORE_EMOJI = "emoji";
+var STORE_KEYVALUE = "keyvalue";
+var STORE_FAVORITES = "favorites";
+var FIELD_TOKENS = "tokens";
+var INDEX_TOKENS = "tokens";
+var FIELD_UNICODE = "unicode";
+var INDEX_COUNT = "count";
+var FIELD_GROUP = "group";
+var FIELD_ORDER = "order";
+var INDEX_GROUP_AND_ORDER = "group-order";
+var KEY_ETAG = "eTag";
+var KEY_URL = "url";
+var KEY_PREFERRED_SKINTONE = "skinTone";
+var MODE_READONLY = "readonly";
+var MODE_READWRITE = "readwrite";
+var INDEX_SKIN_UNICODE = "skinUnicodes";
+var FIELD_SKIN_UNICODE = "skinUnicodes";
+var DEFAULT_DATA_SOURCE = "https://cdn.jsdelivr.net/npm/emoji-picker-element-data@^1/en/emojibase/data.json";
+var DEFAULT_LOCALE = "en";
+function uniqBy(arr, func) {
+  const set2 = /* @__PURE__ */ new Set();
+  const res = [];
+  for (const item of arr) {
+    const key = func(item);
+    if (!set2.has(key)) {
+      set2.add(key);
+      res.push(item);
+    }
+  }
+  return res;
+}
+function uniqEmoji(emojis) {
+  return uniqBy(emojis, (_) => _.unicode);
+}
+function initialMigration(db) {
+  function createObjectStore(name, keyPath, indexes2) {
+    const store = keyPath ? db.createObjectStore(name, { keyPath }) : db.createObjectStore(name);
+    if (indexes2) {
+      for (const [indexName, [keyPath2, multiEntry]] of Object.entries(indexes2)) {
+        store.createIndex(indexName, keyPath2, { multiEntry });
+      }
+    }
+    return store;
+  }
+  createObjectStore(STORE_KEYVALUE);
+  createObjectStore(
+    STORE_EMOJI,
+    /* keyPath */
+    FIELD_UNICODE,
+    {
+      [INDEX_TOKENS]: [
+        FIELD_TOKENS,
+        /* multiEntry */
+        true
+      ],
+      [INDEX_GROUP_AND_ORDER]: [[FIELD_GROUP, FIELD_ORDER]],
+      [INDEX_SKIN_UNICODE]: [
+        FIELD_SKIN_UNICODE,
+        /* multiEntry */
+        true
+      ]
+    }
+  );
+  createObjectStore(STORE_FAVORITES, void 0, {
+    [INDEX_COUNT]: [""]
+  });
+}
+var openIndexedDBRequests = {};
+var databaseCache = {};
+var onCloseListeners = {};
+function handleOpenOrDeleteReq(resolve, reject, req) {
+  req.onerror = () => reject(req.error);
+  req.onblocked = () => reject(new Error("IDB blocked"));
+  req.onsuccess = () => resolve(req.result);
+}
+async function createDatabase(dbName) {
+  const db = await new Promise((resolve, reject) => {
+    const req = indexedDB.open(dbName, DB_VERSION_CURRENT);
+    openIndexedDBRequests[dbName] = req;
+    req.onupgradeneeded = (e) => {
+      if (e.oldVersion < DB_VERSION_INITIAL) {
+        initialMigration(req.result);
+      }
+    };
+    handleOpenOrDeleteReq(resolve, reject, req);
+  });
+  db.onclose = () => closeDatabase(dbName);
+  return db;
+}
+function openDatabase(dbName) {
+  if (!databaseCache[dbName]) {
+    databaseCache[dbName] = createDatabase(dbName);
+  }
+  return databaseCache[dbName];
+}
+function dbPromise(db, storeName, readOnlyOrReadWrite, cb) {
+  return new Promise((resolve, reject) => {
+    const txn = db.transaction(storeName, readOnlyOrReadWrite, { durability: "relaxed" });
+    const store = typeof storeName === "string" ? txn.objectStore(storeName) : storeName.map((name) => txn.objectStore(name));
+    let res;
+    cb(store, txn, (result) => {
+      res = result;
+    });
+    txn.oncomplete = () => resolve(res);
+    txn.onerror = () => reject(txn.error);
+  });
+}
+function closeDatabase(dbName) {
+  const req = openIndexedDBRequests[dbName];
+  const db = req && req.result;
+  if (db) {
+    db.close();
+    const listeners = onCloseListeners[dbName];
+    if (listeners) {
+      for (const listener of listeners) {
+        listener();
+      }
+    }
+  }
+  delete openIndexedDBRequests[dbName];
+  delete databaseCache[dbName];
+  delete onCloseListeners[dbName];
+}
+function deleteDatabase(dbName) {
+  return new Promise((resolve, reject) => {
+    closeDatabase(dbName);
+    const req = indexedDB.deleteDatabase(dbName);
+    handleOpenOrDeleteReq(resolve, reject, req);
+  });
+}
+function addOnCloseListener(dbName, listener) {
+  let listeners = onCloseListeners[dbName];
+  if (!listeners) {
+    listeners = onCloseListeners[dbName] = [];
+  }
+  listeners.push(listener);
+}
+var irregularEmoticons = /* @__PURE__ */ new Set([
+  ":D",
+  "XD",
+  ":'D",
+  "O:)",
+  ":X",
+  ":P",
+  ";P",
+  "XP",
+  ":L",
+  ":Z",
+  ":j",
+  "8D",
+  "XO",
+  "8)",
+  ":B",
+  ":O",
+  ":S",
+  ":'o",
+  "Dx",
+  "X(",
+  "D:",
+  ":C",
+  ">0)",
+  ":3",
+  "</3",
+  "<3",
+  "\\M/",
+  ":E",
+  "8#"
+]);
+function extractTokens(str) {
+  return str.split(/[\s_]+/).map((word) => {
+    if (!word.match(/\w/) || irregularEmoticons.has(word)) {
+      return word.toLowerCase();
+    }
+    return word.replace(/[)(:,]/g, "").replace(/’/g, "'").toLowerCase();
+  }).filter(Boolean);
+}
+var MIN_SEARCH_TEXT_LENGTH = 2;
+function normalizeTokens(str) {
+  return str.filter(Boolean).map((_) => _.toLowerCase()).filter((_) => _.length >= MIN_SEARCH_TEXT_LENGTH);
+}
+function transformEmojiData(emojiData) {
+  const res = emojiData.map(({ annotation, emoticon, group, order, shortcodes, skins, tags, emoji, version }) => {
+    const tokens = [...new Set(
+      normalizeTokens([
+        ...(shortcodes || []).map(extractTokens).flat(),
+        ...(tags || []).map(extractTokens).flat(),
+        ...extractTokens(annotation),
+        emoticon
+      ])
+    )].sort();
+    const res2 = {
+      annotation,
+      group,
+      order,
+      tags,
+      tokens,
+      unicode: emoji,
+      version
+    };
+    if (emoticon) {
+      res2.emoticon = emoticon;
+    }
+    if (shortcodes) {
+      res2.shortcodes = shortcodes;
+    }
+    if (skins) {
+      res2.skinTones = [];
+      res2.skinUnicodes = [];
+      res2.skinVersions = [];
+      for (const { tone, emoji: emoji2, version: version2 } of skins) {
+        res2.skinTones.push(tone);
+        res2.skinUnicodes.push(emoji2);
+        res2.skinVersions.push(version2);
+      }
+    }
+    return res2;
+  });
+  return res;
+}
+function callStore(store, method, key, cb) {
+  store[method](key).onsuccess = (e) => cb && cb(e.target.result);
+}
+function getIDB(store, key, cb) {
+  callStore(store, "get", key, cb);
+}
+function getAllIDB(store, key, cb) {
+  callStore(store, "getAll", key, cb);
+}
+function commit(txn) {
+  if (txn.commit) {
+    txn.commit();
+  }
+}
+function minBy(array, func) {
+  let minItem = array[0];
+  for (let i2 = 1; i2 < array.length; i2++) {
+    const item = array[i2];
+    if (func(minItem) > func(item)) {
+      minItem = item;
+    }
+  }
+  return minItem;
+}
+function findCommonMembers(arrays, uniqByFunc) {
+  const shortestArray = minBy(arrays, (_) => _.length);
+  const results = [];
+  for (const item of shortestArray) {
+    if (!arrays.some((array) => array.findIndex((_) => uniqByFunc(_) === uniqByFunc(item)) === -1)) {
+      results.push(item);
+    }
+  }
+  return results;
+}
+async function isEmpty2(db) {
+  return !await get2(db, STORE_KEYVALUE, KEY_URL);
+}
+async function hasData(db, url, eTag) {
+  const [oldETag, oldUrl] = await Promise.all([KEY_ETAG, KEY_URL].map((key) => get2(db, STORE_KEYVALUE, key)));
+  return oldETag === eTag && oldUrl === url;
+}
+async function doFullDatabaseScanForSingleResult(db, predicate) {
+  const BATCH_SIZE = 50;
+  return dbPromise(db, STORE_EMOJI, MODE_READONLY, (emojiStore, txn, cb) => {
+    let lastKey;
+    const processNextBatch = () => {
+      emojiStore.getAll(lastKey && IDBKeyRange.lowerBound(lastKey, true), BATCH_SIZE).onsuccess = (e) => {
+        const results = e.target.result;
+        for (const result of results) {
+          lastKey = result.unicode;
+          if (predicate(result)) {
+            return cb(result);
+          }
+        }
+        if (results.length < BATCH_SIZE) {
+          return cb();
+        }
+        processNextBatch();
+      };
+    };
+    processNextBatch();
+  });
+}
+async function loadData(db, emojiData, url, eTag) {
+  try {
+    const transformedData = transformEmojiData(emojiData);
+    await dbPromise(db, [STORE_EMOJI, STORE_KEYVALUE], MODE_READWRITE, ([emojiStore, metaStore], txn) => {
+      let oldETag;
+      let oldUrl;
+      let todo = 0;
+      function checkFetched() {
+        if (++todo === 2) {
+          onFetched();
+        }
+      }
+      function onFetched() {
+        if (oldETag === eTag && oldUrl === url) {
+          return;
+        }
+        emojiStore.clear();
+        for (const data of transformedData) {
+          emojiStore.put(data);
+        }
+        metaStore.put(eTag, KEY_ETAG);
+        metaStore.put(url, KEY_URL);
+        commit(txn);
+      }
+      getIDB(metaStore, KEY_ETAG, (result) => {
+        oldETag = result;
+        checkFetched();
+      });
+      getIDB(metaStore, KEY_URL, (result) => {
+        oldUrl = result;
+        checkFetched();
+      });
+    });
+  } finally {
+  }
+}
+async function getEmojiByGroup(db, group) {
+  return dbPromise(db, STORE_EMOJI, MODE_READONLY, (emojiStore, txn, cb) => {
+    const range = IDBKeyRange.bound([group, 0], [group + 1, 0], false, true);
+    getAllIDB(emojiStore.index(INDEX_GROUP_AND_ORDER), range, cb);
+  });
+}
+async function getEmojiBySearchQuery(db, query) {
+  const tokens = normalizeTokens(extractTokens(query));
+  if (!tokens.length) {
+    return [];
+  }
+  return dbPromise(db, STORE_EMOJI, MODE_READONLY, (emojiStore, txn, cb) => {
+    const intermediateResults = [];
+    const checkDone = () => {
+      if (intermediateResults.length === tokens.length) {
+        onDone();
+      }
+    };
+    const onDone = () => {
+      const results = findCommonMembers(intermediateResults, (_) => _.unicode);
+      cb(results.sort((a, b) => a.order < b.order ? -1 : 1));
+    };
+    for (let i2 = 0; i2 < tokens.length; i2++) {
+      const token = tokens[i2];
+      const range = i2 === tokens.length - 1 ? IDBKeyRange.bound(token, token + "\uFFFF", false, true) : IDBKeyRange.only(token);
+      getAllIDB(emojiStore.index(INDEX_TOKENS), range, (result) => {
+        intermediateResults.push(result);
+        checkDone();
+      });
+    }
+  });
+}
+async function getEmojiByShortcode(db, shortcode) {
+  const emojis = await getEmojiBySearchQuery(db, shortcode);
+  if (!emojis.length) {
+    const predicate = (_) => (_.shortcodes || []).includes(shortcode.toLowerCase());
+    return await doFullDatabaseScanForSingleResult(db, predicate) || null;
+  }
+  return emojis.filter((_) => {
+    const lowerShortcodes = (_.shortcodes || []).map((_2) => _2.toLowerCase());
+    return lowerShortcodes.includes(shortcode.toLowerCase());
+  })[0] || null;
+}
+async function getEmojiByUnicode(db, unicode) {
+  return dbPromise(db, STORE_EMOJI, MODE_READONLY, (emojiStore, txn, cb) => getIDB(emojiStore, unicode, (result) => {
+    if (result) {
+      return cb(result);
+    }
+    getIDB(emojiStore.index(INDEX_SKIN_UNICODE), unicode, (result2) => cb(result2 || null));
+  }));
+}
+function get2(db, storeName, key) {
+  return dbPromise(db, storeName, MODE_READONLY, (store, txn, cb) => getIDB(store, key, cb));
+}
+function set(db, storeName, key, value) {
+  return dbPromise(db, storeName, MODE_READWRITE, (store, txn) => {
+    store.put(value, key);
+    commit(txn);
+  });
+}
+function incrementFavoriteEmojiCount(db, unicode) {
+  return dbPromise(db, STORE_FAVORITES, MODE_READWRITE, (store, txn) => getIDB(store, unicode, (result) => {
+    store.put((result || 0) + 1, unicode);
+    commit(txn);
+  }));
+}
+function getTopFavoriteEmoji(db, customEmojiIndex2, limit) {
+  if (limit === 0) {
+    return [];
+  }
+  return dbPromise(db, [STORE_FAVORITES, STORE_EMOJI], MODE_READONLY, ([favoritesStore, emojiStore], txn, cb) => {
+    const results = [];
+    favoritesStore.index(INDEX_COUNT).openCursor(void 0, "prev").onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (!cursor) {
+        return cb(results);
+      }
+      function addResult(result) {
+        results.push(result);
+        if (results.length === limit) {
+          return cb(results);
+        }
+        cursor.continue();
+      }
+      const unicodeOrName = cursor.primaryKey;
+      const custom = customEmojiIndex2.byName(unicodeOrName);
+      if (custom) {
+        return addResult(custom);
+      }
+      getIDB(emojiStore, unicodeOrName, (emoji) => {
+        if (emoji) {
+          return addResult(emoji);
+        }
+        cursor.continue();
+      });
+    };
+  });
+}
+var CODA_MARKER = "";
+function trie(arr, itemToTokens) {
+  const map2 = /* @__PURE__ */ new Map();
+  for (const item of arr) {
+    const tokens = itemToTokens(item);
+    for (const token of tokens) {
+      let currentMap = map2;
+      for (let i2 = 0; i2 < token.length; i2++) {
+        const char = token.charAt(i2);
+        let nextMap = currentMap.get(char);
+        if (!nextMap) {
+          nextMap = /* @__PURE__ */ new Map();
+          currentMap.set(char, nextMap);
+        }
+        currentMap = nextMap;
+      }
+      let valuesAtCoda = currentMap.get(CODA_MARKER);
+      if (!valuesAtCoda) {
+        valuesAtCoda = [];
+        currentMap.set(CODA_MARKER, valuesAtCoda);
+      }
+      valuesAtCoda.push(item);
+    }
+  }
+  const search = (query, exact) => {
+    let currentMap = map2;
+    for (let i2 = 0; i2 < query.length; i2++) {
+      const char = query.charAt(i2);
+      const nextMap = currentMap.get(char);
+      if (nextMap) {
+        currentMap = nextMap;
+      } else {
+        return [];
+      }
+    }
+    if (exact) {
+      const results2 = currentMap.get(CODA_MARKER);
+      return results2 || [];
+    }
+    const results = [];
+    const queue = [currentMap];
+    while (queue.length) {
+      const currentMap2 = queue.shift();
+      const entriesSortedByKey = [...currentMap2.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1);
+      for (const [key, value] of entriesSortedByKey) {
+        if (key === CODA_MARKER) {
+          results.push(...value);
+        } else {
+          queue.push(value);
+        }
+      }
+    }
+    return results;
+  };
+  return search;
+}
+var requiredKeys$1 = [
+  "name",
+  "url"
+];
+function assertCustomEmojis(customEmojis) {
+  const isArray = customEmojis && Array.isArray(customEmojis);
+  const firstItemIsFaulty = isArray && customEmojis.length && (!customEmojis[0] || requiredKeys$1.some((key) => !(key in customEmojis[0])));
+  if (!isArray || firstItemIsFaulty) {
+    throw new Error("Custom emojis are in the wrong format");
+  }
+}
+function customEmojiIndex(customEmojis) {
+  assertCustomEmojis(customEmojis);
+  const sortByName = (a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+  const all = customEmojis.sort(sortByName);
+  const emojiToTokens = (emoji) => {
+    const set2 = /* @__PURE__ */ new Set();
+    if (emoji.shortcodes) {
+      for (const shortcode of emoji.shortcodes) {
+        for (const token of extractTokens(shortcode)) {
+          set2.add(token);
+        }
+      }
+    }
+    return set2;
+  };
+  const searchTrie = trie(customEmojis, emojiToTokens);
+  const searchByExactMatch = (_) => searchTrie(_, true);
+  const searchByPrefix = (_) => searchTrie(_, false);
+  const search = (query) => {
+    const tokens = extractTokens(query);
+    const intermediateResults = tokens.map((token, i2) => (i2 < tokens.length - 1 ? searchByExactMatch : searchByPrefix)(token));
+    return findCommonMembers(intermediateResults, (_) => _.name).sort(sortByName);
+  };
+  const shortcodeToEmoji = /* @__PURE__ */ new Map();
+  const nameToEmoji = /* @__PURE__ */ new Map();
+  for (const customEmoji of customEmojis) {
+    nameToEmoji.set(customEmoji.name.toLowerCase(), customEmoji);
+    for (const shortcode of customEmoji.shortcodes || []) {
+      shortcodeToEmoji.set(shortcode.toLowerCase(), customEmoji);
+    }
+  }
+  const byShortcode = (shortcode) => shortcodeToEmoji.get(shortcode.toLowerCase());
+  const byName = (name) => nameToEmoji.get(name.toLowerCase());
+  return {
+    all,
+    search,
+    byShortcode,
+    byName
+  };
+}
+var isFirefoxContentScript = typeof wrappedJSObject !== "undefined";
+function cleanEmoji(emoji) {
+  if (!emoji) {
+    return emoji;
+  }
+  if (isFirefoxContentScript) {
+    emoji = structuredClone(emoji);
+  }
+  delete emoji.tokens;
+  if (emoji.skinTones) {
+    const len = emoji.skinTones.length;
+    emoji.skins = Array(len);
+    for (let i2 = 0; i2 < len; i2++) {
+      emoji.skins[i2] = {
+        tone: emoji.skinTones[i2],
+        unicode: emoji.skinUnicodes[i2],
+        version: emoji.skinVersions[i2]
+      };
+    }
+    delete emoji.skinTones;
+    delete emoji.skinUnicodes;
+    delete emoji.skinVersions;
+  }
+  return emoji;
+}
+function warnETag(eTag) {
+  if (!eTag) {
+    console.warn("emoji-picker-element is more efficient if the dataSource server exposes an ETag header.");
+  }
+}
+var requiredKeys = [
+  "annotation",
+  "emoji",
+  "group",
+  "order",
+  "version"
+];
+function assertEmojiData(emojiData) {
+  if (!emojiData || !Array.isArray(emojiData) || !emojiData[0] || typeof emojiData[0] !== "object" || requiredKeys.some((key) => !(key in emojiData[0]))) {
+    throw new Error("Emoji data is in the wrong format");
+  }
+}
+function assertStatus(response, dataSource) {
+  if (Math.floor(response.status / 100) !== 2) {
+    throw new Error("Failed to fetch: " + dataSource + ":  " + response.status);
+  }
+}
+async function getETag(dataSource) {
+  const response = await fetch(dataSource, { method: "HEAD" });
+  assertStatus(response, dataSource);
+  const eTag = response.headers.get("etag");
+  warnETag(eTag);
+  return eTag;
+}
+async function getETagAndData(dataSource) {
+  const response = await fetch(dataSource);
+  assertStatus(response, dataSource);
+  const eTag = response.headers.get("etag");
+  warnETag(eTag);
+  const emojiData = await response.json();
+  assertEmojiData(emojiData);
+  return [eTag, emojiData];
+}
+function arrayBufferToBinaryString(buffer) {
+  var binary = "";
+  var bytes = new Uint8Array(buffer);
+  var length = bytes.byteLength;
+  var i2 = -1;
+  while (++i2 < length) {
+    binary += String.fromCharCode(bytes[i2]);
+  }
+  return binary;
+}
+function binaryStringToArrayBuffer(binary) {
+  var length = binary.length;
+  var buf = new ArrayBuffer(length);
+  var arr = new Uint8Array(buf);
+  var i2 = -1;
+  while (++i2 < length) {
+    arr[i2] = binary.charCodeAt(i2);
+  }
+  return buf;
+}
+async function jsonChecksum(object) {
+  const inString = JSON.stringify(object);
+  let inBuffer = binaryStringToArrayBuffer(inString);
+  const outBuffer = await crypto.subtle.digest("SHA-1", inBuffer);
+  const outBinString = arrayBufferToBinaryString(outBuffer);
+  const res = btoa(outBinString);
+  return res;
+}
+async function doCheckForUpdates(db, dataSource) {
+  let emojiData;
+  let eTag = await getETag(dataSource);
+  if (!eTag) {
+    const eTagAndData = await getETagAndData(dataSource);
+    eTag = eTagAndData[0];
+    emojiData = eTagAndData[1];
+    if (!eTag) {
+      eTag = await jsonChecksum(emojiData);
+    }
+  }
+  if (await hasData(db, dataSource, eTag)) ;
+  else {
+    if (!emojiData) {
+      const eTagAndData = await getETagAndData(dataSource);
+      emojiData = eTagAndData[1];
+    }
+    await loadData(db, emojiData, dataSource, eTag);
+  }
+}
+async function loadDataForFirstTime(db, dataSource) {
+  let [eTag, emojiData] = await getETagAndData(dataSource);
+  if (!eTag) {
+    eTag = await jsonChecksum(emojiData);
+  }
+  await loadData(db, emojiData, dataSource, eTag);
+}
+async function checkForUpdates(db, dataSource) {
+  try {
+    await doCheckForUpdates(db, dataSource);
+  } catch (err) {
+    if (err.name !== "InvalidStateError") {
+      throw err;
+    }
+  }
+}
+var Database = class {
+  constructor({ dataSource = DEFAULT_DATA_SOURCE, locale = DEFAULT_LOCALE, customEmoji = [] } = {}) {
+    this.dataSource = dataSource;
+    this.locale = locale;
+    this._dbName = `emoji-picker-element-${this.locale}`;
+    this._db = void 0;
+    this._lazyUpdate = void 0;
+    this._custom = customEmojiIndex(customEmoji);
+    this._clear = this._clear.bind(this);
+    this._ready = this._init();
+  }
+  async _init() {
+    const db = this._db = await openDatabase(this._dbName);
+    addOnCloseListener(this._dbName, this._clear);
+    const dataSource = this.dataSource;
+    const empty2 = await isEmpty2(db);
+    if (empty2) {
+      await loadDataForFirstTime(db, dataSource);
+    } else {
+      this._lazyUpdate = checkForUpdates(db, dataSource);
+    }
+  }
+  async ready() {
+    const checkReady = async () => {
+      if (!this._ready) {
+        this._ready = this._init();
+      }
+      return this._ready;
+    };
+    await checkReady();
+    if (!this._db) {
+      await checkReady();
+    }
+  }
+  async getEmojiByGroup(group) {
+    assertNumber(group);
+    await this.ready();
+    return uniqEmoji(await getEmojiByGroup(this._db, group)).map(cleanEmoji);
+  }
+  async getEmojiBySearchQuery(query) {
+    assertNonEmptyString(query);
+    await this.ready();
+    const customs = this._custom.search(query);
+    const natives = uniqEmoji(await getEmojiBySearchQuery(this._db, query)).map(cleanEmoji);
+    return [
+      ...customs,
+      ...natives
+    ];
+  }
+  async getEmojiByShortcode(shortcode) {
+    assertNonEmptyString(shortcode);
+    await this.ready();
+    const custom = this._custom.byShortcode(shortcode);
+    if (custom) {
+      return custom;
+    }
+    return cleanEmoji(await getEmojiByShortcode(this._db, shortcode));
+  }
+  async getEmojiByUnicodeOrName(unicodeOrName) {
+    assertNonEmptyString(unicodeOrName);
+    await this.ready();
+    const custom = this._custom.byName(unicodeOrName);
+    if (custom) {
+      return custom;
+    }
+    return cleanEmoji(await getEmojiByUnicode(this._db, unicodeOrName));
+  }
+  async getPreferredSkinTone() {
+    await this.ready();
+    return await get2(this._db, STORE_KEYVALUE, KEY_PREFERRED_SKINTONE) || 0;
+  }
+  async setPreferredSkinTone(skinTone) {
+    assertNumber(skinTone);
+    await this.ready();
+    return set(this._db, STORE_KEYVALUE, KEY_PREFERRED_SKINTONE, skinTone);
+  }
+  async incrementFavoriteEmojiCount(unicodeOrName) {
+    assertNonEmptyString(unicodeOrName);
+    await this.ready();
+    return incrementFavoriteEmojiCount(this._db, unicodeOrName);
+  }
+  async getTopFavoriteEmoji(limit) {
+    assertNumber(limit);
+    await this.ready();
+    return (await getTopFavoriteEmoji(this._db, this._custom, limit)).map(cleanEmoji);
+  }
+  set customEmoji(customEmojis) {
+    this._custom = customEmojiIndex(customEmojis);
+  }
+  get customEmoji() {
+    return this._custom.all;
+  }
+  async _shutdown() {
+    await this.ready();
+    try {
+      await this._lazyUpdate;
+    } catch (err) {
+    }
+  }
+  // clear references to IDB, e.g. during a close event
+  _clear() {
+    this._db = this._ready = this._lazyUpdate = void 0;
+  }
+  async close() {
+    await this._shutdown();
+    await closeDatabase(this._dbName);
+  }
+  async delete() {
+    await this._shutdown();
+    await deleteDatabase(this._dbName);
+  }
+};
+
+// node_modules/emoji-picker-element/picker.js
+var allGroups = [
+  [-1, "\u2728", "custom"],
+  [0, "\u{1F600}", "smileys-emotion"],
+  [1, "\u{1F44B}", "people-body"],
+  [3, "\u{1F431}", "animals-nature"],
+  [4, "\u{1F34E}", "food-drink"],
+  [5, "\u{1F3E0}\uFE0F", "travel-places"],
+  [6, "\u26BD", "activities"],
+  [7, "\u{1F4DD}", "objects"],
+  [8, "\u26D4\uFE0F", "symbols"],
+  [9, "\u{1F3C1}", "flags"]
+].map(([id, emoji, name]) => ({ id, emoji, name }));
+var groups = allGroups.slice(1);
+var MIN_SEARCH_TEXT_LENGTH2 = 2;
+var NUM_SKIN_TONES = 6;
+var rIC = typeof requestIdleCallback === "function" ? requestIdleCallback : setTimeout;
+function hasZwj(emoji) {
+  return emoji.unicode.includes("\u200D");
+}
+var versionsAndTestEmoji = {
+  "\u{1FAEA}": 17,
+  // distorted face
+  "\u{1FAE9}": 16,
+  // face with bags under eyes
+  "\u{1FAE8}": 15.1,
+  // shaking head, technically from v15 but see note above
+  "\u{1FAE0}": 14,
+  "\u{1F972}": 13.1,
+  // smiling face with tear, technically from v13 but see note above
+  "\u{1F97B}": 12.1,
+  // sari, technically from v12 but see note above
+  "\u{1F970}": 11,
+  "\u{1F929}": 5,
+  "\u{1F471}\u200D\u2640\uFE0F": 4,
+  "\u{1F923}": 3,
+  "\u{1F441}\uFE0F\u200D\u{1F5E8}\uFE0F": 2,
+  "\u{1F600}": 1,
+  "\u{1F610}\uFE0F": 0.7,
+  "\u{1F603}": 0.6
+};
+var TIMEOUT_BEFORE_LOADING_MESSAGE = 1e3;
+var DEFAULT_SKIN_TONE_EMOJI = "\u{1F590}\uFE0F";
+var DEFAULT_NUM_COLUMNS = 8;
+var MOST_COMMONLY_USED_EMOJI = [
+  "\u{1F60A}",
+  "\u{1F612}",
+  "\u2764\uFE0F",
+  "\u{1F44D}\uFE0F",
+  "\u{1F60D}",
+  "\u{1F602}",
+  "\u{1F62D}",
+  "\u263A\uFE0F",
+  "\u{1F614}",
+  "\u{1F629}",
+  "\u{1F60F}",
+  "\u{1F495}",
+  "\u{1F64C}",
+  "\u{1F618}"
+];
+var FONT_FAMILY = '"Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji","EmojiOne Color","Android Emoji",sans-serif';
+var DEFAULT_CATEGORY_SORTING = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+var getTextFeature = (text2, color) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 1;
+  const ctx = canvas.getContext("2d", {
+    // Improves the performance of `getImageData()`
+    // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/getContextAttributes#willreadfrequently
+    willReadFrequently: true
+  });
+  ctx.textBaseline = "top";
+  ctx.font = `100px ${FONT_FAMILY}`;
+  ctx.fillStyle = color;
+  ctx.scale(0.01, 0.01);
+  ctx.fillText(text2, 0, 0);
+  return ctx.getImageData(0, 0, 1, 1).data;
+};
+var compareFeatures = (feature1, feature2) => {
+  const feature1Str = [...feature1].join(",");
+  const feature2Str = [...feature2].join(",");
+  return feature1Str === feature2Str && !feature1Str.startsWith("0,0,0,");
+};
+function testColorEmojiSupported(text2) {
+  const feature1 = getTextFeature(text2, "#000");
+  const feature2 = getTextFeature(text2, "#fff");
+  return feature1 && feature2 && compareFeatures(feature1, feature2);
+}
+function determineEmojiSupportLevel() {
+  const entries = Object.entries(versionsAndTestEmoji);
+  try {
+    for (const [emoji, version] of entries) {
+      if (testColorEmojiSupported(emoji)) {
+        return version;
+      }
+    }
+  } catch (e) {
+  } finally {
+  }
+  return entries[0][1];
+}
+var promise;
+var detectEmojiSupportLevel = () => {
+  if (!promise) {
+    promise = new Promise((resolve) => rIC(() => resolve(determineEmojiSupportLevel())));
+  }
+  return promise;
+};
+var supportedZwjEmojis = /* @__PURE__ */ new Map();
+var VARIATION_SELECTOR = "\uFE0F";
+var SKINTONE_MODIFIER = "\uD83C";
+var ZWJ = "\u200D";
+var LIGHT_SKIN_TONE = 127995;
+var LIGHT_SKIN_TONE_MODIFIER = 57339;
+function applySkinTone(str, skinTone) {
+  if (skinTone === 0) {
+    return str;
+  }
+  const zwjIndex = str.indexOf(ZWJ);
+  if (zwjIndex !== -1) {
+    return str.substring(0, zwjIndex) + String.fromCodePoint(LIGHT_SKIN_TONE + skinTone - 1) + str.substring(zwjIndex);
+  }
+  if (str.endsWith(VARIATION_SELECTOR)) {
+    str = str.substring(0, str.length - 1);
+  }
+  return str + SKINTONE_MODIFIER + String.fromCodePoint(LIGHT_SKIN_TONE_MODIFIER + skinTone - 1);
+}
+function halt(event) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+function incrementOrDecrement(decrement, val, arr) {
+  val += decrement ? -1 : 1;
+  if (val < 0) {
+    val = arr.length - 1;
+  } else if (val >= arr.length) {
+    val = 0;
+  }
+  return val;
+}
+function uniqBy2(arr, func) {
+  const set2 = /* @__PURE__ */ new Set();
+  const res = [];
+  for (const item of arr) {
+    const key = func(item);
+    if (!set2.has(key)) {
+      set2.add(key);
+      res.push(item);
+    }
+  }
+  return res;
+}
+function summarizeEmojisForUI(emojis, emojiSupportLevel) {
+  const toSimpleSkinsMap = (skins) => {
+    const res = {};
+    for (const skin of skins) {
+      if (typeof skin.tone === "number" && skin.version <= emojiSupportLevel) {
+        res[skin.tone] = skin.unicode;
+      }
+    }
+    return res;
+  };
+  return emojis.map(({ unicode, skins, shortcodes, url, name, category, annotation }) => ({
+    unicode,
+    name,
+    shortcodes,
+    url,
+    category,
+    annotation,
+    id: unicode || name,
+    skins: skins && toSimpleSkinsMap(skins)
+  }));
+}
+var rAF = requestAnimationFrame;
+var resizeObserverSupported = typeof ResizeObserver === "function";
+function resizeObserverAction(node2, abortSignal, onUpdate) {
+  let resizeObserver;
+  if (resizeObserverSupported) {
+    resizeObserver = new ResizeObserver(onUpdate);
+    resizeObserver.observe(node2);
+  } else {
+    rAF(onUpdate);
+  }
+  abortSignal.addEventListener("abort", () => {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
+  });
+}
+function calculateTextWidth(node2) {
+  {
+    const range = document.createRange();
+    range.selectNode(node2.firstChild);
+    return range.getBoundingClientRect().width;
+  }
+}
+var BASELINE_EMOJI = "\u{1F600}";
+var baselineEmojiWidth;
+var fallbackNode;
+function calculateTextWidthWithFallback(unicode, domNode, baselineEmojiNode) {
+  const result = calculateTextWidth(domNode);
+  if (!result) {
+    if (!fallbackNode) {
+      fallbackNode = baselineEmojiNode.cloneNode(true);
+      const styles = getComputedStyle(baselineEmojiNode);
+      for (const prop of ["font-family", "line-height", "width", "height", "font-size", "display", "align-items", "justify-content"]) {
+        fallbackNode.style.setProperty(prop, styles.getPropertyValue(prop), "important");
+      }
+    }
+    try {
+      document.body.appendChild(fallbackNode);
+      fallbackNode.firstChild.nodeValue = unicode;
+      return calculateTextWidth(fallbackNode);
+    } finally {
+      fallbackNode.remove();
+    }
+  }
+  return result;
+}
+function checkZwjSupport(zwjEmojisToCheck, baselineEmojiNode, emojiToDomNode) {
+  let allSupported = true;
+  for (const emoji of zwjEmojisToCheck) {
+    const domNode = emojiToDomNode(emoji);
+    if (!domNode) {
+      continue;
+    }
+    if (typeof baselineEmojiWidth === "undefined") {
+      baselineEmojiWidth = calculateTextWidthWithFallback(BASELINE_EMOJI, baselineEmojiNode, baselineEmojiNode);
+    }
+    const emojiWidth = calculateTextWidthWithFallback(emoji.unicode, domNode, baselineEmojiNode);
+    const supported = emojiWidth / 1.8 < baselineEmojiWidth;
+    supportedZwjEmojis.set(emoji.unicode, supported);
+    if (!supported) {
+      allSupported = false;
+    }
+  }
+  return allSupported;
+}
+function uniq(arr) {
+  return uniqBy2(arr, (_) => _);
+}
+function resetScrollTopIfPossible(element2) {
+  if (element2) {
+    element2.scrollTop = 0;
+  }
+}
+function getFromMap(cache2, key, func) {
+  let cached = cache2.get(key);
+  if (!cached) {
+    cached = func();
+    cache2.set(key, cached);
+  }
+  return cached;
+}
+function toString(value) {
+  return "" + value;
+}
+function parseTemplate(htmlString) {
+  const template = document.createElement("template");
+  template.innerHTML = htmlString;
+  return template;
+}
+var parseCache = /* @__PURE__ */ new WeakMap();
+var domInstancesCache = /* @__PURE__ */ new WeakMap();
+var unkeyedSymbol = /* @__PURE__ */ Symbol("un-keyed");
+var hasReplaceChildren = "replaceChildren" in Element.prototype;
+function replaceChildren(parentNode2, newChildren) {
+  if (hasReplaceChildren) {
+    parentNode2.replaceChildren(...newChildren);
+  } else {
+    parentNode2.innerHTML = "";
+    parentNode2.append(...newChildren);
+  }
+}
+function doChildrenNeedRerender(parentNode2, newChildren) {
+  let oldChild = parentNode2.firstChild;
+  let oldChildrenCount = 0;
+  while (oldChild) {
+    const newChild = newChildren[oldChildrenCount];
+    if (newChild !== oldChild) {
+      return true;
+    }
+    oldChild = oldChild.nextSibling;
+    oldChildrenCount++;
+  }
+  return oldChildrenCount !== newChildren.length;
+}
+function patchChildren(newChildren, instanceBinding) {
+  const { targetNode } = instanceBinding;
+  let { targetParentNode } = instanceBinding;
+  let needsRerender = false;
+  if (targetParentNode) {
+    needsRerender = doChildrenNeedRerender(targetParentNode, newChildren);
+  } else {
+    needsRerender = true;
+    instanceBinding.targetNode = void 0;
+    instanceBinding.targetParentNode = targetParentNode = targetNode.parentNode;
+  }
+  if (needsRerender) {
+    replaceChildren(targetParentNode, newChildren);
+  }
+}
+function patch(expressions, instanceBindings) {
+  for (const instanceBinding of instanceBindings) {
+    const {
+      targetNode,
+      currentExpression,
+      binding: {
+        expressionIndex,
+        attributeName,
+        attributeValuePre,
+        attributeValuePost
+      }
+    } = instanceBinding;
+    const expression = expressions[expressionIndex];
+    if (currentExpression === expression) {
+      continue;
+    }
+    instanceBinding.currentExpression = expression;
+    if (attributeName) {
+      if (expression === null) {
+        targetNode.removeAttribute(attributeName);
+      } else {
+        const newValue = attributeValuePre + toString(expression) + attributeValuePost;
+        targetNode.setAttribute(attributeName, newValue);
+      }
+    } else {
+      let newNode;
+      if (Array.isArray(expression)) {
+        patchChildren(expression, instanceBinding);
+      } else if (expression instanceof Element) {
+        newNode = expression;
+        targetNode.replaceWith(newNode);
+      } else {
+        targetNode.nodeValue = toString(expression);
+      }
+      if (newNode) {
+        instanceBinding.targetNode = newNode;
+      }
+    }
+  }
+}
+function parse2(tokens) {
+  let htmlString = "";
+  let withinTag = false;
+  let withinAttribute = false;
+  let elementIndexCounter = -1;
+  const elementsToBindings = /* @__PURE__ */ new Map();
+  const elementIndexes = [];
+  let skipTokenChars = 0;
+  for (let i2 = 0, len = tokens.length; i2 < len; i2++) {
+    const token = tokens[i2];
+    htmlString += token.slice(skipTokenChars);
+    if (i2 === len - 1) {
+      break;
+    }
+    for (let j = 0; j < token.length; j++) {
+      const char = token.charAt(j);
+      switch (char) {
+        case "<": {
+          const nextChar = token.charAt(j + 1);
+          if (nextChar === "/") {
+            elementIndexes.pop();
+          } else {
+            withinTag = true;
+            elementIndexes.push(++elementIndexCounter);
+          }
+          break;
+        }
+        case ">": {
+          withinTag = false;
+          withinAttribute = false;
+          break;
+        }
+        case "=": {
+          withinAttribute = true;
+          break;
+        }
+      }
+    }
+    const elementIndex = elementIndexes[elementIndexes.length - 1];
+    const bindings = getFromMap(elementsToBindings, elementIndex, () => []);
+    let attributeName;
+    let attributeValuePre;
+    let attributeValuePost;
+    if (withinAttribute) {
+      const attributePreMatch = /(\S+)="?([^"=]*)$/.exec(token);
+      attributeName = attributePreMatch[1];
+      attributeValuePre = attributePreMatch[2];
+      const attributePostMatch = /^([^">]*)("?)/.exec(tokens[i2 + 1]);
+      attributeValuePost = attributePostMatch[1];
+      htmlString = htmlString.slice(0, -1 * attributePreMatch[0].length);
+      skipTokenChars = attributePostMatch[0].length;
+    } else {
+      skipTokenChars = 0;
+    }
+    const binding = {
+      attributeName,
+      attributeValuePre,
+      attributeValuePost,
+      expressionIndex: i2
+    };
+    bindings.push(binding);
+    if (!withinTag && !withinAttribute) {
+      htmlString += " ";
+    }
+  }
+  const template = parseTemplate(htmlString);
+  return {
+    template,
+    elementsToBindings
+  };
+}
+function applyBindings(bindings, element2, instanceBindings) {
+  for (let i2 = 0; i2 < bindings.length; i2++) {
+    const binding = bindings[i2];
+    const targetNode = binding.attributeName ? element2 : element2.firstChild;
+    const instanceBinding = {
+      binding,
+      targetNode,
+      targetParentNode: void 0,
+      currentExpression: void 0
+    };
+    instanceBindings.push(instanceBinding);
+  }
+}
+function traverseAndSetupBindings(rootElement, elementsToBindings) {
+  const instanceBindings = [];
+  let topLevelBindings;
+  if (elementsToBindings.size === 1 && (topLevelBindings = elementsToBindings.get(0))) {
+    applyBindings(topLevelBindings, rootElement, instanceBindings);
+  } else {
+    const treeWalker = document.createTreeWalker(rootElement, NodeFilter.SHOW_ELEMENT);
+    let element2 = rootElement;
+    let elementIndex = -1;
+    do {
+      const bindings = elementsToBindings.get(++elementIndex);
+      if (bindings) {
+        applyBindings(bindings, element2, instanceBindings);
+      }
+    } while (element2 = treeWalker.nextNode());
+  }
+  return instanceBindings;
+}
+function parseHtml(tokens) {
+  const { template, elementsToBindings } = getFromMap(parseCache, tokens, () => parse2(tokens));
+  const dom = template.cloneNode(true).content.firstElementChild;
+  const instanceBindings = traverseAndSetupBindings(dom, elementsToBindings);
+  return function updateDomInstance(expressions) {
+    patch(expressions, instanceBindings);
+    return dom;
+  };
+}
+function createFramework(state) {
+  const domInstances = getFromMap(domInstancesCache, state, () => /* @__PURE__ */ new Map());
+  let domInstanceCacheKey = unkeyedSymbol;
+  function html(tokens, ...expressions) {
+    const domInstancesForTokens = getFromMap(domInstances, tokens, () => /* @__PURE__ */ new Map());
+    const updateDomInstance = getFromMap(domInstancesForTokens, domInstanceCacheKey, () => parseHtml(tokens));
+    return updateDomInstance(expressions);
+  }
+  function map2(array, callback, keyFunction) {
+    return array.map((item, index) => {
+      const originalCacheKey = domInstanceCacheKey;
+      domInstanceCacheKey = keyFunction(item);
+      try {
+        return callback(item, index);
+      } finally {
+        domInstanceCacheKey = originalCacheKey;
+      }
+    });
+  }
+  return { map: map2, html };
+}
+function render2(container, state, helpers, events, actions, refs, abortSignal, actionContext, firstRender) {
+  const { labelWithSkin, titleForEmoji, unicodeWithSkin } = helpers;
+  const { html, map: map2 } = createFramework(state);
+  function emojiList(emojis, searchMode, prefix) {
+    return map2(emojis, (emoji, i2) => {
+      return html`<button role="${searchMode ? "option" : "menuitem"}" aria-selected="${searchMode ? i2 === state.activeSearchItem : null}" aria-label="${labelWithSkin(emoji, state.currentSkinTone)}" title="${titleForEmoji(emoji)}" class="${"emoji" + (searchMode && i2 === state.activeSearchItem ? " active" : "") + (emoji.unicode ? "" : " custom-emoji")}" id="${`${prefix}-${emoji.id}`}" style="${emoji.unicode ? null : `--custom-emoji-background: url(${JSON.stringify(emoji.url)})`}">${emoji.unicode ? unicodeWithSkin(emoji, state.currentSkinTone) : ""}</button>`;
+    }, (emoji) => `${prefix}-${emoji.id}`);
+  }
+  const section = () => {
+    return html`<section data-ref="rootElement" class="picker" aria-label="${state.i18n.regionLabel}" style="${state.pickerStyle || ""}"><div class="pad-top"></div><div class="search-row"><div class="search-wrapper"><input id="search" class="search" type="search" role="combobox" enterkeyhint="search" placeholder="${state.i18n.searchLabel}" autocapitalize="none" autocomplete="off" spellcheck="true" aria-expanded="${!!(state.searchMode && state.currentEmojis.length)}" aria-controls="search-results" aria-describedby="search-description" aria-autocomplete="list" aria-activedescendant="${state.activeSearchItemId ? `emo-${state.activeSearchItemId}` : null}" data-ref="searchElement" data-on-input="onSearchInput" data-on-keydown="onSearchKeydown"><label class="sr-only" for="search">${state.i18n.searchLabel}</label> <span id="search-description" class="sr-only">${state.i18n.searchDescription}</span></div><div class="skintone-button-wrapper ${state.skinTonePickerExpandedAfterAnimation ? "expanded" : ""}"><button id="skintone-button" class="emoji ${state.skinTonePickerExpanded ? "hide-focus" : ""}" aria-label="${state.skinToneButtonLabel}" title="${state.skinToneButtonLabel}" aria-describedby="skintone-description" aria-haspopup="listbox" aria-expanded="${state.skinTonePickerExpanded}" aria-controls="skintone-list" data-on-click="onClickSkinToneButton">${state.skinToneButtonText || ""}</button></div><span id="skintone-description" class="sr-only">${state.i18n.skinToneDescription}</span><div data-ref="skinToneDropdown" id="skintone-list" class="skintone-list hide-focus ${state.skinTonePickerExpanded ? "" : "hidden no-animate"}" style="transform:translateY(${state.skinTonePickerExpanded ? 0 : "calc(-1 * var(--num-skintones) * var(--total-emoji-size))"})" role="listbox" aria-label="${state.i18n.skinTonesLabel}" aria-activedescendant="skintone-${state.activeSkinTone}" aria-hidden="${!state.skinTonePickerExpanded}" tabIndex="-1" data-on-focusout="onSkinToneOptionsFocusOut" data-on-click="onSkinToneOptionsClick" data-on-keydown="onSkinToneOptionsKeydown" data-on-keyup="onSkinToneOptionsKeyup">${map2(state.skinTones, (skinTone, i2) => {
+      return html`<div id="skintone-${i2}" class="emoji ${i2 === state.activeSkinTone ? "active" : ""}" aria-selected="${i2 === state.activeSkinTone}" role="option" title="${state.i18n.skinTones[i2]}" aria-label="${state.i18n.skinTones[i2]}">${skinTone}</div>`;
+    }, (skinTone) => skinTone)}</div></div><div class="nav" role="tablist" style="grid-template-columns:repeat(${state.groups.length},1fr)" aria-label="${state.i18n.categoriesLabel}" data-on-keydown="onNavKeydown" data-on-click="onNavClick">${map2(state.groups, (group) => {
+      return html`<button role="tab" class="nav-button" aria-controls="tab-${group.id}" aria-label="${state.i18n.categories[group.name]}" aria-selected="${!state.searchMode && state.currentGroup.id === group.id}" title="${state.i18n.categories[group.name]}" data-group-id="${group.id}"><div class="nav-emoji emoji">${group.emoji}</div></button>`;
+    }, (group) => group.id)}</div><div class="indicator-wrapper"><div class="indicator" style="transform:translateX(${/* istanbul ignore next */
+    (state.isRtl ? -1 : 1) * state.currentGroupIndex * 100}%)"></div></div><div class="message ${state.message ? "" : "gone"}" role="alert" aria-live="polite">${state.message || ""}</div><div data-ref="tabpanelElement" class="tabpanel ${!state.databaseLoaded || state.message ? "gone" : ""}" role="${state.searchMode ? "region" : "tabpanel"}" aria-label="${state.searchMode ? state.i18n.searchResultsLabel : state.i18n.categories[state.currentGroup.name]}" id="${state.searchMode ? null : `tab-${state.currentGroup.id}`}" tabIndex="0" data-on-click="onEmojiClick"><div data-action="calculateEmojiGridStyle">${map2(state.currentEmojisWithCategories, (emojiWithCategory, i2) => {
+      return html`<div><div id="menu-label-${i2}" class="category ${state.currentEmojisWithCategories.length === 1 && state.currentEmojisWithCategories[0].category === "" ? "gone" : ""}" aria-hidden="true">${state.searchMode ? state.i18n.searchResultsLabel : emojiWithCategory.category ? emojiWithCategory.category : state.currentEmojisWithCategories.length > 1 ? state.i18n.categories.custom : state.i18n.categories[state.currentGroup.name]}</div><div class="emoji-menu ${i2 !== 0 && !state.searchMode && state.currentGroup.id === -1 ? "visibility-auto" : ""}" style="${`--num-rows: ${Math.ceil(emojiWithCategory.emojis.length / state.numColumns)}`}" data-action="updateOnIntersection" role="${state.searchMode ? "listbox" : "menu"}" aria-labelledby="menu-label-${i2}" id="${state.searchMode ? "search-results" : null}">${emojiList(
+        emojiWithCategory.emojis,
+        state.searchMode,
+        /* prefix */
+        "emo"
+      )}</div></div>`;
+    }, (emojiWithCategory) => emojiWithCategory.category)}</div></div><div class="favorites onscreen emoji-menu ${state.message ? "gone" : ""}" role="menu" aria-label="${state.i18n.favoritesLabel}" data-on-click="onEmojiClick">${emojiList(
+      state.currentFavorites,
+      /* searchMode */
+      false,
+      /* prefix */
+      "fav"
+    )}</div><button data-ref="baselineEmoji" aria-hidden="true" tabindex="-1" class="abs-pos hidden emoji baseline-emoji">😀</button></section>`;
+  };
+  const rootDom = section();
+  const forElementWithAttribute = (attributeName, callback) => {
+    for (const element2 of container.querySelectorAll(`[${attributeName}]`)) {
+      callback(element2, element2.getAttribute(attributeName));
+    }
+  };
+  if (firstRender) {
+    container.appendChild(rootDom);
+    for (const eventName of ["click", "focusout", "input", "keydown", "keyup"]) {
+      forElementWithAttribute(`data-on-${eventName}`, (element2, listenerName) => {
+        element2.addEventListener(eventName, events[listenerName]);
+      });
+    }
+    forElementWithAttribute("data-ref", (element2, ref) => {
+      refs[ref] = element2;
+    });
+    abortSignal.addEventListener("abort", () => {
+      container.removeChild(rootDom);
+    });
+  }
+  forElementWithAttribute("data-action", (element2, action) => {
+    let boundActions = actionContext.get(action);
+    if (!boundActions) {
+      actionContext.set(action, boundActions = /* @__PURE__ */ new WeakSet());
+    }
+    if (!boundActions.has(element2)) {
+      boundActions.add(element2);
+      actions[action](element2);
+    }
+  });
+}
+var qM = typeof queueMicrotask === "function" ? queueMicrotask : (callback) => Promise.resolve().then(callback);
+function createState(abortSignal) {
+  let destroyed = false;
+  let currentObserver;
+  const propsToObservers = /* @__PURE__ */ new Map();
+  const dirtyObservers = /* @__PURE__ */ new Set();
+  let queued;
+  const flush = () => {
+    if (destroyed) {
+      return;
+    }
+    const observersToRun = [...dirtyObservers];
+    dirtyObservers.clear();
+    try {
+      for (const observer2 of observersToRun) {
+        observer2();
+      }
+    } finally {
+      queued = false;
+      if (dirtyObservers.size) {
+        queued = true;
+        qM(flush);
+      }
+    }
+  };
+  const state = new Proxy({}, {
+    get(target, prop) {
+      if (currentObserver) {
+        let observers = propsToObservers.get(prop);
+        if (!observers) {
+          observers = /* @__PURE__ */ new Set();
+          propsToObservers.set(prop, observers);
+        }
+        observers.add(currentObserver);
+      }
+      return target[prop];
+    },
+    set(target, prop, newValue) {
+      if (target[prop] !== newValue) {
+        target[prop] = newValue;
+        const observers = propsToObservers.get(prop);
+        if (observers) {
+          for (const observer2 of observers) {
+            dirtyObservers.add(observer2);
+          }
+          if (!queued) {
+            queued = true;
+            qM(flush);
+          }
+        }
+      }
+      return true;
+    }
+  });
+  const createEffect = (callback) => {
+    const runnable = () => {
+      const oldObserver = currentObserver;
+      currentObserver = runnable;
+      try {
+        return callback();
+      } finally {
+        currentObserver = oldObserver;
+      }
+    };
+    return runnable();
+  };
+  abortSignal.addEventListener("abort", () => {
+    destroyed = true;
+  });
+  return {
+    state,
+    createEffect
+  };
+}
+function arraysAreEqualByFunction(left, right, areEqualFunc) {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let i2 = 0; i2 < left.length; i2++) {
+    if (!areEqualFunc(left[i2], right[i2])) {
+      return false;
+    }
+  }
+  return true;
+}
+var intersectionObserverCache = /* @__PURE__ */ new WeakMap();
+function intersectionObserverAction(node2, abortSignal, listener) {
+  {
+    const root = node2.closest(".tabpanel");
+    let observer2 = intersectionObserverCache.get(root);
+    if (!observer2) {
+      observer2 = new IntersectionObserver(listener, {
+        root,
+        // trigger if we are 1/2 scroll container height away so that the images load a bit quicker while scrolling
+        rootMargin: "50% 0px 50% 0px",
+        // trigger if any part of the emoji grid is intersecting
+        threshold: 0
+      });
+      intersectionObserverCache.set(root, observer2);
+      abortSignal.addEventListener("abort", () => {
+        observer2.disconnect();
+      });
+    }
+    observer2.observe(node2);
+  }
+}
+var EMPTY_ARRAY = [];
+var { assign } = Object;
+function createRoot(shadowRoot, props) {
+  const refs = {};
+  const abortController = new AbortController();
+  const abortSignal = abortController.signal;
+  const { state, createEffect } = createState(abortSignal);
+  const actionContext = /* @__PURE__ */ new Map();
+  assign(state, {
+    skinToneEmoji: void 0,
+    i18n: void 0,
+    database: void 0,
+    customEmoji: void 0,
+    customCategorySorting: void 0,
+    emojiVersion: void 0
+  });
+  assign(state, props);
+  assign(state, {
+    initialLoad: true,
+    currentEmojis: [],
+    currentEmojisWithCategories: [],
+    rawSearchText: "",
+    searchText: "",
+    searchMode: false,
+    activeSearchItem: -1,
+    message: void 0,
+    skinTonePickerExpanded: false,
+    skinTonePickerExpandedAfterAnimation: false,
+    currentSkinTone: 0,
+    activeSkinTone: 0,
+    skinToneButtonText: void 0,
+    pickerStyle: void 0,
+    skinToneButtonLabel: "",
+    skinTones: [],
+    currentFavorites: [],
+    defaultFavoriteEmojis: void 0,
+    numColumns: DEFAULT_NUM_COLUMNS,
+    isRtl: false,
+    currentGroupIndex: 0,
+    groups,
+    databaseLoaded: false,
+    activeSearchItemId: void 0
+  });
+  createEffect(() => {
+    if (state.currentGroup !== state.groups[state.currentGroupIndex]) {
+      state.currentGroup = state.groups[state.currentGroupIndex];
+    }
+  });
+  const focus2 = (id) => {
+    shadowRoot.getElementById(id).focus();
+  };
+  const emojiToDomNode = (emoji) => shadowRoot.getElementById(`emo-${emoji.id}`);
+  const fireEvent = (name, detail) => {
+    refs.rootElement.dispatchEvent(new CustomEvent(name, {
+      detail,
+      bubbles: true,
+      composed: true
+    }));
+  };
+  const compareEmojiArrays = (a, b) => a.id === b.id;
+  const compareCurrentEmojisWithCategories = (a, b) => {
+    const { category: aCategory, emojis: aEmojis } = a;
+    const { category: bCategory, emojis: bEmojis } = b;
+    if (aCategory !== bCategory) {
+      return false;
+    }
+    return arraysAreEqualByFunction(aEmojis, bEmojis, compareEmojiArrays);
+  };
+  const updateCurrentEmojis = (newEmojis) => {
+    if (!arraysAreEqualByFunction(state.currentEmojis, newEmojis, compareEmojiArrays)) {
+      state.currentEmojis = newEmojis;
+    }
+  };
+  const updateSearchMode = (newSearchMode) => {
+    if (state.searchMode !== newSearchMode) {
+      state.searchMode = newSearchMode;
+    }
+  };
+  const updateCurrentEmojisWithCategories = (newEmojisWithCategories) => {
+    if (!arraysAreEqualByFunction(state.currentEmojisWithCategories, newEmojisWithCategories, compareCurrentEmojisWithCategories)) {
+      state.currentEmojisWithCategories = newEmojisWithCategories;
+    }
+  };
+  const unicodeWithSkin = (emoji, currentSkinTone) => currentSkinTone && emoji.skins && emoji.skins[currentSkinTone] || emoji.unicode;
+  const labelWithSkin = (emoji, currentSkinTone) => uniq([
+    emoji.name || unicodeWithSkin(emoji, currentSkinTone),
+    emoji.annotation,
+    ...emoji.shortcodes || EMPTY_ARRAY
+  ].filter(Boolean)).join(", ");
+  const titleForEmoji = (emoji) => emoji.annotation || (emoji.shortcodes || EMPTY_ARRAY).join(", ");
+  const helpers = {
+    labelWithSkin,
+    titleForEmoji,
+    unicodeWithSkin
+  };
+  const events = {
+    onClickSkinToneButton,
+    onEmojiClick,
+    onNavClick,
+    onNavKeydown,
+    onSearchKeydown,
+    onSkinToneOptionsClick,
+    onSkinToneOptionsFocusOut,
+    onSkinToneOptionsKeydown,
+    onSkinToneOptionsKeyup,
+    onSearchInput
+  };
+  const actions = {
+    calculateEmojiGridStyle,
+    updateOnIntersection
+  };
+  let firstRender = true;
+  createEffect(() => {
+    render2(shadowRoot, state, helpers, events, actions, refs, abortSignal, actionContext, firstRender);
+    firstRender = false;
+  });
+  if (!state.emojiVersion) {
+    detectEmojiSupportLevel().then((level) => {
+      if (!level) {
+        state.message = state.i18n.emojiUnsupportedMessage;
+      }
+    });
+  }
+  createEffect(() => {
+    async function handleDatabaseLoading() {
+      let showingLoadingMessage = false;
+      const timeoutHandle = setTimeout(() => {
+        showingLoadingMessage = true;
+        state.message = state.i18n.loadingMessage;
+      }, TIMEOUT_BEFORE_LOADING_MESSAGE);
+      try {
+        await state.database.ready();
+        state.databaseLoaded = true;
+      } catch (err) {
+        console.error(err);
+        state.message = state.i18n.networkErrorMessage;
+      } finally {
+        clearTimeout(timeoutHandle);
+        if (showingLoadingMessage) {
+          showingLoadingMessage = false;
+          state.message = "";
+        }
+      }
+    }
+    if (state.database) {
+      handleDatabaseLoading();
+    }
+  });
+  createEffect(() => {
+    state.pickerStyle = `
+      --num-groups: ${state.groups.length};
+      --indicator-opacity: ${state.searchMode ? 0 : 1};
+      --num-skintones: ${NUM_SKIN_TONES};`;
+  });
+  createEffect(() => {
+    if (state.customEmoji && state.database) {
+      updateCustomEmoji();
+    }
+  });
+  createEffect(() => {
+    if (state.customEmoji && state.customEmoji.length) {
+      if (state.groups !== allGroups) {
+        state.groups = allGroups;
+      }
+    } else if (state.groups !== groups) {
+      if (state.currentGroupIndex) {
+        state.currentGroupIndex--;
+      }
+      state.groups = groups;
+    }
+  });
+  createEffect(() => {
+    async function updatePreferredSkinTone() {
+      if (state.databaseLoaded) {
+        state.currentSkinTone = await state.database.getPreferredSkinTone();
+      }
+    }
+    updatePreferredSkinTone();
+  });
+  createEffect(() => {
+    state.skinTones = Array(NUM_SKIN_TONES).fill().map((_, i2) => applySkinTone(state.skinToneEmoji, i2));
+  });
+  createEffect(() => {
+    state.skinToneButtonText = state.skinTones[state.currentSkinTone];
+  });
+  createEffect(() => {
+    state.skinToneButtonLabel = state.i18n.skinToneLabel.replace("{skinTone}", state.i18n.skinTones[state.currentSkinTone]);
+  });
+  createEffect(() => {
+    async function updateDefaultFavoriteEmojis() {
+      const { database } = state;
+      const favs = (await Promise.all(MOST_COMMONLY_USED_EMOJI.map((unicode) => database.getEmojiByUnicodeOrName(unicode)))).filter(Boolean);
+      state.defaultFavoriteEmojis = favs;
+    }
+    if (state.databaseLoaded) {
+      updateDefaultFavoriteEmojis();
+    }
+  });
+  function updateCustomEmoji() {
+    const { customEmoji, database } = state;
+    const databaseCustomEmoji = customEmoji || EMPTY_ARRAY;
+    if (database.customEmoji !== databaseCustomEmoji) {
+      database.customEmoji = databaseCustomEmoji;
+    }
+  }
+  createEffect(() => {
+    async function updateFavorites() {
+      updateCustomEmoji();
+      const { database, defaultFavoriteEmojis, numColumns } = state;
+      const dbFavorites = await database.getTopFavoriteEmoji(numColumns);
+      const favorites = await summarizeEmojis(uniqBy2([
+        ...dbFavorites,
+        ...defaultFavoriteEmojis
+      ], (_) => _.unicode || _.name).slice(0, numColumns));
+      state.currentFavorites = favorites;
+    }
+    if (state.databaseLoaded && state.defaultFavoriteEmojis) {
+      updateFavorites();
+    }
+  });
+  function calculateEmojiGridStyle(node2) {
+    resizeObserverAction(node2, abortSignal, () => {
+      {
+        const style2 = getComputedStyle(refs.rootElement);
+        const newNumColumns = parseInt(style2.getPropertyValue("--num-columns"), 10);
+        const newIsRtl = style2.getPropertyValue("direction") === "rtl";
+        state.numColumns = newNumColumns;
+        state.isRtl = newIsRtl;
+      }
+    });
+  }
+  function updateOnIntersection(node2) {
+    intersectionObserverAction(node2, abortSignal, (entries) => {
+      for (const { target, isIntersecting } of entries) {
+        target.classList.toggle("onscreen", isIntersecting);
+      }
+    });
+  }
+  createEffect(() => {
+    async function updateEmojis() {
+      const { searchText, currentGroup, databaseLoaded, customEmoji } = state;
+      if (!databaseLoaded) {
+        state.currentEmojis = [];
+        state.searchMode = false;
+      } else if (searchText.length >= MIN_SEARCH_TEXT_LENGTH2) {
+        const newEmojis = await getEmojisBySearchQuery(searchText);
+        if (state.searchText === searchText) {
+          updateCurrentEmojis(newEmojis);
+          updateSearchMode(true);
+        }
+      } else {
+        const { id: currentGroupId } = currentGroup;
+        if (currentGroupId !== -1 || customEmoji && customEmoji.length) {
+          const newEmojis = await getEmojisByGroup(currentGroupId);
+          if (state.currentGroup.id === currentGroupId) {
+            updateCurrentEmojis(newEmojis);
+            updateSearchMode(false);
+          }
+        }
+      }
+    }
+    updateEmojis();
+  });
+  const resetScrollTopInRaf = () => {
+    rAF(() => resetScrollTopIfPossible(refs.tabpanelElement));
+  };
+  createEffect(() => {
+    const { currentEmojis, emojiVersion } = state;
+    const zwjEmojisToCheck = currentEmojis.filter((emoji) => emoji.unicode).filter((emoji) => hasZwj(emoji) && !supportedZwjEmojis.has(emoji.unicode));
+    if (!emojiVersion && zwjEmojisToCheck.length) {
+      updateCurrentEmojis(currentEmojis);
+      rAF(() => checkZwjSupportAndUpdate(zwjEmojisToCheck));
+    } else {
+      const newEmojis = emojiVersion ? currentEmojis : currentEmojis.filter(isZwjSupported);
+      updateCurrentEmojis(newEmojis);
+      resetScrollTopInRaf();
+    }
+  });
+  function checkZwjSupportAndUpdate(zwjEmojisToCheck) {
+    const allSupported = checkZwjSupport(zwjEmojisToCheck, refs.baselineEmoji, emojiToDomNode);
+    if (allSupported) {
+      resetScrollTopInRaf();
+    } else {
+      state.currentEmojis = [...state.currentEmojis];
+    }
+  }
+  function isZwjSupported(emoji) {
+    return !emoji.unicode || !hasZwj(emoji) || supportedZwjEmojis.get(emoji.unicode);
+  }
+  async function filterEmojisByVersion(emojis) {
+    const emojiSupportLevel = state.emojiVersion || await detectEmojiSupportLevel();
+    return emojis.filter(({ version }) => !version || version <= emojiSupportLevel);
+  }
+  async function summarizeEmojis(emojis) {
+    return summarizeEmojisForUI(emojis, state.emojiVersion || await detectEmojiSupportLevel());
+  }
+  async function getEmojisByGroup(group) {
+    const emoji = group === -1 ? state.customEmoji : await state.database.getEmojiByGroup(group);
+    return summarizeEmojis(await filterEmojisByVersion(emoji));
+  }
+  async function getEmojisBySearchQuery(query) {
+    return summarizeEmojis(await filterEmojisByVersion(await state.database.getEmojiBySearchQuery(query)));
+  }
+  createEffect(() => {
+  });
+  createEffect(() => {
+    function calculateCurrentEmojisWithCategories() {
+      const { searchMode, currentEmojis } = state;
+      if (searchMode) {
+        return [
+          {
+            category: "",
+            emojis: currentEmojis
+          }
+        ];
+      }
+      const categoriesToEmoji = /* @__PURE__ */ new Map();
+      for (const emoji of currentEmojis) {
+        const category = emoji.category || "";
+        let emojis = categoriesToEmoji.get(category);
+        if (!emojis) {
+          emojis = [];
+          categoriesToEmoji.set(category, emojis);
+        }
+        emojis.push(emoji);
+      }
+      return [...categoriesToEmoji.entries()].map(([category, emojis]) => ({ category, emojis })).sort((a, b) => state.customCategorySorting(a.category, b.category));
+    }
+    const newEmojisWithCategories = calculateCurrentEmojisWithCategories();
+    updateCurrentEmojisWithCategories(newEmojisWithCategories);
+  });
+  createEffect(() => {
+    state.activeSearchItemId = state.activeSearchItem !== -1 && state.currentEmojis[state.activeSearchItem].id;
+  });
+  createEffect(() => {
+    const { rawSearchText } = state;
+    rIC(() => {
+      state.searchText = (rawSearchText || "").trim();
+      state.activeSearchItem = -1;
+    });
+  });
+  function onSearchKeydown(event) {
+    if (!state.searchMode || !state.currentEmojis.length) {
+      return;
+    }
+    const goToNextOrPrevious = (previous) => {
+      halt(event);
+      state.activeSearchItem = incrementOrDecrement(previous, state.activeSearchItem, state.currentEmojis);
+    };
+    switch (event.key) {
+      case "ArrowDown":
+        return goToNextOrPrevious(false);
+      case "ArrowUp":
+        return goToNextOrPrevious(true);
+      case "Enter":
+        if (state.activeSearchItem === -1) {
+          state.activeSearchItem = 0;
+        } else {
+          halt(event);
+          return clickEmoji(state.currentEmojis[state.activeSearchItem].id);
+        }
+    }
+  }
+  function onNavClick(event) {
+    const { target } = event;
+    const closestTarget = target.closest(".nav-button");
+    if (!closestTarget) {
+      return;
+    }
+    const groupId = parseInt(closestTarget.dataset.groupId, 10);
+    refs.searchElement.value = "";
+    state.rawSearchText = "";
+    state.searchText = "";
+    state.activeSearchItem = -1;
+    state.currentGroupIndex = state.groups.findIndex((_) => _.id === groupId);
+  }
+  function onNavKeydown(event) {
+    const { target, key } = event;
+    const doFocus = (el) => {
+      if (el) {
+        halt(event);
+        el.focus();
+      }
+    };
+    switch (key) {
+      case "ArrowLeft":
+        return doFocus(target.previousElementSibling);
+      case "ArrowRight":
+        return doFocus(target.nextElementSibling);
+      case "Home":
+        return doFocus(target.parentElement.firstElementChild);
+      case "End":
+        return doFocus(target.parentElement.lastElementChild);
+    }
+  }
+  async function getDetailForClickEvent(unicodeOrName) {
+    const emoji = await state.database.getEmojiByUnicodeOrName(unicodeOrName);
+    const emojiSummary = [...state.currentEmojis, ...state.currentFavorites].find((_) => _.id === unicodeOrName);
+    const skinTonedUnicode = emojiSummary.unicode && unicodeWithSkin(emojiSummary, state.currentSkinTone);
+    await state.database.incrementFavoriteEmojiCount(unicodeOrName);
+    return {
+      emoji,
+      skinTone: state.currentSkinTone,
+      ...skinTonedUnicode && { unicode: skinTonedUnicode },
+      ...emojiSummary.name && { name: emojiSummary.name }
+    };
+  }
+  async function clickEmoji(unicodeOrName) {
+    const promiseForDetail = getDetailForClickEvent(unicodeOrName);
+    fireEvent("emoji-click-sync", promiseForDetail);
+    fireEvent("emoji-click", await promiseForDetail);
+  }
+  function onEmojiClick(event) {
+    const { target } = event;
+    if (!target.classList.contains("emoji")) {
+      return;
+    }
+    halt(event);
+    const id = target.id.substring(4);
+    clickEmoji(id);
+  }
+  function changeSkinTone(skinTone) {
+    state.currentSkinTone = skinTone;
+    state.skinTonePickerExpanded = false;
+    focus2("skintone-button");
+    fireEvent("skin-tone-change", { skinTone });
+    state.database.setPreferredSkinTone(skinTone);
+  }
+  function onSkinToneOptionsClick(event) {
+    const { target: { id } } = event;
+    const match = id && id.match(/^skintone-(\d)/);
+    if (!match) {
+      return;
+    }
+    halt(event);
+    const skinTone = parseInt(match[1], 10);
+    changeSkinTone(skinTone);
+  }
+  function onClickSkinToneButton(event) {
+    state.skinTonePickerExpanded = !state.skinTonePickerExpanded;
+    state.activeSkinTone = state.currentSkinTone;
+    if (state.skinTonePickerExpanded) {
+      halt(event);
+      rAF(() => focus2("skintone-list"));
+    }
+  }
+  createEffect(() => {
+    if (state.skinTonePickerExpanded) {
+      refs.skinToneDropdown.addEventListener("transitionend", () => {
+        state.skinTonePickerExpandedAfterAnimation = true;
+      }, { once: true });
+    } else {
+      state.skinTonePickerExpandedAfterAnimation = false;
+    }
+  });
+  function onSkinToneOptionsKeydown(event) {
+    if (!state.skinTonePickerExpanded) {
+      return;
+    }
+    const changeActiveSkinTone = async (nextSkinTone) => {
+      halt(event);
+      state.activeSkinTone = nextSkinTone;
+    };
+    switch (event.key) {
+      case "ArrowUp":
+        return changeActiveSkinTone(incrementOrDecrement(true, state.activeSkinTone, state.skinTones));
+      case "ArrowDown":
+        return changeActiveSkinTone(incrementOrDecrement(false, state.activeSkinTone, state.skinTones));
+      case "Home":
+        return changeActiveSkinTone(0);
+      case "End":
+        return changeActiveSkinTone(state.skinTones.length - 1);
+      case "Enter":
+        halt(event);
+        return changeSkinTone(state.activeSkinTone);
+      case "Escape":
+        halt(event);
+        state.skinTonePickerExpanded = false;
+        return focus2("skintone-button");
+    }
+  }
+  function onSkinToneOptionsKeyup(event) {
+    if (!state.skinTonePickerExpanded) {
+      return;
+    }
+    switch (event.key) {
+      case " ":
+        halt(event);
+        return changeSkinTone(state.activeSkinTone);
+    }
+  }
+  async function onSkinToneOptionsFocusOut(event) {
+    const { relatedTarget } = event;
+    if (!relatedTarget || relatedTarget.id !== "skintone-list") {
+      state.skinTonePickerExpanded = false;
+    }
+  }
+  function onSearchInput(event) {
+    state.rawSearchText = event.target.value;
+  }
+  return {
+    $set(newState) {
+      assign(state, newState);
+    },
+    $destroy() {
+      abortController.abort();
+    }
+  };
+}
+var DEFAULT_DATA_SOURCE2 = "https://cdn.jsdelivr.net/npm/emoji-picker-element-data@^1/en/emojibase/data.json";
+var DEFAULT_LOCALE2 = "en";
+var enI18n = {
+  categoriesLabel: "Categories",
+  emojiUnsupportedMessage: "Your browser does not support color emoji.",
+  favoritesLabel: "Favorites",
+  loadingMessage: "Loading\u2026",
+  networkErrorMessage: "Could not load emoji.",
+  regionLabel: "Emoji picker",
+  searchDescription: "When search results are available, press up or down to select and enter to choose.",
+  searchLabel: "Search",
+  searchResultsLabel: "Search results",
+  skinToneDescription: "When expanded, press up or down to select and enter to choose.",
+  skinToneLabel: "Choose a skin tone (currently {skinTone})",
+  skinTonesLabel: "Skin tones",
+  skinTones: [
+    "Default",
+    "Light",
+    "Medium-Light",
+    "Medium",
+    "Medium-Dark",
+    "Dark"
+  ],
+  categories: {
+    custom: "Custom",
+    "smileys-emotion": "Smileys and emoticons",
+    "people-body": "People and body",
+    "animals-nature": "Animals and nature",
+    "food-drink": "Food and drink",
+    "travel-places": "Travel and places",
+    activities: "Activities",
+    objects: "Objects",
+    symbols: "Symbols",
+    flags: "Flags"
+  }
+};
+var baseStyles = ':host{--emoji-size:1.375rem;--emoji-padding:0.5rem;--category-emoji-size:var(--emoji-size);--category-emoji-padding:var(--emoji-padding);--indicator-height:3px;--input-border-radius:0.5rem;--input-border-size:1px;--input-font-size:1rem;--input-line-height:1.5;--input-padding:0.25rem;--num-columns:8;--outline-size:2px;--border-size:1px;--border-radius:0;--skintone-border-radius:1rem;--category-font-size:1rem;display:flex;width:min-content;height:400px}:host,:host(.light){color-scheme:light;--background:#fff;--border-color:#e0e0e0;--indicator-color:#385ac1;--input-border-color:#999;--input-font-color:#111;--input-placeholder-color:#999;--outline-color:#999;--category-font-color:#111;--button-active-background:#e6e6e6;--button-hover-background:#d9d9d9}:host(.dark){color-scheme:dark;--background:#222;--border-color:#444;--indicator-color:#5373ec;--input-border-color:#ccc;--input-font-color:#efefef;--input-placeholder-color:#ccc;--outline-color:#fff;--category-font-color:#efefef;--button-active-background:#555555;--button-hover-background:#484848}@media (prefers-color-scheme:dark){:host{color-scheme:dark;--background:#222;--border-color:#444;--indicator-color:#5373ec;--input-border-color:#ccc;--input-font-color:#efefef;--input-placeholder-color:#ccc;--outline-color:#fff;--category-font-color:#efefef;--button-active-background:#555555;--button-hover-background:#484848}}:host([hidden]){display:none}button{margin:0;padding:0;border:0;background:0 0;box-shadow:none;-webkit-tap-highlight-color:transparent}button::-moz-focus-inner{border:0}input{padding:0;margin:0;line-height:1.15;font-family:inherit}input[type=search]{-webkit-appearance:none}:focus{outline:var(--outline-color) solid var(--outline-size);outline-offset:calc(-1*var(--outline-size))}:host([data-js-focus-visible]) :focus:not([data-focus-visible-added]){outline:0}:focus:not(:focus-visible){outline:0}.hide-focus{outline:0}*{box-sizing:border-box}.picker{contain:content;display:flex;flex-direction:column;background:var(--background);border:var(--border-size) solid var(--border-color);border-radius:var(--border-radius);width:100%;height:100%;overflow:hidden;--total-emoji-size:calc(var(--emoji-size) + (2 * var(--emoji-padding)));--total-category-emoji-size:calc(var(--category-emoji-size) + (2 * var(--category-emoji-padding)))}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}.hidden{opacity:0;pointer-events:none}.abs-pos{position:absolute;left:0;top:0}.gone{display:none!important}.skintone-button-wrapper,.skintone-list{background:var(--background);z-index:3}.skintone-button-wrapper.expanded{z-index:1}.skintone-list{position:absolute;inset-inline-end:0;top:0;z-index:2;overflow:visible;border-bottom:var(--border-size) solid var(--border-color);border-radius:0 0 var(--skintone-border-radius) var(--skintone-border-radius);will-change:transform;transition:transform .2s ease-in-out;transform-origin:center 0}@media (prefers-reduced-motion:reduce){.skintone-list{transition-duration:.001s}}@supports not (inset-inline-end:0){.skintone-list{right:0}}.skintone-list.no-animate{transition:none}.tabpanel{overflow-y:auto;scrollbar-gutter:stable;-webkit-overflow-scrolling:touch;will-change:transform;min-height:0;flex:1;contain:content}.emoji-menu{display:grid;grid-template-columns:repeat(var(--num-columns),var(--total-emoji-size));justify-content:space-around;align-items:flex-start;width:100%}.emoji-menu.visibility-auto{content-visibility:auto;contain-intrinsic-size:calc(var(--num-columns)*var(--total-emoji-size)) calc(var(--num-rows)*var(--total-emoji-size))}.category{padding:var(--emoji-padding);font-size:var(--category-font-size);color:var(--category-font-color)}.emoji,button.emoji{font-size:var(--emoji-size);display:flex;align-items:center;justify-content:center;border-radius:100%;height:var(--total-emoji-size);width:var(--total-emoji-size);line-height:1;overflow:hidden;font-family:var(--emoji-font-family);cursor:pointer}@media (hover:hover) and (pointer:fine){.emoji:hover,button.emoji:hover{background:var(--button-hover-background)}}.emoji.active,.emoji:active,button.emoji.active,button.emoji:active{background:var(--button-active-background)}.onscreen .custom-emoji::after{content:"";width:var(--emoji-size);height:var(--emoji-size);background-repeat:no-repeat;background-position:center center;background-size:contain;background-image:var(--custom-emoji-background)}.nav,.nav-button{align-items:center}.nav{display:grid;justify-content:space-between;contain:content}.nav-button{display:flex;justify-content:center}.nav-emoji{font-size:var(--category-emoji-size);width:var(--total-category-emoji-size);height:var(--total-category-emoji-size)}.indicator-wrapper{display:flex;border-bottom:1px solid var(--border-color)}.indicator{width:calc(100%/var(--num-groups));height:var(--indicator-height);opacity:var(--indicator-opacity);background-color:var(--indicator-color);will-change:transform,opacity;transition:opacity .1s linear,transform .25s ease-in-out}@media (prefers-reduced-motion:reduce){.indicator{will-change:opacity;transition:opacity .1s linear}}.pad-top,input.search{background:var(--background);width:100%}.pad-top{height:var(--emoji-padding);z-index:3}.search-row{display:flex;align-items:center;position:relative;padding-inline-start:var(--emoji-padding);padding-bottom:var(--emoji-padding)}.search-wrapper{flex:1;min-width:0}input.search{padding:var(--input-padding);border-radius:var(--input-border-radius);border:var(--input-border-size) solid var(--input-border-color);color:var(--input-font-color);font-size:var(--input-font-size);line-height:var(--input-line-height)}input.search::placeholder{color:var(--input-placeholder-color)}.favorites{overflow-y:auto;scrollbar-gutter:stable;display:flex;flex-direction:row;border-top:var(--border-size) solid var(--border-color);contain:content}.message{padding:var(--emoji-padding)}';
+var PROPS = [
+  "customEmoji",
+  "customCategorySorting",
+  "database",
+  "dataSource",
+  "i18n",
+  "locale",
+  "skinToneEmoji",
+  "emojiVersion"
+];
+var EXTRA_STYLES = `:host{--emoji-font-family:${FONT_FAMILY}}`;
+var PickerElement = class extends HTMLElement {
+  constructor(props) {
+    super();
+    this.attachShadow({ mode: "open" });
+    const style2 = document.createElement("style");
+    style2.textContent = baseStyles + EXTRA_STYLES;
+    this.shadowRoot.appendChild(style2);
+    this._ctx = {
+      // Set defaults
+      locale: DEFAULT_LOCALE2,
+      dataSource: DEFAULT_DATA_SOURCE2,
+      skinToneEmoji: DEFAULT_SKIN_TONE_EMOJI,
+      customCategorySorting: DEFAULT_CATEGORY_SORTING,
+      customEmoji: null,
+      i18n: enI18n,
+      emojiVersion: null,
+      ...props
+    };
+    for (const prop of PROPS) {
+      if (prop !== "database" && Object.prototype.hasOwnProperty.call(this, prop)) {
+        this._ctx[prop] = this[prop];
+        delete this[prop];
+      }
+    }
+    this._dbFlush();
+  }
+  connectedCallback() {
+    rescueElementPrototype(this);
+    if (!this._cmp) {
+      this._cmp = createRoot(this.shadowRoot, this._ctx);
+    }
+  }
+  disconnectedCallback() {
+    rescueElementPrototype(this);
+    qM(() => {
+      if (!this.isConnected && this._cmp) {
+        this._cmp.$destroy();
+        this._cmp = void 0;
+        const { database } = this._ctx;
+        database.close().catch((err) => console.error(err));
+      }
+    });
+  }
+  static get observedAttributes() {
+    return ["locale", "data-source", "skin-tone-emoji", "emoji-version"];
+  }
+  attributeChangedCallback(attrName, oldValue, newValue) {
+    this._set(
+      // convert from kebab-case to camelcase
+      // see https://github.com/sveltejs/svelte/issues/3852#issuecomment-665037015
+      attrName.replace(/-([a-z])/g, (_, up) => up.toUpperCase()),
+      // convert string attribute to float if necessary
+      attrName === "emoji-version" ? parseFloat(newValue) : newValue
+    );
+  }
+  _set(prop, newValue) {
+    this._ctx[prop] = newValue;
+    if (this._cmp) {
+      this._cmp.$set({ [prop]: newValue });
+    }
+    if (["locale", "dataSource"].includes(prop)) {
+      this._dbFlush();
+    }
+  }
+  _dbCreate() {
+    const { locale, dataSource, database } = this._ctx;
+    if (!database || database.locale !== locale || database.dataSource !== dataSource) {
+      this._set("database", new Database({ locale, dataSource }));
+    }
+  }
+  // Update the Database in one microtask if the locale/dataSource change. We do one microtask
+  // so we don't create two Databases if e.g. both the locale and the dataSource change
+  _dbFlush() {
+    qM(() => this._dbCreate());
+  }
+};
+var definitions = {};
+for (const prop of PROPS) {
+  definitions[prop] = {
+    get() {
+      if (prop === "database") {
+        this._dbCreate();
+      }
+      return this._ctx[prop];
+    },
+    set(val) {
+      if (prop === "database") {
+        throw new Error("database is read-only");
+      }
+      this._set(prop, val);
+    }
+  };
+}
+Object.defineProperties(PickerElement.prototype, definitions);
+function rescueElementPrototype(element2) {
+  if (!(element2 instanceof PickerElement)) {
+    Object.setPrototypeOf(element2, customElements.get(element2.tagName.toLowerCase()).prototype);
+  }
+}
+if (!customElements.get("emoji-picker")) {
+  customElements.define("emoji-picker", PickerElement);
+}
+
+// node_modules/emoji-picker-element/i18n/fr.js
+var fr_default = {
+  categoriesLabel: "Cat\xE9gories",
+  emojiUnsupportedMessage: "Votre navigateur ne supporte pas les emojis en couleur.",
+  favoritesLabel: "Favoris",
+  loadingMessage: "Chargement en cours\u2026",
+  networkErrorMessage: "Impossible de charger les emojis.",
+  regionLabel: "Choisir un emoji",
+  searchDescription: "Lorsque les r\xE9sultats sont affich\xE9s, utilisez les fl\xE8ches haut/bas pour naviguer et la touche entr\xE9e pour s\xE9lectionner.",
+  searchLabel: "Rechercher",
+  searchResultsLabel: "R\xE9sultats",
+  skinToneDescription: "Quand disponible, utilisez les fl\xE8ches haut/bas pour naviguer et la touche entr\xE9e pour s\xE9lectionner.",
+  skinToneLabel: "Choisir une couleur de peau (actuellement {skinTone})",
+  skinTonesLabel: "Couleurs de peau",
+  skinTones: [
+    "Par d\xE9faut",
+    "Clair",
+    "Moyennement clair",
+    "Moyen",
+    "Moyennement sombre",
+    "Sombre"
+  ],
+  categories: {
+    custom: "Personnalis\xE9",
+    "smileys-emotion": "\xC9motic\xF4nes",
+    "people-body": "Corps et m\xE9tiers",
+    "animals-nature": "Animaux et nature",
+    "food-drink": "Nourriture et boissons",
+    "travel-places": "Voyages et lieux",
+    activities: "Activit\xE9s",
+    objects: "Objets",
+    symbols: "Symboles",
+    flags: "Drapeaux"
+  }
+};
+
+// node_modules/emoji-picker-element/i18n/en.js
+var en_default = {
+  categoriesLabel: "Categories",
+  emojiUnsupportedMessage: "Your browser does not support color emoji.",
+  favoritesLabel: "Favorites",
+  loadingMessage: "Loading\u2026",
+  networkErrorMessage: "Could not load emoji.",
+  regionLabel: "Emoji picker",
+  searchDescription: "When search results are available, press up or down to select and enter to choose.",
+  searchLabel: "Search",
+  searchResultsLabel: "Search results",
+  skinToneDescription: "When expanded, press up or down to select and enter to choose.",
+  skinToneLabel: "Choose a skin tone (currently {skinTone})",
+  skinTonesLabel: "Skin tones",
+  skinTones: [
+    "Default",
+    "Light",
+    "Medium-Light",
+    "Medium",
+    "Medium-Dark",
+    "Dark"
+  ],
+  categories: {
+    custom: "Custom",
+    "smileys-emotion": "Smileys and emoticons",
+    "people-body": "People and body",
+    "animals-nature": "Animals and nature",
+    "food-drink": "Food and drink",
+    "travel-places": "Travel and places",
+    activities: "Activities",
+    objects: "Objects",
+    symbols: "Symbols",
+    flags: "Flags"
+  }
+};
+
+// src/suggestions/PanneauSuggestions.js
+var compteur3 = 0;
+var SELECTEUR = 'button, input, select, textarea, a[href], summary, iframe, [contenteditable="true"], [tabindex]';
+var creerOuvreurPanneau = (editor, contexte3) => (options) => {
+  const cible = editor();
+  if (!cible || cible.isDestroyed) return null;
+  lierContexteSuggestions(cible, contexte3);
+  return ouvrirPanneauSuggestions({ ...options, editor: cible });
+};
+function voisin(editor, contexte3, origine, sens) {
+  const depart = origine.trigger ?? editor.view.dom;
+  const scope = contexte3.parent?.form ?? depart.ownerDocument.body;
+  const cibles = [...scope.querySelectorAll(SELECTEUR)].filter((e) => {
+    const summary = e.tagName === "SUMMARY" && e.parentElement?.tagName === "DETAILS" && !e.hasAttribute("tabindex") && [...e.parentElement.children].find((c) => c.tagName === "SUMMARY") === e;
+    if (e.tabIndex < 0 && !summary || e.disabled || e.closest("[hidden], [inert], .tts-suggestions-panneau") || getComputedStyle(e).visibility === "hidden") return false;
+    for (let ancetre = e; ancetre; ancetre = ancetre.parentElement) {
+      if (getComputedStyle(ancetre).display === "none") return false;
+    }
+    return true;
+  });
+  const i2 = cibles.indexOf(depart);
+  if (i2 >= 0) return cibles[i2 + sens] ?? (contexte3.parent ? sens > 0 ? cibles[0] : cibles.at(-1) : depart);
+  const suivants = cibles.filter((e) => depart.compareDocumentPosition(e) & (sens > 0 ? 4 : 2));
+  return (sens > 0 ? suivants[0] : suivants.at(-1)) ?? depart;
+}
+function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label: label2, onClose }) {
+  const contexte3 = contexteSuggestions(editor);
+  if (!contexte3 || editor.isDestroyed || !editor.isEditable || editor.view.dom.closest("[hidden]")) return null;
+  fermerSuggestions({ reason: "replacement" });
+  const { wrapper, parent } = contexte3;
+  const doc4 = editor.view.dom.ownerDocument;
+  const element2 = doc4.createElement("div");
+  element2.className = "tts-suggestions-panneau";
+  element2.id = `tts-suggestions-panneau-${++compteur3}`;
+  element2.setAttribute("popover", "manual");
+  if (typeof element2.showPopover !== "function") element2.style.display = "block";
+  element2.setAttribute("role", "dialog");
+  element2.setAttribute("aria-label", label2);
+  const corps = doc4.createElement("div");
+  corps.className = "tts-suggestions-panneau__corps";
+  corps.tabIndex = -1;
+  corps.setAttribute("role", "group");
+  corps.setAttribute("aria-label", label2);
+  let ouvert2 = true;
+  let delier;
+  const ecoutes = [];
+  const ecouter = (cible, type, fn, capture = false) => {
+    cible.addEventListener(type, fn, capture);
+    ecoutes.push(() => cible.removeEventListener(type, fn, capture));
+  };
+  const trigger = origin.trigger;
+  const boutonOrigine = trigger?.matches('button, [role="button"]') ? trigger : null;
+  const ancienControls = boutonOrigine?.getAttribute("aria-controls");
+  const fermer = ({ reason = "cancel", refocus = true } = {}) => {
+    if (!ouvert2) return;
+    ouvert2 = false;
+    delier?.();
+    ecoutes.forEach((retirer) => retirer());
+    element2.hidePopover?.();
+    element2.remove();
+    if (boutonOrigine) {
+      boutonOrigine.setAttribute("aria-expanded", "false");
+      if (ancienControls === null) boutonOrigine.removeAttribute("aria-controls");
+      else boutonOrigine.setAttribute("aria-controls", ancienControls);
+    }
+    onClose?.({ reason });
+    if (refocus && !editor.isDestroyed) {
+      const cible = origin.returnTarget ?? trigger ?? editor.view.dom;
+      if (cible.isConnected) {
+        if (cible === editor.view.dom) editor.view.focus();
+        else cible.focus();
+      }
+    }
+  };
+  const sentinelle = (sens) => {
+    const el = doc4.createElement("span");
+    el.tabIndex = 0;
+    el.className = "tts-suggestions-sentinelle";
+    ecouter(el, "focus", () => {
+      const cible = voisin(editor, contexte3, origin, sens);
+      fermer({ reason: "tab", refocus: false });
+      if (cible?.isConnected) cible.focus();
+    });
+    return el;
+  };
+  element2.append(sentinelle(-1), corps, sentinelle(1));
+  (parent?.element ?? wrapper).append(element2);
+  delier = enregistrerCoucheSuggestions({ editor, wrapper, parent, fermer });
+  if (boutonOrigine) {
+    boutonOrigine.setAttribute("aria-expanded", "true");
+    boutonOrigine.setAttribute("aria-controls", element2.id);
+  }
+  element2.showPopover?.();
+  const lireRect = typeof anchor === "function" ? anchor : () => (anchor ?? editor.view.dom).getBoundingClientRect();
+  const placer = () => {
+    if (!ouvert2) return;
+    placerDepuisRect(element2, lireRect, { ecart: 4 });
+  };
+  placer();
+  const clavier = (event) => {
+    if (event.isComposing) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      fermer({ reason: "escape" });
+    } else if (event.key === "Enter") {
+      event.stopPropagation();
+      const cible = event.composedPath()[0];
+      if (cible.form && !(cible.tagName === "BUTTON" && cible.type === "button")) event.preventDefault();
+    }
+  };
+  ecouter(element2, "keydown", clavier);
+  ecouter(doc4, "keydown", (event) => {
+    if (event.key === "Escape" && doc4.activeElement === doc4.body) clavier(event);
+  });
+  const dehors = (event) => {
+    if (!event.composedPath().includes(element2)) fermer({ reason: "outside", refocus: false });
+  };
+  ecouter(doc4, "pointerdown", dehors, true);
+  ecouter(doc4, "focusin", dehors, true);
+  ecouter(doc4.defaultView, "resize", placer);
+  ecouter(doc4.defaultView, "scroll", (e) => {
+    if (!element2.contains(e.target)) placer();
+  }, true);
+  const remplacer = (contenu) => {
+    if (!ouvert2) return;
+    corps.replaceChildren(contenu);
+    for (const bouton of corps.querySelectorAll("button")) bouton.type = "button";
+    placer();
+    (corps.querySelector('input[type="search"]') ?? corps).focus();
+  };
+  const Observer = doc4.defaultView.ResizeObserver;
+  if (Observer) {
+    const observer2 = new Observer(placer);
+    observer2.observe(corps);
+    observer2.observe(element2);
+    ecoutes.push(() => observer2.disconnect());
+  }
+  remplacer(content);
+  return { element: element2, corps, fermer, remplacer, placer };
+}
+
+// src/emojis/PickerEmoji.js
+function ouvrirPickerEmoji({ editor, anchor, origin = {}, range = editor.state.selection, onChoose, onClose, i18n }) {
+  const valide = (plage) => emojiAutorise({ editor, range: plage });
+  if (!valide(range)) return null;
+  const debut = suivrePosition(editor, range.from), fin = suivrePosition(editor, range.to);
+  const initial = editor.state.doc.slice(range.from, range.to).content;
+  const doc4 = editor.view.dom.ownerDocument;
+  let ouvert2 = true, accepte = false, essai = 0, pret = false, retirerChoix, attente;
+  let panneau;
+  const cibleFocus = (picker) => {
+    if (!ouvert2) return;
+    (picker?.shadowRoot?.querySelector('input[type="search"]') ?? panneau.corps).focus();
+  };
+  const terminer = (raison) => {
+    ouvert2 = false;
+    essai++;
+    clearTimeout(attente);
+    retirerChoix?.();
+    debut.fin();
+    fin.fin();
+    onClose?.(raison);
+  };
+  const fragment = doc4.createElement("div");
+  panneau = ouvrirPanneauSuggestions({ editor, anchor, origin, content: fragment, label: label("emoji"), onClose: terminer });
+  if (!panneau) {
+    terminer({ reason: "unavailable" });
+    return null;
+  }
+  const erreur = () => {
+    if (!ouvert2) return;
+    pret = false;
+    essai++;
+    clearTimeout(attente);
+    retirerChoix?.();
+    const contenu = doc4.createElement("div");
+    const message = doc4.createElement("p");
+    message.setAttribute("role", "alert");
+    message.textContent = label("emoji_erreur");
+    const retry = doc4.createElement("button");
+    retry.type = "button";
+    retry.textContent = label("emoji_reessayer");
+    retry.addEventListener("click", charger2);
+    contenu.append(message, retry);
+    panneau.remplacer(contenu);
+  };
+  function charger2() {
+    const numero = ++essai;
+    clearTimeout(attente);
+    pret = false;
+    retirerChoix?.();
+    const donnees = config().emojis;
+    if (!donnees?.url || !donnees.locale) {
+      erreur();
+      return;
+    }
+    const contenu = doc4.createElement("div");
+    contenu.className = "tts-emoji";
+    const status = doc4.createElement("p");
+    status.setAttribute("role", "status");
+    status.textContent = label("emoji_chargement");
+    try {
+      const picker = doc4.createElement("emoji-picker");
+      if (!["dataSource", "locale", "i18n", "database"].every((prop) => prop in picker)) throw new Error("Picker emoji incompatible");
+      picker.dataSource = donnees.url;
+      picker.locale = donnees.locale;
+      picker.i18n = i18n;
+      const choix = (event) => {
+        if (!ouvert2 || numero !== essai || !pret || accepte || !picker.isConnected) return;
+        const unicode = event.detail?.unicode;
+        if (typeof unicode !== "string" || !unicode.trim()) return;
+        const plage = { from: debut.pos(), to: fin.pos() };
+        if (!valide(plage) || !editor.state.doc.slice(plage.from, plage.to).content.eq(initial)) {
+          panneau.fermer({ reason: "invalid" });
+          return;
+        }
+        accepte = true;
+        let succes = false;
+        try {
+          succes = onChoose?.(unicode) === true;
+        } catch (error) {
+          console.error("tiptap_spip : choix emoji refus\xE9", error);
+        }
+        if (!succes) {
+          accepte = false;
+          return;
+        }
+        panneau.fermer({ reason: "choose", refocus: false });
+        if (!editor.isDestroyed) editor.view.focus();
+      };
+      picker.addEventListener("emoji-click", choix);
+      retirerChoix = () => picker.removeEventListener("emoji-click", choix);
+      contenu.append(status, picker);
+      panneau.remplacer(contenu);
+      const database = picker.database;
+      if (typeof database?.ready !== "function") throw new Error("Base du picker incompatible");
+      attente = setTimeout(erreur, 1e4);
+      Promise.resolve(database.ready()).then(() => {
+        if (!ouvert2 || numero !== essai) return;
+        clearTimeout(attente);
+        pret = true;
+        status.remove();
+        panneau.placer();
+        queueMicrotask(() => {
+          if (ouvert2 && numero === essai) cibleFocus(picker);
+        });
+      }, () => {
+        if (ouvert2 && numero === essai) erreur();
+      });
+    } catch {
+      erreur();
+    }
+  }
+  charger2();
+  return { fermer: panneau.fermer };
+}
+
 // src/services/cache.js
 var disponibles = (services) => Promise.resolve(services).then((s) => {
   if (!s) throw new ServiceUnavailable();
@@ -30018,9 +32610,9 @@ var ModelPreviews = class {
   /** @returns {Promise<string>} HTML calculé par SPIP (passé par safehtml) */
   get(source) {
     if (!this.cache.has(source)) {
-      const promise = disponibles(this.services).then((s) => s.call("previsu_modele", { modele: source }));
-      this.cache.set(source, promise);
-      promise.catch(() => this.cache.delete(source));
+      const promise2 = disponibles(this.services).then((s) => s.call("previsu_modele", { modele: source }));
+      this.cache.set(source, promise2);
+      promise2.catch(() => this.cache.delete(source));
     }
     return this.cache.get(source);
   }
@@ -30041,14 +32633,14 @@ var CacheParLots = class {
   }
   get(cle2) {
     if (this.cache.has(cle2)) return this.cache.get(cle2);
-    const promise = new Promise((resolve, reject) => this.pending.set(cle2, { resolve, reject }));
-    this.cache.set(cle2, promise);
-    promise.catch(() => this.cache.delete(cle2));
+    const promise2 = new Promise((resolve, reject) => this.pending.set(cle2, { resolve, reject }));
+    this.cache.set(cle2, promise2);
+    promise2.catch(() => this.cache.delete(cle2));
     if (!this.scheduled) {
       this.scheduled = true;
       queueMicrotask(() => this.flush());
     }
-    return promise;
+    return promise2;
   }
   flush() {
     this.scheduled = false;
@@ -30341,6 +32933,37 @@ function openAbbrPopover(contexte3) {
   });
 }
 
+// src/emojis/bouton.js
+function creerBoutonEmoji({ editor, ouvrir }) {
+  let detruit = false;
+  const element2 = boutonOutil({ nom: "emoji", libelle: label("emoji"), action: () => {
+    if (!detruit && emojiAutorise({ editor })) ouvrir({ trigger: element2 });
+  } });
+  element2.setAttribute("aria-haspopup", "dialog");
+  element2.setAttribute("aria-expanded", "false");
+  const memoriser = () => {
+    if (!detruit) lireSelection(editor);
+  };
+  element2.addEventListener("pointerdown", memoriser);
+  const maj = () => {
+    element2.disabled = !emojiAutorise({ editor });
+  };
+  const destroy = () => {
+    if (detruit) return;
+    detruit = true;
+    editor.off("transaction", maj);
+    editor.off("update", maj);
+    editor.off("destroy", destroy);
+    element2.removeEventListener("pointerdown", memoriser);
+    element2.remove();
+  };
+  editor.on("transaction", maj);
+  editor.on("update", maj);
+  editor.on("destroy", destroy);
+  maj();
+  return { element: element2, maj, destroy };
+}
+
 // src/ui/RawPopover.js
 function segmentDe(doc4, pos) {
   const enfants = [];
@@ -30424,145 +33047,6 @@ function openRawPopover({ editor, wrapper, parent }, pos) {
   }, { name: "annuler" });
   popover2.open(zone);
   return popover2;
-}
-
-// src/suggestions/PanneauSuggestions.js
-var compteur3 = 0;
-var SELECTEUR = 'button, input, select, textarea, a[href], summary, iframe, [contenteditable="true"], [tabindex]';
-var creerOuvreurPanneau = (editor, contexte3) => (options) => {
-  const cible = editor();
-  if (!cible || cible.isDestroyed) return null;
-  lierContexteSuggestions(cible, contexte3);
-  return ouvrirPanneauSuggestions({ ...options, editor: cible });
-};
-function voisin(editor, contexte3, origine, sens) {
-  const depart = origine.trigger ?? editor.view.dom;
-  const scope = contexte3.parent?.form ?? depart.ownerDocument.body;
-  const cibles = [...scope.querySelectorAll(SELECTEUR)].filter((e) => {
-    const summary = e.tagName === "SUMMARY" && e.parentElement?.tagName === "DETAILS" && !e.hasAttribute("tabindex") && [...e.parentElement.children].find((c) => c.tagName === "SUMMARY") === e;
-    if (e.tabIndex < 0 && !summary || e.disabled || e.closest("[hidden], [inert], .tts-suggestions-panneau") || getComputedStyle(e).visibility === "hidden") return false;
-    for (let ancetre = e; ancetre; ancetre = ancetre.parentElement) {
-      if (getComputedStyle(ancetre).display === "none") return false;
-    }
-    return true;
-  });
-  const i2 = cibles.indexOf(depart);
-  if (i2 >= 0) return cibles[i2 + sens] ?? (contexte3.parent ? sens > 0 ? cibles[0] : cibles.at(-1) : depart);
-  const suivants = cibles.filter((e) => depart.compareDocumentPosition(e) & (sens > 0 ? 4 : 2));
-  return (sens > 0 ? suivants[0] : suivants.at(-1)) ?? depart;
-}
-function ouvrirPanneauSuggestions({ editor, anchor, origin = {}, content, label: label2, onClose }) {
-  const contexte3 = contexteSuggestions(editor);
-  if (!contexte3 || editor.isDestroyed || !editor.isEditable || editor.view.dom.closest("[hidden]")) return null;
-  fermerSuggestions({ reason: "replacement" });
-  const { wrapper, parent } = contexte3;
-  const doc4 = editor.view.dom.ownerDocument;
-  const element2 = doc4.createElement("div");
-  element2.className = "tts-suggestions-panneau";
-  element2.id = `tts-suggestions-panneau-${++compteur3}`;
-  element2.setAttribute("popover", "manual");
-  if (typeof element2.showPopover !== "function") element2.style.display = "block";
-  element2.setAttribute("role", "dialog");
-  element2.setAttribute("aria-label", label2);
-  const corps = doc4.createElement("div");
-  corps.className = "tts-suggestions-panneau__corps";
-  corps.tabIndex = -1;
-  corps.setAttribute("role", "group");
-  corps.setAttribute("aria-label", label2);
-  let ouvert2 = true;
-  let delier;
-  const ecoutes = [];
-  const ecouter = (cible, type, fn, capture = false) => {
-    cible.addEventListener(type, fn, capture);
-    ecoutes.push(() => cible.removeEventListener(type, fn, capture));
-  };
-  const trigger = origin.trigger;
-  const boutonOrigine = trigger?.matches('button, [role="button"]') ? trigger : null;
-  const ancienControls = boutonOrigine?.getAttribute("aria-controls");
-  const fermer = ({ reason = "cancel", refocus = true } = {}) => {
-    if (!ouvert2) return;
-    ouvert2 = false;
-    delier?.();
-    ecoutes.forEach((retirer) => retirer());
-    element2.hidePopover?.();
-    element2.remove();
-    if (boutonOrigine) {
-      boutonOrigine.setAttribute("aria-expanded", "false");
-      if (ancienControls === null) boutonOrigine.removeAttribute("aria-controls");
-      else boutonOrigine.setAttribute("aria-controls", ancienControls);
-    }
-    onClose?.({ reason });
-    if (refocus && !editor.isDestroyed) {
-      const cible = origin.returnTarget ?? trigger ?? editor.view.dom;
-      if (cible.isConnected) cible.focus();
-    }
-  };
-  const sentinelle = (sens) => {
-    const el = doc4.createElement("span");
-    el.tabIndex = 0;
-    el.className = "tts-suggestions-sentinelle";
-    ecouter(el, "focus", () => {
-      const cible = voisin(editor, contexte3, origin, sens);
-      fermer({ reason: "tab", refocus: false });
-      if (cible?.isConnected) cible.focus();
-    });
-    return el;
-  };
-  element2.append(sentinelle(-1), corps, sentinelle(1));
-  (parent?.element ?? wrapper).append(element2);
-  delier = enregistrerCoucheSuggestions({ editor, wrapper, parent, fermer });
-  if (boutonOrigine) {
-    boutonOrigine.setAttribute("aria-expanded", "true");
-    boutonOrigine.setAttribute("aria-controls", element2.id);
-  }
-  element2.showPopover?.();
-  const lireRect = typeof anchor === "function" ? anchor : () => (anchor ?? editor.view.dom).getBoundingClientRect();
-  const placer = () => {
-    if (!ouvert2) return;
-    placerDepuisRect(element2, lireRect, { ecart: 4 });
-  };
-  placer();
-  const clavier = (event) => {
-    if (event.isComposing) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      fermer({ reason: "escape" });
-    } else if (event.key === "Enter") {
-      event.stopPropagation();
-      const cible = event.composedPath()[0];
-      if (cible.form && !(cible.tagName === "BUTTON" && cible.type === "button")) event.preventDefault();
-    }
-  };
-  ecouter(element2, "keydown", clavier);
-  ecouter(doc4, "keydown", (event) => {
-    if (event.key === "Escape" && doc4.activeElement === doc4.body) clavier(event);
-  });
-  const dehors = (event) => {
-    if (!event.composedPath().includes(element2)) fermer({ reason: "outside", refocus: false });
-  };
-  ecouter(doc4, "pointerdown", dehors, true);
-  ecouter(doc4, "focusin", dehors, true);
-  ecouter(doc4.defaultView, "resize", placer);
-  ecouter(doc4.defaultView, "scroll", (e) => {
-    if (!element2.contains(e.target)) placer();
-  }, true);
-  const remplacer = (contenu) => {
-    if (!ouvert2) return;
-    corps.replaceChildren(contenu);
-    for (const bouton of corps.querySelectorAll("button")) bouton.type = "button";
-    placer();
-    (corps.querySelector('input[type="search"]') ?? corps).focus();
-  };
-  const Observer = doc4.defaultView.ResizeObserver;
-  if (Observer) {
-    const observer2 = new Observer(placer);
-    observer2.observe(corps);
-    observer2.observe(element2);
-    ecoutes.push(() => observer2.disconnect());
-  }
-  remplacer(content);
-  return { element: element2, corps, fermer, remplacer, placer };
 }
 
 // src/ui/MultiPopover.js
@@ -30650,6 +33134,7 @@ function multiEnLigne(contexte3, existant) {
     const content = schemaJSON({ type: "doc", content: [{ type: "paragraph", content: origine?.length ? origine : void 0 }] }, schema);
     const l = { langue, sous: null, origine, modifie: false, ligne };
     const sousUi = {
+      openEmoji: (origin) => contexte3.ouvrirEmoji?.(l.sous, popover2, origin),
       openSuggestionsPanel: creerOuvreurPanneau(() => l.sous, { wrapper, parent: popover2 }),
       previews: contexte3.previews ?? null,
       titles: contexte3.titles ?? null,
@@ -30667,6 +33152,9 @@ function multiEnLigne(contexte3, existant) {
     l.sous = sous;
     l.sousUi = sousUi;
     lierContexteSuggestions(sous, { wrapper, parent: popover2 });
+    const accesEmoji = creerBoutonEmoji({ editor: sous, ouvrir: sousUi.openEmoji });
+    accesEmoji.element.classList.add("tts-emoji-acces");
+    zone.prepend(accesEmoji.element);
     sous.on("update", () => {
       l.modifie = true;
     });
@@ -30917,6 +33405,7 @@ function openNotePopover(contexte3, pos = null) {
   popover2.actions.before(bloc);
   const enfant = () => ({ ...contexte3, editor: sous, parent: popover2 });
   const sousUi = {
+    openEmoji: (origin) => contexte3.ouvrirEmoji?.(sous, popover2, origin),
     openSuggestionsPanel: creerOuvreurPanneau(() => sous, { wrapper, parent: popover2 }),
     previews: contexte3.previews ?? null,
     titles: contexte3.titles ?? null,
@@ -30944,6 +33433,9 @@ function openNotePopover(contexte3, pos = null) {
   });
   sous.tiptapSpip = editor.tiptapSpip;
   lierContexteSuggestions(sous, { wrapper, parent: popover2 });
+  const accesEmoji = creerBoutonEmoji({ editor: sous, ouvrir: sousUi.openEmoji });
+  accesEmoji.element.classList.add("tts-emoji-acces");
+  titre.after(accesEmoji.element);
   popover2.sous = sous;
   popover2.sousUi = sousUi;
   let modifie = false;
@@ -30989,7 +33481,39 @@ function openNotePopover(contexte3, pos = null) {
 
 // src/ui/interface.js
 function creerInterface({ editor, wrapper, services, catalogue = null }) {
-  const contexte3 = () => ({ editor: editor(), wrapper, services, titles: ui2.titles, previews: ui2.previews });
+  const ouvrirEmoji = (cible, parent, origin = {}) => {
+    if (!cible || cible.isDestroyed) return null;
+    lireSelection(cible);
+    const range = origin.range ?? { from: cible.state.selection.from, to: cible.state.selection.to };
+    if (!emojiAutorise({ editor: cible, range })) return null;
+    const debut = origin.onChoose ? null : suivrePosition(cible, range.from);
+    const fin = origin.onChoose ? null : suivrePosition(cible, range.to);
+    let termine = false;
+    const terminer = (raison) => {
+      if (termine) return;
+      termine = true;
+      debut?.fin();
+      fin?.fin();
+      origin.onClose?.(raison);
+    };
+    lierContexteSuggestions(cible, { wrapper, parent });
+    const panneau = ouvrirPickerEmoji({
+      editor: cible,
+      anchor: origin.anchor ?? origin.trigger,
+      origin,
+      range,
+      onChoose: origin.onChoose ?? ((unicode) => insererEmoji({
+        editor: cible,
+        range: { from: debut.pos(), to: fin.pos() },
+        unicode
+      })),
+      onClose: terminer,
+      i18n: (config().lang ?? wrapper.ownerDocument.documentElement.lang).startsWith("en") ? en_default : fr_default
+    });
+    if (!panneau) terminer({ reason: "unavailable" });
+    return panneau;
+  };
+  const contexte3 = () => ({ editor: editor(), wrapper, services, titles: ui2.titles, previews: ui2.previews, ouvrirEmoji });
   const modifierParCatalogue = (pos) => {
     const model = pos === null ? null : editor().state.doc.nodeAt(pos)?.attrs.model;
     const description = model && catalogue?.modeles[model.name];
@@ -30998,6 +33522,7 @@ function creerInterface({ editor, wrapper, services, catalogue = null }) {
   };
   const ui2 = {
     openSuggestionsPanel: creerOuvreurPanneau(editor, { wrapper }),
+    openEmoji: (origin) => ouvrirEmoji(editor(), null, origin),
     catalogue,
     previews: services ? new ModelPreviews(services) : null,
     titles: services ? new LinkTitles(services) : null,
@@ -31046,6 +33571,7 @@ var barres_default = {
     "tableau",
     "guillemets",
     "caracteres",
+    "emoji",
     "|",
     "multi",
     "langues",
@@ -31053,8 +33579,8 @@ var barres_default = {
     "source",
     "pleinEcran"
   ],
-  forum: ["gras", "italique", "lien", "|", "citation", "liste", "code", "|", "source"],
-  minimale: ["gras", "italique", "lien", "|", "source"],
+  forum: ["gras", "italique", "lien", "|", "citation", "liste", "code", "emoji", "|", "source"],
+  minimale: ["gras", "italique", "lien", "emoji", "|", "source"],
   modele: ["gras", "italique", "exposant", "|", "liste", "citation", "|", "source"]
 };
 
@@ -31112,6 +33638,7 @@ var guillemetsDe = (langue) => {
 };
 var CARACTERES = ["\xC0", "\xC9", "\xC8", "\xE6", "\xC6", "\u0153", "\u0152", "\xC7"];
 var COMPOSANTS = {
+  emoji: ({ editor, ui: ui2 }) => creerBoutonEmoji({ editor, ouvrir: ui2.openEmoji }),
   annuler: commande("annuler", "undo", "Mod-z"),
   retablir: commande("retablir", "redo", "Mod-Shift-z"),
   // niveaux : ceux de la barre, sinon ceux de la configuration (page configurer_tiptap_spip)

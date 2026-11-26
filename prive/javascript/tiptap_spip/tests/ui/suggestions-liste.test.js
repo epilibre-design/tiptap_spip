@@ -55,3 +55,17 @@ it('toute la liste conserve le focus souris sans bloquer le tactile ni la molett
 	}
 	liste.destroy();
 });
+
+it('action Plus hors listbox, navigation et libellé emoji restent internes', () => {
+	const { editor } = monter('Texte'); lierContexteSuggestions(editor, { wrapper }); editor.view.focus();
+	const onChoose = vi.fn(), onAction = vi.fn();
+	const liste = new ListeSuggestions({ editor, labels, onChoose, onDismiss() {}, onAction,
+		formatItem: (item) => `😄 :${item.title}:` });
+	liste.update({ query: 's', items: [{ id: 's', title: 'smile' }], actionLabel: 'Plus…' });
+	expect(liste.liste.textContent).toBe('😄 :smile:');
+	const action = liste.element.querySelector('button'); expect(action.type).toBe('button'); expect(action.closest('[role=listbox]')).toBeNull();
+	liste.keydown(new KeyboardEvent('keydown', { key: 'ArrowUp' })); expect(liste.actif).toBe(0);
+	liste.keydown(new KeyboardEvent('keydown', { key: 'ArrowDown' })); expect(editor.view.dom.hasAttribute('aria-activedescendant')).toBe(false);
+	liste.keydown(new KeyboardEvent('keydown', { key: 'Enter' })); expect(onAction).toHaveBeenCalledOnce(); expect(onChoose).not.toHaveBeenCalled();
+	liste.destroy(); action.click(); expect(onAction).toHaveBeenCalledOnce();
+});

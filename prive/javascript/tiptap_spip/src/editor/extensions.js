@@ -1,3 +1,4 @@
+import { creerFournisseurEmoji } from '../emojis/fournisseur.js';
 import { Extension, InputRule, Mark, Node } from '@tiptap/core';
 import { retenirFournisseurs } from '../suggestions/fabrique.js';
 import Blockquote from '@tiptap/extension-blockquote';
@@ -807,6 +808,7 @@ function extensionsDuCoeur({ headingLevels, ui, markdown }) {
 		SpipEdition,
 		SpipAnomalies,
 		SpipUi.configure({ ui }),
+		creerFournisseurEmoji({ ui }),
 		SpipPasteImage.configure({ ui }),
 	];
 }

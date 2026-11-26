@@ -2,10 +2,14 @@
 
 ### Ajouté
 
+- Emojis : bouton dans les barres d’édition, de forum et minimale, ainsi que dans les notes et
+  chaque langue d’un multi ; sélecteur local `emoji-picker-element` et suggestions dès un caractère
+  autorisé après `:`. Six résultats et « Plus… », recherche dans le catalogue anglais partagé,
+  insertion de texte Unicode avec les marques et un historique isolé.
+
 - Extensions tierces : `ui.creerSuggestions` et `ui.filtrerSuggestions` permettent de proposer
   des suggestions pendant la saisie, avec navigation clavier, recherches asynchrones et
-  insertion isolée dans l’historique. Les fournisseurs sont repris dans les notes et multis ;
-  aucun déclencheur n’est activé par défaut.
+  insertion isolée dans l’historique. Les fournisseurs sont repris dans les notes et multis.
 
 ## [1.5.0] - 2026-11-23
 

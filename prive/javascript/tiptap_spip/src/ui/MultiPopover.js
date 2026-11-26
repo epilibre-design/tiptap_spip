@@ -1,3 +1,4 @@
+import { creerBoutonEmoji } from '../emojis/bouton.js';
 import { Editor, getSchema } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { config } from '../config.js';
@@ -136,6 +137,7 @@ function multiEnLigne(contexte, existant) {
 		// interface de ce sous-éditeur : lien et glossaire en popovers enfants
 		const l = { langue, sous: null, origine, modifie: false, ligne };
 		const sousUi = {
+			openEmoji: (origin) => contexte.ouvrirEmoji?.(l.sous, popover, origin),
 			openSuggestionsPanel: creerOuvreurPanneau(() => l.sous, { wrapper, parent: popover }),
 			previews: contexte.previews ?? null,
 			titles: contexte.titles ?? null,
@@ -153,6 +155,9 @@ function multiEnLigne(contexte, existant) {
 		l.sous = sous;
 		l.sousUi = sousUi;
 		lierContexteSuggestions(sous, { wrapper, parent: popover });
+		const accesEmoji = creerBoutonEmoji({ editor: sous, ouvrir: sousUi.openEmoji });
+		accesEmoji.element.classList.add('tts-emoji-acces');
+		zone.prepend(accesEmoji.element);
 		sous.on('update', () => {
 			l.modifie = true;
 		});

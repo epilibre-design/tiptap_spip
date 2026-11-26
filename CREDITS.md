@@ -32,6 +32,16 @@ recopiées dans `prive/javascript/tiptap_spip.LICENSES.txt`, que `scripts/build.
   l'éditeur a reconnu l'ambiguïté de ces anciens termes en annonçant le changement de licence. tiptap_spip ne
   vend pas ces icônes. Leur remplacement par un jeu sans réserve (Lucide, ISC) est envisagé.
 
+- [emoji-picker-element](https://github.com/nolanlawson/emoji-picker-element) 1.29.1 et
+  [emoji-picker-element-data](https://github.com/nolanlawson/emoji-picker-element-data) 1.8.0
+  (Nolan Lawson et contributeurs) : Apache-2.0. Le JSON anglais est distribué sans transformation,
+  séparément du bundle ; licences recopiées par le build. Le build retire deux espaces de fin
+  de ligne dans des déclarations CSS du picker, sans effet sur le rendu (26 novembre 2026).
+- [Emoji Add](https://www.svgrepo.com/svg/309597/emoji-add), Microsoft,
+  [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) : MIT.
+  SVG original `src/ui/svg-add-emoji.svg`, notice `src/ui/svg-add-emoji.LICENSE` ; le générateur
+  conserve la géométrie, hérite la couleur et retire les métadonnées et identifiants répétés.
+
 ## Données de test
 
 - `tests/corpus/textwheel/` : textes des tests de TextWheel (SPIP 4.4.21, Collectif SPIP,

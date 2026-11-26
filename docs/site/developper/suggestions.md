@@ -2,8 +2,9 @@
 
 Un plugin peut proposer une liste après un caractère, par exemple `@bo` pour insérer
 « Bonjour ! ». Le socle fournit la liste, le clavier et les recherches asynchrones ; le plugin
-fournit les résultats et la commande d’insertion. Aucun fournisseur n’est activé par défaut.
-L’insertion d’emojis appartient à une livraison ultérieure.
+fournit les résultats et la commande d’insertion. Le cœur réserve déjà `:` aux emojis.
+Choisissez un autre caractère pour votre fournisseur : un doublon de `:` est ignoré avec un
+avertissement. Le retrait du bouton Emoji par le pipeline des barres ne désactive pas cet inline.
 
 ## Charger le fournisseur
 

@@ -22,6 +22,9 @@ Ce choix sert à relire et à modifier les différentes versions dans l’édite
 
 La première version prend la langue affichée si elle fait partie des langues activées ; sinon, elle prend la première langue proposée. Une nouvelle version prend la première langue activée qui n’est pas déjà utilisée. **Sans langue** désigne la version par défaut, affichée lorsqu’aucune version de la langue demandée ne convient.
 
+Chaque zone de langue possède un bouton **Emoji** et les suggestions `:heart`. Le choix
+modifie uniquement cette version, puis **Appliquer** enregistre le multi dans l’éditeur.
+
 ![Fenêtre d’édition d’un multi avec une version sans langue, une version anglaise et une version allemande](../medias/edit_multi.png)
 
 Pour modifier un multi en ligne, sélectionnez-le et ouvrez **Multilingue**. Le bouton **Supprimer le multi** retire les balises et garde dans le texte la version actuellement affichée.

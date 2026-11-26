@@ -15,6 +15,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.61.0",
+    "emoji-picker-element-data": "1.8.0",
     "esbuild": "0.28.2",
     "fast-check": "4.10.2",
     "jsdom": "30.1.2",
@@ -43,6 +44,7 @@
     "@tiptap/extension-text": "3.31.4",
     "@tiptap/extensions": "3.31.4",
     "@tiptap/pm": "3.31.4",
-    "@tiptap/suggestion": "3.31.4"
+    "@tiptap/suggestion": "3.31.4",
+    "emoji-picker-element": "1.29.1"
   }
 }

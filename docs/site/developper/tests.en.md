@@ -92,3 +92,12 @@ From the repository root, for PHP tests that do not need a SPIP site:
 composer install
 composer tests-unit
 ```
+
+## Emoji picker transport checks
+
+`emojis.e2e.js` starts its local HTTP and TLS fixtures automatically. Install OpenSSL and
+set `TTS_PHP` to a PHP version compatible with the test site. A local proxy serves
+`tts-emojis.test` without external DNS to check a truly insecure HTTP context; an auxiliary
+PHP server and a temporary certificate check HTTPS. Both use the existing site and stop
+afterwards; no site or database is recreated. Only the JSON’s ETag headers may be simulated;
+the received bundle bytes are still checked.

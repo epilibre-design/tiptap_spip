@@ -44,6 +44,18 @@ Depending on the configuration and content, the toolbar may also offer
 The toolbar stays visible as you scroll through the form. Available buttons depend on the field:
 a forum comment, for example, has a shorter toolbar than an article.
 
+## Insert an emoji
+
+Click **Emoji** in the toolbar to browse the picker, or use the small button next to a note
+or each language of a multi. Choosing an emoji replaces the selected text. Search names stay
+in English, such as `heart` or `smile`.
+
+You can also type `:h` after a space or at the beginning of a line. The list shows six matches
+and updates with each character; **More…** opens the full picker. Press Down then Enter to
+choose, or click a result. A space closes the list; Escape dismisses it. Enter without an
+active choice keeps its normal action. Existing `:smile:` and `:)` text stays literal.
+The Emoji button was added after the toolbar screenshot above.
+
 ## Switch to source and back
 
 Click **Source** to view and edit SPIP syntax, such as `{{bold}}` or `[text->art12]`. Click it

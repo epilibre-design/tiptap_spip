@@ -1,3 +1,4 @@
+import { creerBoutonEmoji } from '../emojis/bouton.js';
 import { config } from '../config.js';
 import { ALIGNEMENTS, alignementActif, selectionAlignee } from '../editor/edition.js';
 import { aDesMultis, langueAffichee, languesDuDocument } from '../editor/extensions.js';
@@ -83,6 +84,7 @@ export const guillemetsDe = (langue) => {
 const CARACTERES = ['À', 'É', 'È', 'æ', 'Æ', 'œ', 'Œ', 'Ç'];
 
 const COMPOSANTS = {
+	emoji: ({ editor, ui }) => creerBoutonEmoji({ editor, ouvrir: ui.openEmoji }),
 	annuler: commande('annuler', 'undo', 'Mod-z'),
 	retablir: commande('retablir', 'redo', 'Mod-Shift-z'),
 
