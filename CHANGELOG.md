@@ -1,5 +1,7 @@
 ## [Non publié]
 
+## [1.6.0] - 2026-11-26
+
 ### Ajouté
 
 - Emojis : bouton dans les barres d’édition, de forum et minimale, ainsi que dans les notes et
@@ -210,7 +212,8 @@
 - API d'extension pour les plugins tiers et exemple d'un bloc FAQ.
 - Guide utilisateur en français et documentation des points d'extension.
 
-[Non publié]: https://github.com/epilibre-design/tiptap_spip/compare/1.5.0...HEAD
+[Non publié]: https://git.spip.net/spip-contrib-extensions/tiptap_spip/-/compare/1.6.0...main
+[1.6.0]: https://git.spip.net/spip-contrib-extensions/tiptap_spip/-/compare/1.5.0...1.6.0
 [1.5.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.4.0...1.5.0
 [1.4.0]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.6...1.4.0
 [1.3.6]: https://github.com/epilibre-design/tiptap_spip/compare/1.3.5...1.3.6
